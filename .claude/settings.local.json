@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(android info *)",
+      "Bash(android docs *)",
+      "Bash(./gradlew.bat :shared:compileKotlinAndroid --info)",
+      "Bash(./gradlew.bat :shared:compileKotlinAndroid)",
+      "Bash(./gradlew.bat --version)",
+      "Read(//c/Users/ajrpa/.gradle/caches/modules-2/files-2.1/com.google.devtools.ksp/com.google.devtools.ksp.gradle.plugin//**)",
+      "Read(//c/Users/ajrpa/.gradle/caches/modules-2/files-2.1/com.google.devtools.ksp/symbol-processing-api//**)",
+      "Bash(./gradlew.bat :shared:compileDebugKotlin)",
+      "Bash(./gradlew.bat :shared:compileDebugKotlin --stacktrace)"
+    ]
+  }
+}
