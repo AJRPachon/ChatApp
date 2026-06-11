@@ -1,8 +1,11 @@
 package com.ajrpachon.chatapp.ui.auth
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,28 +13,61 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Chat
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ajrpachon.chatapp.ui.components.ChatAppOutlinedButton
+import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
+import com.ajrpachon.chatapp.ui.components.ChatAppTextField
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -45,6 +81,12 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
         vm.effect.collect { effect ->
             when (effect) {
                 is AuthEffect.NavigateToHome -> onAuthenticated()
+                is AuthEffect.OpenAddGoogleAccount -> {
+                    val intent = Intent(Settings.ACTION_ADD_ACCOUNT).apply {
+                        putExtra(Settings.EXTRA_ACCOUNT_TYPES, arrayOf("com.google"))
+                    }
+                    context.startActivity(intent)
+                }
             }
         }
     }
@@ -56,61 +98,326 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
         }
     }
 
+    LaunchedEffect(state.showEmailVerification) {
+        if (state.showEmailVerification) {
+            snackbar.showSnackbar("Revisa tu correo para verificar tu cuenta")
+            vm.onIntent(AuthIntent.DismissEmailVerification)
+        }
+    }
+
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .safeDrawingPadding(),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (state.isLoading) {
-                CircularProgressIndicator()
-            } else if (state.needsUsername) {
+        when {
+            state.isLoading -> Box(
+                modifier = Modifier.fillMaxSize().padding(innerPadding),
+                contentAlignment = Alignment.Center,
+            ) { CircularProgressIndicator() }
+
+            state.needsUsername -> Box(
+                modifier = Modifier.fillMaxSize().padding(innerPadding).safeDrawingPadding(),
+                contentAlignment = Alignment.Center,
+            ) {
                 UsernameSetupContent(
                     username = state.usernameInput,
                     error = state.usernameError,
                     onUsernameChange = { vm.onIntent(AuthIntent.UsernameChanged(it)) },
                     onConfirm = { vm.onIntent(AuthIntent.ConfirmUsername) },
                 )
-            } else {
-                LoginContent(onSignIn = { vm.onIntent(AuthIntent.SignInWithGoogle(context)) })
+            }
+
+            else -> LoginContent(
+                state = state,
+                onIntent = { vm.onIntent(it) },
+                onGoogleSignIn = { vm.onIntent(AuthIntent.SignInWithGoogle(context)) },
+            )
+        }
+    }
+}
+
+// ── Login content ──────────────────────────────────────────────────────────────
+
+@Composable
+private fun LoginContent(
+    state: AuthState,
+    onIntent: (AuthIntent) -> Unit,
+    onGoogleSignIn: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+    ) {
+        // ── Gradient hero header ───────────────────────────────────────────────
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(260.dp)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primaryContainer,
+                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f),
+                            MaterialTheme.colorScheme.surface,
+                        ),
+                    ),
+                )
+                .statusBarsPadding(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    modifier = Modifier
+                        .size(88.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Chat,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                    )
+                }
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    "ChatApp",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    "Conecta con tus amigos",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        // ── Form card ─────────────────────────────────────────────────────────
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.surface,
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Spacer(Modifier.height(8.dp))
+
+                // ── Social buttons ─────────────────────────────────────────────
+                ChatAppOutlinedButton(
+                    text = "Continuar con Google",
+                    onClick = onGoogleSignIn,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                Spacer(Modifier.height(20.dp))
+
+                // ── Divider ───────────────────────────────────────────────────
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    HorizontalDivider(modifier = Modifier.weight(1f))
+                    Text(
+                        "o continúa con email",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                    HorizontalDivider(modifier = Modifier.weight(1f))
+                }
+
+                Spacer(Modifier.height(20.dp))
+
+                // ── Email/password tabs ───────────────────────────────────────
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(modifier = Modifier.padding(4.dp)) {
+                        val isSignIn = state.authMode == AuthMode.SIGN_IN
+                        Surface(
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(50),
+                            color = if (isSignIn) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                            onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_IN)) },
+                        ) {
+                            Text(
+                                "Iniciar sesión",
+                                modifier = Modifier.padding(vertical = 10.dp),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = if (isSignIn) FontWeight.SemiBold else FontWeight.Normal,
+                                color = if (isSignIn) MaterialTheme.colorScheme.onPrimaryContainer
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            )
+                        }
+                        Surface(
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(50),
+                            color = if (!isSignIn) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                            onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_UP)) },
+                        ) {
+                            Text(
+                                "Registrarse",
+                                modifier = Modifier.padding(vertical = 10.dp),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = if (!isSignIn) FontWeight.SemiBold else FontWeight.Normal,
+                                color = if (!isSignIn) MaterialTheme.colorScheme.onPrimaryContainer
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                EmailPasswordForm(state = state, onIntent = onIntent)
+
+                Spacer(Modifier.height(32.dp))
             }
         }
     }
 }
 
+// ── Email/password form ────────────────────────────────────────────────────────
+
 @Composable
-private fun LoginContent(onSignIn: () -> Unit) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        modifier = Modifier.padding(32.dp),
-    ) {
-        Icon(
-            imageVector = Icons.Default.Chat,
-            contentDescription = null,
-            modifier = Modifier.size(80.dp),
-            tint = MaterialTheme.colorScheme.primary,
-        )
-        Spacer(Modifier.height(24.dp))
-        Text(
-            text = "ChatApp",
-            style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.Bold,
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = "Conecta con tus amigos",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(48.dp))
-        OutlinedButton(onClick = onSignIn, modifier = Modifier.fillMaxWidth()) {
-            Text("Continuar con Google")
+private fun EmailPasswordForm(
+    state: AuthState,
+    onIntent: (AuthIntent) -> Unit,
+) {
+    val keyboard = LocalSoftwareKeyboardController.current
+    val passwordFocus = remember { FocusRequester() }
+    val confirmFocus = remember { FocusRequester() }
+    var showPassword by rememberSaveable { mutableStateOf(false) }
+    var showConfirm by rememberSaveable { mutableStateOf(false) }
+    val isSignUp = state.authMode == AuthMode.SIGN_UP
+
+    OutlinedTextField(
+        value = state.emailInput,
+        onValueChange = { onIntent(AuthIntent.EmailChanged(it)) },
+        label = { Text("Correo electrónico") },
+        leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Email,
+            imeAction = ImeAction.Next,
+        ),
+        keyboardActions = KeyboardActions(onNext = { passwordFocus.requestFocus() }),
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+    )
+
+    Spacer(Modifier.height(8.dp))
+
+    OutlinedTextField(
+        value = state.passwordInput,
+        onValueChange = { onIntent(AuthIntent.PasswordChanged(it)) },
+        label = { Text("Contraseña") },
+        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+        trailingIcon = {
+            IconButton(onClick = { showPassword = !showPassword }) {
+                Icon(
+                    if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                    contentDescription = if (showPassword) "Ocultar" else "Mostrar",
+                )
+            }
+        },
+        visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Password,
+            imeAction = if (isSignUp) ImeAction.Next else ImeAction.Done,
+        ),
+        keyboardActions = KeyboardActions(
+            onNext = { if (isSignUp) confirmFocus.requestFocus() },
+            onDone = {
+                keyboard?.hide()
+                onIntent(AuthIntent.SignInWithEmail)
+            },
+        ),
+        singleLine = true,
+        modifier = Modifier
+            .fillMaxWidth()
+            .focusRequester(passwordFocus),
+        shape = MaterialTheme.shapes.medium,
+    )
+
+    AnimatedVisibility(visible = isSignUp) {
+        Column {
+            Spacer(Modifier.height(8.dp))
+            OutlinedTextField(
+                value = state.confirmPasswordInput,
+                onValueChange = { onIntent(AuthIntent.ConfirmPasswordChanged(it)) },
+                label = { Text("Confirmar contraseña") },
+                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                trailingIcon = {
+                    IconButton(onClick = { showConfirm = !showConfirm }) {
+                        Icon(
+                            if (showConfirm) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            contentDescription = if (showConfirm) "Ocultar" else "Mostrar",
+                        )
+                    }
+                },
+                visualTransformation = if (showConfirm) VisualTransformation.None else PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done,
+                ),
+                keyboardActions = KeyboardActions(onDone = {
+                    keyboard?.hide()
+                    onIntent(AuthIntent.SignUpWithEmail)
+                }),
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(confirmFocus),
+                shape = MaterialTheme.shapes.medium,
+            )
+        }
+    }
+
+    Spacer(Modifier.height(16.dp))
+
+    ChatAppPrimaryButton(
+        text = if (isSignUp) "Crear cuenta" else "Iniciar sesión",
+        onClick = {
+            keyboard?.hide()
+            if (isSignUp) onIntent(AuthIntent.SignUpWithEmail) else onIntent(AuthIntent.SignInWithEmail)
+        },
+        enabled = state.emailInput.isNotBlank() && state.passwordInput.isNotBlank(),
+        modifier = Modifier.fillMaxWidth(),
+    )
+
+    if (!isSignUp) {
+        if (state.showRegisterSuggestion) {
+            TextButton(
+                onClick = { onIntent(AuthIntent.SwitchToRegister) },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("¿No tienes cuenta? Regístrate aquí")
+            }
+        } else {
+            TextButton(
+                onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_UP)) },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("¿No tienes cuenta? Regístrate")
+            }
+        }
+    } else {
+        TextButton(
+            onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_IN)) },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("¿Ya tienes cuenta? Inicia sesión")
         }
     }
 }
+
+// ── Username setup ─────────────────────────────────────────────────────────────
 
 @Composable
 private fun UsernameSetupContent(
@@ -131,22 +438,20 @@ private fun UsernameSetupContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(24.dp))
-        OutlinedTextField(
+        ChatAppTextField(
             value = username,
             onValueChange = onUsernameChange,
-            label = { Text("@usuario") },
+            label = "@usuario",
             isError = error != null,
-            supportingText = error?.let { { Text(it) } },
-            singleLine = true,
+            supportingText = error,
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(16.dp))
-        Button(
+        ChatAppPrimaryButton(
+            text = "Confirmar",
             onClick = onConfirm,
             enabled = username.length >= 3,
             modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("Confirmar")
-        }
+        )
     }
 }
