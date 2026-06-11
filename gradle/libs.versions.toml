@@ -4,7 +4,7 @@ kotlin = "2.1.20"
 ksp = "2.1.20-1.0.32"
 
 # Compose
-composeBom = "2026.03.00"
+composeBom = "2026.05.00"
 activityCompose = "1.10.1"
 lifecycleViewmodelCompose = "2.9.0"
 
@@ -17,7 +17,7 @@ room = "2.8.4"
 sqlite = "2.6.2"
 
 # Koin
-koin = "4.0.0"
+koin = "4.2.0"
 
 # Ktor
 ktor = "3.1.3"
@@ -28,10 +28,17 @@ kotlinxDatetime = "0.6.2"
 kotlinxCoroutines = "1.10.1"
 
 # Supabase
-supabase = "3.0.0"
+supabase = "3.5.0"
+
+# LiveKit
+livekit = "2.7.0"
+
+# Coil
+coil = "3.1.0"
 
 # AndroidX
 coreKtx = "1.18.0"
+appcompat = "1.7.0"
 junit = "4.13.2"
 junitVersion = "1.3.0"
 espressoCore = "3.7.0"
@@ -40,9 +47,21 @@ espressoCore = "3.7.0"
 credentials = "1.5.0"
 googleid = "1.1.1"
 
+# Paging
+paging = "3.3.6"
+
+# Firebase
+firebaseBom = "33.14.0"
+
+# Test
+mockk = "1.13.17"
+turbine = "1.2.0"
+robolectric = "4.14.1"
+
 [libraries]
 # AndroidX
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
@@ -66,6 +85,7 @@ lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewm
 
 # Room KMP
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+androidx-room-paging = { module = "androidx.room:room-paging", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
 
@@ -88,22 +108,43 @@ kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-c
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
 
 # Supabase (BOM + plugins)
-supabase-bom = { module = "io.github.jan-tennant.supabase:bom", version.ref = "supabase" }
-supabase-auth = { module = "io.github.jan-tennant.supabase:auth-kt" }
-supabase-realtime = { module = "io.github.jan-tennant.supabase:realtime-kt" }
-supabase-postgrest = { module = "io.github.jan-tennant.supabase:postgrest-kt" }
+supabase-bom = { module = "io.github.jan-tennert.supabase:bom", version.ref = "supabase" }
+supabase-auth = { module = "io.github.jan-tennert.supabase:auth-kt" }
+supabase-realtime = { module = "io.github.jan-tennert.supabase:realtime-kt" }
+supabase-postgrest = { module = "io.github.jan-tennert.supabase:postgrest-kt" }
+supabase-storage = { module = "io.github.jan-tennert.supabase:storage-kt" }
+
+# LiveKit
+livekit-android = { module = "io.livekit:livekit-android", version.ref = "livekit" }
+
+# Coil
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
+coil-gif = { module = "io.coil-kt.coil3:coil-gif", version.ref = "coil" }
 
 # Google Credentials (Sign-In)
 credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
 credentials-play-services = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
 googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
 
+# Paging
+androidx-paging-runtime = { module = "androidx.paging:paging-runtime-ktx", version.ref = "paging" }
+androidx-paging-compose = { module = "androidx.paging:paging-compose", version.ref = "paging" }
+
+# Firebase
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
+firebase-messaging = { module = "com.google.firebase:firebase-messaging-ktx" }
+
+# Test
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-android-library = { id = "com.android.library", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 androidx-room = { id = "androidx.room", version.ref = "room" }
+google-services = { id = "com.google.gms.google-services", version = "4.4.2" }
