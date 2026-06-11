@@ -1,3 +1,6 @@
+ > [!WARNING]
+> **Este proyecto se encuentra actualmente en desarrollo.** Algunas funcionalidades pueden estar incompletas o sujetas a cambios.
+
 <div align="center">
 
 # 💬 ChatApp
