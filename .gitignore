@@ -13,3 +13,19 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Claude Code
+.claude/
+.agents/
+skills-lock.json
+CLAUDE.md
+
+# Sensitive / Firebase
+google-services.json
+app/google-services.json
+
+# Supabase temp files
+supabase/.temp/
+
+# Old shared module (removed, kept out of future tracking)
+shared/
