@@ -2,16 +2,30 @@ package com.ajrpachon.chatapp.di
 
 import com.ajrpachon.chatapp.BuildConfig
 import com.ajrpachon.chatapp.data.local.buildChatDatabase
+import com.ajrpachon.chatapp.data.session.AndroidSessionManager
+import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.ui.auth.AuthViewModel
+import com.ajrpachon.chatapp.ui.call.CallViewModel
+import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
 import com.ajrpachon.chatapp.ui.chat.ChatViewModel
 import com.ajrpachon.chatapp.ui.conversations.ConversationListViewModel
+import com.ajrpachon.chatapp.ui.group.CreateGroupViewModel
+import com.ajrpachon.chatapp.ui.group.GroupInfoViewModel
 import com.ajrpachon.chatapp.ui.invitations.InvitationsViewModel
-import io.github.jan.supabase.createSupabaseClient
+import com.ajrpachon.chatapp.ui.newchat.NewChatViewModel
+import com.ajrpachon.chatapp.ui.profile.ProfileViewModel
+import com.ajrpachon.chatapp.ui.userinfo.UserInfoViewModel
 import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.realtime.Realtime
+import io.github.jan.supabase.storage.Storage
+import android.app.NotificationManager
+import android.content.Context
+import org.koin.android.ext.koin.androidApplication
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
+import org.koin.androidx.viewmodel.dsl.viewModelOf
 import org.koin.dsl.module
 
 val databaseModule = module {
@@ -20,6 +34,7 @@ val databaseModule = module {
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().conversationDao() }
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().messageDao() }
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().invitationDao() }
+    single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().groupMemberDao() }
 }
 
 val networkModule = module {
@@ -28,18 +43,67 @@ val networkModule = module {
             supabaseUrl = BuildConfig.SUPABASE_URL,
             supabaseKey = BuildConfig.SUPABASE_ANON_KEY,
         ) {
-            install(Auth)
+            install(Auth) {
+                sessionManager = AndroidSessionManager(androidContext())
+                scheme = "com.ajrpachon.chatapp"
+                host = "auth-callback"
+            }
             install(Postgrest)
             install(Realtime)
+            install(Storage)
         }
     }
 }
 
 val viewModelModule = module {
-    viewModel { AuthViewModel(get(), get(), BuildConfig.GOOGLE_WEB_CLIENT_ID) }
-    viewModel { ConversationListViewModel(get(), get()) }
-    viewModel { (conversationId: String) -> ChatViewModel(conversationId, get(), get()) }
-    viewModel { InvitationsViewModel(get(), get()) }
+    // Needs BuildConfig value — cannot use viewModelOf
+    viewModel { AuthViewModel(get(), get(), BuildConfig.GOOGLE_WEB_CLIENT_ID, get(), get()) }
+
+    viewModelOf(::ConversationListViewModel)
+    viewModelOf(::InvitationsViewModel)
+    viewModelOf(::NewChatViewModel)
+    viewModelOf(::ProfileViewModel)
+    viewModel {
+        IncomingCallViewModel(
+            notificationManager = androidContext().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager,
+            callRepository = get(),
+            getCurrentUserUseCase = get(),
+        )
+    }
+    viewModelOf(::CreateGroupViewModel)
+
+    // Needs runtime parameters — cannot use viewModelOf
+    viewModel { (conversationId: String, otherUserName: String) ->
+        ChatViewModel(conversationId, otherUserName, get(), get(), get(), get(), get(), get(), get(), get())
+    }
+    viewModel { params ->
+        CallViewModel(
+            context = androidApplication(),
+            callId = params[0],
+            conversationId = params[1],
+            roomName = params[2],
+            callType = params[3],
+            isOutgoing = params[4],
+            isGroup = params[5],
+            callRepository = get(),
+            getCurrentUserUseCase = get(),
+            sendMessageUseCase = get(),
+            livekitUrl = BuildConfig.LIVEKIT_URL,
+        )
+    }
+    viewModel { (conversationId: String) ->
+        GroupInfoViewModel(conversationId, get(), get(), get(), get(), get(), get(), get())
+    }
+    viewModel { (userId: String) ->
+        UserInfoViewModel(userId, get())
+    }
 }
 
-val appModules = sharedModules + listOf(databaseModule, networkModule, viewModelModule)
+val appModules = listOf(
+    databaseModule,
+    networkModule,
+    remoteModule,
+    repositoryModule,
+    useCaseModule,
+    viewModelModule,
+)
