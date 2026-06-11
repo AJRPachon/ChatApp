@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.serialization)
@@ -5,6 +7,11 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.room)
     alias(libs.plugins.google.services)
+}
+
+val localProperties = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) load(f.inputStream())
 }
 
 android {
@@ -23,13 +30,14 @@ android {
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "SUPABASE_URL", "\"https://oouhhjszqlbnhcnugvvs.supabase.co\"")
-        buildConfigField("String", "SUPABASE_ANON_KEY", "\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9vdWhoanN6cWxibmhjbnVndnZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMTk3ODYsImV4cCI6MjA5MTg5NTc4Nn0.JA4VcngBpJaCqQ8aruTRNcT9ncStQhU_zYF7UNfmGU0\"")
-        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"169505634310-m5pstmbg0mmhkait107q7erbhva8sunm.apps.googleusercontent.com\"")
-        buildConfigField("String", "LIVEKIT_URL", "\"wss://chatapp-8ff7ks6x.livekit.cloud\"")
-        buildConfigField("String", "LIVEKIT_API_KEY", "\"APIZcJXfKLhgrQm\"")
-        buildConfigField("String", "LIVEKIT_API_SECRET", "\"9zxXsXDNaaUDOvmdTD04g4pXIYpaCM0X7sQzrNvK5dF\"")
-        buildConfigField("String", "GIPHY_API_KEY", "\"4RAqWY16uCG7erRCMazloSbKueqcJd8G\"")
+        fun secret(key: String) = "\"${localProperties.getProperty(key, "")}\""
+        buildConfigField("String", "SUPABASE_URL", secret("SUPABASE_URL"))
+        buildConfigField("String", "SUPABASE_ANON_KEY", secret("SUPABASE_ANON_KEY"))
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", secret("GOOGLE_WEB_CLIENT_ID"))
+        buildConfigField("String", "LIVEKIT_URL", secret("LIVEKIT_URL"))
+        buildConfigField("String", "LIVEKIT_API_KEY", secret("LIVEKIT_API_KEY"))
+        buildConfigField("String", "LIVEKIT_API_SECRET", secret("LIVEKIT_API_SECRET"))
+        buildConfigField("String", "GIPHY_API_KEY", secret("GIPHY_API_KEY"))
     }
 
     buildTypes {
