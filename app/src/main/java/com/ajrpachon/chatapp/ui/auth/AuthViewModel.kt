@@ -1,59 +1,42 @@
 package com.ajrpachon.chatapp.ui.auth
+import com.ajrpachon.chatapp.utils.catchResult
 
 import android.content.Context
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.NoCredentialException
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ajrpachon.chatapp.domain.model.UserBO
-import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
+import com.ajrpachon.chatapp.data.local.dao.UserDao
+import com.ajrpachon.chatapp.data.mapper.toDBO
+import com.ajrpachon.chatapp.data.remote.dto.UserDTO
 import com.ajrpachon.chatapp.domain.usecase.SetUsernameUseCase
+import com.ajrpachon.chatapp.service.FcmTokenManager
+import com.ajrpachon.chatapp.utils.AppLogger
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.Google
+import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.providers.builtin.IDToken
+import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-// ── State ──────────────────────────────────────────────────────────────────
-
-data class AuthState(
-    val isLoading: Boolean = false,
-    val currentUser: UserBO? = null,
-    val needsUsername: Boolean = false,
-    val usernameInput: String = "",
-    val usernameError: String? = null,
-    val error: String? = null,
-)
-
-// ── Intents ────────────────────────────────────────────────────────────────
-
-sealed interface AuthIntent {
-    data class SignInWithGoogle(val context: Context) : AuthIntent
-    data class UsernameChanged(val value: String) : AuthIntent
-    data object ConfirmUsername : AuthIntent
-    data object SignOut : AuthIntent
-    data object DismissError : AuthIntent
-}
-
-// ── Effects ────────────────────────────────────────────────────────────────
-
-sealed interface AuthEffect {
-    data object NavigateToHome : AuthEffect
-}
-
-// ── ViewModel ──────────────────────────────────────────────────────────────
+import java.security.MessageDigest
+import java.util.UUID
 
 class AuthViewModel(
     private val supabase: SupabaseClient,
     private val setUsernameUseCase: SetUsernameUseCase,
     private val googleWebClientId: String,
+    private val userDao: UserDao,
+    private val fcmTokenManager: FcmTokenManager,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AuthState())
@@ -62,74 +45,261 @@ class AuthViewModel(
     private val _effect = Channel<AuthEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
 
+    init {
+        viewModelScope.launch {
+            catchResult {
+                val session = supabase.auth.currentSessionOrNull() ?: run {
+                    _state.update { it.copy(isLoading = false) }
+                    return@catchResult
+                }
+                val userId = session.user?.id ?: run {
+                    _state.update { it.copy(isLoading = false) }
+                    return@catchResult
+                }
+                val profileResult = catchResult {
+                    supabase.postgrest["profiles"]
+                        .select { filter { eq("id", userId) } }
+                        .decodeSingleOrNull<UserDTO>()
+                }
+                val profile = profileResult.getOrNull()
+                when {
+                    profile?.username?.isNotBlank() == true -> {
+                        val email = session.user?.email ?: ""
+                        userDao.clearCurrentUser()
+                        userDao.upsert(profile.toDBO(email = email, isCurrentUser = true))
+                        launch { catchResult { fcmTokenManager.syncToken() } }
+                        _effect.send(AuthEffect.NavigateToHome)
+                    }
+                    profileResult.isFailure && userDao.getById(userId) != null -> {
+                        launch { catchResult { fcmTokenManager.syncToken() } }
+                        _effect.send(AuthEffect.NavigateToHome)
+                    }
+                    else -> _state.update { it.copy(isLoading = false, needsUsername = true) }
+                }
+            }.onFailure { e ->
+                AppLogger.e(TAG, "Session restore failed", e)
+                _state.update { it.copy(isLoading = false) }
+            }
+        }
+    }
+
     fun onIntent(intent: AuthIntent) {
         when (intent) {
             is AuthIntent.SignInWithGoogle -> signInWithGoogle(intent.context)
+            is AuthIntent.SignInWithEmail -> signInWithEmail()
+            is AuthIntent.SignUpWithEmail -> signUpWithEmail()
+            is AuthIntent.ToggleMode -> _state.update { it.copy(authMode = intent.mode, error = null, showRegisterSuggestion = false) }
+            is AuthIntent.SwitchToRegister -> _state.update { it.copy(authMode = AuthMode.SIGN_UP, error = null, showRegisterSuggestion = false) }
+            is AuthIntent.EmailChanged -> _state.update { it.copy(emailInput = intent.value, error = null) }
+            is AuthIntent.PasswordChanged -> _state.update { it.copy(passwordInput = intent.value, error = null) }
+            is AuthIntent.ConfirmPasswordChanged -> _state.update { it.copy(confirmPasswordInput = intent.value, error = null) }
             is AuthIntent.UsernameChanged -> _state.update { it.copy(usernameInput = intent.value, usernameError = null) }
             is AuthIntent.ConfirmUsername -> confirmUsername()
             is AuthIntent.SignOut -> signOut()
             is AuthIntent.DismissError -> _state.update { it.copy(error = null) }
+            is AuthIntent.DismissEmailVerification -> _state.update { it.copy(showEmailVerification = false) }
         }
     }
+
+    // ── Google ─────────────────────────────────────────────────────────────────
 
     private fun signInWithGoogle(context: Context) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            runCatching {
-                val credentialManager = CredentialManager.create(context)
+            val rawNonce = UUID.randomUUID().toString()
+            val hashedNonce = MessageDigest.getInstance("SHA-256")
+                .digest(rawNonce.toByteArray())
+                .joinToString("") { "%02x".format(it) }
+            val credentialManager = CredentialManager.create(context)
+
+            // 1st attempt: one-tap (fastest, no UI if already authorized)
+            val oneTapResult = catchResult {
                 val request = GetCredentialRequest.Builder()
                     .addCredentialOption(
                         GetGoogleIdOption.Builder()
                             .setFilterByAuthorizedAccounts(false)
                             .setServerClientId(googleWebClientId)
+                            .setNonce(hashedNonce)
                             .build()
                     )
                     .build()
-                val result = credentialManager.getCredential(context, request)
-                val googleCredential = GoogleIdTokenCredential.createFrom(result.credential.data)
-                val idToken = googleCredential.idToken
+                credentialManager.getCredential(context, request)
+            }
 
-                supabase.auth.signInWith(IDToken) {
-                    provider = Google
-                    this.idToken = idToken
+            // 2nd attempt: full account picker (when one-tap can't access existing accounts)
+            val credentialResult = if (oneTapResult.isFailure && oneTapResult.exceptionOrNull() is NoCredentialException) {
+                catchResult {
+                    val request = GetCredentialRequest.Builder()
+                        .addCredentialOption(
+                            GetSignInWithGoogleOption.Builder(googleWebClientId)
+                                .setNonce(hashedNonce)
+                                .build()
+                        )
+                        .build()
+                    credentialManager.getCredential(context, request)
                 }
+            } else {
+                oneTapResult
+            }
 
-                val session = supabase.auth.currentSessionOrNull()
-                val userId = session?.user?.id ?: error("No user after sign-in")
-                val email = session.user?.email ?: ""
-
-                // Check if profile has username
-                val profile = supabase.auth.currentUserOrNull()
-                val hasUsername = profile?.userMetadata?.get("username") != null
-
-                if (hasUsername) {
-                    _effect.send(AuthEffect.NavigateToHome)
-                } else {
-                    _state.update { it.copy(needsUsername = true) }
+            credentialResult.onSuccess { result ->
+                catchResult {
+                    val googleCredential = GoogleIdTokenCredential.createFrom(result.credential.data)
+                    supabase.auth.signInWith(IDToken) {
+                        provider = Google
+                        this.idToken = googleCredential.idToken
+                        nonce = rawNonce
+                    }
+                    finishSignIn()
+                }.onFailure { e ->
+                    AppLogger.e(TAG, "Google sign-in supabase failed", e)
+                    _state.update { it.copy(error = e.message ?: "Error con Google") }
                 }
             }.onFailure { e ->
-                _state.update { it.copy(error = e.message ?: "Sign-in failed") }
+                AppLogger.e(TAG, "Google sign-in credential failed", e)
+                if (e is NoCredentialException) {
+                    _effect.send(AuthEffect.OpenAddGoogleAccount)
+                } else {
+                    _state.update { it.copy(error = e.message ?: "Error con Google") }
+                }
             }
             _state.update { it.copy(isLoading = false) }
         }
     }
 
+    // ── Email/Password ─────────────────────────────────────────────────────────
+
+    private fun signInWithEmail() {
+        val email = _state.value.emailInput.trim()
+        val password = _state.value.passwordInput
+        val validationError = validateEmailPassword(email, password)
+        if (validationError != null) {
+            _state.update { it.copy(error = validationError) }
+            return
+        }
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null) }
+            catchResult {
+                supabase.auth.signInWith(Email) {
+                    this.email = email
+                    this.password = password
+                }
+                finishSignIn()
+            }.onFailure { e ->
+                AppLogger.e(TAG, "Email sign-in failed", e)
+                _state.update { it.copy(error = e.toSignInMessage(), showRegisterSuggestion = e.isInvalidCredentials()) }
+            }
+            _state.update { it.copy(isLoading = false) }
+        }
+    }
+
+    private fun signUpWithEmail() {
+        val email = _state.value.emailInput.trim()
+        val password = _state.value.passwordInput
+        val confirm = _state.value.confirmPasswordInput
+        val validationError = validateEmailPassword(email, password)
+            ?: if (password.length < 6) "La contraseña debe tener al menos 6 caracteres" else null
+            ?: if (password != confirm) "Las contraseñas no coinciden" else null
+        if (validationError != null) {
+            _state.update { it.copy(error = validationError) }
+            return
+        }
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null) }
+            val signUpResult = catchResult {
+                supabase.auth.signUpWith(Email) {
+                    this.email = email
+                    this.password = password
+                }
+            }
+            signUpResult.onFailure { e ->
+                AppLogger.e(TAG, "Email sign-up failed", e)
+                _state.update { it.copy(error = e.toSignUpMessage(), isLoading = false) }
+                return@launch
+            }
+            val hasSession = supabase.auth.currentSessionOrNull() != null
+            if (hasSession) {
+                catchResult { finishSignIn() }.onFailure { e ->
+                    AppLogger.e(TAG, "Post sign-up finishSignIn failed", e)
+                    _state.update { it.copy(error = e.message ?: "Error al completar el registro") }
+                }
+            } else {
+                _state.update { it.copy(showEmailVerification = true) }
+            }
+            _state.update { it.copy(isLoading = false) }
+        }
+    }
+
+    private fun validateEmailPassword(email: String, password: String): String? = when {
+        email.isBlank() || password.isBlank() -> "Introduce tu correo y contraseña"
+        else -> null
+    }
+
+    private fun Throwable.isInvalidCredentials(): Boolean =
+        isSupabaseErrorCode("invalid_credentials") ||
+                message?.contains("Invalid login", ignoreCase = true) == true
+
+    private fun Throwable.toSignInMessage(): String = when {
+        isInvalidCredentials() -> "Correo o contraseña incorrectos"
+        isSupabaseErrorCode("email_not_confirmed") ||
+                message?.contains("Email not confirmed", ignoreCase = true) == true ->
+            "Verifica tu correo antes de iniciar sesión"
+        else -> message ?: "Error al iniciar sesión"
+    }
+
+    private fun Throwable.toSignUpMessage(): String = when {
+        isSupabaseErrorCode("user_already_exists") ||
+                message?.contains("already registered", ignoreCase = true) == true ||
+                message?.contains("already been registered", ignoreCase = true) == true ->
+            "Este correo ya está registrado. Inicia sesión en su lugar."
+        else -> message ?: "Error al registrarse"
+    }
+
+    private fun Throwable.isSupabaseErrorCode(code: String): Boolean {
+        val restEx = this as? io.github.jan.supabase.exceptions.RestException ?: return false
+        return restEx.error.equals(code, ignoreCase = true)
+    }
+
+    // ── Common post-auth flow ──────────────────────────────────────────────────
+
+    private suspend fun finishSignIn() {
+        val session = supabase.auth.currentSessionOrNull()
+        val userId = session?.user?.id ?: error("No user after sign-in")
+        val profile = supabase.postgrest["profiles"]
+            .select { filter { eq("id", userId) } }
+            .decodeSingleOrNull<UserDTO>()
+
+        if (profile?.username?.isNotBlank() == true) {
+            val email = session.user?.email ?: ""
+            userDao.clearCurrentUser()
+            userDao.upsert(profile.toDBO(email = email, isCurrentUser = true))
+            catchResult { fcmTokenManager.syncToken() }
+            _effect.send(AuthEffect.NavigateToHome)
+        } else {
+            _state.update { it.copy(needsUsername = true) }
+        }
+    }
+
+    // ── Username ───────────────────────────────────────────────────────────────
+
     private fun confirmUsername() {
         val username = _state.value.usernameInput.trim()
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
-            val userId = supabase.auth.currentUserOrNull()?.id ?: run {
-                _state.update { it.copy(error = "Not authenticated", isLoading = false) }
-                return@launch
+            _state.update { it.copy(isLoading = true, usernameError = null) }
+            catchResult {
+                val userId = supabase.auth.currentUserOrNull()?.id ?: error("Not authenticated")
+                setUsernameUseCase(userId, username)
+                    .onSuccess {
+                        _state.update { it.copy(needsUsername = false) }
+                        launch { catchResult { fcmTokenManager.syncToken() } }
+                        _effect.send(AuthEffect.NavigateToHome)
+                    }
+                    .onFailure { e ->
+                        _state.update { it.copy(usernameError = e.message) }
+                    }
+            }.onFailure { e ->
+                _state.update { it.copy(usernameError = e.message ?: "Error inesperado") }
             }
-            setUsernameUseCase(userId, username)
-                .onSuccess {
-                    _state.update { it.copy(needsUsername = false) }
-                    _effect.send(AuthEffect.NavigateToHome)
-                }
-                .onFailure { e ->
-                    _state.update { it.copy(usernameError = e.message, isLoading = false) }
-                }
             _state.update { it.copy(isLoading = false) }
         }
     }
@@ -139,5 +309,9 @@ class AuthViewModel(
             supabase.auth.signOut()
             _state.update { AuthState() }
         }
+    }
+
+    companion object {
+        private const val TAG = "AuthViewModel"
     }
 }
