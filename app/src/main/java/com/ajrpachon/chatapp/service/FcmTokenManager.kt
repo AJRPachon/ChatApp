@@ -1,9 +1,10 @@
 package com.ajrpachon.chatapp.service
-import com.ajrpachon.chatapp.utils.catchResult
 
 import android.content.Context
 import android.util.Log
+import com.ajrpachon.chatapp.data.session.AndroidSecureStorage
 import com.ajrpachon.chatapp.data.remote.source.FcmTokenRemoteSource
+import com.ajrpachon.chatapp.utils.catchResult
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -16,13 +17,11 @@ class FcmTokenManager(
     private val context: Context,
 ) {
 
-    private val prefs by lazy {
-        context.getSharedPreferences("fcm_prefs", Context.MODE_PRIVATE)
-    }
+    private val storage by lazy { AndroidSecureStorage(context, "fcm_prefs") }
     private val tokenMutex = Mutex()
 
     fun savePendingToken(token: String) {
-        prefs.edit().putString(KEY_PENDING_TOKEN, token).apply()
+        storage.putString(KEY_PENDING_TOKEN, token)
     }
 
     suspend fun syncToken() = tokenMutex.withLock {
@@ -30,7 +29,7 @@ class FcmTokenManager(
             val token = FirebaseMessaging.getInstance().token.await()
             Log.d(TAG, "FCM token obtained: ${token.take(20)}...")
             remoteSource.upsertToken(token)
-            withContext(Dispatchers.IO) { prefs.edit().remove(KEY_PENDING_TOKEN).apply() }
+            withContext(Dispatchers.IO) { storage.remove(KEY_PENDING_TOKEN) }
             Log.d(TAG, "FCM token upserted successfully")
         }.onFailure { e ->
             Log.e(TAG, "syncToken failed", e)
@@ -42,7 +41,7 @@ class FcmTokenManager(
             val token = FirebaseMessaging.getInstance().token.await()
             remoteSource.deleteToken(token)
             FirebaseMessaging.getInstance().deleteToken().await()
-            withContext(Dispatchers.IO) { prefs.edit().remove(KEY_PENDING_TOKEN).apply() }
+            withContext(Dispatchers.IO) { storage.remove(KEY_PENDING_TOKEN) }
             Log.d(TAG, "FCM token deleted")
         }.onFailure { e ->
             Log.e(TAG, "deleteToken failed", e)
