@@ -2,6 +2,8 @@ package com.ajrpachon.chatapp.data.session
 
 import android.content.Context
 import androidx.core.content.edit
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import com.ajrpachon.chatapp.utils.AppLogger
 import io.github.jan.supabase.auth.SessionManager
 import io.github.jan.supabase.auth.user.UserSession
@@ -11,7 +13,7 @@ import kotlinx.serialization.json.Json
 
 class AndroidSessionManager(context: Context) : SessionManager {
 
-    private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private val prefs = buildEncryptedPrefs(context)
 
     override suspend fun loadSession(): UserSession? = withContext(Dispatchers.IO) {
         val encoded = prefs.getString(KEY_SESSION, null) ?: return@withContext null
@@ -41,5 +43,12 @@ class AndroidSessionManager(context: Context) : SessionManager {
         private const val TAG = "AndroidSessionManager"
         private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
+        private fun buildEncryptedPrefs(context: Context) = EncryptedSharedPreferences.create(
+            context,
+            PREFS_NAME,
+            MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build(),
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+        )
     }
 }

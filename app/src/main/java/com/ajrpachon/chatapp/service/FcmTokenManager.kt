@@ -1,9 +1,11 @@
 package com.ajrpachon.chatapp.service
-import com.ajrpachon.chatapp.utils.catchResult
 
 import android.content.Context
 import android.util.Log
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import com.ajrpachon.chatapp.data.remote.source.FcmTokenRemoteSource
+import com.ajrpachon.chatapp.utils.catchResult
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -16,9 +18,7 @@ class FcmTokenManager(
     private val context: Context,
 ) {
 
-    private val prefs by lazy {
-        context.getSharedPreferences("fcm_prefs", Context.MODE_PRIVATE)
-    }
+    private val prefs by lazy { buildEncryptedPrefs(context) }
     private val tokenMutex = Mutex()
 
     fun savePendingToken(token: String) {
@@ -52,5 +52,13 @@ class FcmTokenManager(
     companion object {
         private const val TAG = "FcmTokenManager"
         private const val KEY_PENDING_TOKEN = "pending_fcm_token"
+
+        private fun buildEncryptedPrefs(context: Context) = EncryptedSharedPreferences.create(
+            context,
+            "fcm_prefs",
+            MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build(),
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+        )
     }
 }
