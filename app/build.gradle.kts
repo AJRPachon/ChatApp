@@ -149,9 +149,6 @@ dependencies {
     implementation(libs.coil.network.okhttp)
     implementation(libs.coil.gif)
 
-    // Security
-    implementation(libs.androidx.security.crypto)
-
     // Google Sign-In
     implementation(libs.credentials)
     implementation(libs.credentials.play.services)
