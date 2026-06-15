@@ -33,9 +33,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import coil3.compose.AsyncImage
+import com.github.skydoves.navgraph.annotations.NavDestination
+import com.ajrpachon.chatapp.UserInfoRoute
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 
+@NavDestination(route = UserInfoRoute::class)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserInfoScreen(

@@ -47,8 +47,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.ui.components.ChatAppDestructiveButton
+import com.github.skydoves.navgraph.annotations.NavDestination
+import com.github.skydoves.navgraph.annotations.NavEdge
+import com.ajrpachon.chatapp.AuthRoute
+import com.ajrpachon.chatapp.ProfileRoute
 import org.koin.androidx.compose.koinViewModel
 
+@NavEdge(to = AuthRoute::class, label = "Sign Out")
+@NavDestination(route = ProfileRoute::class)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
