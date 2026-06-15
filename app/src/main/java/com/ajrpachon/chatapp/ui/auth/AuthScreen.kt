@@ -31,7 +31,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -302,28 +301,25 @@ private fun EmailPasswordForm(
     var showConfirm by rememberSaveable { mutableStateOf(false) }
     val isSignUp = state.authMode == AuthMode.SIGN_UP
 
-    OutlinedTextField(
+    ChatAppTextField(
         value = state.emailInput,
         onValueChange = { onIntent(AuthIntent.EmailChanged(it)) },
-        label = { Text("Correo electrónico") },
-        leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+        label = "Correo electrónico",
+        leadingIcon = Icons.Default.Email,
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Email,
             imeAction = ImeAction.Next,
         ),
         keyboardActions = KeyboardActions(onNext = { passwordFocus.requestFocus() }),
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
     )
 
     Spacer(Modifier.height(8.dp))
 
-    OutlinedTextField(
+    ChatAppTextField(
         value = state.passwordInput,
         onValueChange = { onIntent(AuthIntent.PasswordChanged(it)) },
-        label = { Text("Contraseña") },
-        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+        label = "Contraseña",
+        leadingIcon = Icons.Default.Lock,
         trailingIcon = {
             IconButton(onClick = { showPassword = !showPassword }) {
                 Icon(
@@ -344,21 +340,17 @@ private fun EmailPasswordForm(
                 onIntent(AuthIntent.SignInWithEmail)
             },
         ),
-        singleLine = true,
-        modifier = Modifier
-            .fillMaxWidth()
-            .focusRequester(passwordFocus),
-        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier.focusRequester(passwordFocus),
     )
 
     AnimatedVisibility(visible = isSignUp) {
         Column {
             Spacer(Modifier.height(8.dp))
-            OutlinedTextField(
+            ChatAppTextField(
                 value = state.confirmPasswordInput,
                 onValueChange = { onIntent(AuthIntent.ConfirmPasswordChanged(it)) },
-                label = { Text("Confirmar contraseña") },
-                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                label = "Confirmar contraseña",
+                leadingIcon = Icons.Default.Lock,
                 trailingIcon = {
                     IconButton(onClick = { showConfirm = !showConfirm }) {
                         Icon(
@@ -376,11 +368,7 @@ private fun EmailPasswordForm(
                     keyboard?.hide()
                     onIntent(AuthIntent.SignUpWithEmail)
                 }),
-                singleLine = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .focusRequester(confirmFocus),
-                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier.focusRequester(confirmFocus),
             )
         }
     }
@@ -450,7 +438,6 @@ private fun UsernameSetupContent(
             label = "@usuario",
             isError = error != null,
             supportingText = error,
-            modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(16.dp))
         ChatAppPrimaryButton(

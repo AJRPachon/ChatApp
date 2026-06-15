@@ -20,21 +20,17 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,11 +41,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.compose.dropUnlessResumed
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.ui.components.ChatAppAvatar
 import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
+import com.ajrpachon.chatapp.ui.components.ChatAppSearchField
 import com.ajrpachon.chatapp.ui.components.ChatAppTextField
+import com.ajrpachon.chatapp.ui.components.ChatAppTopBar
 import com.github.skydoves.navgraph.annotations.NavDestination
 import com.github.skydoves.navgraph.annotations.NavEdge
 import com.ajrpachon.chatapp.ChatRoute
@@ -58,7 +55,7 @@ import org.koin.androidx.compose.koinViewModel
 
 @NavEdge(to = ChatRoute::class, label = "Group Created")
 @NavDestination(route = CreateGroupRoute::class)
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CreateGroupScreen(
     onBack: () -> Unit,
@@ -87,15 +84,9 @@ fun CreateGroupScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(if (state.step == CreateGroupStep.SELECT_MEMBERS) "Nuevo grupo" else "Nombre del grupo")
-                },
-                navigationIcon = {
-                    IconButton(onClick = dropUnlessResumed { vm.onIntent(CreateGroupIntent.Back) }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
-                    }
-                },
+            ChatAppTopBar(
+                title = if (state.step == CreateGroupStep.SELECT_MEMBERS) "Nuevo grupo" else "Nombre del grupo",
+                onBack = { vm.onIntent(CreateGroupIntent.Back) },
             )
         },
     ) { innerPadding ->
@@ -143,14 +134,11 @@ private fun SelectMembersStep(
             }
         }
 
-        ChatAppTextField(
+        ChatAppSearchField(
             value = state.query,
             onValueChange = { onIntent(CreateGroupIntent.QueryChanged(it)) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
             placeholder = "Buscar personas…",
-            leadingIcon = Icons.Default.Search,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         )
 
         LazyColumn(modifier = Modifier.weight(1f)) {
@@ -191,7 +179,6 @@ private fun SetGroupInfoStep(
             value = state.groupName,
             onValueChange = { onIntent(CreateGroupIntent.NameChanged(it)) },
             label = "Nombre del grupo",
-            modifier = Modifier.fillMaxWidth(),
         )
 
         Spacer(Modifier.height(12.dp))
@@ -200,7 +187,6 @@ private fun SetGroupInfoStep(
             value = state.groupDescription,
             onValueChange = { onIntent(CreateGroupIntent.DescriptionChanged(it)) },
             label = "Descripción (opcional)",
-            modifier = Modifier.fillMaxWidth(),
             singleLine = false,
             maxLines = 3,
         )

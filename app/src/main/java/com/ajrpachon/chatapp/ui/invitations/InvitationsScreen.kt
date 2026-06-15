@@ -10,17 +10,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,9 +23,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.compose.dropUnlessResumed
 import com.ajrpachon.chatapp.domain.model.InvitationBO
 import com.ajrpachon.chatapp.ui.components.ChatAppAcceptRejectRow
+import com.ajrpachon.chatapp.ui.components.ChatAppTopBar
 import com.ajrpachon.chatapp.ui.components.InvitationsSkeleton
 import com.github.skydoves.navgraph.annotations.NavDestination
 import com.github.skydoves.navgraph.annotations.NavEdge
@@ -41,7 +35,6 @@ import org.koin.androidx.compose.koinViewModel
 
 @NavEdge(to = ChatRoute::class, label = "Accept Invitation")
 @NavDestination(route = InvitationsRoute::class)
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InvitationsScreen(
     onBack: () -> Unit,
@@ -62,14 +55,7 @@ fun InvitationsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Invitaciones") },
-                navigationIcon = {
-                    IconButton(onClick = dropUnlessResumed { onBack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
-                    }
-                },
-            )
+            ChatAppTopBar(title = "Invitaciones", onBack = onBack)
         },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { innerPadding ->

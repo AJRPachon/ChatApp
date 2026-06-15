@@ -74,7 +74,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.SnackbarHost
@@ -128,6 +127,7 @@ import com.ajrpachon.chatapp.CallRoute
 import com.ajrpachon.chatapp.ChatRoute
 import com.ajrpachon.chatapp.GroupInfoRoute
 import com.ajrpachon.chatapp.UserInfoRoute
+import com.ajrpachon.chatapp.ui.components.ChatAppTextField
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import java.io.File
@@ -629,11 +629,12 @@ private fun NormalInputBar(
         IconButton(onClick = onSticker, enabled = !busy) {
             Icon(Icons.Default.EmojiEmotions, contentDescription = "Stickers y GIFs")
         }
-        OutlinedTextField(
+        ChatAppTextField(
             value = inputText,
             onValueChange = onTextChange,
             modifier = Modifier.weight(1f),
-            placeholder = { Text("Mensaje…") },
+            placeholder = "Mensaje…",
+            singleLine = false,
             maxLines = 4,
         )
         if (isUploadingImage) {
