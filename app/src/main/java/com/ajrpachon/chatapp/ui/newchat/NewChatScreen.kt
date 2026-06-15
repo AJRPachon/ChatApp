@@ -24,17 +24,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.PersonAdd
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,7 +41,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -58,11 +54,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.compose.dropUnlessResumed
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.model.UserRelationship
 import com.ajrpachon.chatapp.ui.components.ChatAppSecondaryButton
+import com.ajrpachon.chatapp.ui.components.ChatAppSearchField
 import com.ajrpachon.chatapp.ui.components.ChatAppTextField
+import com.ajrpachon.chatapp.ui.components.ChatAppTopBar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -76,7 +73,6 @@ import org.koin.androidx.compose.koinViewModel
 @NavEdge(to = ChatRoute::class, label = "Open Chat")
 @NavEdge(to = InvitationsRoute::class, label = "Invite User")
 @NavDestination(route = NewChatRoute::class)
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewChatScreen(
     onBack: () -> Unit,
@@ -124,14 +120,7 @@ fun NewChatScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Nuevo chat") },
-                navigationIcon = {
-                    IconButton(onClick = dropUnlessResumed { onBack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
-                    }
-                },
-            )
+            ChatAppTopBar(title = "Nuevo chat", onBack = onBack)
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
@@ -140,14 +129,11 @@ fun NewChatScreen(
                 .fillMaxSize()
                 .padding(innerPadding),
         ) {
-            ChatAppTextField(
+            ChatAppSearchField(
                 value = state.query,
                 onValueChange = { vm.onIntent(NewChatIntent.QueryChanged(it)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 placeholder = "Buscar por username",
-                leadingIcon = Icons.Default.Search,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
 
             LazyColumn(modifier = Modifier.fillMaxSize()) {

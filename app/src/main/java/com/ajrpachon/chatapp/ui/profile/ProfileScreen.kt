@@ -16,21 +16,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,9 +40,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.compose.dropUnlessResumed
 import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.ui.components.ChatAppDestructiveButton
+import com.ajrpachon.chatapp.ui.components.ChatAppTopBar
 import com.github.skydoves.navgraph.annotations.NavDestination
 import com.github.skydoves.navgraph.annotations.NavEdge
 import com.ajrpachon.chatapp.AuthRoute
@@ -55,7 +51,6 @@ import org.koin.androidx.compose.koinViewModel
 
 @NavEdge(to = AuthRoute::class, label = "Sign Out")
 @NavDestination(route = ProfileRoute::class)
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     onBack: () -> Unit,
@@ -91,14 +86,7 @@ fun ProfileScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = { Text("Perfil") },
-                navigationIcon = {
-                    IconButton(onClick = dropUnlessResumed { onBack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
-                    }
-                },
-            )
+            ChatAppTopBar(title = "Perfil", onBack = onBack)
         },
     ) { innerPadding ->
         Column(

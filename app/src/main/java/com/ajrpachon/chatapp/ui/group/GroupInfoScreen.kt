@@ -22,7 +22,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.CameraAlt
@@ -48,7 +47,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -65,12 +63,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.compose.dropUnlessResumed
 import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.GroupRole
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.ui.components.ChatAppAvatar
+import com.ajrpachon.chatapp.ui.components.ChatAppSearchField
+import com.ajrpachon.chatapp.ui.components.ChatAppTopBar
 import com.ajrpachon.chatapp.ui.components.ChatAppTextField
 import com.github.skydoves.navgraph.annotations.NavDestination
 import com.github.skydoves.navgraph.annotations.NavEdge
@@ -169,13 +168,9 @@ fun GroupInfoScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = { Text("Info del grupo") },
-                navigationIcon = {
-                    IconButton(onClick = dropUnlessResumed { onBack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
-                    }
-                },
+            ChatAppTopBar(
+                title = "Info del grupo",
+                onBack = onBack,
                 actions = {
                     var menuExpanded by remember { mutableStateOf(false) }
                     Box {
@@ -494,13 +489,11 @@ private fun EditGroupDialog(
                     value = name,
                     onValueChange = onNameChange,
                     label = "Nombre del grupo",
-                    modifier = Modifier.fillMaxWidth(),
                 )
                 ChatAppTextField(
                     value = description,
                     onValueChange = onDescChange,
                     label = "Descripción",
-                    modifier = Modifier.fillMaxWidth(),
                     singleLine = false,
                     maxLines = 3,
                 )
@@ -532,14 +525,11 @@ private fun AddMemberSheet(
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
         )
-        ChatAppTextField(
+        ChatAppSearchField(
             value = query,
             onValueChange = onQueryChange,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
             placeholder = "Buscar por nombre o usuario…",
-            leadingIcon = Icons.Default.Search,
+            modifier = Modifier.padding(horizontal = 16.dp),
         )
         Spacer(Modifier.height(8.dp))
         if (results.isEmpty() && query.isNotBlank()) {

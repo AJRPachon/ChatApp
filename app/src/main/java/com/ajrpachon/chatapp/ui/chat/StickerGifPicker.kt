@@ -18,7 +18,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -37,6 +36,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ajrpachon.chatapp.ui.components.ChatAppSearchField
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.delay
 
@@ -134,14 +134,11 @@ private fun GifTab(onSelected: (String) -> Unit) {
     }
 
     Column {
-        OutlinedTextField(
+        ChatAppSearchField(
             value = query,
             onValueChange = { query = it },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            placeholder = { Text("Buscar GIFs…") },
-            singleLine = true,
+            placeholder = "Buscar GIFs…",
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
         )
         if (isLoading) {
             Box(Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
