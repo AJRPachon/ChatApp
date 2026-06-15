@@ -201,18 +201,24 @@ fun ChatScreen(
 
     val initialScrollDone = remember { mutableStateOf(false) }
 
+    // Initial scroll: wait for the refresh to fully complete before scrolling to bottom.
+    LaunchedEffect(Unit) {
+        snapshotFlow { lazyPagingItems.loadState.refresh }
+            .first { it is LoadState.NotLoading }
+        snapshotFlow { listState.layoutInfo.totalItemsCount }
+            .first { it > 0 }
+        withFrameNanos { }
+        listState.scrollToItem(0)
+        initialScrollDone.value = true
+    }
+
+    // Subsequent scrolls: new sent messages and incoming messages while near the bottom.
     LaunchedEffect(lazyPagingItems.itemCount) {
+        if (!initialScrollDone.value) return@LaunchedEffect
         val count = lazyPagingItems.itemCount
         if (count == 0) return@LaunchedEffect
 
-        if (!initialScrollDone.value) {
-            // First load: wait for the LazyColumn to actually measure items, then snap.
-            snapshotFlow { listState.layoutInfo.totalItemsCount }
-                .first { it > 0 }
-            withFrameNanos { } // one extra frame for full measure pass
-            listState.scrollToItem(0)
-            initialScrollDone.value = true
-        } else if (pendingSendScroll.value) {
+        if (pendingSendScroll.value) {
             // New message sent — item just arrived in PagingData, scroll to it now.
             snapshotFlow { listState.layoutInfo.totalItemsCount }
                 .first { it > 0 }
