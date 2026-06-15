@@ -50,8 +50,14 @@ import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.ui.components.ChatAppAvatar
 import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
 import com.ajrpachon.chatapp.ui.components.ChatAppTextField
+import com.github.skydoves.navgraph.annotations.NavDestination
+import com.github.skydoves.navgraph.annotations.NavEdge
+import com.ajrpachon.chatapp.ChatRoute
+import com.ajrpachon.chatapp.CreateGroupRoute
 import org.koin.androidx.compose.koinViewModel
 
+@NavEdge(to = ChatRoute::class, label = "Group Created")
+@NavDestination(route = CreateGroupRoute::class)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun CreateGroupScreen(

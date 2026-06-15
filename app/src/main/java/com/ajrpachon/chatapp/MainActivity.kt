@@ -41,6 +41,7 @@ import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
+import com.github.skydoves.navgraph.annotations.NavGraphRoot
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.handleDeeplinks
 import androidx.compose.runtime.produceState
@@ -49,6 +50,7 @@ import org.koin.androidx.compose.koinViewModel
 
 // ── Routes ─────────────────────────────────────────────────────────────────
 
+@NavGraphRoot
 @Serializable data object AuthRoute : NavKey
 @Serializable data object ConversationListRoute : NavKey
 @Serializable data class ChatRoute(val conversationId: String, val otherUserName: String = "", val isGroup: Boolean = false) : NavKey

@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.room)
     alias(libs.plugins.google.services)
+    alias(libs.plugins.compose.nav.graph)
 }
 
 val localProperties = Properties().apply {
@@ -78,6 +79,14 @@ kotlin {
 
 room {
     schemaDirectory("$projectDir/schemas")
+}
+
+navgraph {
+    renderThumbnails.set(true)
+}
+
+ksp {
+    arg("navgraph.annotatedOnly", "true")
 }
 
 dependencies {

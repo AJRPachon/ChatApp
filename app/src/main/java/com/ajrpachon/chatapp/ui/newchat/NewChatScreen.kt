@@ -66,8 +66,16 @@ import com.ajrpachon.chatapp.ui.components.ChatAppTextField
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.github.skydoves.navgraph.annotations.NavDestination
+import com.github.skydoves.navgraph.annotations.NavEdge
+import com.ajrpachon.chatapp.ChatRoute
+import com.ajrpachon.chatapp.InvitationsRoute
+import com.ajrpachon.chatapp.NewChatRoute
 import org.koin.androidx.compose.koinViewModel
 
+@NavEdge(to = ChatRoute::class, label = "Open Chat")
+@NavEdge(to = InvitationsRoute::class, label = "Invite User")
+@NavDestination(route = NewChatRoute::class)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewChatScreen(
