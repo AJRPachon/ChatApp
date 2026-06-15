@@ -122,6 +122,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import com.github.skydoves.navgraph.annotations.NavDestination
+import com.github.skydoves.navgraph.annotations.NavEdge
+import com.ajrpachon.chatapp.CallRoute
+import com.ajrpachon.chatapp.ChatRoute
+import com.ajrpachon.chatapp.GroupInfoRoute
+import com.ajrpachon.chatapp.UserInfoRoute
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import java.io.File
@@ -129,6 +135,10 @@ import java.io.File
 
 // ── Screen ───────────────────────────────────────────────────────────────────
 
+@NavEdge(to = CallRoute::class, label = "Start Call")
+@NavEdge(to = GroupInfoRoute::class, label = "Group Info")
+@NavEdge(to = UserInfoRoute::class, label = "User Info")
+@NavDestination(route = ChatRoute::class)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(

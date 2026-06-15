@@ -68,8 +68,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.ui.components.ChatAppOutlinedButton
 import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
 import com.ajrpachon.chatapp.ui.components.ChatAppTextField
+import com.github.skydoves.navgraph.annotations.NavDestination
+import com.github.skydoves.navgraph.annotations.NavEdge
+import com.ajrpachon.chatapp.AuthRoute
+import com.ajrpachon.chatapp.ConversationListRoute
 import org.koin.androidx.compose.koinViewModel
 
+@NavEdge(to = ConversationListRoute::class, label = "Sign In")
+@NavDestination(route = AuthRoute::class)
 @Composable
 fun AuthScreen(onAuthenticated: () -> Unit) {
     val vm: AuthViewModel = koinViewModel()

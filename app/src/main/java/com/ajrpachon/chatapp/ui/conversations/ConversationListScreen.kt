@@ -64,8 +64,22 @@ import com.ajrpachon.chatapp.ui.components.ConversationListSkeleton
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import com.github.skydoves.navgraph.annotations.NavDestination
+import com.github.skydoves.navgraph.annotations.NavEdge
+import com.ajrpachon.chatapp.ChatRoute
+import com.ajrpachon.chatapp.ConversationListRoute
+import com.ajrpachon.chatapp.CreateGroupRoute
+import com.ajrpachon.chatapp.InvitationsRoute
+import com.ajrpachon.chatapp.NewChatRoute
+import com.ajrpachon.chatapp.ProfileRoute
 import org.koin.androidx.compose.koinViewModel
 
+@NavEdge(to = ChatRoute::class, label = "Open Chat")
+@NavEdge(to = NewChatRoute::class, label = "New Chat")
+@NavEdge(to = InvitationsRoute::class, label = "Invitations")
+@NavEdge(to = ProfileRoute::class, label = "Profile")
+@NavEdge(to = CreateGroupRoute::class, label = "New Group")
+@NavDestination(route = ConversationListRoute::class)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConversationListScreen(

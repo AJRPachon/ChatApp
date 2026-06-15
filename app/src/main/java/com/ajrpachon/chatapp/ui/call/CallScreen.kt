@@ -59,11 +59,14 @@ import io.livekit.android.renderer.TextureViewRenderer
 import io.livekit.android.room.Room
 import io.livekit.android.room.track.LocalVideoTrack
 import io.livekit.android.room.track.VideoTrack
+import com.github.skydoves.navgraph.annotations.NavDestination
+import com.ajrpachon.chatapp.CallRoute
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 
 // ── Active call screen ────────────────────────────────────────────────────────
 
+@NavDestination(route = CallRoute::class)
 @Composable
 fun CallScreen(
     callId: String,

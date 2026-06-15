@@ -33,8 +33,14 @@ import androidx.lifecycle.compose.dropUnlessResumed
 import com.ajrpachon.chatapp.domain.model.InvitationBO
 import com.ajrpachon.chatapp.ui.components.ChatAppAcceptRejectRow
 import com.ajrpachon.chatapp.ui.components.InvitationsSkeleton
+import com.github.skydoves.navgraph.annotations.NavDestination
+import com.github.skydoves.navgraph.annotations.NavEdge
+import com.ajrpachon.chatapp.ChatRoute
+import com.ajrpachon.chatapp.InvitationsRoute
 import org.koin.androidx.compose.koinViewModel
 
+@NavEdge(to = ChatRoute::class, label = "Accept Invitation")
+@NavDestination(route = InvitationsRoute::class)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InvitationsScreen(

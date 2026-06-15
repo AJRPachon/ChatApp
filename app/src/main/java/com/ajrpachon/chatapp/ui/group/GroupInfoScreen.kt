@@ -72,9 +72,15 @@ import com.ajrpachon.chatapp.domain.model.GroupRole
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.ui.components.ChatAppAvatar
 import com.ajrpachon.chatapp.ui.components.ChatAppTextField
+import com.github.skydoves.navgraph.annotations.NavDestination
+import com.github.skydoves.navgraph.annotations.NavEdge
+import com.ajrpachon.chatapp.GroupInfoRoute
+import com.ajrpachon.chatapp.UserInfoRoute
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 
+@NavEdge(to = UserInfoRoute::class, label = "Member Info")
+@NavDestination(route = GroupInfoRoute::class)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupInfoScreen(
