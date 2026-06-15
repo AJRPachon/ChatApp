@@ -1,8 +1,11 @@
 package com.ajrpachon.chatapp.ui.components
 
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -14,10 +17,6 @@ import androidx.compose.ui.unit.dp
 
 private val TextFieldShape = RoundedCornerShape(16.dp)
 
-/**
- * App-wide outlined text field. Shape and appearance are consistent across all screens.
- * Pass [supportingText] only when there's an error or hint to show.
- */
 @Composable
 fun ChatAppTextField(
     value: String,
@@ -40,7 +39,7 @@ fun ChatAppTextField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = modifier,
+        modifier = Modifier.fillMaxWidth().then(modifier),
         label = label?.let { { Text(it) } },
         placeholder = placeholder?.let { { Text(it) } },
         leadingIcon = leadingIcon?.let { icon -> { Icon(icon, contentDescription = null) } },
@@ -53,6 +52,30 @@ fun ChatAppTextField(
         readOnly = readOnly,
         shape = TextFieldShape,
         visualTransformation = visualTransformation,
+        keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
+    )
+}
+
+@Composable
+fun ChatAppSearchField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = Modifier.fillMaxWidth().then(modifier),
+        placeholder = { Text(placeholder) },
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+        singleLine = true,
+        enabled = enabled,
+        shape = TextFieldShape,
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
     )
