@@ -114,7 +114,7 @@ fun onIntent(intent: FooIntent)   // punto de entrada único para interacciones
 
 La app implementa un modelo de seguridad en capas para proteger los mensajes y los datos del usuario:
 
-- **Cifrado de mensajes (E2EE):** los mensajes 1:1 se cifran en el dispositivo antes de enviarse, de modo que Supabase nunca almacena contenido legible.
+- **Cifrado de mensajes (E2EE):** los mensajes 1:1 se cifran con ECDH (P-256) + HKDF + AES-256-GCM en el dispositivo antes de enviarse, de modo que Supabase nunca almacena contenido legible. Las claves derivadas se cachean en memoria para evitar round-trips repetidos a la base de datos.
 - **Base de datos local cifrada:** la caché de mensajes en el dispositivo está protegida con SQLCipher AES-256, con la clave custodiada por el Android KeyStore.
 - **Transporte seguro:** certificate pinning para Supabase y LiveKit, bloqueo de HTTP en claro, rechazo de CAs de usuario y validación de dominios en todas las URLs de medios.
 - **Autenticación robusta:** expiración de sesión por inactividad, revocación global al cerrar sesión y secretos de servidor nunca incluidos en el cliente (tokens LiveKit generados en Edge Function).
@@ -141,7 +141,7 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | **Kotlin Coroutines + Flow** | 1.10.1 | Concurrencia y streams asíncronos |
 | **Kotlin Serialization** | 1.8.0 | Serialización JSON |
 | **Paging 3** | 3.3.6 | Carga paginada de mensajes |
-| ![Coil](https://img.shields.io/badge/-Coil-000000?logoColor=white) **Coil 3** | 3.1.0 | Carga de imágenes, GIFs y stickers |
+| ![Coil](https://img.shields.io/badge/-Coil-000000?logoColor=white) **Coil 3** | 3.1.0 | Carga de imágenes, GIFs y stickers (disk cache 50 MB + memory cache 20% heap) |
 | **OkHttp** | 4.x | Cliente HTTP con certificate pinning |
 | **Play Integrity API** | 1.4.0 | Verificación de integridad del dispositivo y la app |
 
@@ -171,8 +171,11 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 
 | Herramienta | Uso |
 |---|---|
-| ![GitHub Actions](https://img.shields.io/badge/-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white) **GitHub Actions** | Build y tests automáticos en cada push a `master`/`develop` |
+| ![GitHub Actions](https://img.shields.io/badge/-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white) **GitHub Actions** | Pipeline paralelo en cada push: unit tests + cobertura Jacoco, Android Lint, Detekt, build debug y release |
 | ![GitHub Secrets](https://img.shields.io/badge/-GitHub%20Secrets-181717?logo=github&logoColor=white) **GitHub Secrets** | Gestión segura de claves (Supabase, Firebase, LiveKit, Giphy) |
+| **Detekt 1.23.8** | Análisis estático de Kotlin con baseline para código heredado |
+| **Jacoco** | Cobertura de tests unitarios generada en cada CI run |
+| **OWASP Dependency Check** | Escaneo semanal de dependencias con vulnerabilidades conocidas (CVE) |
 
 ---
 
@@ -195,6 +198,11 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 master        ← releases estables (v1.0, v1.1…)
 └── develop   ← integración continua
     ├── feature/…                  (31 feature branches de funcionalidad)
+    ├── feature/coil-disk-cache
+    ├── feature/strictmode-debug
+    ├── fix/viewmodel-coroutine-leaks
+    ├── fix/e2ee-key-cache
+    ├── ci/improvements
     ├── security/flag-secure
     ├── security/backup-rules
     ├── security/exported-components
