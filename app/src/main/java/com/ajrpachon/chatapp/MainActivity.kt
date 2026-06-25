@@ -26,6 +26,11 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import com.ajrpachon.chatapp.ui.auth.AuthScreen
+import com.ajrpachon.chatapp.ui.auth.IntegrityBlockedScreen
+import com.ajrpachon.chatapp.utils.IntegrityChecker
+import com.ajrpachon.chatapp.utils.IntegrityResult
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.Alignment
 import com.ajrpachon.chatapp.ui.call.CallScreen
 import com.ajrpachon.chatapp.ui.call.IncomingCallScreen
 import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
@@ -87,8 +92,41 @@ class MainActivity : ComponentActivity() {
         pendingConversationId.value = intent.getStringExtra("conversation_id")
         pendingOtherUserName.value = intent.getStringExtra("other_user_name")
         val getCurrentUser: GetCurrentUserUseCase = get()
+        val supabase: SupabaseClient = get()
         setContent {
             ChatAppTheme {
+                // ── 1. Play Integrity gate ──────────────────────────────────
+                val integrityResult by produceState<IntegrityResult?>(initialValue = null) {
+                    value = IntegrityChecker.check(this@MainActivity, supabase)
+                }
+
+                when (val integrity = integrityResult) {
+                    null -> {
+                        // Still checking — show a centered loading spinner
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                        return@ChatAppTheme
+                    }
+                    is IntegrityResult.Failed -> {
+                        IntegrityBlockedScreen(onExit = { finish() })
+                        return@ChatAppTheme
+                    }
+                    is IntegrityResult.Error -> {
+                        // Lenient: allow on error (e.g. no network) so legitimate users
+                        // aren't locked out during transient failures.
+                        Log.w("MainActivity", "Integrity check error (allowing): ${integrity.message}")
+                        // fall through to normal app flow
+                    }
+                    is IntegrityResult.Passed -> {
+                        // fall through to normal app flow
+                    }
+                }
+
+                // ── 2. Normal app flow ──────────────────────────────────────
                 val initialRoute by produceState<NavKey?>(initialValue = null) {
                     value = if (getCurrentUser().first() != null) ConversationListRoute else AuthRoute
                 }
