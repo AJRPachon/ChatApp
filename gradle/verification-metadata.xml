@@ -8,8 +8,8 @@
               UAST) with OS-dependent checksums. Trusted from Google Maven only. -->
          <trust group="^com\.android\.tools.*" regex="true"/>
          <!-- Groovy runtime: transitive dependency of Android lint rules.
-              Resolved lazily only when lintDebug runs, so not captured by the
-              --write-verification-metadata pre-step which only runs 'help'. -->
+              Resolved lazily only during lintDebug, not captured by the
+              verification metadata pre-step that runs 'help' only. -->
          <trust group="^org\.codehaus\.groovy.*" regex="true"/>
       </trusted-artifacts>
    </configuration>
