@@ -63,7 +63,7 @@ val networkModule = module {
 
 val viewModelModule = module {
     // Needs BuildConfig value — cannot use viewModelOf
-    viewModel { AuthViewModel(get(), get(), BuildConfig.GOOGLE_WEB_CLIENT_ID, get(), get()) }
+    viewModel { AuthViewModel(androidApplication(), get(), get(), BuildConfig.GOOGLE_WEB_CLIENT_ID, get(), get()) }
 
     viewModelOf(::ConversationListViewModel)
     viewModelOf(::InvitationsViewModel)

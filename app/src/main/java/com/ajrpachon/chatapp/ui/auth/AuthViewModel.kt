@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.ui.auth
 import com.ajrpachon.chatapp.utils.catchResult
 
+import android.app.Application
 import android.content.Context
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
@@ -13,6 +14,8 @@ import com.ajrpachon.chatapp.data.remote.dto.UserDTO
 import com.ajrpachon.chatapp.domain.usecase.SetUsernameUseCase
 import com.ajrpachon.chatapp.service.FcmTokenManager
 import com.ajrpachon.chatapp.utils.AppLogger
+import com.ajrpachon.chatapp.utils.IntegrityChecker
+import com.ajrpachon.chatapp.utils.IntegrityResult
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -32,6 +35,7 @@ import java.security.MessageDigest
 import java.util.UUID
 
 class AuthViewModel(
+    private val application: Application,
     private val supabase: SupabaseClient,
     private val setUsernameUseCase: SetUsernameUseCase,
     private val googleWebClientId: String,
@@ -47,6 +51,8 @@ class AuthViewModel(
 
     init {
         viewModelScope.launch {
+            runIntegrityCheck()
+
             catchResult {
                 val session = supabase.auth.currentSessionOrNull() ?: run {
                     _state.update { it.copy(isLoading = false) }
@@ -308,6 +314,20 @@ class AuthViewModel(
         viewModelScope.launch {
             supabase.auth.signOut()
             _state.update { AuthState() }
+        }
+    }
+
+    private suspend fun runIntegrityCheck() {
+        when (val result = IntegrityChecker.check(application, supabase)) {
+            is IntegrityResult.Passed -> AppLogger.d(TAG, "Integrity check passed")
+            is IntegrityResult.Failed -> {
+                AppLogger.w(TAG, "Integrity check failed: ${result.reason}")
+                _effect.send(AuthEffect.IntegrityFailed(result.reason))
+            }
+            is IntegrityResult.Error -> {
+                // Network/Play Store unavailable — allow through but log
+                AppLogger.w(TAG, "Integrity check error (non-blocking): ${result.message}")
+            }
         }
     }
 

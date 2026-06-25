@@ -129,6 +129,7 @@ dependencies {
     implementation(libs.androidx.room.paging)
     implementation(libs.androidx.sqlite.bundled)
     implementation(libs.sqlcipher.android)
+    implementation(libs.play.integrity)
     ksp(libs.androidx.room.compiler)
 
     // Paging
