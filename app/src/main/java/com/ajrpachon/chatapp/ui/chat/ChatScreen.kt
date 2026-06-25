@@ -117,6 +117,7 @@ import androidx.lifecycle.compose.dropUnlessResumed
 import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.domain.model.CallBO
 import com.ajrpachon.chatapp.domain.model.MessageBO
+import com.ajrpachon.chatapp.domain.model.MessageLimits
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
@@ -631,11 +632,14 @@ private fun NormalInputBar(
         }
         ChatAppTextField(
             value = inputText,
-            onValueChange = onTextChange,
+            onValueChange = { if (it.length <= MessageLimits.MAX_CONTENT_LENGTH) onTextChange(it) },
             modifier = Modifier.weight(1f),
             placeholder = "Mensaje…",
             singleLine = false,
             maxLines = 4,
+            isError = inputText.length >= MessageLimits.MAX_CONTENT_LENGTH,
+            supportingText = if (inputText.length >= MessageLimits.MAX_CONTENT_LENGTH - 100)
+                "${inputText.length}/${MessageLimits.MAX_CONTENT_LENGTH}" else null,
         )
         if (isUploadingImage) {
             CircularProgressIndicator(modifier = Modifier.size(40.dp).padding(8.dp))
