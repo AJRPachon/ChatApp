@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.data.mapper
+﻿package com.ajrpachon.chatapp.data.mapper
 
 import com.ajrpachon.chatapp.data.local.entity.MessageDBO
 import com.ajrpachon.chatapp.data.remote.dto.MessageDTO
@@ -23,6 +23,7 @@ fun MessageDTO.toDBO() = MessageDBO(
     callDuration = callDuration,
     gifUrl = gifUrl,
     stickerUrl = stickerUrl,
+    isEncrypted = isEncrypted,
 )
 
 fun MessageDBO.toBO(currentUserId: String, senderName: String) = MessageBO(
@@ -44,4 +45,5 @@ fun MessageDBO.toBO(currentUserId: String, senderName: String) = MessageBO(
     callDuration = callDuration,
     gifUrl = gifUrl,
     stickerUrl = stickerUrl,
+    isEncrypted = isEncrypted,
 )

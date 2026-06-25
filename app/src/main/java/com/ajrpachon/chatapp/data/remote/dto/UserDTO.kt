@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.data.remote.dto
+﻿package com.ajrpachon.chatapp.data.remote.dto
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -10,4 +10,5 @@ data class UserDTO(
     @SerialName("display_name") val displayName: String = "",
     @SerialName("avatar_url") val avatarUrl: String? = null,
     @SerialName("created_at") val createdAt: String = "",
+    @SerialName("public_key") val publicKey: String? = null,
 )

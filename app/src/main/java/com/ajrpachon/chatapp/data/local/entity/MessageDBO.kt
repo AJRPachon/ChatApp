@@ -1,5 +1,6 @@
-package com.ajrpachon.chatapp.data.local.entity
+﻿package com.ajrpachon.chatapp.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -21,4 +22,5 @@ data class MessageDBO(
     val callDuration: Int? = null,
     val gifUrl: String? = null,
     val stickerUrl: String? = null,
+    @ColumnInfo(name = "isEncrypted") val isEncrypted: Boolean = false,
 )

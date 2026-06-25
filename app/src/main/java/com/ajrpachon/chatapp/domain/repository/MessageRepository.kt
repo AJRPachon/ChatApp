@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.domain.repository
+﻿package com.ajrpachon.chatapp.domain.repository
 
 import androidx.paging.PagingData
 import com.ajrpachon.chatapp.domain.model.MessageBO
@@ -22,6 +22,8 @@ interface MessageRepository {
         callDuration: Int? = null,
         gifUrl: String? = null,
         stickerUrl: String? = null,
+        // E2EE: pass the other user's ID for 1:1 conversations (null = skip encryption)
+        otherUserId: String? = null,
     ): MessageBO
     suspend fun uploadImage(conversationId: String, bytes: ByteArray, mimeType: String): String
     suspend fun uploadAudio(conversationId: String, bytes: ByteArray): String

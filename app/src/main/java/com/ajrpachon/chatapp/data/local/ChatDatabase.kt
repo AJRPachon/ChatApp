@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.data.local
+﻿package com.ajrpachon.chatapp.data.local
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
@@ -15,7 +15,7 @@ import com.ajrpachon.chatapp.data.local.entity.UserDBO
 
 @Database(
     entities = [UserDBO::class, ConversationDBO::class, MessageDBO::class, InvitationDBO::class, GroupMemberDBO::class],
-    version = 10,
+    version = 11,
     exportSchema = true,
 )
 abstract class ChatDatabase : RoomDatabase() {

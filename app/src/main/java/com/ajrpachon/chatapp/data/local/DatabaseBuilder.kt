@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.data.local
+﻿package com.ajrpachon.chatapp.data.local
 
 import android.content.Context
 import androidx.room.Room
@@ -80,6 +80,13 @@ private val MIGRATION_7_8 = object : Migration(7, 8) {
     }
 }
 
+/** Adds isEncrypted column to messages table for E2EE support. */
+private val MIGRATION_10_11 = object : Migration(10, 11) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE messages ADD COLUMN isEncrypted INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
 fun buildChatDatabase(context: Context): ChatDatabase =
     Room.databaseBuilder<ChatDatabase>(
         context = context.applicationContext,
@@ -87,5 +94,9 @@ fun buildChatDatabase(context: Context): ChatDatabase =
     )
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.IO)
-        .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+        .addMigrations(
+            MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
+            MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
+            MIGRATION_9_10, MIGRATION_10_11,
+        )
         .build()
