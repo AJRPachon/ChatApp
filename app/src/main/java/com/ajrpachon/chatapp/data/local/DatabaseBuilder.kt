@@ -4,9 +4,9 @@ import android.content.Context
 import androidx.room.Room
 import androidx.room.migration.Migration
 import androidx.sqlite.SQLiteConnection
-import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import androidx.sqlite.execSQL
 import kotlinx.coroutines.Dispatchers
+import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 
 private val MIGRATION_1_2 = object : Migration(1, 2) {
     override fun migrate(connection: SQLiteConnection) {
@@ -80,12 +80,15 @@ private val MIGRATION_7_8 = object : Migration(7, 8) {
     }
 }
 
-fun buildChatDatabase(context: Context): ChatDatabase =
-    Room.databaseBuilder<ChatDatabase>(
+fun buildChatDatabase(context: Context): ChatDatabase {
+    System.loadLibrary("sqlcipher")
+    val passphrase = DatabaseKeyProvider.getPassphrase(context.applicationContext)
+    return Room.databaseBuilder<ChatDatabase>(
         context = context.applicationContext,
         name = "chat.db",
     )
-        .setDriver(BundledSQLiteDriver())
+        .openHelperFactory(SupportOpenHelperFactory(passphrase))
         .setQueryCoroutineContext(Dispatchers.IO)
         .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
         .build()
+}
