@@ -4,6 +4,20 @@ import { createClient } from "jsr:@supabase/supabase-js@2"
 const LIVEKIT_API_KEY = Deno.env.get("LIVEKIT_API_KEY") ?? ""
 const LIVEKIT_API_SECRET = Deno.env.get("LIVEKIT_API_SECRET") ?? ""
 
+// Sliding-window in-memory rate limiter
+const rateLimitMap = new Map<string, number[]>()
+const RATE_LIMIT_WINDOW_MS = 60_000   // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 10    // 10 requests per minute per user
+
+function isRateLimited(userId: string): boolean {
+  const now = Date.now()
+  const timestamps = (rateLimitMap.get(userId) ?? []).filter(t => now - t < RATE_LIMIT_WINDOW_MS)
+  if (timestamps.length >= RATE_LIMIT_MAX_REQUESTS) return true
+  timestamps.push(now)
+  rateLimitMap.set(userId, timestamps)
+  return false
+}
+
 async function buildLivekitToken(roomName: string, identity: string): Promise<string> {
   const encoder = new TextEncoder()
 
@@ -59,6 +73,10 @@ Deno.serve(async (req) => {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
     return new Response("Unauthorized", { status: 401 })
+  }
+
+  if (isRateLimited(user.id)) {
+    return new Response("Too many requests", { status: 429 })
   }
 
   let roomName: string

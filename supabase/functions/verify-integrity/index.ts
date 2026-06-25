@@ -8,6 +8,20 @@ const PACKAGE_NAME = "com.ajrpachon.chatapp"
 // "Android Device Verification > Play Integrity API" role enabled.
 const SERVICE_ACCOUNT_JSON = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON") ?? ""
 
+// Sliding-window in-memory rate limiter
+const rateLimitMap = new Map<string, number[]>()
+const RATE_LIMIT_WINDOW_MS = 60_000   // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 3     // 3 requests per minute per user
+
+function isRateLimited(userId: string): boolean {
+  const now = Date.now()
+  const timestamps = (rateLimitMap.get(userId) ?? []).filter(t => now - t < RATE_LIMIT_WINDOW_MS)
+  if (timestamps.length >= RATE_LIMIT_MAX_REQUESTS) return true
+  timestamps.push(now)
+  rateLimitMap.set(userId, timestamps)
+  return false
+}
+
 async function getAccessToken(): Promise<string> {
   const sa = JSON.parse(SERVICE_ACCOUNT_JSON)
   const now = Math.floor(Date.now() / 1000)
@@ -56,6 +70,10 @@ Deno.serve(async (req) => {
   )
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) return new Response("Unauthorized", { status: 401 })
+
+  if (isRateLimited(user.id)) {
+    return new Response("Too many requests", { status: 429 })
+  }
 
   let token: string, nonce: string
   try {
