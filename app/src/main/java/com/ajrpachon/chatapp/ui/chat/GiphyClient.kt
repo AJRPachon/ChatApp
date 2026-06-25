@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.ui.chat
 
 import com.ajrpachon.chatapp.BuildConfig
+import com.ajrpachon.chatapp.utils.OkHttpProvider
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.okhttp.OkHttp
@@ -34,6 +35,7 @@ internal data class GiphyImageData(
 )
 
 internal val giphyClient = HttpClient(OkHttp) {
+    engine { preconfigured = OkHttpProvider.client }
     install(ContentNegotiation) {
         json(Json { ignoreUnknownKeys = true })
     }
