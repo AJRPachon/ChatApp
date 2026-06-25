@@ -2,6 +2,7 @@ package com.ajrpachon.chatapp.service
 import com.ajrpachon.chatapp.utils.catchResult
 
 import com.ajrpachon.chatapp.data.remote.source.FcmTokenRemoteSource
+import com.ajrpachon.chatapp.utils.AppLogger
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import kotlinx.coroutines.CoroutineName
@@ -30,7 +31,7 @@ class ChatFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         val conversationId = message.data["conversation_id"]
-        android.util.Log.d(TAG, "onMessageReceived: convId=$conversationId activeId=${ActiveChatTracker.activeConversationId}")
+        AppLogger.d(TAG, "onMessageReceived: convId=$conversationId activeId=${ActiveChatTracker.activeConversationId}")
 
         // Merge notification fields into data map so FcmMessageHandler works with a single source.
         val data = message.data.toMutableMap()

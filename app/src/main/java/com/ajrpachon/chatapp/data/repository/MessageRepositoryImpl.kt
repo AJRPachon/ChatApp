@@ -1,5 +1,8 @@
 package com.ajrpachon.chatapp.data.repository
 import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.utils.AppLogger
+
+private const val TAG = "MsgRepo"
 
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
@@ -35,11 +38,11 @@ class MessageRepositoryImpl(
 ) : MessageRepository {
 
     override fun observeMessages(conversationId: String, currentUserId: String, historyVisibleFrom: Long): Flow<List<MessageBO>> = channelFlow {
-        android.util.Log.d("MsgRepo", "observeMessages conv=$conversationId historyVisibleFrom=$historyVisibleFrom")
+        AppLogger.d(TAG, "observeMessages conv=$conversationId historyVisibleFrom=$historyVisibleFrom")
         launch {
             catchResult {
                 val remote = remoteSource.getMessages(conversationId, historyVisibleFrom)
-                android.util.Log.d("MsgRepo", "getMessages returned ${remote.size} messages")
+                AppLogger.d(TAG, "getMessages returned ${remote.size} messages")
                 messageDao.upsertAll(remote.map { it.toDBO() })
             }
         }
@@ -49,7 +52,7 @@ class MessageRepositoryImpl(
             }
         }
         messageDao.observeByConversation(conversationId, historyVisibleFrom).map { dbos ->
-            android.util.Log.d("MsgRepo", "Room emit: ${dbos.size} msgs conv=$conversationId since=$historyVisibleFrom firstCreatedAt=${dbos.firstOrNull()?.createdAt} lastCreatedAt=${dbos.lastOrNull()?.createdAt}")
+            AppLogger.d(TAG, "Room emit: ${dbos.size} msgs conv=$conversationId since=$historyVisibleFrom firstCreatedAt=${dbos.firstOrNull()?.createdAt} lastCreatedAt=${dbos.lastOrNull()?.createdAt}")
             dbos.map { dbo ->
                 val senderName = userDao.getById(dbo.senderId)?.displayName ?: dbo.senderId
                 dbo.toBO(currentUserId, senderName)
@@ -121,7 +124,7 @@ class MessageRepositoryImpl(
         launch {
             catchResult {
                 val remote = remoteSource.getMessages(conversationId, historyVisibleFrom)
-                android.util.Log.d("MsgRepo", "syncRemote fetched ${remote.size} msgs conv=$conversationId since=$historyVisibleFrom")
+                AppLogger.d(TAG, "syncRemote fetched ${remote.size} msgs conv=$conversationId since=$historyVisibleFrom")
                 messageDao.upsertAll(remote.map { it.toDBO() })
             }
         }
