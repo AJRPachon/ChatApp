@@ -116,6 +116,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.domain.model.CallBO
+import com.ajrpachon.chatapp.domain.model.MediaUrlValidator
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -1089,7 +1090,7 @@ private fun MessageBubble(
                     }
                     if (message.imageUrl != null) {
                         AsyncImage(
-                            model = message.imageUrl,
+                            model = message.imageUrl.takeIf { MediaUrlValidator.isValid(it) },
                             contentDescription = "Imagen",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
@@ -1101,7 +1102,7 @@ private fun MessageBubble(
                     }
                     if (message.gifUrl != null) {
                         AsyncImage(
-                            model = message.gifUrl,
+                            model = message.gifUrl.takeIf { MediaUrlValidator.isValid(it) },
                             contentDescription = "GIF",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
@@ -1110,7 +1111,7 @@ private fun MessageBubble(
                                 .clip(RoundedCornerShape(8.dp)),
                         )
                     }
-                    if (message.audioUrl != null) {
+                    if (message.audioUrl != null && MediaUrlValidator.isValid(message.audioUrl)) {
                         RemoteAudioPlayer(url = message.audioUrl)
                     }
                     if (message.content.isNotBlank()) {
