@@ -3,6 +3,7 @@ package com.ajrpachon.chatapp
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.os.StrictMode
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
@@ -20,11 +21,31 @@ class ChatApplication : Application(), SingletonImageLoader.Factory {
 
     override fun onCreate() {
         super.onCreate()
+        if (BuildConfig.DEBUG) enableStrictMode()
         createNotificationChannel()
         startKoin {
             androidContext(this@ChatApplication)
             modules(appModules)
         }
+    }
+
+    private fun enableStrictMode() {
+        StrictMode.setThreadPolicy(
+            StrictMode.ThreadPolicy.Builder()
+                .detectDiskReads()
+                .detectDiskWrites()
+                .detectNetwork()
+                .penaltyLog()
+                .build()
+        )
+        StrictMode.setVmPolicy(
+            StrictMode.VmPolicy.Builder()
+                .detectLeakedSqlLiteObjects()
+                .detectLeakedClosableObjects()
+                .detectActivityLeaks()
+                .penaltyLog()
+                .build()
+        )
     }
 
     private fun createNotificationChannel() {
