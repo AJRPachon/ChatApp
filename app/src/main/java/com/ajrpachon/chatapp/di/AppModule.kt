@@ -16,6 +16,7 @@ import com.ajrpachon.chatapp.ui.newchat.NewChatViewModel
 import com.ajrpachon.chatapp.ui.profile.ProfileViewModel
 import com.ajrpachon.chatapp.ui.userinfo.UserInfoViewModel
 import com.ajrpachon.chatapp.utils.OkHttpProvider
+import com.ajrpachon.chatapp.utils.SessionGuard
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.functions.Functions
@@ -63,7 +64,7 @@ val networkModule = module {
 
 val viewModelModule = module {
     // Needs BuildConfig value — cannot use viewModelOf
-    viewModel { AuthViewModel(androidApplication(), get(), get(), BuildConfig.GOOGLE_WEB_CLIENT_ID, get(), get()) }
+    viewModel { AuthViewModel(androidApplication(), get(), get(), BuildConfig.GOOGLE_WEB_CLIENT_ID, get(), get(), get()) }
 
     viewModelOf(::ConversationListViewModel)
     viewModelOf(::InvitationsViewModel)
@@ -105,6 +106,10 @@ val viewModelModule = module {
     }
 }
 
+val utilsModule = module {
+    single { SessionGuard(androidContext()) }
+}
+
 val appModules = listOf(
     databaseModule,
     networkModule,
@@ -112,4 +117,5 @@ val appModules = listOf(
     repositoryModule,
     useCaseModule,
     viewModelModule,
+    utilsModule,
 )

@@ -46,12 +46,17 @@ import com.ajrpachon.chatapp.ui.profile.ProfileScreen
 import com.ajrpachon.chatapp.ui.userinfo.UserInfoScreen
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
+import com.ajrpachon.chatapp.utils.SessionGuard
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
 import com.github.skydoves.navgraph.annotations.NavGraphRoot
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.handleDeeplinks
 import androidx.compose.runtime.produceState
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.koin.android.ext.android.get
 import org.koin.androidx.compose.koinViewModel
 
@@ -88,6 +93,8 @@ class MainActivity : ComponentActivity() {
 
     private val pendingConversationId = mutableStateOf<String?>(null)
     private val pendingOtherUserName = mutableStateOf<String?>(null)
+    // Signals that the session has expired and the UI should redirect to AuthRoute
+    private val sessionExpired = mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -107,13 +114,10 @@ class MainActivity : ComponentActivity() {
 
                 when (val integrity = integrityResult) {
                     null -> {
-                        // Still checking — show a centered loading spinner
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center,
-                        ) {
-                            CircularProgressIndicator()
-                        }
+                        ) { CircularProgressIndicator() }
                         return@ChatAppTheme
                     }
                     is IntegrityResult.Failed -> {
@@ -121,22 +125,40 @@ class MainActivity : ComponentActivity() {
                         return@ChatAppTheme
                     }
                     is IntegrityResult.Error -> {
-                        // Lenient: allow on error (e.g. no network) so legitimate users
-                        // aren't locked out during transient failures.
-                        Log.w("MainActivity", "Integrity check error (allowing): ${integrity.message}")
-                        // fall through to normal app flow
+                        AppLogger.w("MainActivity", "Integrity check error (allowing): ${integrity.message}")
                     }
-                    is IntegrityResult.Passed -> {
-                        // fall through to normal app flow
-                    }
+                    is IntegrityResult.Passed -> Unit
                 }
 
                 // ── 2. Normal app flow ──────────────────────────────────────
+                val sessionGuard: SessionGuard = get()
+                val isExpired by sessionExpired
                 val initialRoute by produceState<NavKey?>(initialValue = null) {
-                    value = if (getCurrentUser().first() != null) ConversationListRoute else AuthRoute
+                    val hasUser = getCurrentUser().first() != null
+                    value = when {
+                        !hasUser -> AuthRoute
+                        sessionGuard.isSessionExpired() -> {
+                            // Sign out server-side and clear local guard before routing
+                            CoroutineScope(Dispatchers.IO).launch {
+                                runCatching { get<SupabaseClient>().auth.signOut() }
+                                sessionGuard.clearSession()
+                            }
+                            AuthRoute
+                        }
+                        else -> ConversationListRoute
+                    }
                 }
                 val resolvedRoute = initialRoute ?: return@ChatAppTheme
                 val backStack = rememberNavBackStack(resolvedRoute)
+
+                // Handle mid-session expiry detected in onResume
+                androidx.compose.runtime.LaunchedEffect(isExpired) {
+                    if (isExpired) {
+                        sessionExpired.value = false
+                        backStack.clear()
+                        backStack.add(AuthRoute)
+                    }
+                }
 
                 val conversationIdToOpen by pendingConversationId
                 val otherUserNameToOpen by pendingOtherUserName
@@ -332,6 +354,21 @@ class MainActivity : ComponentActivity() {
                 }
                 } // end Box
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val sessionGuard: SessionGuard = get()
+        if (sessionGuard.isSessionExpired()) {
+            // Mid-session expiry: sign out and signal the UI to navigate to AuthRoute
+            CoroutineScope(Dispatchers.IO).launch {
+                runCatching { get<SupabaseClient>().auth.signOut() }
+                sessionGuard.clearSession()
+            }
+            sessionExpired.value = true
+        } else {
+            sessionGuard.recordActivity()
         }
     }
 

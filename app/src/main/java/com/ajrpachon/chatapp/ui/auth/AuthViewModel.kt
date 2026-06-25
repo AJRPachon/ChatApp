@@ -14,8 +14,7 @@ import com.ajrpachon.chatapp.data.remote.dto.UserDTO
 import com.ajrpachon.chatapp.domain.usecase.SetUsernameUseCase
 import com.ajrpachon.chatapp.service.FcmTokenManager
 import com.ajrpachon.chatapp.utils.AppLogger
-import com.ajrpachon.chatapp.utils.IntegrityChecker
-import com.ajrpachon.chatapp.utils.IntegrityResult
+import com.ajrpachon.chatapp.utils.SessionGuard
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -41,6 +40,7 @@ class AuthViewModel(
     private val googleWebClientId: String,
     private val userDao: UserDao,
     private val fcmTokenManager: FcmTokenManager,
+    private val sessionGuard: SessionGuard,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AuthState())
@@ -280,6 +280,7 @@ class AuthViewModel(
             userDao.clearCurrentUser()
             userDao.upsert(profile.toDBO(email = email, isCurrentUser = true))
             catchResult { fcmTokenManager.syncToken() }
+            sessionGuard.recordActivity()
             _effect.send(AuthEffect.NavigateToHome)
         } else {
             _state.update { it.copy(needsUsername = true) }
@@ -298,6 +299,7 @@ class AuthViewModel(
                     .onSuccess {
                         _state.update { it.copy(needsUsername = false) }
                         launch { catchResult { fcmTokenManager.syncToken() } }
+                        sessionGuard.recordActivity()
                         _effect.send(AuthEffect.NavigateToHome)
                     }
                     .onFailure { e ->
@@ -313,6 +315,7 @@ class AuthViewModel(
     private fun signOut() {
         viewModelScope.launch {
             supabase.auth.signOut()
+            sessionGuard.clearSession()
             _state.update { AuthState() }
         }
     }
