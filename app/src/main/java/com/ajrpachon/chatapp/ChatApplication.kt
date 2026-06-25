@@ -6,8 +6,10 @@ import android.app.NotificationManager
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.gif.AnimatedImageDecoder
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
 import com.ajrpachon.chatapp.di.appModules
+import com.ajrpachon.chatapp.utils.OkHttpProvider
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 
@@ -33,7 +35,10 @@ class ChatApplication : Application(), SingletonImageLoader.Factory {
 
     override fun newImageLoader(context: android.content.Context): ImageLoader =
         ImageLoader.Builder(context)
-            .components { add(AnimatedImageDecoder.Factory()) }
+            .components {
+                add(OkHttpNetworkFetcherFactory(callFactory = OkHttpProvider.client))
+                add(AnimatedImageDecoder.Factory())
+            }
             .crossfade(true)
             .build()
 }
