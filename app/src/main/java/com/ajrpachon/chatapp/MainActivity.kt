@@ -1,8 +1,10 @@
 package com.ajrpachon.chatapp
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
@@ -10,8 +12,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.content.ContextCompat
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.ajrpachon.chatapp.utils.RootDetector
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.SideEffect
@@ -27,6 +34,11 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import com.ajrpachon.chatapp.ui.auth.AuthScreen
+import com.ajrpachon.chatapp.ui.auth.IntegrityBlockedScreen
+import com.ajrpachon.chatapp.utils.IntegrityChecker
+import com.ajrpachon.chatapp.utils.IntegrityResult
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.Alignment
 import com.ajrpachon.chatapp.ui.call.CallScreen
 import com.ajrpachon.chatapp.ui.call.IncomingCallScreen
 import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
@@ -40,12 +52,17 @@ import com.ajrpachon.chatapp.ui.profile.ProfileScreen
 import com.ajrpachon.chatapp.ui.userinfo.UserInfoScreen
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
+import com.ajrpachon.chatapp.utils.SessionGuard
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
 import com.github.skydoves.navgraph.annotations.NavGraphRoot
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.handleDeeplinks
 import androidx.compose.runtime.produceState
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.koin.android.ext.android.get
 import org.koin.androidx.compose.koinViewModel
 
@@ -82,22 +99,74 @@ class MainActivity : ComponentActivity() {
 
     private val pendingConversationId = mutableStateOf<String?>(null)
     private val pendingOtherUserName = mutableStateOf<String?>(null)
+    // Signals that the session has expired and the UI should redirect to AuthRoute
+    private val sessionExpired = mutableStateOf(false)
+    private var showRootWarning by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         requestNotificationPermissionIfNeeded()
+        checkRootAndWarnIfNeeded()
         pendingConversationId.value = intent.validatedConversationId()
         pendingOtherUserName.value = intent.validatedUserName()
         val getCurrentUser: GetCurrentUserUseCase = get()
+        val supabase: SupabaseClient = get()
         setContent {
             ChatAppTheme {
+                // ── 1. Play Integrity gate ──────────────────────────────────
+                val integrityResult by produceState<IntegrityResult?>(initialValue = null) {
+                    value = IntegrityChecker.check(this@MainActivity, supabase)
+                }
+
+                when (val integrity = integrityResult) {
+                    null -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) { CircularProgressIndicator() }
+                        return@ChatAppTheme
+                    }
+                    is IntegrityResult.Failed -> {
+                        IntegrityBlockedScreen(onExit = { finish() })
+                        return@ChatAppTheme
+                    }
+                    is IntegrityResult.Error -> {
+                        AppLogger.w("MainActivity", "Integrity check error (allowing): ${integrity.message}")
+                    }
+                    is IntegrityResult.Passed -> Unit
+                }
+
+                // ── 2. Normal app flow ──────────────────────────────────────
+                val sessionGuard: SessionGuard = get()
+                val isExpired by sessionExpired
                 val initialRoute by produceState<NavKey?>(initialValue = null) {
-                    value = if (getCurrentUser().first() != null) ConversationListRoute else AuthRoute
+                    val hasUser = getCurrentUser().first() != null
+                    value = when {
+                        !hasUser -> AuthRoute
+                        sessionGuard.isSessionExpired() -> {
+                            // Sign out server-side and clear local guard before routing
+                            CoroutineScope(Dispatchers.IO).launch {
+                                runCatching { get<SupabaseClient>().auth.signOut() }
+                                sessionGuard.clearSession()
+                            }
+                            AuthRoute
+                        }
+                        else -> ConversationListRoute
+                    }
                 }
                 val resolvedRoute = initialRoute ?: return@ChatAppTheme
                 val backStack = rememberNavBackStack(resolvedRoute)
+
+                // Handle mid-session expiry detected in onResume
+                androidx.compose.runtime.LaunchedEffect(isExpired) {
+                    if (isExpired) {
+                        sessionExpired.value = false
+                        backStack.clear()
+                        backStack.add(AuthRoute)
+                    }
+                }
 
                 val conversationIdToOpen by pendingConversationId
                 val otherUserNameToOpen by pendingOtherUserName
@@ -291,19 +360,69 @@ class MainActivity : ComponentActivity() {
                         onReject = { incomingCallVm.reject(call.id) },
                     )
                 }
+
+                // Root warning dialog — shown only once on first launch if root is detected
+                if (showRootWarning) {
+                    AlertDialog(
+                        onDismissRequest = { /* non-dismissable via back/outside tap */ },
+                        title = { Text("Rooted device detected") },
+                        text = {
+                            Text(
+                                "Running on a rooted device may compromise the security of your messages. " +
+                                "Do you want to continue?"
+                            )
+                        },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                saveRootWarningAccepted()
+                                showRootWarning = false
+                            }) {
+                                Text("Continue")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { finish() }) {
+                                Text("Exit")
+                            }
+                        },
+                    )
+                }
                 } // end Box
             }
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        val sessionGuard: SessionGuard = get()
+        if (sessionGuard.isSessionExpired()) {
+            // Mid-session expiry: sign out and signal the UI to navigate to AuthRoute
+            CoroutineScope(Dispatchers.IO).launch {
+                runCatching { get<SupabaseClient>().auth.signOut() }
+                sessionGuard.clearSession()
+            }
+            sessionExpired.value = true
+        } else {
+            sessionGuard.recordActivity()
+        }
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        get<SupabaseClient>().handleDeeplinks(intent)
+        val uri = intent.data
+        if (uri != null && uri.isValidAuthCallback()) {
+            get<SupabaseClient>().handleDeeplinks(intent)
+        } else if (uri != null) {
+            AppLogger.w("MainActivity", "Rejected deep link with unexpected scheme/host: $uri")
+        }
         intent.validatedConversationId()?.let {
             pendingConversationId.value = it
             pendingOtherUserName.value = intent.validatedUserName()
         }
     }
+
+    private fun Uri.isValidAuthCallback(): Boolean =
+        scheme == "com.ajrpachon.chatapp" && host == "auth-callback"
 
     private fun requestNotificationPermissionIfNeeded() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -312,6 +431,21 @@ class MainActivity : ComponentActivity() {
         ) {
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 0)
         }
+    }
+
+    private fun checkRootAndWarnIfNeeded() {
+        val prefs = getSharedPreferences("security_prefs", Context.MODE_PRIVATE)
+        val alreadyAccepted = prefs.getBoolean("root_warning_accepted", false)
+        if (!alreadyAccepted && RootDetector.isRooted(packageManager)) {
+            showRootWarning = true
+        }
+    }
+
+    private fun saveRootWarningAccepted() {
+        getSharedPreferences("security_prefs", Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean("root_warning_accepted", true)
+            .apply()
     }
 }
 

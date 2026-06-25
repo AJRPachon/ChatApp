@@ -1,6 +1,9 @@
 package com.ajrpachon.chatapp.data.remote.source
 
+import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.data.remote.dto.GroupMemberDTO
+
+private const val TAG = "GroupRemote"
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
@@ -66,7 +69,7 @@ class GroupRemoteSource(private val supabase: SupabaseClient) {
                 }
                 .decodeList<JsonObject>()
                 .isNotEmpty()
-        }.onFailure { android.util.Log.e("GroupRemote", "isCurrentUserMember failed", it) }
+        }.onFailure { AppLogger.e(TAG, "isCurrentUserMember failed", it) }
          .getOrNull()
     }
 
@@ -78,7 +81,7 @@ class GroupRemoteSource(private val supabase: SupabaseClient) {
                     filter { eq("conversation_id", conversationId) }
                 }
                 .decodeList<GroupMemberDTO>()
-        }.onFailure { android.util.Log.e("GroupRemote", "getMembers failed", it) }
+        }.onFailure { AppLogger.e(TAG, "getMembers failed", it) }
          .getOrNull()
 
     // Emits an updated member list whenever INSERT or UPDATE fires on conversation_participants.

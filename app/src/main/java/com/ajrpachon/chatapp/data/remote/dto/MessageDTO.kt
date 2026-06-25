@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.data.remote.dto
+﻿package com.ajrpachon.chatapp.data.remote.dto
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -21,4 +21,5 @@ data class MessageDTO(
     @SerialName("call_duration") val callDuration: Int? = null,
     @SerialName("gif_url") val gifUrl: String? = null,
     @SerialName("sticker_url") val stickerUrl: String? = null,
+    @SerialName("is_encrypted") val isEncrypted: Boolean = false,
 )

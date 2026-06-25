@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.data.remote.source
+﻿package com.ajrpachon.chatapp.data.remote.source
 
 import com.ajrpachon.chatapp.data.remote.dto.UserDTO
 import io.github.jan.supabase.SupabaseClient

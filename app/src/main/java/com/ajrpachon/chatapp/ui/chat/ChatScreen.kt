@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.ui.chat
+﻿package com.ajrpachon.chatapp.ui.chat
 
 import android.Manifest
 import android.content.Context
@@ -17,8 +17,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -66,6 +68,7 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Reply
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -116,7 +119,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.domain.model.CallBO
+import com.ajrpachon.chatapp.domain.model.MediaUrlValidator
 import com.ajrpachon.chatapp.domain.model.MessageBO
+import com.ajrpachon.chatapp.domain.model.MessageLimits
+import com.ajrpachon.chatapp.domain.model.StickerValidation
+import com.ajrpachon.chatapp.utils.ClipboardProtection
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
@@ -330,6 +337,15 @@ fun ChatScreen(
                         }
                         Spacer(Modifier.width(10.dp))
                         Text(state.conversationTitle.ifBlank { "Chat" })
+                        if (!state.isGroup) {
+                            Spacer(Modifier.width(6.dp))
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = "Cifrado extremo a extremo",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(14.dp),
+                            )
+                        }
                     }
                 },
                 navigationIcon = {
@@ -631,11 +647,14 @@ private fun NormalInputBar(
         }
         ChatAppTextField(
             value = inputText,
-            onValueChange = onTextChange,
+            onValueChange = { if (it.length <= MessageLimits.MAX_CONTENT_LENGTH) onTextChange(it) },
             modifier = Modifier.weight(1f),
             placeholder = "Mensaje…",
             singleLine = false,
             maxLines = 4,
+            isError = inputText.length >= MessageLimits.MAX_CONTENT_LENGTH,
+            supportingText = if (inputText.length >= MessageLimits.MAX_CONTENT_LENGTH - 100)
+                "${inputText.length}/${MessageLimits.MAX_CONTENT_LENGTH}" else null,
         )
         if (isUploadingImage) {
             CircularProgressIndicator(modifier = Modifier.size(40.dp).padding(8.dp))
@@ -984,7 +1003,10 @@ private fun StickerBubble(message: MessageBO, onReply: () -> Unit) {
                 .padding(horizontal = 4.dp, vertical = 2.dp),
             horizontalAlignment = if (message.isFromMe) Alignment.End else Alignment.Start,
         ) {
-            Text(text = message.stickerUrl ?: "", fontSize = 64.sp)
+            val sticker = StickerValidation.sanitize(message.stickerUrl)
+            if (sticker != null) {
+                Text(text = sticker, fontSize = 64.sp)
+            }
             Text(
                 text = timeText,
                 style = MaterialTheme.typography.labelSmall,
@@ -996,6 +1018,7 @@ private fun StickerBubble(message: MessageBO, onReply: () -> Unit) {
 
 // ── MessageBubble ─────────────────────────────────────────────────────────────
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun MessageBubble(
     message: MessageBO,
@@ -1024,6 +1047,7 @@ private fun MessageBubble(
     )
     val swipeOffset = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     val density = LocalDensity.current
     val swipeThreshold = remember(density) { with(density) { 72.dp.toPx() } }
 
@@ -1089,7 +1113,7 @@ private fun MessageBubble(
                     }
                     if (message.imageUrl != null) {
                         AsyncImage(
-                            model = message.imageUrl,
+                            model = message.imageUrl.takeIf { MediaUrlValidator.isValid(it) },
                             contentDescription = "Imagen",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
@@ -1101,7 +1125,7 @@ private fun MessageBubble(
                     }
                     if (message.gifUrl != null) {
                         AsyncImage(
-                            model = message.gifUrl,
+                            model = message.gifUrl.takeIf { MediaUrlValidator.isValid(it) },
                             contentDescription = "GIF",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
@@ -1110,11 +1134,25 @@ private fun MessageBubble(
                                 .clip(RoundedCornerShape(8.dp)),
                         )
                     }
-                    if (message.audioUrl != null) {
+                    if (message.audioUrl != null && MediaUrlValidator.isValid(message.audioUrl)) {
                         RemoteAudioPlayer(url = message.audioUrl)
                     }
                     if (message.content.isNotBlank()) {
-                        Text(text = message.content, style = MaterialTheme.typography.bodyMedium)
+                        Box(
+                            modifier = Modifier.combinedClickable(
+                                onClick = {},
+                                onLongClick = {
+                                    ClipboardProtection.copyWithTimeout(
+                                        context = context,
+                                        label = "message",
+                                        text = message.content,
+                                        scope = scope,
+                                    )
+                                },
+                            ),
+                        ) {
+                            Text(text = message.content, style = MaterialTheme.typography.bodyMedium)
+                        }
                     }
                     Text(
                         text = timeText,

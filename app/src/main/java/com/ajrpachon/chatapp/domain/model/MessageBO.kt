@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.domain.model
+﻿package com.ajrpachon.chatapp.domain.model
 
 import kotlinx.datetime.Instant
 
@@ -21,6 +21,7 @@ data class MessageBO(
     val callDuration: Int? = null,
     val gifUrl: String? = null,
     val stickerUrl: String? = null,
+    val isEncrypted: Boolean = false,
 ) {
     val isCallMessage: Boolean get() = callType != null
 
