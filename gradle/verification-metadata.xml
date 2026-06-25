@@ -4,11 +4,13 @@
       <verify-metadata>true</verify-metadata>
       <verify-signatures>false</verify-signatures>
       <trusted-artifacts>
-         <!-- All com.android.tools artifacts are official Google Android SDK tooling
-              distributed exclusively via Google's Maven repository. Many are
-              platform-specific binaries (aapt2, lint tools, UAST) whose checksums
-              differ per OS, making per-artifact verification impractical. -->
+         <!-- Google Android SDK tooling: platform-specific binaries (aapt2, lint,
+              UAST) with OS-dependent checksums. Trusted from Google Maven only. -->
          <trust group="^com\.android\.tools.*" regex="true"/>
+         <!-- Groovy runtime: transitive dependency of Android lint rules.
+              Resolved lazily only when lintDebug runs, so not captured by the
+              --write-verification-metadata pre-step which only runs 'help'. -->
+         <trust group="^org\.codehaus\.groovy.*" regex="true"/>
       </trusted-artifacts>
    </configuration>
    <components>
