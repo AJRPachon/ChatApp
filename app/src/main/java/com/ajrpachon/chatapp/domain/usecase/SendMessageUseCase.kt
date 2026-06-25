@@ -2,6 +2,7 @@ package com.ajrpachon.chatapp.domain.usecase
 import com.ajrpachon.chatapp.utils.catchResult
 
 import com.ajrpachon.chatapp.domain.model.MessageBO
+import com.ajrpachon.chatapp.domain.model.MessageLimits
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 
 class SendMessageUseCase(private val messageRepository: MessageRepository) {
@@ -24,6 +25,8 @@ class SendMessageUseCase(private val messageRepository: MessageRepository) {
             content.isNotBlank() || imageUrl != null || audioUrl != null ||
                     callType != null || gifUrl != null || stickerUrl != null
         ) { "Message cannot be blank" }
+        if (content.length > MessageLimits.MAX_CONTENT_LENGTH)
+            return@catchResult Result.failure(IllegalArgumentException("Message exceeds ${MessageLimits.MAX_CONTENT_LENGTH} characters"))
         messageRepository.sendMessage(
             conversationId, senderId, content.trim(),
             imageUrl, audioUrl,
