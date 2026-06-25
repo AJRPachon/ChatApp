@@ -9,6 +9,7 @@ import com.ajrpachon.chatapp.service.FcmTokenManager
 import com.ajrpachon.chatapp.utils.AppLogger
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.SignOutScope
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.channels.Channel
@@ -85,6 +86,21 @@ class ProfileViewModel(
                 supabase.auth.signOut()
                 userDao.clearCurrentUser()
             }.onFailure { e -> AppLogger.e(TAG, "Sign out failed", e) }
+            _effect.send(ProfileEffect.NavigateToAuth)
+        }
+    }
+
+    fun requestSignOutAll() {
+        viewModelScope.launch { _effect.send(ProfileEffect.ShowSignOutAllConfirm) }
+    }
+
+    fun signOutAll() {
+        viewModelScope.launch {
+            catchResult {
+                fcmTokenManager.deleteToken()
+                supabase.auth.signOut(SignOutScope.GLOBAL)
+                userDao.clearCurrentUser()
+            }.onFailure { e -> AppLogger.e(TAG, "Sign out all failed", e) }
             _effect.send(ProfileEffect.NavigateToAuth)
         }
     }

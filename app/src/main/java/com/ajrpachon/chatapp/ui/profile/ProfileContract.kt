@@ -11,4 +11,5 @@ data class ProfileState(
 
 sealed interface ProfileEffect {
     data object NavigateToAuth : ProfileEffect
+    data object ShowSignOutAllConfirm : ProfileEffect
 }
