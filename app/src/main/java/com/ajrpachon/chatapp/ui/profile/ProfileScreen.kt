@@ -30,7 +30,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,13 +63,34 @@ fun ProfileScreen(
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
+    var showSignOutAllDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         vm.effect.collect { effect ->
             when (effect) {
                 ProfileEffect.NavigateToAuth -> onSignOut()
+                ProfileEffect.ShowSignOutAllConfirm -> showSignOutAllDialog = true
             }
         }
+    }
+
+    if (showSignOutAllDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showSignOutAllDialog = false },
+            title = { androidx.compose.material3.Text("Cerrar sesión en todos los dispositivos") },
+            text = { androidx.compose.material3.Text("Esto cerrará la sesión en todos los dispositivos donde hayas iniciado sesión. ¿Continuar?") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    showSignOutAllDialog = false
+                    vm.signOutAll()
+                }) { androidx.compose.material3.Text("Cerrar todas las sesiones") }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { showSignOutAllDialog = false }) {
+                    androidx.compose.material3.Text("Cancelar")
+                }
+            },
+        )
     }
 
     LaunchedEffect(state.error) {
@@ -181,6 +205,13 @@ fun ProfileScreen(
             ChatAppDestructiveButton(
                 text = "Cerrar sesión",
                 onClick = { vm.signOut() },
+                leadingIcon = Icons.AutoMirrored.Filled.Logout,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.size(8.dp))
+            ChatAppDestructiveButton(
+                text = "Cerrar sesión en todos los dispositivos",
+                onClick = { vm.requestSignOutAll() },
                 leadingIcon = Icons.AutoMirrored.Filled.Logout,
                 modifier = Modifier
                     .fillMaxWidth()
