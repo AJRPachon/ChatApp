@@ -112,56 +112,15 @@ fun onIntent(intent: FooIntent)   // punto de entrada único para interacciones
 
 ## 🔒 Seguridad
 
-El proyecto implementa un modelo de seguridad en capas. Todas las utilidades de validación del dominio están escritas en Kotlin puro sin imports de Android, lo que las hace preparadas para **Kotlin Multiplatform (KMP)**.
+La app implementa un modelo de seguridad en capas para proteger los mensajes y los datos del usuario:
 
-### Datos en reposo
-| Medida | Implementación |
-|---|---|
-| **Cifrado de base de datos local** | SQLCipher AES-256; clave generada aleatoriamente, cifrada con AES-256-GCM y almacenada en Android KeyStore (hardware-backed) |
-| **Cifrado extremo a extremo (E2EE)** | Mensajes 1:1 cifrados con ECDH secp256r1 + AES-256-GCM antes de subir a Supabase; claves privadas en Android KeyStore; icono de candado en el chat cifrado |
-| **Exclusión de backups** | `backup_rules.xml` excluye BD, claves y preferencias de copias de seguridad de Android |
-
-### Red y transporte
-| Medida | Implementación |
-|---|---|
-| **Certificate pinning** | `OkHttpProvider` fija los certificados de `*.supabase.co` (Let's Encrypt R13) y `*.livekit.cloud` (ZeroSSL) |
-| **Certificate Transparency** | `OkHttpProvider` usa `systemOnlyTrustManager()` — rechaza CAs de usuario e impide proxies MITM |
-| **Bloqueo de HTTP** | `network_security_config.xml` bloquea todo tráfico en claro |
-| **Coil con pinning** | `OkHttpNetworkFetcherFactory(OkHttpProvider.client)` — todas las imágenes y GIFs usan el mismo cliente pinado |
-| **Whitelist de dominios** | `MediaUrlValidator` (pure Kotlin) permite solo URLs de `*.supabase.co` y `media*.giphy.com`; inválidas se convierten en `null` en el mapper |
-
-### Autenticación y sesión
-| Medida | Implementación |
-|---|---|
-| **Revocación global de sesión** | Sign-out con `SignOutScope.GLOBAL` invalida todas las sesiones del usuario en Supabase |
-| **Expiración por inactividad** | `SessionGuard` fuerza re-autenticación tras 7 días sin actividad; detectado en `onResume` y al arrancar |
-| **Secreto LiveKit fuera del cliente** | `LIVEKIT_API_SECRET` eliminado de `BuildConfig`; JWT generado en la Edge Function `livekit-token` con validación de identidad (`identity == auth.uid()`) |
-| **Deep link verificado** | `android:autoVerify="true"` en el intent-filter de auth callback + validación de esquema/host en `onNewIntent` |
-
-### Integridad del dispositivo y la app
-| Medida | Implementación |
-|---|---|
-| **Play Integrity API** | Verificación en cada arranque; si el resultado es `Failed` → pantalla bloqueante no-dismissable; si es `Error` (sin red) → comportamiento permisivo |
-| **Detección de root** | `RootDetector` comprueba binarios `su`, packages conocidos (Magisk, LSPosed) y `test-keys` en `Build.TAGS`; dialog de advertencia dismissable |
-| **Componentes exportados** | `MainActivity` protegida contra task hijacking e intent injection |
-| **FLAG_SECURE** | Previene capturas de pantalla y aparición en el selector de apps recientes |
-
-### Protección de datos en uso
-| Medida | Implementación |
-|---|---|
-| **Portapapeles auto-limpiado** | `ClipboardProtection.copyWithTimeout()` borra el contenido a los 60 s si no ha sido reemplazado |
-| **Sin logs en producción** | `AppLogger` suprime todos los logs en release; todos los `android.util.Log` directos reemplazados |
-| **Validación de inputs** | `MessageLimits` (4000 chars), `StickerValidation` (≤10 chars), `InputValidation.sanitizeDisplayName()` para intents FCM |
-
-### Backend (Supabase)
-| Medida | Implementación |
-|---|---|
-| **RLS en todas las tablas** | Políticas estrictas en `profiles`, `conversations`, `conversation_participants`, `messages`, `calls`, `call_signals`, `invitations` y todos los buckets de Storage |
-| **GRANTs mínimos** | `REVOKE ALL` + re-grant solo de las operaciones necesarias por tabla; `anon` sin acceso a ninguna tabla |
-| **Límite de tamaño de mensajes** | `CHECK (char_length(content) <= 4000)` a nivel de BD como última barrera |
-| **Rate limiting en Edge Functions** | Sliding window: 10 req/min en `livekit-token`, 3 req/min en `verify-integrity` |
-| **Verificación de dependencias** | `verification-metadata.xml` con SHA-256 de todas las dependencias Gradle |
-| **ProGuard/R8** | Ofuscación completa en release con reglas para preservar solo lo necesario |
+- **Cifrado de mensajes (E2EE):** los mensajes 1:1 se cifran en el dispositivo antes de enviarse, de modo que Supabase nunca almacena contenido legible.
+- **Base de datos local cifrada:** la caché de mensajes en el dispositivo está protegida con SQLCipher AES-256, con la clave custodiada por el Android KeyStore.
+- **Transporte seguro:** certificate pinning para Supabase y LiveKit, bloqueo de HTTP en claro, rechazo de CAs de usuario y validación de dominios en todas las URLs de medios.
+- **Autenticación robusta:** expiración de sesión por inactividad, revocación global al cerrar sesión y secretos de servidor nunca incluidos en el cliente (tokens LiveKit generados en Edge Function).
+- **Integridad del dispositivo:** verificación con Play Integrity API al arrancar y detección de root, bloqueando o advirtiendo al usuario si el entorno no es de confianza.
+- **Privacidad en uso:** `FLAG_SECURE` impide capturas de pantalla, el portapapeles se limpia automáticamente a los 60 s y los logs se suprimen en producción.
+- **Backend endurecido:** RLS estricto en todas las tablas de Supabase, permisos mínimos por rol, límite de tamaño de mensajes en BD y rate limiting en las Edge Functions.
 
 ---
 
