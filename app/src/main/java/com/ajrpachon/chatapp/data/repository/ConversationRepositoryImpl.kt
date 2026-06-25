@@ -2,7 +2,6 @@ package com.ajrpachon.chatapp.data.repository
 import com.ajrpachon.chatapp.utils.catchResult
 import com.ajrpachon.chatapp.utils.AppLogger
 
-private const val TAG = "ConvRepo"
 
 import com.ajrpachon.chatapp.data.local.dao.ConversationDao
 import com.ajrpachon.chatapp.data.local.dao.GroupMemberDao
@@ -43,6 +42,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+private const val TAG = "ConvRepo"
 
 private val lenientJson = Json { ignoreUnknownKeys = true }
 

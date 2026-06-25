@@ -2,7 +2,6 @@
 import com.ajrpachon.chatapp.utils.catchResult
 import com.ajrpachon.chatapp.utils.AppLogger
 
-private const val TAG = "MsgRepo"
 
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
@@ -30,6 +29,7 @@ import com.ajrpachon.chatapp.utils.UploadLimits.checkImageSize
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+private const val TAG = "MsgRepo"
 
 private const val BUCKET = "chat-images"
 private const val AUDIO_BUCKET = "chat-audio"

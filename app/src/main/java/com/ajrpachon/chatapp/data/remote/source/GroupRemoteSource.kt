@@ -3,7 +3,6 @@ package com.ajrpachon.chatapp.data.remote.source
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.data.remote.dto.GroupMemberDTO
 
-private const val TAG = "GroupRemote"
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
@@ -25,6 +24,7 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+private const val TAG = "GroupRemote"
 
 class GroupRemoteSource(private val supabase: SupabaseClient) {
 
