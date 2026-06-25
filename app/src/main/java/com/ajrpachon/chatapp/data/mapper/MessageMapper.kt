@@ -2,6 +2,7 @@ package com.ajrpachon.chatapp.data.mapper
 
 import com.ajrpachon.chatapp.data.local.entity.MessageDBO
 import com.ajrpachon.chatapp.data.remote.dto.MessageDTO
+import com.ajrpachon.chatapp.domain.model.MediaUrlValidator
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import kotlinx.datetime.Instant
 
@@ -13,15 +14,15 @@ fun MessageDTO.toDBO() = MessageDBO(
     isRead = isRead,
     createdAt = runCatching { Instant.parse(createdAt).toEpochMilliseconds() }
         .getOrDefault(System.currentTimeMillis()),
-    imageUrl = imageUrl,
-    audioUrl = audioUrl,
+    imageUrl = MediaUrlValidator.sanitize(imageUrl),
+    audioUrl = MediaUrlValidator.sanitize(audioUrl),
     replyToId = replyToId,
     replyToContent = replyToContent,
     replyToSenderName = replyToSenderName,
     callType = callType,
     callStatus = callStatus,
     callDuration = callDuration,
-    gifUrl = gifUrl,
+    gifUrl = MediaUrlValidator.sanitize(gifUrl),
     stickerUrl = stickerUrl,
 )
 
