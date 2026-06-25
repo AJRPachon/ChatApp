@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -11,8 +12,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.content.ContextCompat
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.ajrpachon.chatapp.utils.RootDetector
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.SideEffect
@@ -95,12 +101,14 @@ class MainActivity : ComponentActivity() {
     private val pendingOtherUserName = mutableStateOf<String?>(null)
     // Signals that the session has expired and the UI should redirect to AuthRoute
     private val sessionExpired = mutableStateOf(false)
+    private var showRootWarning by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         requestNotificationPermissionIfNeeded()
+        checkRootAndWarnIfNeeded()
         pendingConversationId.value = intent.validatedConversationId()
         pendingOtherUserName.value = intent.validatedUserName()
         val getCurrentUser: GetCurrentUserUseCase = get()
@@ -352,6 +360,33 @@ class MainActivity : ComponentActivity() {
                         onReject = { incomingCallVm.reject(call.id) },
                     )
                 }
+
+                // Root warning dialog — shown only once on first launch if root is detected
+                if (showRootWarning) {
+                    AlertDialog(
+                        onDismissRequest = { /* non-dismissable via back/outside tap */ },
+                        title = { Text("Rooted device detected") },
+                        text = {
+                            Text(
+                                "Running on a rooted device may compromise the security of your messages. " +
+                                "Do you want to continue?"
+                            )
+                        },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                saveRootWarningAccepted()
+                                showRootWarning = false
+                            }) {
+                                Text("Continue")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { finish() }) {
+                                Text("Exit")
+                            }
+                        },
+                    )
+                }
                 } // end Box
             }
         }
@@ -396,6 +431,21 @@ class MainActivity : ComponentActivity() {
         ) {
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 0)
         }
+    }
+
+    private fun checkRootAndWarnIfNeeded() {
+        val prefs = getSharedPreferences("security_prefs", Context.MODE_PRIVATE)
+        val alreadyAccepted = prefs.getBoolean("root_warning_accepted", false)
+        if (!alreadyAccepted && RootDetector.isRooted(packageManager)) {
+            showRootWarning = true
+        }
+    }
+
+    private fun saveRootWarningAccepted() {
+        getSharedPreferences("security_prefs", Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean("root_warning_accepted", true)
+            .apply()
     }
 }
 
