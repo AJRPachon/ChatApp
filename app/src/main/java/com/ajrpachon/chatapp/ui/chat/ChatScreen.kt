@@ -17,8 +17,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -120,6 +122,7 @@ import com.ajrpachon.chatapp.domain.model.MediaUrlValidator
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.MessageLimits
 import com.ajrpachon.chatapp.domain.model.StickerValidation
+import com.ajrpachon.chatapp.utils.ClipboardProtection
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
@@ -1005,6 +1008,7 @@ private fun StickerBubble(message: MessageBO, onReply: () -> Unit) {
 
 // ── MessageBubble ─────────────────────────────────────────────────────────────
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun MessageBubble(
     message: MessageBO,
@@ -1033,6 +1037,7 @@ private fun MessageBubble(
     )
     val swipeOffset = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     val density = LocalDensity.current
     val swipeThreshold = remember(density) { with(density) { 72.dp.toPx() } }
 
@@ -1123,7 +1128,21 @@ private fun MessageBubble(
                         RemoteAudioPlayer(url = message.audioUrl)
                     }
                     if (message.content.isNotBlank()) {
-                        Text(text = message.content, style = MaterialTheme.typography.bodyMedium)
+                        Box(
+                            modifier = Modifier.combinedClickable(
+                                onClick = {},
+                                onLongClick = {
+                                    ClipboardProtection.copyWithTimeout(
+                                        context = context,
+                                        label = "message",
+                                        text = message.content,
+                                        scope = scope,
+                                    )
+                                },
+                            ),
+                        ) {
+                            Text(text = message.content, style = MaterialTheme.typography.bodyMedium)
+                        }
                     }
                     Text(
                         text = timeText,
