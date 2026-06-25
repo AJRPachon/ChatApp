@@ -24,6 +24,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import java.util.concurrent.ConcurrentHashMap
+import javax.crypto.SecretKey
 import com.ajrpachon.chatapp.utils.UploadLimits.checkAudioSize
 import com.ajrpachon.chatapp.utils.UploadLimits.checkImageSize
 import kotlinx.datetime.Instant
@@ -47,6 +51,11 @@ class MessageRepositoryImpl(
     private val remoteSource: MessageRemoteSource,
     private val supabase: SupabaseClient,
 ) : MessageRepository {
+
+    // Shared key cache: avoids a Supabase round-trip on every encrypt/decrypt.
+    // Key = (localUserId, peerUserId). Entry is populated on first use per session.
+    private val sharedKeyCache = ConcurrentHashMap<Pair<String, String>, SecretKey>()
+    private val keyDerivationMutex = Mutex()
 
     override fun observeMessages(conversationId: String, currentUserId: String, historyVisibleFrom: Long): Flow<List<MessageBO>> = channelFlow {
         AppLogger.d(TAG, "observeMessages conv=$conversationId historyVisibleFrom=$historyVisibleFrom")
@@ -199,24 +208,36 @@ class MessageRepositoryImpl(
     // ---------------------------------------------------------------------------
 
     /**
-     * Fetches the other user's public key from `profiles` and encrypts [content].
-     * Falls back to plaintext (unencrypted) if the key is missing or an error occurs.
+     * Returns the cached shared key for [localUserId]+[peerId], deriving and caching it on
+     * first call. Returns null if the peer has no public key registered yet.
      */
+    private suspend fun getOrDeriveSharedKey(localUserId: String, peerId: String): SecretKey? {
+        val cacheKey = localUserId to peerId
+        sharedKeyCache[cacheKey]?.let { return it }
+        // Mutex prevents duplicate derivations when multiple messages arrive concurrently.
+        return keyDerivationMutex.withLock {
+            sharedKeyCache[cacheKey]?.let { return it }
+            val row = supabase.postgrest["profiles"]
+                .select { filter { eq("id", peerId) } }
+                .decodeSingleOrNull<PublicKeyDTO>()
+            val peerPublicKey = row?.publicKey
+            if (peerPublicKey.isNullOrBlank()) return null
+            E2EEKeyManager.getOrCreateKeyPair(localUserId)
+            val key = E2EEKeyManager.deriveSharedKey(localUserId, peerPublicKey)
+            sharedKeyCache[cacheKey] = key
+            key
+        }
+    }
+
+    /** Encrypts [content] for [otherUserId]. Falls back to plaintext on any error. */
     private suspend fun tryEncrypt(senderId: String, otherUserId: String, content: String): Pair<String, Boolean> {
         return runCatching {
-            val row = supabase.postgrest["profiles"]
-                .select { filter { eq("id", otherUserId) } }
-                .decodeSingleOrNull<PublicKeyDTO>()
-            val otherPublicKey = row?.publicKey
-            if (otherPublicKey.isNullOrBlank()) {
+            val sharedKey = getOrDeriveSharedKey(senderId, otherUserId)
+            if (sharedKey == null) {
                 android.util.Log.d("E2EE", "No public key for $otherUserId — sending unencrypted")
                 return Pair(content, false)
             }
-            // Ensure our own key pair exists so the other side can decrypt
-            E2EEKeyManager.getOrCreateKeyPair(senderId)
-            val sharedKey = E2EEKeyManager.deriveSharedKey(senderId, otherPublicKey)
-            val encrypted = E2EEKeyManager.encrypt(sharedKey, content)
-            Pair(encrypted, true)
+            Pair(E2EEKeyManager.encrypt(sharedKey, content), true)
         }.getOrElse { e ->
             android.util.Log.w("E2EE", "Encryption failed, sending unencrypted: ${e.message}")
             Pair(content, false)
@@ -224,30 +245,20 @@ class MessageRepositoryImpl(
     }
 
     /**
-     * Attempts to decrypt a message received with [isEncrypted] == true.
-     * Falls back to the original (ciphertext) [bo] on any error.
-     *
+     * Decrypts [bo] using the sender's public key. Falls back to ciphertext on any error.
      * [currentUserId] is the local user; [senderId] is who sent the message.
-     * We derive the shared key from our own private key + sender's public key.
      */
     private suspend fun tryDecrypt(currentUserId: String, senderId: String, bo: MessageBO): MessageBO {
         return runCatching {
-            // TODO: cache shared keys per (currentUserId, senderId) pair to avoid
-            //       repeated Supabase fetches. For now fetch each time.
-            val row = supabase.postgrest["profiles"]
-                .select { filter { eq("id", senderId) } }
-                .decodeSingleOrNull<PublicKeyDTO>()
-            val senderPublicKey = row?.publicKey
-            if (senderPublicKey.isNullOrBlank()) {
+            val sharedKey = getOrDeriveSharedKey(currentUserId, senderId)
+            if (sharedKey == null) {
                 android.util.Log.d("E2EE", "No public key for sender $senderId — cannot decrypt")
                 return bo
             }
-            val sharedKey = E2EEKeyManager.deriveSharedKey(currentUserId, senderPublicKey)
-            val plaintext = E2EEKeyManager.decrypt(sharedKey, bo.content)
-            bo.copy(content = plaintext)
+            bo.copy(content = E2EEKeyManager.decrypt(sharedKey, bo.content))
         }.getOrElse { e ->
             android.util.Log.w("E2EE", "Decryption failed for msg ${bo.id}: ${e.message}")
-            bo // return as-is (shows ciphertext rather than crashing)
+            bo
         }
     }
 }
