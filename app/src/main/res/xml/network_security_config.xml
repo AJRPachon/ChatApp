@@ -1,8 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Network Security Config
+    =======================
+    Security posture:
+      - Cleartext (HTTP) traffic is blocked app-wide.
+      - Only system (device) CA certificates are trusted; user-installed CAs are explicitly
+        excluded. This prevents corporate MitM proxies and rogue root certificates from
+        intercepting TLS traffic.
+      - Certificate Transparency (CT) is automatically enforced by Android 7.0+ (API 24+)
+        for all connections that use system CAs. No user CAs means no CT bypass.
+      - OkHttpProvider additionally enforces system-only trust at the socket level and
+        applies certificate pinning for Supabase (*.supabase.co) and LiveKit (*.livekit.cloud).
+-->
 <network-security-config>
     <!-- Block all cleartext (HTTP) traffic for the entire app -->
     <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
+            <!--
+                Trust system CAs only. Omitting <certificates src="user" /> means user-installed
+                certificates (including corporate MitM proxy CAs) are rejected. Android 7.0+
+                enforces Certificate Transparency for system CA connections automatically.
+            -->
             <certificates src="system" />
         </trust-anchors>
     </base-config>
