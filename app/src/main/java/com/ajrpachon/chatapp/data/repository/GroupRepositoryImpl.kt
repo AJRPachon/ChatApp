@@ -2,7 +2,6 @@ package com.ajrpachon.chatapp.data.repository
 import com.ajrpachon.chatapp.utils.catchResult
 import com.ajrpachon.chatapp.utils.AppLogger
 
-private const val TAG = "GroupRepo"
 
 import com.ajrpachon.chatapp.data.local.dao.ConversationDao
 import com.ajrpachon.chatapp.data.local.dao.GroupMemberDao
@@ -22,6 +21,7 @@ import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
+private const val TAG = "GroupRepo"
 
 private const val GROUP_AVATAR_BUCKET = "group-avatars"
 
