@@ -118,6 +118,7 @@ import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.domain.model.CallBO
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.MessageLimits
+import com.ajrpachon.chatapp.domain.model.StickerValidation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
@@ -988,7 +989,10 @@ private fun StickerBubble(message: MessageBO, onReply: () -> Unit) {
                 .padding(horizontal = 4.dp, vertical = 2.dp),
             horizontalAlignment = if (message.isFromMe) Alignment.End else Alignment.Start,
         ) {
-            Text(text = message.stickerUrl ?: "", fontSize = 64.sp)
+            val sticker = StickerValidation.sanitize(message.stickerUrl)
+            if (sticker != null) {
+                Text(text = sticker, fontSize = 64.sp)
+            }
             Text(
                 text = timeText,
                 style = MaterialTheme.typography.labelSmall,
