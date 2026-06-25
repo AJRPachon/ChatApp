@@ -1,6 +1,5 @@
 package com.ajrpachon.chatapp.di
 
-import com.ajrpachon.chatapp.BuildConfig
 import com.ajrpachon.chatapp.data.remote.source.FcmTokenRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.GroupRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.InvitationRemoteSource
@@ -57,9 +56,7 @@ val repositoryModule = module {
     singleOf(::MessageRepositoryImpl) { bind<MessageRepository>() }
     singleOf(::InvitationRepositoryImpl) { bind<InvitationRepository>() }
     singleOf(::GroupRepositoryImpl) { bind<GroupRepository>() }
-    single<CallRepository> {
-        CallRepositoryImpl(get(), BuildConfig.LIVEKIT_API_KEY, BuildConfig.LIVEKIT_API_SECRET)
-    }
+    singleOf(::CallRepositoryImpl) { bind<CallRepository>() }
 }
 
 val useCaseModule = module {

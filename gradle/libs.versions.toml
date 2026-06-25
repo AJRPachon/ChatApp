@@ -39,6 +39,9 @@ navgraph = "0.1.1"
 # Coil
 coil = "3.1.0"
 
+# SQLCipher
+sqlcipher = "4.6.1"
+
 # AndroidX
 coreKtx = "1.18.0"
 appcompat = "1.7.0"
@@ -91,6 +94,7 @@ androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "
 androidx-room-paging = { module = "androidx.room:room-paging", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
+sqlcipher-android = { module = "net.zetetic:sqlcipher-android", version.ref = "sqlcipher" }
 
 # Koin
 koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
@@ -116,6 +120,7 @@ supabase-auth = { module = "io.github.jan-tennert.supabase:auth-kt" }
 supabase-realtime = { module = "io.github.jan-tennert.supabase:realtime-kt" }
 supabase-postgrest = { module = "io.github.jan-tennert.supabase:postgrest-kt" }
 supabase-storage = { module = "io.github.jan-tennert.supabase:storage-kt" }
+supabase-functions = { module = "io.github.jan-tennert.supabase:functions-kt" }
 
 # LiveKit
 livekit-android = { module = "io.livekit:livekit-android", version.ref = "livekit" }

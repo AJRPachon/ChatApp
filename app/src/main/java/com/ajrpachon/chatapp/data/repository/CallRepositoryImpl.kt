@@ -1,7 +1,6 @@
 package com.ajrpachon.chatapp.data.repository
 import com.ajrpachon.chatapp.utils.catchResult
 
-import java.util.Base64
 import com.ajrpachon.chatapp.data.remote.dto.CallDTO
 import com.ajrpachon.chatapp.data.remote.dto.UserDTO
 import com.ajrpachon.chatapp.data.remote.dto.toBO
@@ -25,14 +24,16 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.withContext
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.filter.FilterOperator
+import io.github.jan.supabase.functions.functions
+import io.ktor.client.statement.bodyAsText
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import javax.crypto.Mac
-import javax.crypto.spec.SecretKeySpec
 
 import com.ajrpachon.chatapp.utils.AppLogger
 
@@ -51,8 +52,6 @@ private data class CallSignalDTO(
 
 class CallRepositoryImpl(
     private val supabase: SupabaseClient,
-    private val livekitApiKey: String,
-    private val livekitApiSecret: String,
 ) : CallRepository {
 
     override suspend fun createCall(
@@ -271,21 +270,16 @@ class CallRepositoryImpl(
          .onFailure { e -> AppLogger.e(TAG, "sendHangupSignal: INSERT FAILED callId=$callId", e) }
     }
 
-    override fun fetchLivekitToken(roomName: String, identity: String): String {
-        val encoder = Base64.getUrlEncoder().withoutPadding()
-        val header = encoder.encodeToString(
-            """{"alg":"HS256","typ":"JWT"}""".toByteArray(Charsets.UTF_8)
-        )
-        val now = System.currentTimeMillis() / 1000
-        val grants = """{"roomJoin":true,"room":"$roomName","canPublish":true,"canSubscribe":true}"""
-        val payload = encoder.encodeToString(
-            """{"iss":"$livekitApiKey","sub":"$identity","iat":$now,"exp":${now + 21600},"nbf":${now - 5},"video":$grants}"""
-                .toByteArray(Charsets.UTF_8)
-        )
-        val data = "$header.$payload"
-        val mac = Mac.getInstance("HmacSHA256")
-        mac.init(SecretKeySpec(livekitApiSecret.toByteArray(Charsets.UTF_8), "HmacSHA256"))
-        val sig = encoder.encodeToString(mac.doFinal(data.toByteArray(Charsets.UTF_8)))
-        return "$data.$sig"
+    override suspend fun fetchLivekitToken(roomName: String, identity: String): String {
+        val responseText = supabase.functions.invoke(
+            function = "livekit-token",
+            body = buildJsonObject {
+                put("room_name", roomName)
+                put("identity", identity)
+            },
+        ).bodyAsText()
+        val json = Json.parseToJsonElement(responseText)
+        return json.jsonObject["token"]?.jsonPrimitive?.content
+            ?: error("livekit-token Edge Function returned no token")
     }
 }

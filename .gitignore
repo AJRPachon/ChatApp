@@ -33,3 +33,4 @@ supabase/.temp/
 
 # Old shared module (removed, kept out of future tracking)
 shared/
+supabase/functions/.env

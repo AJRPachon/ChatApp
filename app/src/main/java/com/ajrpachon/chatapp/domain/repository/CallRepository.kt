@@ -14,5 +14,5 @@ interface CallRepository {
     fun observeCallStatus(callId: String): Flow<String>
     fun observeHangupSignal(callId: String): Flow<Unit>
     suspend fun sendHangupSignal(callId: String)
-    fun fetchLivekitToken(roomName: String, identity: String): String
+    suspend fun fetchLivekitToken(roomName: String, identity: String): String
 }

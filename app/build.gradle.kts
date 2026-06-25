@@ -36,8 +36,7 @@ android {
         buildConfigField("String", "SUPABASE_ANON_KEY", secret("SUPABASE_ANON_KEY"))
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", secret("GOOGLE_WEB_CLIENT_ID"))
         buildConfigField("String", "LIVEKIT_URL", secret("LIVEKIT_URL"))
-        buildConfigField("String", "LIVEKIT_API_KEY", secret("LIVEKIT_API_KEY"))
-        buildConfigField("String", "LIVEKIT_API_SECRET", secret("LIVEKIT_API_SECRET"))
+        // LIVEKIT_API_KEY and LIVEKIT_API_SECRET removed — token generation moved to Edge Function
         buildConfigField("String", "GIPHY_API_KEY", secret("GIPHY_API_KEY"))
     }
 
@@ -129,6 +128,7 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.paging)
     implementation(libs.androidx.sqlite.bundled)
+    implementation(libs.sqlcipher.android)
     ksp(libs.androidx.room.compiler)
 
     // Paging
@@ -149,6 +149,7 @@ dependencies {
     implementation(libs.supabase.postgrest)
     implementation(libs.supabase.realtime)
     implementation(libs.supabase.storage)
+    implementation(libs.supabase.functions)
 
     // LiveKit
     implementation(libs.livekit.android)
