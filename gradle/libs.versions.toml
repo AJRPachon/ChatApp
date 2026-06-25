@@ -62,6 +62,9 @@ paging = "3.3.6"
 # Firebase
 firebaseBom = "33.14.0"
 
+# CI tooling
+detekt = "1.23.8"
+
 # Test
 mockk = "1.13.17"
 turbine = "1.2.0"
@@ -161,3 +164,4 @@ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 androidx-room = { id = "androidx.room", version.ref = "room" }
 google-services = { id = "com.google.gms.google-services", version = "4.4.2" }
 compose-nav-graph = { id = "com.github.skydoves.navgraph", version.ref = "navgraph" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
