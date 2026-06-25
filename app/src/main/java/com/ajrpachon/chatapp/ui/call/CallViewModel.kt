@@ -17,7 +17,6 @@ import io.livekit.android.room.track.LocalVideoTrack
 import io.livekit.android.room.track.Track
 import io.livekit.android.room.track.VideoTrack
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -75,7 +74,7 @@ class CallViewModel(
             if (_state.value.phase != CallPhase.ENDED) {
                 durationJob?.cancel()
                 _state.update { it.copy(phase = CallPhase.ENDED) }
-                GlobalScope.launch(Dispatchers.IO) {
+                viewModelScope.launch(Dispatchers.IO) {
                     sendCallSummaryMessage("ended")
                 }
                 catchResult { room?.disconnect() }
@@ -95,7 +94,7 @@ class CallViewModel(
                         durationJob?.cancel()
                         _state.update { it.copy(phase = CallPhase.ENDED) }
                         catchResult { room?.disconnect() }
-                        GlobalScope.launch(Dispatchers.IO) {
+                        viewModelScope.launch(Dispatchers.IO) {
                             sendCallSummaryMessage(status)
                         }
                     }
@@ -319,12 +318,12 @@ class CallViewModel(
             catchResult { room?.disconnect() }
             AppLogger.d(TAG, "hangUp: room disconnect done")
         }
-        GlobalScope.launch(Dispatchers.IO) {
-            AppLogger.d(TAG, "hangUp: GlobalScope - sending hangup signal callId=$callId")
+        viewModelScope.launch(Dispatchers.IO) {
+            AppLogger.d(TAG, "hangUp: sending hangup signal callId=$callId")
             catchResult { callRepository.sendHangupSignal(callId) }
                 .onSuccess { AppLogger.d(TAG, "hangUp: sendHangupSignal OK") }
                 .onFailure { e -> AppLogger.e(TAG, "hangUp: sendHangupSignal FAILED", e) }
-            AppLogger.d(TAG, "hangUp: GlobalScope - calling endCall callId=$callId")
+            AppLogger.d(TAG, "hangUp: calling endCall callId=$callId")
             catchResult { callRepository.endCall(callId) }
                 .onSuccess { AppLogger.d(TAG, "hangUp: endCall OK") }
                 .onFailure { e -> AppLogger.e(TAG, "hangUp: endCall FAILED", e) }
