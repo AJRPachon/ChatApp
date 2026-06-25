@@ -1,0 +1,67 @@
+name: Update Gradle Verification Metadata
+
+on:
+  schedule:
+    - cron: '0 4 * * 1'   # Every Monday at 04:00 UTC
+  workflow_dispatch:
+
+jobs:
+  update-metadata:
+    name: Regenerate verification-metadata.xml
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Create google-services.json
+        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > app/google-services.json
+
+      - name: Create local.properties
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" >> local.properties
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> local.properties
+          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> local.properties
+          echo "GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }}" >> local.properties
+          echo "LIVEKIT_URL=${{ secrets.LIVEKIT_URL }}" >> local.properties
+          echo "LIVEKIT_API_KEY=${{ secrets.LIVEKIT_API_KEY }}" >> local.properties
+          echo "LIVEKIT_API_SECRET=${{ secrets.LIVEKIT_API_SECRET }}" >> local.properties
+          echo "GIPHY_API_KEY=${{ secrets.GIPHY_API_KEY }}" >> local.properties
+
+      - name: Regenerate verification metadata
+        run: ./gradlew --write-verification-metadata sha256 test assembleDebug --no-daemon
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet gradle/verification-metadata.xml; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Open PR with updated metadata
+        if: steps.changes.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore: update gradle verification metadata'
+          title: 'chore: update gradle verification metadata'
+          body: |
+            Auto-generated update of `gradle/verification-metadata.xml` checksums.
+
+            This PR was created automatically by the weekly `dependency-update` workflow.
+            Review the diff to ensure no unexpected artifacts were added before merging.
+          branch: chore/update-verification-metadata
+          base: develop
+          delete-branch: true
