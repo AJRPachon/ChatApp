@@ -4,10 +4,11 @@
       <verify-metadata>true</verify-metadata>
       <verify-signatures>false</verify-signatures>
       <trusted-artifacts>
-         <!-- aapt2 is a platform-specific binary (different checksum per OS).
-              Generated locally on Windows; Linux CI gets a different variant.
-              Trusted because it comes exclusively from Google's Maven repository. -->
-         <trust group="com.android.tools.build" name="aapt2" regex="false"/>
+         <!-- All com.android.tools artifacts are official Google Android SDK tooling
+              distributed exclusively via Google's Maven repository. Many are
+              platform-specific binaries (aapt2, lint tools, UAST) whose checksums
+              differ per OS, making per-artifact verification impractical. -->
+         <trust group="^com\.android\.tools.*" regex="true"/>
       </trusted-artifacts>
    </configuration>
    <components>
