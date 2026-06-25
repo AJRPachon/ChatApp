@@ -42,6 +42,9 @@ coil = "3.1.0"
 # SQLCipher
 sqlcipher = "4.6.1"
 
+# Play Integrity
+playIntegrity = "1.4.0"
+
 # AndroidX
 coreKtx = "1.18.0"
 appcompat = "1.7.0"
@@ -95,6 +98,7 @@ androidx-room-paging = { module = "androidx.room:room-paging", version.ref = "ro
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
 sqlcipher-android = { module = "net.zetetic:sqlcipher-android", version.ref = "sqlcipher" }
+play-integrity = { module = "com.google.android.play:integrity", version.ref = "playIntegrity" }
 
 # Koin
 koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
