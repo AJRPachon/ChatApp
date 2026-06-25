@@ -3,6 +3,7 @@ package com.ajrpachon.chatapp
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -294,12 +295,20 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        get<SupabaseClient>().handleDeeplinks(intent)
+        val uri = intent.data
+        if (uri != null && uri.isValidAuthCallback()) {
+            get<SupabaseClient>().handleDeeplinks(intent)
+        } else if (uri != null) {
+            Log.w("MainActivity", "Rejected deep link with unexpected scheme/host: $uri")
+        }
         intent.getStringExtra("conversation_id")?.let {
             pendingConversationId.value = it
             pendingOtherUserName.value = intent.getStringExtra("other_user_name")
         }
     }
+
+    private fun Uri.isValidAuthCallback(): Boolean =
+        scheme == "com.ajrpachon.chatapp" && host == "auth-callback"
 
     private fun requestNotificationPermissionIfNeeded() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
