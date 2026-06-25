@@ -1,5 +1,8 @@
 package com.ajrpachon.chatapp.data.repository
 import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.utils.AppLogger
+
+private const val TAG = "GroupRepo"
 
 import com.ajrpachon.chatapp.data.local.dao.ConversationDao
 import com.ajrpachon.chatapp.data.local.dao.GroupMemberDao
@@ -68,11 +71,11 @@ class GroupRepositoryImpl(
     // Called by ViewModels in their own viewModelScope so it cancels reliably on onCleared.
     override suspend fun syncMembership(conversationId: String) {
         val isMember = remoteSource.isCurrentUserMember(conversationId)
-        android.util.Log.d("GroupRepo", "syncMembership conv=$conversationId isMember=$isMember")
+        AppLogger.d(TAG, "syncMembership conv=$conversationId isMember=$isMember")
         when (isMember) {
             null -> {} // network error — leave Room untouched
             false -> {
-                android.util.Log.d("GroupRepo", "syncMembership: expelled — clearing Room")
+                AppLogger.d(TAG, "syncMembership: expelled — clearing Room")
                 groupMemberDao.deleteAllForConversation(conversationId)
                 messageDao.deleteByConversation(conversationId)
             }
@@ -90,18 +93,18 @@ class GroupRepositoryImpl(
 
         val localMembers = groupMemberDao.getAllForConversation(conversationId)
         val wasExpelled = localMembers.none { it.userId == currentUserId }
-        android.util.Log.d("GroupRepo", "syncFull conv=$conversationId currentUser=$currentUserId wasExpelled=$wasExpelled selfJoinedAt=${selfMember.joinedAt} localIds=${localMembers.map{it.userId}}")
+        AppLogger.d(TAG, "syncFull conv=$conversationId currentUser=$currentUserId wasExpelled=$wasExpelled selfJoinedAt=${selfMember.joinedAt} localIds=${localMembers.map{it.userId}}")
 
         if (wasExpelled) {
             val newHistoryFrom = catchResult {
                 Instant.parse(selfMember.joinedAt).toEpochMilliseconds()
             }.getOrDefault(0L)
             val existing = conversationDao.getById(conversationId)
-            android.util.Log.d("GroupRepo", "syncFull EXPELLED — newHistoryFrom=$newHistoryFrom existing.historyVisibleFrom=${existing?.historyVisibleFrom}")
+            AppLogger.d(TAG, "syncFull EXPELLED — newHistoryFrom=$newHistoryFrom existing.historyVisibleFrom=${existing?.historyVisibleFrom}")
             if (existing != null && newHistoryFrom != existing.historyVisibleFrom) {
                 conversationDao.upsert(existing.copy(historyVisibleFrom = newHistoryFrom))
                 if (newHistoryFrom > 0L) messageDao.deleteMessagesBefore(conversationId, newHistoryFrom)
-                android.util.Log.d("GroupRepo", "syncFull EXPELLED — wrote historyVisibleFrom=$newHistoryFrom, deleted messages before $newHistoryFrom")
+                AppLogger.d(TAG, "syncFull EXPELLED — wrote historyVisibleFrom=$newHistoryFrom, deleted messages before $newHistoryFrom")
             }
         }
 
@@ -116,13 +119,13 @@ class GroupRepositoryImpl(
         if (dtos.isEmpty()) return
         val currentUserId = supabase.auth.currentUserOrNull()?.id
         if (currentUserId == null || dtos.none { it.userId == currentUserId }) {
-            android.util.Log.w("GroupRepo", "applyMemberDiff SKIPPED conv=$conversationId currentUserId=$currentUserId dtos=${dtos.map { it.userId }}")
+            AppLogger.w(TAG, "applyMemberDiff SKIPPED conv=$conversationId currentUserId=$currentUserId dtos=${dtos.map { it.userId }}")
             return
         }
         val remoteIds = dtos.map { it.userId }.toSet()
         val localIds = groupMemberDao.getAllForConversation(conversationId).map { it.userId }.toSet()
         val toRemove = localIds - remoteIds
-        android.util.Log.d("GroupRepo", "applyMemberDiff conv=$conversationId local=$localIds remote=$remoteIds removing=$toRemove")
+        AppLogger.d(TAG, "applyMemberDiff conv=$conversationId local=$localIds remote=$remoteIds removing=$toRemove")
         for (removed in toRemove) groupMemberDao.delete(conversationId, removed)
         groupMemberDao.upsertAll(dtos.map { it.toDBO() })
     }

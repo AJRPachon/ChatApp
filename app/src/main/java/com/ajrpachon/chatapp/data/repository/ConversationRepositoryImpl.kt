@@ -1,5 +1,8 @@
 package com.ajrpachon.chatapp.data.repository
 import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.utils.AppLogger
+
+private const val TAG = "ConvRepo"
 
 import com.ajrpachon.chatapp.data.local.dao.ConversationDao
 import com.ajrpachon.chatapp.data.local.dao.GroupMemberDao
@@ -64,7 +67,7 @@ class ConversationRepositoryImpl(
         launch {
             while (isActive) {
                 delay(60_000)
-                android.util.Log.d("ConvRepo", "periodic resync userId=$userId")
+                AppLogger.d(TAG, "periodic resync userId=$userId")
                 catchResult { syncConversations(userId) }
             }
         }
@@ -125,14 +128,14 @@ class ConversationRepositoryImpl(
             val flow = conversationsUpdateChannel.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
                 table = "conversations"
             }
-            android.util.Log.d("ConvRepo", "conversationsUpdateChannel subscribing userId=$userId")
+            AppLogger.d(TAG, "conversationsUpdateChannel subscribing userId=$userId")
             conversationsUpdateChannel.subscribe()
-            android.util.Log.d("ConvRepo", "conversationsUpdateChannel subscribed userId=$userId")
+            AppLogger.d(TAG, "conversationsUpdateChannel subscribed userId=$userId")
             try {
                 flow.collect { action ->
-                    android.util.Log.d("ConvRepo", "conversationsUpdateChannel UPDATE received userId=$userId record=${action.record}")
+                    AppLogger.d(TAG, "conversationsUpdateChannel UPDATE received userId=$userId record=${action.record}")
                     catchResult { syncConversations(userId) }
-                        .onFailure { e -> android.util.Log.e("ConvRepo", "syncConversations failed after conversations UPDATE", e) }
+                        .onFailure { e -> AppLogger.e(TAG, "syncConversations failed after conversations UPDATE", e) }
                 }
             } finally {
                 withContext(NonCancellable) {
@@ -284,7 +287,7 @@ class ConversationRepositoryImpl(
             val historyVisibleFrom = catchResult {
                 Instant.parse(participantRow.joinedAt).toEpochMilliseconds()
             }.getOrDefault(0L)
-            android.util.Log.d("ConvRepo", "syncConv conv=${conversationDto.id} isGroup=${conversationDto.isGroup} avatarUrl=${conversationDto.avatarUrl} existingAvatarUrl=${existingConversation?.groupAvatarUrl}")
+            AppLogger.d(TAG, "syncConv conv=${conversationDto.id} isGroup=${conversationDto.isGroup} avatarUrl=${conversationDto.avatarUrl} existingAvatarUrl=${existingConversation?.groupAvatarUrl}")
 
             var resolvedOtherUserId: String? = null
             val resolvedName = if (!conversationDto.isGroup) {
