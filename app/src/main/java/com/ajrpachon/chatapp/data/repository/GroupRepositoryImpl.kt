@@ -12,6 +12,7 @@ import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.GroupRole
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
+import com.ajrpachon.chatapp.utils.UploadLimits.checkAvatarSize
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.storage.storage
@@ -210,6 +211,7 @@ class GroupRepositoryImpl(
     }
 
     override suspend fun uploadGroupAvatar(conversationId: String, bytes: ByteArray): String {
+        bytes.checkAvatarSize()
         val path = "$conversationId/${java.util.UUID.randomUUID()}.jpg"
         supabase.storage[GROUP_AVATAR_BUCKET].upload(path, bytes) { upsert = true }
         return supabase.storage[GROUP_AVATAR_BUCKET].publicUrl(path)

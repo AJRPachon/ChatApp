@@ -20,6 +20,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import com.ajrpachon.chatapp.utils.UploadLimits.checkAudioSize
+import com.ajrpachon.chatapp.utils.UploadLimits.checkImageSize
 import kotlinx.datetime.Instant
 
 private const val BUCKET = "chat-images"
@@ -96,12 +98,14 @@ class MessageRepositoryImpl(
     }
 
     override suspend fun uploadAudio(conversationId: String, bytes: ByteArray): String {
+        bytes.checkAudioSize()
         val path = "$conversationId/${java.util.UUID.randomUUID()}.m4a"
         supabase.storage[AUDIO_BUCKET].upload(path, bytes) { upsert = false }
         return supabase.storage[AUDIO_BUCKET].publicUrl(path)
     }
 
     override suspend fun uploadImage(conversationId: String, bytes: ByteArray, mimeType: String): String {
+        bytes.checkImageSize()
         val ext = if (mimeType.contains("png")) "png" else "jpg"
         val path = "$conversationId/${java.util.UUID.randomUUID()}.$ext"
         supabase.storage[BUCKET].upload(path, bytes) { upsert = false }

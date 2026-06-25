@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.ajrpachon.chatapp.utils.UploadLimits.checkAvatarSize
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -59,6 +60,7 @@ class ProfileViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isUploadingAvatar = true, error = null) }
             catchResult {
+                bytes.checkAvatarSize()
                 val ext = if (mimeType.contains("png")) "png" else "jpg"
                 val path = "$userId/avatar.$ext"
 
