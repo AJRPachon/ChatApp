@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.domain.usecase
+﻿package com.ajrpachon.chatapp.domain.usecase
 import com.ajrpachon.chatapp.utils.catchResult
 
 import com.ajrpachon.chatapp.domain.model.MessageBO
@@ -20,6 +20,8 @@ class SendMessageUseCase(private val messageRepository: MessageRepository) {
         callDuration: Int? = null,
         gifUrl: String? = null,
         stickerUrl: String? = null,
+        // E2EE: pass the other user's ID for 1:1 conversations (null for group chats)
+        otherUserId: String? = null,
     ): Result<MessageBO> = catchResult {
         require(
             content.isNotBlank() || imageUrl != null || audioUrl != null ||
@@ -33,6 +35,7 @@ class SendMessageUseCase(private val messageRepository: MessageRepository) {
             replyToId, replyToContent, replyToSenderName,
             callType, callStatus, callDuration,
             gifUrl, stickerUrl,
+            otherUserId = otherUserId,
         )
     }
 }

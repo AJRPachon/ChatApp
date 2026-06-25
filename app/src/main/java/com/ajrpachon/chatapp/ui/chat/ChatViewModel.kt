@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.ui.chat
+﻿package com.ajrpachon.chatapp.ui.chat
 import com.ajrpachon.chatapp.utils.catchResult
 
 import android.content.Context
