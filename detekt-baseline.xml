@@ -1,0 +1,265 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:ChatItem.kt$j < size && this[j].imageUrl != null && this[j].audioUrl == null && this[j].senderId == message.senderId</ID>
+    <ID>ComplexCondition:MessageRepositoryImpl.kt$MessageRepositoryImpl$otherUserId != null && content.isNotBlank() && imageUrl == null && audioUrl == null && callType == null && gifUrl == null && stickerUrl == null</ID>
+    <ID>CyclomaticComplexMethod:CallScreen.kt$@Composable private fun CallScreenContent( callId: String, conversationId: String, roomName: String, callType: String, otherUserName: String, isOutgoing: Boolean, isGroup: Boolean, onCallEnded: () -> Unit, )</ID>
+    <ID>CyclomaticComplexMethod:CallViewModel.kt$CallViewModel$private fun handleRoomEvent(event: RoomEvent)</ID>
+    <ID>CyclomaticComplexMethod:ChatScreen.kt$@Composable private fun CallMessageBubble(message: MessageBO)</ID>
+    <ID>CyclomaticComplexMethod:ChatScreen.kt$@NavEdge(to = CallRoute::class, label = "Start Call") @NavEdge(to = GroupInfoRoute::class, label = "Group Info") @NavEdge(to = UserInfoRoute::class, label = "User Info") @NavDestination(route = ChatRoute::class) @OptIn(ExperimentalMaterial3Api::class) @Composable fun ChatScreen( conversationId: String, otherUserName: String, onBack: () -> Unit, onStartCall: (CallBO) -> Unit = {}, onGroupInfo: () -> Unit = {}, onUserInfo: (userId: String) -> Unit = {}, )</ID>
+    <ID>CyclomaticComplexMethod:ConversationListScreen.kt$@OptIn(ExperimentalFoundationApi::class) @Composable private fun ConversationItem( conversation: ConversationBO, showMenu: Boolean, onClick: () -> Unit, onLongClick: () -> Unit, onMenuDismiss: () -> Unit, onMuteToggle: () -> Unit, onClearChat: () -> Unit, onLeaveGroup: (() -> Unit)?, onDelete: () -> Unit, )</ID>
+    <ID>CyclomaticComplexMethod:MainActivity.kt$MainActivity$override fun onCreate(savedInstanceState: Bundle?)</ID>
+    <ID>FunctionNaming:ChatScreen.kt$@Composable private fun AudioPlayerRow( isPrepared: Boolean, isPlaying: Boolean, currentMs: Int, durationMs: Int, onToggle: () -> Unit, modifier: Modifier = Modifier, )</ID>
+    <ID>FunctionNaming:ChatScreen.kt$@Composable private fun AudioPreviewBar( filePath: String, isUploading: Boolean, onDiscard: () -> Unit, onSend: () -> Unit, )</ID>
+    <ID>FunctionNaming:ChatScreen.kt$@Composable private fun CallMessageBubble(message: MessageBO)</ID>
+    <ID>FunctionNaming:ChatScreen.kt$@Composable private fun ImageGroupBubble( messages: List<MessageBO>, onImageClick: (index: Int) -> Unit, onReply: () -> Unit, )</ID>
+    <ID>FunctionNaming:ChatScreen.kt$@Composable private fun ImageViewerDialog( imageUrls: List<String>, initialIndex: Int, onDismiss: () -> Unit, )</ID>
+    <ID>FunctionNaming:ChatScreen.kt$@Composable private fun LocalAudioPlayer(filePath: String, modifier: Modifier = Modifier)</ID>
+    <ID>FunctionNaming:ChatScreen.kt$@Composable private fun NormalInputBar( inputText: String, isSending: Boolean, isUploadingImage: Boolean, onTextChange: (String) -> Unit, onSend: () -> Unit, onGallery: () -> Unit, onCamera: () -> Unit, onMic: () -> Unit, onSticker: () -> Unit, )</ID>
+    <ID>FunctionNaming:ChatScreen.kt$@Composable private fun RecordingBar( durationMs: Long, amplitudeHistory: List<Float>, onStop: () -> Unit, )</ID>
+    <ID>FunctionNaming:ChatScreen.kt$@Composable private fun RemoteAudioPlayer(url: String, modifier: Modifier = Modifier)</ID>
+    <ID>FunctionNaming:ChatScreen.kt$@Composable private fun ReplyPreviewBar(message: MessageBO, onCancel: () -> Unit)</ID>
+    <ID>FunctionNaming:ChatScreen.kt$@Composable private fun ReplyQuote( senderName: String, content: String, isFromMe: Boolean, onClick: () -> Unit = {}, )</ID>
+    <ID>FunctionNaming:ChatScreen.kt$@Composable private fun StickerBubble(message: MessageBO, onReply: () -> Unit)</ID>
+    <ID>FunctionNaming:ChatScreen.kt$@NavEdge(to = CallRoute::class, label = "Start Call") @NavEdge(to = GroupInfoRoute::class, label = "Group Info") @NavEdge(to = UserInfoRoute::class, label = "User Info") @NavDestination(route = ChatRoute::class) @OptIn(ExperimentalMaterial3Api::class) @Composable fun ChatScreen( conversationId: String, otherUserName: String, onBack: () -> Unit, onStartCall: (CallBO) -> Unit = {}, onGroupInfo: () -> Unit = {}, onUserInfo: (userId: String) -> Unit = {}, )</ID>
+    <ID>FunctionNaming:ChatScreen.kt$@OptIn(ExperimentalFoundationApi::class) @Composable private fun MessageBubble( message: MessageBO, isGroup: Boolean = false, onImageClick: (String) -> Unit, onReply: () -> Unit, isHighlighted: Boolean = false, onReplyClick: (String) -> Unit = {}, )</ID>
+    <ID>GlobalCoroutineUsage:CallViewModel.kt$CallViewModel$GlobalScope.launch(Dispatchers.IO) { AppLogger.d(TAG, "hangUp: GlobalScope - sending hangup signal callId=$callId") catchResult { callRepository.sendHangupSignal(callId) } .onSuccess { AppLogger.d(TAG, "hangUp: sendHangupSignal OK") } .onFailure { e -> AppLogger.e(TAG, "hangUp: sendHangupSignal FAILED", e) } AppLogger.d(TAG, "hangUp: GlobalScope - calling endCall callId=$callId") catchResult { callRepository.endCall(callId) } .onSuccess { AppLogger.d(TAG, "hangUp: endCall OK") } .onFailure { e -> AppLogger.e(TAG, "hangUp: endCall FAILED", e) } sendCallSummaryMessage(if (phaseBefore == CallPhase.ACTIVE) "ended" else "missed") }</ID>
+    <ID>GlobalCoroutineUsage:CallViewModel.kt$CallViewModel$GlobalScope.launch(Dispatchers.IO) { sendCallSummaryMessage("ended") }</ID>
+    <ID>GlobalCoroutineUsage:CallViewModel.kt$CallViewModel$GlobalScope.launch(Dispatchers.IO) { sendCallSummaryMessage(status) }</ID>
+    <ID>LongMethod:AuthScreen.kt$@Composable private fun EmailPasswordForm( state: AuthState, onIntent: (AuthIntent) -> Unit, )</ID>
+    <ID>LongMethod:AuthScreen.kt$@Composable private fun LoginContent( state: AuthState, onIntent: (AuthIntent) -> Unit, onGoogleSignIn: () -> Unit, )</ID>
+    <ID>LongMethod:CallScreen.kt$@Composable private fun CallScreenContent( callId: String, conversationId: String, roomName: String, callType: String, otherUserName: String, isOutgoing: Boolean, isGroup: Boolean, onCallEnded: () -> Unit, )</ID>
+    <ID>LongMethod:ChatScreen.kt$@Composable private fun ImageGroupBubble( messages: List<MessageBO>, onImageClick: (index: Int) -> Unit, onReply: () -> Unit, )</ID>
+    <ID>LongMethod:ChatScreen.kt$@NavEdge(to = CallRoute::class, label = "Start Call") @NavEdge(to = GroupInfoRoute::class, label = "Group Info") @NavEdge(to = UserInfoRoute::class, label = "User Info") @NavDestination(route = ChatRoute::class) @OptIn(ExperimentalMaterial3Api::class) @Composable fun ChatScreen( conversationId: String, otherUserName: String, onBack: () -> Unit, onStartCall: (CallBO) -> Unit = {}, onGroupInfo: () -> Unit = {}, onUserInfo: (userId: String) -> Unit = {}, )</ID>
+    <ID>LongMethod:ChatScreen.kt$@OptIn(ExperimentalFoundationApi::class) @Composable private fun MessageBubble( message: MessageBO, isGroup: Boolean = false, onImageClick: (String) -> Unit, onReply: () -> Unit, isHighlighted: Boolean = false, onReplyClick: (String) -> Unit = {}, )</ID>
+    <ID>LongMethod:ConversationListScreen.kt$@NavEdge(to = ChatRoute::class, label = "Open Chat") @NavEdge(to = NewChatRoute::class, label = "New Chat") @NavEdge(to = InvitationsRoute::class, label = "Invitations") @NavEdge(to = ProfileRoute::class, label = "Profile") @NavEdge(to = CreateGroupRoute::class, label = "New Group") @NavDestination(route = ConversationListRoute::class) @OptIn(ExperimentalMaterial3Api::class) @Composable fun ConversationListScreen( onOpenConversation: (id: String, name: String, isGroup: Boolean) -> Unit, onOpenInvitations: () -> Unit, onNewChat: () -> Unit, onNewGroup: () -> Unit = {}, onOpenProfile: () -> Unit, )</ID>
+    <ID>LongMethod:ConversationListScreen.kt$@OptIn(ExperimentalFoundationApi::class) @Composable private fun ConversationItem( conversation: ConversationBO, showMenu: Boolean, onClick: () -> Unit, onLongClick: () -> Unit, onMenuDismiss: () -> Unit, onMuteToggle: () -> Unit, onClearChat: () -> Unit, onLeaveGroup: (() -> Unit)?, onDelete: () -> Unit, )</ID>
+    <ID>LongMethod:ConversationRepositoryImpl.kt$ConversationRepositoryImpl$override fun observeConversations(userId: String): Flow<List<ConversationBO>></ID>
+    <ID>LongMethod:GroupInfoScreen.kt$@NavEdge(to = UserInfoRoute::class, label = "Member Info") @NavDestination(route = GroupInfoRoute::class) @OptIn(ExperimentalMaterial3Api::class) @Composable fun GroupInfoScreen( conversationId: String, groupName: String, groupAvatarUrl: String?, groupDescription: String?, onBack: () -> Unit, )</ID>
+    <ID>LongMethod:IncomingCallScreen.kt$@Composable fun IncomingCallScreen( call: CallBO, onAccept: () -> Unit, onReject: () -> Unit, )</ID>
+    <ID>LongMethod:MainActivity.kt$MainActivity$override fun onCreate(savedInstanceState: Bundle?)</ID>
+    <ID>LongMethod:NewChatScreen.kt$@NavEdge(to = ChatRoute::class, label = "Open Chat") @NavEdge(to = InvitationsRoute::class, label = "Invite User") @NavDestination(route = NewChatRoute::class) @Composable fun NewChatScreen( onBack: () -> Unit, onOpenConversation: (id: String, name: String) -> Unit, onOpenInvitations: () -> Unit = {}, )</ID>
+    <ID>LongMethod:ProfileScreen.kt$@NavEdge(to = AuthRoute::class, label = "Sign Out") @NavDestination(route = ProfileRoute::class) @Composable fun ProfileScreen( onBack: () -> Unit, onSignOut: () -> Unit, )</ID>
+    <ID>LongParameterList:CallViewModel.kt$CallViewModel$( private val context: Context, private val callId: String, private val conversationId: String, private val roomName: String, private val callType: String, private val isOutgoing: Boolean, private val isGroup: Boolean, private val callRepository: CallRepository, private val getCurrentUserUseCase: GetCurrentUserUseCase, private val sendMessageUseCase: SendMessageUseCase, private val livekitUrl: String, )</ID>
+    <ID>LongParameterList:ChatScreen.kt$( inputText: String, isSending: Boolean, isUploadingImage: Boolean, onTextChange: (String) -> Unit, onSend: () -> Unit, onGallery: () -> Unit, onCamera: () -> Unit, onMic: () -> Unit, onSticker: () -> Unit, )</ID>
+    <ID>LongParameterList:ChatViewModel.kt$ChatViewModel$( private val conversationId: String, private val otherUserName: String, private val sendMessageUseCase: SendMessageUseCase, private val messageRepository: MessageRepository, private val conversationDao: ConversationDao, private val callRepository: CallRepository, private val userRepository: UserRepository, private val getGroupMembersUseCase: GetGroupMembersUseCase, private val leaveGroupUseCase: LeaveGroupUseCase, private val groupRepository: GroupRepository, )</ID>
+    <ID>LongParameterList:GroupInfoViewModel.kt$GroupInfoViewModel$( private val conversationId: String, private val userRepository: UserRepository, private val getGroupMembersUseCase: GetGroupMembersUseCase, private val updateGroupUseCase: UpdateGroupUseCase, private val leaveGroupUseCase: LeaveGroupUseCase, private val searchUsersUseCase: SearchUsersUseCase, private val groupRepository: GroupRepository, private val conversationDao: ConversationDao, )</ID>
+    <ID>LongParameterList:MessageRepository.kt$MessageRepository$( conversationId: String, senderId: String, content: String, imageUrl: String? = null, audioUrl: String? = null, replyToId: String? = null, replyToContent: String? = null, replyToSenderName: String? = null, callType: String? = null, callStatus: String? = null, callDuration: Int? = null, gifUrl: String? = null, stickerUrl: String? = null, // E2EE: pass the other user's ID for 1:1 conversations (null = skip encryption) otherUserId: String? = null, )</ID>
+    <ID>LongParameterList:SendMessageUseCase.kt$SendMessageUseCase$( conversationId: String, senderId: String, content: String, imageUrl: String? = null, audioUrl: String? = null, replyToId: String? = null, replyToContent: String? = null, replyToSenderName: String? = null, callType: String? = null, callStatus: String? = null, callDuration: Int? = null, gifUrl: String? = null, stickerUrl: String? = null, // E2EE: pass the other user's ID for 1:1 conversations (null for group chats) otherUserId: String? = null, )</ID>
+    <ID>LoopWithTooManyJumpStatements:ChatScreen.kt$while</ID>
+    <ID>LoopWithTooManyJumpStatements:NewChatScreen.kt$while</ID>
+    <ID>MatchingDeclarationName:IncomingCallContract.kt$IncomingCallState</ID>
+    <ID>MatchingDeclarationName:StickerPacks.kt$StickerCategory</ID>
+    <ID>MatchingDeclarationName:UserInfoContract.kt$UserInfoState</ID>
+    <ID>MaxLineLength:AppModule.kt$notificationManager = androidContext().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager</ID>
+    <ID>MaxLineLength:AppModule.kt$viewModel { AuthViewModel(androidApplication(), get(), get(), BuildConfig.GOOGLE_WEB_CLIENT_ID, get(), get(), get()) }</ID>
+    <ID>MaxLineLength:AuthScreen.kt$message = "Este dispositivo o instalación no es de confianza. Algunas funciones pueden estar restringidas."</ID>
+    <ID>MaxLineLength:AuthViewModel.kt$AuthViewModel$_state.update { it.copy(error = e.toSignInMessage(), showRegisterSuggestion = e.isInvalidCredentials()) }</ID>
+    <ID>MaxLineLength:AuthViewModel.kt$AuthViewModel$is AuthIntent.ConfirmPasswordChanged -> _state.update { it.copy(confirmPasswordInput = intent.value, error = null) }</ID>
+    <ID>MaxLineLength:AuthViewModel.kt$AuthViewModel$is AuthIntent.SwitchToRegister -> _state.update { it.copy(authMode = AuthMode.SIGN_UP, error = null, showRegisterSuggestion = false) }</ID>
+    <ID>MaxLineLength:AuthViewModel.kt$AuthViewModel$is AuthIntent.ToggleMode -> _state.update { it.copy(authMode = intent.mode, error = null, showRegisterSuggestion = false) }</ID>
+    <ID>MaxLineLength:AuthViewModel.kt$AuthViewModel$is AuthIntent.UsernameChanged -> _state.update { it.copy(usernameInput = intent.value, usernameError = null) }</ID>
+    <ID>MaxLineLength:AuthViewModel.kt$AuthViewModel$val</ID>
+    <ID>MaxLineLength:CallRepositoryImpl.kt$CallRepositoryImpl$AppLogger.d(TAG, "observeHangupSignal: signal=${json.signal} senderId=${json.senderId} mySenderId=$senderId")</ID>
+    <ID>MaxLineLength:CallViewModel.kt$CallViewModel$AppLogger.d(TAG, "ParticipantDisconnected: identity=${event.participant.identity} phase=${_state.value.phase}")</ID>
+    <ID>MaxLineLength:CallViewModel.kt$CallViewModel$AppLogger.d(TAG, "sendCallSummaryMessage: status=$status isOutgoing=$isOutgoing callMessageSent=$callMessageSent")</ID>
+    <ID>MaxLineLength:CallViewModel.kt$CallViewModel$if</ID>
+    <ID>MaxLineLength:CallViewModel.kt$CallViewModel$viewModelScope.launch { sendCallSummaryMessage(if (phase == CallPhase.ACTIVE) "ended" else "missed") }</ID>
+    <ID>MaxLineLength:ChatItem.kt$while</ID>
+    <ID>MaxLineLength:ChatScreen.kt$if (state.isMuted) Icons.Default.NotificationsActive else Icons.Default.NotificationsOff</ID>
+    <ID>MaxLineLength:ChatScreen.kt$if</ID>
+    <ID>MaxLineLength:ChatScreen.kt$val vm: ChatViewModel = koinViewModel(key = conversationId, parameters = { parametersOf(conversationId, otherUserName) })</ID>
+    <ID>MaxLineLength:ChatViewModel.kt$ChatViewModel$AppLogger.d(TAG, "members emission: size=${members.size} isMember=$isMember prev=$previousIsMember")</ID>
+    <ID>MaxLineLength:ChatViewModel.kt$ChatViewModel$_state.update { it.copy(audioState = it.audioState.copy(isRecording = false, recordingDurationMs = durationMs)) }</ID>
+    <ID>MaxLineLength:ChatViewModel.kt$ChatViewModel$conversationTitle = if (conv.isGroup && !conv.name.isNullOrBlank()) conv.name!! else it.conversationTitle</ID>
+    <ID>MaxLineLength:ConversationListContract.kt$ConversationListEffect$NavigateToChat : ConversationListEffect</ID>
+    <ID>MaxLineLength:ConversationListContract.kt$ConversationListIntent$OpenConversation : ConversationListIntent</ID>
+    <ID>MaxLineLength:ConversationListScreen.kt$text = if (conversation.unreadCount > 99) "99+" else conversation.unreadCount.toString()</ID>
+    <ID>MaxLineLength:ConversationListViewModel.kt$ConversationListViewModel$_effect.trySend(ConversationListEffect.NavigateToChat(intent.conversationId, intent.conversationName, intent.isGroup))</ID>
+    <ID>MaxLineLength:ConversationRepositoryImpl.kt$ConversationRepositoryImpl$.</ID>
+    <ID>MaxLineLength:ConversationRepositoryImpl.kt$ConversationRepositoryImpl$AppLogger.d(TAG, "conversationsUpdateChannel UPDATE received userId=$userId record=${action.record}")</ID>
+    <ID>MaxLineLength:ConversationRepositoryImpl.kt$ConversationRepositoryImpl$AppLogger.d(TAG, "syncConv conv=${conversationDto.id} isGroup=${conversationDto.isGroup} avatarUrl=${conversationDto.avatarUrl} existingAvatarUrl=${existingConversation?.groupAvatarUrl}")</ID>
+    <ID>MaxLineLength:CreateGroupScreen.kt$Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))</ID>
+    <ID>MaxLineLength:CreateGroupUseCase.kt$CreateGroupUseCase$groupRepository.createGroup(name.trim(), description?.trim()?.takeIf { it.isNotBlank() }, createdBy, participantIds)</ID>
+    <ID>MaxLineLength:GroupInfoViewModel.kt$GroupInfoViewModel$GroupInfoIntent.CloseAddMember -> _state.update { it.copy(showAddMemberSheet = false, addMemberQuery = "", addMemberResults = emptyList()) }</ID>
+    <ID>MaxLineLength:GroupInfoViewModel.kt$GroupInfoViewModel$GroupInfoIntent.DismissHistoryDialog -> _state.update { it.copy(showHistoryDialog = false, pendingAddUser = null, showAddMemberSheet = true) }</ID>
+    <ID>MaxLineLength:GroupInfoViewModel.kt$GroupInfoViewModel$_state.update { it.copy(showHistoryDialog = false, pendingAddUser = null, addMemberQuery = "", addMemberResults = emptyList()) }</ID>
+    <ID>MaxLineLength:GroupInfoViewModel.kt$GroupInfoViewModel$is GroupInfoIntent.AddMember -> _state.update { it.copy(pendingAddUser = intent.user, showHistoryDialog = true, showAddMemberSheet = false) }</ID>
+    <ID>MaxLineLength:GroupInfoViewModel.kt$GroupInfoViewModel$updateGroupUseCase(conversationId, name = currentState.groupName, description = currentState.groupDescription)</ID>
+    <ID>MaxLineLength:GroupRemoteSource.kt$GroupRemoteSource$.</ID>
+    <ID>MaxLineLength:GroupRepositoryImpl.kt$GroupRepositoryImpl$AppLogger.d(TAG, "syncFull EXPELLED — newHistoryFrom=$newHistoryFrom existing.historyVisibleFrom=${existing?.historyVisibleFrom}")</ID>
+    <ID>MaxLineLength:GroupRepositoryImpl.kt$GroupRepositoryImpl$AppLogger.d(TAG, "syncFull EXPELLED — wrote historyVisibleFrom=$newHistoryFrom, deleted messages before $newHistoryFrom")</ID>
+    <ID>MaxLineLength:GroupRepositoryImpl.kt$GroupRepositoryImpl$AppLogger.d(TAG, "syncFull conv=$conversationId currentUser=$currentUserId wasExpelled=$wasExpelled selfJoinedAt=${selfMember.joinedAt} localIds=${localMembers.map{it.userId}}")</ID>
+    <ID>MaxLineLength:GroupRepositoryImpl.kt$GroupRepositoryImpl$AppLogger.w(TAG, "applyMemberDiff SKIPPED conv=$conversationId currentUserId=$currentUserId dtos=${dtos.map { it.userId }}")</ID>
+    <ID>MaxLineLength:IncomingCallViewModel.kt$IncomingCallViewModel$AppLogger.d(TAG, "STATE EMIT vmHash=${System.identityHashCode(this@IncomingCallViewModel)}: incomingCall=${s.incomingCall?.id ?: "null"}")</ID>
+    <ID>MaxLineLength:IncomingCallViewModel.kt$IncomingCallViewModel$AppLogger.d(TAG, "init: INCOMING CALL callId=${call.id} caller=${call.callerName} room=${call.roomName}")</ID>
+    <ID>MaxLineLength:InvitationDao.kt$InvitationDao$@Query("SELECT * FROM invitations WHERE receiverId = :userId AND status = 'pending' ORDER BY createdAt DESC, id ASC")</ID>
+    <ID>MaxLineLength:InvitationRepositoryImpl.kt$InvitationRepositoryImpl$val</ID>
+    <ID>MaxLineLength:MainActivity.kt$ChatRoute : NavKey</ID>
+    <ID>MaxLineLength:MainActivity.kt$MainActivity$AppLogger.d("MainActivity", "RECOMPOSE vmHash=${System.identityHashCode(incomingCallVm)} incomingCall=${incomingCallState.incomingCall?.id ?: "null"}")</ID>
+    <ID>MaxLineLength:MessageDao.kt$MessageDao$@Query("SELECT * FROM messages WHERE conversationId = :conversationId AND createdAt >= :since ORDER BY createdAt ASC")</ID>
+    <ID>MaxLineLength:MessageDao.kt$MessageDao$@Query("SELECT * FROM messages WHERE conversationId = :conversationId AND createdAt >= :since ORDER BY createdAt DESC")</ID>
+    <ID>MaxLineLength:MessageRemoteSource.kt$MessageRemoteSource$if (since > 0L) gte("created_at", kotlinx.datetime.Instant.fromEpochMilliseconds(since).toString())</ID>
+    <ID>MaxLineLength:MessageRepository.kt$MessageRepository$fun getMessagesPaged(conversationId: String, currentUserId: String, historyVisibleFrom: Long = 0L): Flow<PagingData<MessageBO>></ID>
+    <ID>MaxLineLength:MessageRepository.kt$MessageRepository$fun observeMessages(conversationId: String, currentUserId: String, historyVisibleFrom: Long = 0L): Flow<List<MessageBO>></ID>
+    <ID>MaxLineLength:MessageRepositoryImpl.kt$MessageRepositoryImpl$AppLogger.d(TAG, "Room emit: ${dbos.size} msgs conv=$conversationId since=$historyVisibleFrom firstCreatedAt=${dbos.firstOrNull()?.createdAt} lastCreatedAt=${dbos.lastOrNull()?.createdAt}")</ID>
+    <ID>MaxLineLength:MessageRepositoryImpl.kt$MessageRepositoryImpl$AppLogger.d(TAG, "syncRemote fetched ${remote.size} msgs conv=$conversationId since=$historyVisibleFrom")</ID>
+    <ID>MaxLineLength:MessageRepositoryImpl.kt$MessageRepositoryImpl$override</ID>
+    <ID>MaxLineLength:NavGraphPreviews.kt$Icon(Icons.Default.Call, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))</ID>
+    <ID>MaxLineLength:NavGraphPreviews.kt$Icon(Icons.Default.Group, contentDescription = null, tint = Color.White, modifier = Modifier.size(40.dp))</ID>
+    <ID>MaxLineLength:NavGraphPreviews.kt$Icon(Icons.Default.Group, contentDescription = null, tint = PreviewPrimary, modifier = Modifier.size(40.dp))</ID>
+    <ID>MaxLineLength:NavGraphPreviews.kt$Icon(Icons.Default.Phone, contentDescription = null, tint = Color.White, modifier = Modifier.size(36.dp))</ID>
+    <ID>MaxLineLength:NavGraphPreviews.kt$Icon(Icons.Default.Videocam, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))</ID>
+    <ID>MaxLineLength:NavGraphPreviews.kt$OutlinedTextField(value = "Project coordination", onValueChange = {}, label = { Text("Description") }, modifier = Modifier.fillMaxWidth())</ID>
+    <ID>MaxLineLength:NavGraphPreviews.kt$OutlinedTextField(value = "Team Alpha", onValueChange = {}, label = { Text("Group Name") }, modifier = Modifier.fillMaxWidth())</ID>
+    <ID>MaxLineLength:NavGraphPreviews.kt$OutlinedTextField(value = "user@email.com", onValueChange = {}, label = { Text("Email") }, modifier = Modifier.fillMaxWidth())</ID>
+    <ID>MaxLineLength:NavGraphPreviews.kt$OutlinedTextField(value = "••••••••", onValueChange = {}, label = { Text("Password") }, modifier = Modifier.fillMaxWidth())</ID>
+    <ID>MaxLineLength:NavGraphPreviews.kt$Text("Add Members", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Start))</ID>
+    <ID>MaxLineLength:NavGraphPreviews.kt$Text("Alice Johnson", color = Color.White, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)</ID>
+    <ID>MaxLineLength:NavGraphPreviews.kt$Text("ChatApp", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = PreviewPrimary)</ID>
+    <ID>MaxLineLength:NavGraphPreviews.kt$Text("Members", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Start))</ID>
+    <ID>MaxLineLength:NavGraphPreviews.kt$Text("Online", modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), color = Color(0xFF0A2118), style = MaterialTheme.typography.labelMedium)</ID>
+    <ID>MaxLineLength:NavGraphPreviews.kt$Text("Sent you an invitation", style = MaterialTheme.typography.bodySmall, color = Color(0xFF787680))</ID>
+    <ID>MaxLineLength:NavGraphPreviews.kt$Text("contact${i + 1}@email.com", style = MaterialTheme.typography.bodySmall, color = Color(0xFF787680))</ID>
+    <ID>MaxLineLength:NavGraphPreviews.kt$Text(preview, style = MaterialTheme.typography.bodyMedium, color = Color(0xFF787680), maxLines = 1, overflow = TextOverflow.Ellipsis)</ID>
+    <ID>MaxLineLength:NavGraphPreviews.kt$if (i == 0) Text("Admin", style = MaterialTheme.typography.labelSmall, color = PreviewPrimary)</ID>
+    <ID>MaxLineLength:NewChatScreen.kt$Icon(Icons.Default.Block, contentDescription = "Bloquear", tint = MaterialTheme.colorScheme.error)</ID>
+    <ID>MaxLineLength:NewChatScreen.kt$Icon(Icons.Default.LockOpen, contentDescription = "Desbloquear", tint = MaterialTheme.colorScheme.outline)</ID>
+    <ID>MaxLineLength:NewChatScreen.kt$Icon(Icons.Default.PersonAdd, contentDescription = "Aceptar", tint = MaterialTheme.colorScheme.tertiary)</ID>
+    <ID>MaxLineLength:NewChatScreen.kt$Icon(Icons.Default.PersonAdd, contentDescription = "Invitar", tint = MaterialTheme.colorScheme.primary)</ID>
+    <ID>MaxLineLength:NewChatScreen.kt$Text("Invitación enviada", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)</ID>
+    <ID>MaxLineLength:NewChatScreen.kt$Text("Pendiente de respuesta", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)</ID>
+    <ID>MaxLineLength:NewChatScreen.kt$if</ID>
+    <ID>MaxLineLength:NewChatViewModel.kt$NewChatViewModel$_effect.send(NewChatEffect.ShowMessage("Invitación enviada · Pendiente de respuesta de @${otherUser.username}"))</ID>
+    <ID>MaxLineLength:NewChatViewModel.kt$NewChatViewModel$it.copy(userRelationships = it.userRelationships + (otherUser.id to UserRelationship.PENDING_RECEIVED))</ID>
+    <ID>MaxLineLength:NewChatViewModel.kt$NewChatViewModel$it.copy(userRelationships = it.userRelationships + (otherUser.id to UserRelationship.PENDING_SENT))</ID>
+    <ID>MaxLineLength:NewChatViewModel.kt$NewChatViewModel$viewModelScope.launch { _effect.send(NewChatEffect.ShowMessage("Invitación enviada · Pendiente de respuesta de @${otherUser.username}")) }</ID>
+    <ID>MaxLineLength:ObserveMessagesUseCase.kt$ObserveMessagesUseCase$operator</ID>
+    <ID>MaxLineLength:ProfileScreen.kt$text = { androidx.compose.material3.Text("Esto cerrará la sesión en todos los dispositivos donde hayas iniciado sesión. ¿Continuar?") }</ID>
+    <ID>MissingPackageDeclaration:ChatDatabase.kt$.ChatDatabase.kt</ID>
+    <ID>MissingPackageDeclaration:ChatScreen.kt$.ChatScreen.kt</ID>
+    <ID>MissingPackageDeclaration:ChatViewModel.kt$.ChatViewModel.kt</ID>
+    <ID>MissingPackageDeclaration:E2EEKeyManager.kt$.E2EEKeyManager.kt</ID>
+    <ID>MissingPackageDeclaration:MessageBO.kt$.MessageBO.kt</ID>
+    <ID>MissingPackageDeclaration:MessageDBO.kt$.MessageDBO.kt</ID>
+    <ID>MissingPackageDeclaration:MessageDTO.kt$.MessageDTO.kt</ID>
+    <ID>MissingPackageDeclaration:MessageMapper.kt$.MessageMapper.kt</ID>
+    <ID>MissingPackageDeclaration:MessageRepository.kt$.MessageRepository.kt</ID>
+    <ID>MissingPackageDeclaration:MessageRepositoryImpl.kt$.MessageRepositoryImpl.kt</ID>
+    <ID>MissingPackageDeclaration:SendMessageUseCase.kt$.SendMessageUseCase.kt</ID>
+    <ID>MissingPackageDeclaration:UserDTO.kt$.UserDTO.kt</ID>
+    <ID>MissingPackageDeclaration:UserRemoteSource.kt$.UserRemoteSource.kt</ID>
+    <ID>NestedBlockDepth:CallViewModel.kt$CallViewModel$private suspend fun joinCall()</ID>
+    <ID>NestedBlockDepth:ChatItem.kt$internal fun List<MessageBO>.toChatItems(): List<ChatItem></ID>
+    <ID>ReturnCount:InvitationRepositoryImpl.kt$InvitationRepositoryImpl$override suspend fun getRelationship(currentUserId: String, otherUserId: String): UserRelationship</ID>
+    <ID>SwallowedException:ChatViewModel.kt$ChatViewModel$e: Exception</ID>
+    <ID>TooManyFunctions:GroupRepository.kt$GroupRepository</ID>
+    <ID>TopLevelPropertyNaming:ChatAppButton.kt$private val ButtonShape = RoundedCornerShape(50)</ID>
+    <ID>TopLevelPropertyNaming:ChatAppTextField.kt$private val TextFieldShape = RoundedCornerShape(16.dp)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$// ── Avatar placeholder colors (pastel-tinted) ─────────────────────────────── val AvatarColors = listOf( Color(0xFF7986CB), // indigo Color(0xFF66BB6A), // green Color(0xFFEF5350), // red Color(0xFFAB47BC), // purple Color(0xFFFFA726), // orange Color(0xFF26C6DA), // cyan Color(0xFFEC407A), // pink Color(0xFF8D6E63), // brown )</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$// ── Dark scheme ───────────────────────────────────────────────────────────── val Pastel_PrimaryDark = Color(0xFFBFC2FF)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$// ── Light scheme — pastel lavender / sage / blush ────────────────────────── val Pastel_Primary = Color(0xFF6B71B8)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_Error = Color(0xFFBA1A1A)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_ErrorContainer = Color(0xFFFFDAD6)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_ErrorContainerDark = Color(0xFF93000A)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_ErrorDark = Color(0xFFFFB4AB)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_InverseOnSurface = Color(0xFFF3EFF7)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_InverseOnSurfaceDark = Color(0xFF303034)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_InversePrimary = Color(0xFFBFC2FF)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_InversePrimaryDark = Color(0xFF6B71B8)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_InverseSurface = Color(0xFF303034)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_InverseSurfaceDark = Color(0xFFE5E1EA)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnError = Color(0xFFFFFFFF)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnErrorContainer = Color(0xFF410002)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnErrorContainerDark = Color(0xFFFFDAD6)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnErrorDark = Color(0xFF690005)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnPrimary = Color(0xFFFFFFFF)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnPrimaryContainer = Color(0xFF141863)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnPrimaryContainerDark = Color(0xFFDFE0FF)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnPrimaryDark = Color(0xFF24287A)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnSecondary = Color(0xFFFFFFFF)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnSecondaryContainer = Color(0xFF0A2118)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnSecondaryContainerDark = Color(0xFFBCEDCE)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnSecondaryDark = Color(0xFF14392A)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnSurface = Color(0xFF1B1B1F)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnSurfaceDark = Color(0xFFE5E1EA)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnSurfaceVariant = Color(0xFF47464F)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnSurfaceVariantDark = Color(0xFFC8C5D0)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnTertiary = Color(0xFFFFFFFF)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnTertiaryContainer = Color(0xFF3E001F)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnTertiaryContainerDark = Color(0xFFFFD9E2)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnTertiaryDark = Color(0xFF68122C)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_Outline = Color(0xFF787680)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OutlineDark = Color(0xFF928F9A)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OutlineVariant = Color(0xFFC8C5D0)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OutlineVariantDark = Color(0xFF47464F)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_PrimaryContainer = Color(0xFFDFE0FF)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_PrimaryContainerDark = Color(0xFF4B509F)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_Secondary = Color(0xFF5E8B6D)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SecondaryContainer = Color(0xFFBCEDCE)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SecondaryContainerDark = Color(0xFF2B5C3E)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SecondaryDark = Color(0xFFA2D1B3)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_Surface = Color(0xFFFBF8FF)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SurfaceContainer = Color(0xFFEFECF5)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SurfaceContainerDark = Color(0xFF1F1F23)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SurfaceContainerHigh = Color(0xFFEAE7EF)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SurfaceContainerHighDark = Color(0xFF2A292D)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SurfaceContainerHighest = Color(0xFFE4E1EA)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SurfaceContainerHighestDark = Color(0xFF353438)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SurfaceContainerLow = Color(0xFFF5F2FB)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SurfaceContainerLowDark = Color(0xFF1B1B1F)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SurfaceContainerLowest = Color(0xFFFFFFFF)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SurfaceContainerLowestDark = Color(0xFF0E0E11)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SurfaceDark = Color(0xFF131316)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SurfaceVariant = Color(0xFFE4E1EC)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SurfaceVariantDark = Color(0xFF47464F)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_Tertiary = Color(0xFFB5546A)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_TertiaryContainer = Color(0xFFFFD9E2)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_TertiaryContainerDark = Color(0xFF8E3B50)</ID>
+    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_TertiaryDark = Color(0xFFFFB1C5)</ID>
+    <ID>TopLevelPropertyNaming:DatabaseBuilder.kt$private val MIGRATION_10_11 = object : Migration(10, 11) { override fun migrate(connection: SQLiteConnection) { connection.execSQL("ALTER TABLE messages ADD COLUMN isEncrypted INTEGER NOT NULL DEFAULT 0") } }</ID>
+    <ID>TopLevelPropertyNaming:DatabaseBuilder.kt$private val MIGRATION_1_2 = object : Migration(1, 2) { override fun migrate(connection: SQLiteConnection) { connection.execSQL("ALTER TABLE messages ADD COLUMN imageUrl TEXT") } }</ID>
+    <ID>TopLevelPropertyNaming:DatabaseBuilder.kt$private val MIGRATION_2_3 = object : Migration(2, 3) { override fun migrate(connection: SQLiteConnection) { connection.execSQL("ALTER TABLE conversations ADD COLUMN otherUserId TEXT") } }</ID>
+    <ID>TopLevelPropertyNaming:DatabaseBuilder.kt$private val MIGRATION_3_4 = object : Migration(3, 4) { override fun migrate(connection: SQLiteConnection) { connection.execSQL("ALTER TABLE messages ADD COLUMN audioUrl TEXT") } }</ID>
+    <ID>TopLevelPropertyNaming:DatabaseBuilder.kt$private val MIGRATION_4_5 = object : Migration(4, 5) { override fun migrate(connection: SQLiteConnection) { connection.execSQL("ALTER TABLE messages ADD COLUMN replyToId TEXT") connection.execSQL("ALTER TABLE messages ADD COLUMN replyToContent TEXT") connection.execSQL("ALTER TABLE messages ADD COLUMN replyToSenderName TEXT") } }</ID>
+    <ID>TopLevelPropertyNaming:DatabaseBuilder.kt$private val MIGRATION_5_6 = object : Migration(5, 6) { override fun migrate(connection: SQLiteConnection) { connection.execSQL("ALTER TABLE messages ADD COLUMN callType TEXT") connection.execSQL("ALTER TABLE messages ADD COLUMN callStatus TEXT") connection.execSQL("ALTER TABLE messages ADD COLUMN callDuration INTEGER") } }</ID>
+    <ID>TopLevelPropertyNaming:DatabaseBuilder.kt$private val MIGRATION_6_7 = object : Migration(6, 7) { override fun migrate(connection: SQLiteConnection) { connection.execSQL("ALTER TABLE messages ADD COLUMN gifUrl TEXT") connection.execSQL("ALTER TABLE messages ADD COLUMN stickerUrl TEXT") } }</ID>
+    <ID>TopLevelPropertyNaming:DatabaseBuilder.kt$private val MIGRATION_7_8 = object : Migration(7, 8) { override fun migrate(connection: SQLiteConnection) { connection.execSQL("ALTER TABLE conversations ADD COLUMN description TEXT") connection.execSQL("ALTER TABLE conversations ADD COLUMN groupAvatarUrl TEXT") connection.execSQL( """CREATE TABLE IF NOT EXISTS group_members ( conversationId TEXT NOT NULL, userId TEXT NOT NULL, displayName TEXT NOT NULL, username TEXT NOT NULL, avatarUrl TEXT, role TEXT NOT NULL, joinedAt INTEGER NOT NULL, PRIMARY KEY(conversationId, userId) )""" ) } }</ID>
+    <ID>TopLevelPropertyNaming:DatabaseBuilder.kt$private val MIGRATION_8_9 = object : Migration(8, 9) { override fun migrate(connection: SQLiteConnection) { connection.execSQL("ALTER TABLE conversations ADD COLUMN isMuted INTEGER NOT NULL DEFAULT 0") } }</ID>
+    <ID>TopLevelPropertyNaming:DatabaseBuilder.kt$private val MIGRATION_9_10 = object : Migration(9, 10) { override fun migrate(connection: SQLiteConnection) { connection.execSQL("ALTER TABLE conversations ADD COLUMN historyVisibleFrom INTEGER NOT NULL DEFAULT 0") } }</ID>
+    <ID>TopLevelPropertyNaming:MainActivity.kt$private val UUID_REGEX = Regex( "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", RegexOption.IGNORE_CASE, )</ID>
+    <ID>TopLevelPropertyNaming:NavGraphPreviews.kt$private val NavPreviewColors = lightColorScheme( primary = PreviewPrimary, surface = PreviewSurface, onSurface = PreviewOnSurface, surfaceVariant = PreviewSurfaceVariant, surfaceContainer = PreviewContainer, )</ID>
+    <ID>TopLevelPropertyNaming:NavGraphPreviews.kt$private val PreviewContainer = Color(0xFFEFECF5)</ID>
+    <ID>TopLevelPropertyNaming:NavGraphPreviews.kt$private val PreviewOnSurface = Color(0xFF1B1B1F)</ID>
+    <ID>TopLevelPropertyNaming:NavGraphPreviews.kt$private val PreviewPrimary = Color(0xFF6B71B8)</ID>
+    <ID>TopLevelPropertyNaming:NavGraphPreviews.kt$private val PreviewSurface = Color(0xFFFBF8FF)</ID>
+    <ID>TopLevelPropertyNaming:NavGraphPreviews.kt$private val PreviewSurfaceVariant = Color(0xFFE4E1EC)</ID>
+    <ID>TopLevelPropertyNaming:Shape.kt$val ChatAppShapes = Shapes( extraSmall = RoundedCornerShape(8.dp), small = RoundedCornerShape(12.dp), medium = RoundedCornerShape(20.dp), large = RoundedCornerShape(28.dp), extraLarge = RoundedCornerShape(36.dp), )</ID>
+    <ID>TopLevelPropertyNaming:Theme.kt$private val DarkColorScheme = darkColorScheme( primary = Pastel_PrimaryDark, onPrimary = Pastel_OnPrimaryDark, primaryContainer = Pastel_PrimaryContainerDark, onPrimaryContainer = Pastel_OnPrimaryContainerDark, secondary = Pastel_SecondaryDark, onSecondary = Pastel_OnSecondaryDark, secondaryContainer = Pastel_SecondaryContainerDark, onSecondaryContainer = Pastel_OnSecondaryContainerDark, tertiary = Pastel_TertiaryDark, onTertiary = Pastel_OnTertiaryDark, tertiaryContainer = Pastel_TertiaryContainerDark, onTertiaryContainer = Pastel_OnTertiaryContainerDark, error = Pastel_ErrorDark, onError = Pastel_OnErrorDark, errorContainer = Pastel_ErrorContainerDark, onErrorContainer = Pastel_OnErrorContainerDark, surface = Pastel_SurfaceDark, onSurface = Pastel_OnSurfaceDark, surfaceVariant = Pastel_SurfaceVariantDark, onSurfaceVariant = Pastel_OnSurfaceVariantDark, surfaceContainerLowest = Pastel_SurfaceContainerLowestDark, surfaceContainerLow = Pastel_SurfaceContainerLowDark, surfaceContainer = Pastel_SurfaceContainerDark, surfaceContainerHigh = Pastel_SurfaceContainerHighDark, surfaceContainerHighest = Pastel_SurfaceContainerHighestDark, outline = Pastel_OutlineDark, outlineVariant = Pastel_OutlineVariantDark, inverseSurface = Pastel_InverseSurfaceDark, inverseOnSurface = Pastel_InverseOnSurfaceDark, inversePrimary = Pastel_InversePrimaryDark, )</ID>
+    <ID>TopLevelPropertyNaming:Theme.kt$private val LightColorScheme = lightColorScheme( primary = Pastel_Primary, onPrimary = Pastel_OnPrimary, primaryContainer = Pastel_PrimaryContainer, onPrimaryContainer = Pastel_OnPrimaryContainer, secondary = Pastel_Secondary, onSecondary = Pastel_OnSecondary, secondaryContainer = Pastel_SecondaryContainer, onSecondaryContainer = Pastel_OnSecondaryContainer, tertiary = Pastel_Tertiary, onTertiary = Pastel_OnTertiary, tertiaryContainer = Pastel_TertiaryContainer, onTertiaryContainer = Pastel_OnTertiaryContainer, error = Pastel_Error, onError = Pastel_OnError, errorContainer = Pastel_ErrorContainer, onErrorContainer = Pastel_OnErrorContainer, surface = Pastel_Surface, onSurface = Pastel_OnSurface, surfaceVariant = Pastel_SurfaceVariant, onSurfaceVariant = Pastel_OnSurfaceVariant, surfaceContainerLowest = Pastel_SurfaceContainerLowest, surfaceContainerLow = Pastel_SurfaceContainerLow, surfaceContainer = Pastel_SurfaceContainer, surfaceContainerHigh = Pastel_SurfaceContainerHigh, surfaceContainerHighest = Pastel_SurfaceContainerHighest, outline = Pastel_Outline, outlineVariant = Pastel_OutlineVariant, inverseSurface = Pastel_InverseSurface, inverseOnSurface = Pastel_InverseOnSurface, inversePrimary = Pastel_InversePrimary, )</ID>
+    <ID>UnusedImports:AppModule.kt$import com.ajrpachon.chatapp.domain.repository.UserRepository</ID>
+    <ID>UnusedImports:AppModule.kt$import io.ktor.client.HttpClient</ID>
+    <ID>UnusedImports:AuthScreen.kt$import androidx.compose.material3.Tab</ID>
+    <ID>UnusedImports:AuthScreen.kt$import androidx.compose.material3.TabRow</ID>
+    <ID>UnusedImports:CallScreen.kt$import androidx.compose.material.icons.filled.Phone</ID>
+    <ID>UnusedImports:CallScreen.kt$import io.livekit.android.room.track.LocalVideoTrack</ID>
+    <ID>UnusedImports:ChatAppAvatar.kt$import androidx.compose.foundation.layout.fillMaxSize</ID>
+    <ID>UnusedImports:ChatAppAvatar.kt$import androidx.compose.material3.MaterialTheme</ID>
+    <ID>UnusedImports:ChatViewModel.kt$import com.ajrpachon.chatapp.domain.model.CallBO</ID>
+    <ID>UnusedImports:ConversationListScreen.kt$import androidx.compose.material.icons.filled.Add</ID>
+    <ID>UnusedImports:ConversationListScreen.kt$import androidx.compose.material.icons.filled.CameraAlt</ID>
+    <ID>UnusedImports:ConversationListScreen.kt$import androidx.compose.material.icons.filled.Gif</ID>
+    <ID>UnusedImports:CreateGroupScreen.kt$import androidx.compose.material.icons.filled.Search</ID>
+    <ID>UnusedImports:CreateGroupScreen.kt$import androidx.compose.material3.CircularProgressIndicator</ID>
+    <ID>UnusedImports:GroupInfoScreen.kt$import androidx.compose.material.icons.filled.Search</ID>
+    <ID>UnusedImports:GroupInfoScreen.kt$import androidx.compose.ui.graphics.Color</ID>
+    <ID>UnusedImports:GroupInfoViewModel.kt$import com.ajrpachon.chatapp.domain.model.UserBO</ID>
+    <ID>UnusedImports:IncomingCallScreen.kt$import androidx.compose.foundation.layout.padding</ID>
+    <ID>UnusedImports:MainActivity.kt$import androidx.lifecycle.compose.collectAsStateWithLifecycle</ID>
+    <ID>UnusedImports:NewChatScreen.kt$import androidx.compose.foundation.layout.Spacer</ID>
+    <ID>UnusedImports:NewChatScreen.kt$import com.ajrpachon.chatapp.ui.components.ChatAppTextField</ID>
+    <ID>UnusedImports:Shimmer.kt$import androidx.compose.ui.graphics.Color</ID>
+    <ID>UnusedParameter:GroupInfoViewModel.kt$GroupInfoViewModel$mimeType: String</ID>
+  </CurrentIssues>
+</SmellBaseline>
