@@ -143,7 +143,7 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | **Paging 3** | 3.3.6 | Carga paginada de mensajes |
 | ![Coil](https://img.shields.io/badge/-Coil-000000?logoColor=white) **Coil 3** | 3.1.0 | Carga de imágenes, GIFs y stickers |
 | **OkHttp** | 4.x | Cliente HTTP con certificate pinning |
-| **Play Integrity API** | — | Verificación de integridad del dispositivo y la app |
+| **Play Integrity API** | 1.4.0 | Verificación de integridad del dispositivo y la app |
 
 ### Backend / Servicios
 
