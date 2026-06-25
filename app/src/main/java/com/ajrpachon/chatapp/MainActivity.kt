@@ -86,8 +86,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         requestNotificationPermissionIfNeeded()
-        pendingConversationId.value = intent.getStringExtra("conversation_id")
-        pendingOtherUserName.value = intent.getStringExtra("other_user_name")
+        pendingConversationId.value = intent.validatedConversationId()
+        pendingOtherUserName.value = intent.validatedUserName()
         val getCurrentUser: GetCurrentUserUseCase = get()
         setContent {
             ChatAppTheme {
@@ -297,9 +297,9 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         get<SupabaseClient>().handleDeeplinks(intent)
-        intent.getStringExtra("conversation_id")?.let {
+        intent.validatedConversationId()?.let {
             pendingConversationId.value = it
-            pendingOtherUserName.value = intent.getStringExtra("other_user_name")
+            pendingOtherUserName.value = intent.validatedUserName()
         }
     }
 
@@ -312,3 +312,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
+private val UUID_REGEX = Regex(
+    "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+    RegexOption.IGNORE_CASE,
+)
+
+private fun Intent.validatedConversationId(): String? =
+    getStringExtra("conversation_id")?.takeIf { UUID_REGEX.matches(it) }
+
+private fun Intent.validatedUserName(): String? =
+    getStringExtra("other_user_name")?.take(100)?.ifBlank { null }
