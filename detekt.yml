@@ -15,7 +15,8 @@ complexity:
     threshold: 80
   LongParameterList:
     active: true
-    threshold: 8
+    functionThreshold: 8
+    constructorThreshold: 8
     ignoreAnnotated: ['Composable']
   TooManyFunctions:
     active: true
@@ -68,14 +69,12 @@ performance:
   ArrayPrimitive:
     active: true
   SpreadOperator:
-    active: false  # common in Compose
+    active: false
   UnnecessaryPartOfBinaryExpression:
     active: true
 
 potential-bugs:
   active: true
-  AvoidReferenceToMutableState:
-    active: true
   DontDowncastCollectionTypes:
     active: true
   ExplicitGarbageCollectionCall:

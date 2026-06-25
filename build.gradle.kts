@@ -12,6 +12,7 @@ plugins {
 detekt {
     config.setFrom(files("$rootDir/detekt.yml"))
     source.setFrom(files("app/src/main/java", "app/src/main/kotlin"))
+    baseline = file("$rootDir/detekt-baseline.xml")
     parallel = true
     buildUponDefaultConfig = true
     autoCorrect = false
