@@ -15,11 +15,15 @@ import com.ajrpachon.chatapp.ui.invitations.InvitationsViewModel
 import com.ajrpachon.chatapp.ui.newchat.NewChatViewModel
 import com.ajrpachon.chatapp.ui.profile.ProfileViewModel
 import com.ajrpachon.chatapp.ui.userinfo.UserInfoViewModel
+import com.ajrpachon.chatapp.utils.OkHttpProvider
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.realtime.Realtime
 import io.github.jan.supabase.storage.Storage
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
 import android.app.NotificationManager
 import android.content.Context
 import org.koin.android.ext.koin.androidApplication
@@ -43,6 +47,7 @@ val networkModule = module {
             supabaseUrl = BuildConfig.SUPABASE_URL,
             supabaseKey = BuildConfig.SUPABASE_ANON_KEY,
         ) {
+            httpEngine = OkHttp.create { preconfigured = OkHttpProvider.client }
             install(Auth) {
                 sessionManager = AndroidSessionManager(androidContext())
                 scheme = "com.ajrpachon.chatapp"
@@ -51,13 +56,14 @@ val networkModule = module {
             install(Postgrest)
             install(Realtime)
             install(Storage)
+            install(Functions)
         }
     }
 }
 
 val viewModelModule = module {
     // Needs BuildConfig value — cannot use viewModelOf
-    viewModel { AuthViewModel(get(), get(), BuildConfig.GOOGLE_WEB_CLIENT_ID, get(), get()) }
+    viewModel { AuthViewModel(androidApplication(), get(), get(), BuildConfig.GOOGLE_WEB_CLIENT_ID, get(), get()) }
 
     viewModelOf(::ConversationListViewModel)
     viewModelOf(::InvitationsViewModel)

@@ -39,4 +39,5 @@ sealed interface AuthIntent {
 sealed interface AuthEffect {
     data object NavigateToHome : AuthEffect
     data object OpenAddGoogleAccount : AuthEffect
+    data class IntegrityFailed(val reason: String) : AuthEffect
 }

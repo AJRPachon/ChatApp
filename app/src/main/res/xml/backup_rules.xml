@@ -1,13 +1,13 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older than API 31
-   See https://developer.android.com/about/versions/12/backup-restore
--->
+<?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <!-- Exclude the encrypted database — contains all messages and user data -->
+    <exclude domain="database" path="chat.db" />
+    <exclude domain="database" path="chat.db-shm" />
+    <exclude domain="database" path="chat.db-wal" />
+
+    <!-- Exclude Supabase session tokens -->
+    <exclude domain="sharedpref" path="supabase_session.xml" />
+
+    <!-- Exclude SQLCipher passphrase (re-generated on new install if missing) -->
+    <exclude domain="sharedpref" path="chatapp_db_prefs.xml" />
 </full-backup-content>
