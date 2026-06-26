@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import androidx.core.app.NotificationCompat
 import com.ajrpachon.chatapp.MainActivity
 import com.ajrpachon.chatapp.R
@@ -29,10 +30,17 @@ class FcmMessageHandler(private val context: Context) {
                 NotificationChannel(channelId, "Mensajes", NotificationManager.IMPORTANCE_HIGH)
             )
         }
-        val intent = Intent(context, MainActivity::class.java).apply {
+        val intent = if (payload.conversationId != null) {
+            Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("chatapp://chat/${payload.conversationId}?name=${Uri.encode(payload.title)}"),
+                context,
+                MainActivity::class.java,
+            )
+        } else {
+            Intent(context, MainActivity::class.java)
+        }.apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            payload.conversationId?.let { putExtra("conversation_id", it) }
-            putExtra("other_user_name", payload.title)
         }
         val pendingIntent = PendingIntent.getActivity(
             context, 0, intent,

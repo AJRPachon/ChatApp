@@ -109,8 +109,15 @@ class MainActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         requestNotificationPermissionIfNeeded()
         checkRootAndWarnIfNeeded()
-        pendingConversationId.value = intent.validatedConversationId()
-        pendingOtherUserName.value = intent.validatedUserName()
+        // Handle cold-start deep link (chatapp://chat/{id}) or FCM intent extras
+        val coldUri = intent.data
+        if (coldUri != null && coldUri.scheme == "chatapp" && coldUri.host == "chat") {
+            pendingConversationId.value = coldUri.lastPathSegment?.takeIf { UUID_REGEX.matches(it) }
+            pendingOtherUserName.value = coldUri.getQueryParameter("name")?.take(100)?.ifBlank { null }
+        } else {
+            pendingConversationId.value = intent.validatedConversationId()
+            pendingOtherUserName.value = intent.validatedUserName()
+        }
         val getCurrentUser: GetCurrentUserUseCase = get()
         val supabase: SupabaseClient = get()
         setContent {
@@ -410,19 +417,32 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         val uri = intent.data
-        if (uri != null && uri.isValidAuthCallback()) {
-            get<SupabaseClient>().handleDeeplinks(intent)
-        } else if (uri != null) {
-            AppLogger.w("MainActivity", "Rejected deep link with unexpected scheme/host: $uri")
+        when {
+            uri != null && uri.isValidAuthCallback() -> get<SupabaseClient>().handleDeeplinks(intent)
+            uri != null && uri.isChatDeepLink() -> {
+                val conversationId = uri.lastPathSegment?.takeIf { UUID_REGEX.matches(it) }
+                val name = uri.getQueryParameter("name")?.take(100)?.ifBlank { null }
+                conversationId?.let {
+                    pendingConversationId.value = it
+                    pendingOtherUserName.value = name
+                }
+            }
+            uri != null -> AppLogger.w("MainActivity", "Rejected deep link with unexpected scheme/host: $uri")
         }
-        intent.validatedConversationId()?.let {
-            pendingConversationId.value = it
-            pendingOtherUserName.value = intent.validatedUserName()
+        // Fallback: Intent extra from FCM notification tap
+        if (uri == null) {
+            intent.validatedConversationId()?.let {
+                pendingConversationId.value = it
+                pendingOtherUserName.value = intent.validatedUserName()
+            }
         }
     }
 
     private fun Uri.isValidAuthCallback(): Boolean =
         scheme == "com.ajrpachon.chatapp" && host == "auth-callback"
+
+    private fun Uri.isChatDeepLink(): Boolean =
+        scheme == "chatapp" && host == "chat"
 
     private fun requestNotificationPermissionIfNeeded() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
