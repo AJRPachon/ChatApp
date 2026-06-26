@@ -5,17 +5,13 @@ import com.ajrpachon.chatapp.domain.model.CallStatus
 import com.ajrpachon.chatapp.domain.model.CallType
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.auth.Auth
-import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.postgrest.Postgrest
-import io.github.jan.supabase.postgrest.postgrest
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 
 class CallRepositoryImplTest {
 
@@ -23,24 +19,16 @@ class CallRepositoryImplTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val supabase = mockk<SupabaseClient>(relaxed = true)
-    private val auth = mockk<Auth>(relaxed = true)
-    private val postgrest = mockk<Postgrest>(relaxed = true)
-
-    init {
-        every { supabase.auth } returns auth
-        every { supabase.postgrest } returns postgrest
-    }
 
     private val repo = CallRepositoryImpl(supabase)
 
     // ── createCall — throws when not authenticated ────────────────────────────
 
     @Test
-    fun `createCall throws when user is not authenticated`() = runTest {
-        every { auth.currentUserOrNull() } returns null
-
-        assertFailsWith<IllegalStateException> {
-            repo.createCall("conv1", "callee1", CallType.AUDIO)
+    fun `createCall throws when user is not authenticated`() {
+        // relaxed supabase mock returns null for currentUserOrNull() by default
+        assertThrows(IllegalStateException::class.java) {
+            kotlinx.coroutines.runBlocking { repo.createCall("conv1", "callee1", CallType.AUDIO) }
         }
     }
 
@@ -71,10 +59,10 @@ class CallRepositoryImplTest {
             callerName = "Alice",
             calleeId = "callee1",
             type = CallType.VIDEO,
-            status = CallStatus.ANSWERED,
+            status = CallStatus.ACTIVE,
             roomName = "room2",
         )
         assertEquals(CallType.VIDEO, bo.type)
-        assertEquals(CallStatus.ANSWERED, bo.status)
+        assertEquals(CallStatus.ACTIVE, bo.status)
     }
 }

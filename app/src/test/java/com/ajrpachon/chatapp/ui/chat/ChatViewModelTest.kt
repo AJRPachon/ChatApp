@@ -9,6 +9,7 @@ import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
+import com.ajrpachon.chatapp.domain.repository.ReactionRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.GetGroupMembersUseCase
 import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
@@ -46,6 +47,7 @@ class ChatViewModelTest {
     private val getGroupMembersUseCase = mockk<GetGroupMembersUseCase>()
     private val leaveGroupUseCase = mockk<LeaveGroupUseCase>(relaxed = true)
     private val groupRepository = mockk<GroupRepository>(relaxed = true)
+    private val reactionRepository = mockk<ReactionRepository>(relaxed = true)
 
     // Start with current user as member — mirrors what the repository emits after initial fetch
     private val membersFlow = MutableStateFlow<List<GroupMemberBO>>(emptyList())
@@ -102,6 +104,7 @@ class ChatViewModelTest {
             getGroupMembersUseCase = getGroupMembersUseCase,
             leaveGroupUseCase = leaveGroupUseCase,
             groupRepository = groupRepository,
+            reactionRepository = reactionRepository,
         )
 
     // ── isCurrentUserMember ───────────────────────────────────────────────────

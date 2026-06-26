@@ -14,9 +14,9 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 
 class UserRepositoryImplTest {
 
@@ -53,7 +53,7 @@ class UserRepositoryImplTest {
         val result = repo.getUserById("u1")
 
         assertNotNull(result)
-        assertEquals("u1", result.id)
+        assertEquals("u1", result!!.id)
         assertEquals("Alice", result.displayName)
         coVerify(exactly = 0) { remoteSource.getProfile(any()) }
     }
@@ -66,7 +66,7 @@ class UserRepositoryImplTest {
         val result = repo.getUserById("u2")
 
         assertNotNull(result)
-        assertEquals("Bob", result.displayName)
+        assertEquals("Bob", result!!.displayName)
         coVerify { userDao.upsert(any()) }
     }
 
@@ -87,7 +87,7 @@ class UserRepositoryImplTest {
         repo.observeUserById("u1").test {
             val user = awaitItem()
             assertNotNull(user)
-            assertEquals("Alice", user.displayName)
+            assertEquals("Alice", user!!.displayName)
             cancelAndIgnoreRemainingEvents()
         }
     }
