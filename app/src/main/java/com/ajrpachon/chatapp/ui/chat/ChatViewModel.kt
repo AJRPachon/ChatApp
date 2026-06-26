@@ -38,7 +38,7 @@ import java.io.File
 
 
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 class ChatViewModel(
     private val conversationId: String,
     private val otherUserName: String,
