@@ -57,8 +57,10 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.EmojiEmotions
@@ -82,7 +84,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
@@ -195,6 +196,12 @@ fun ChatScreen(
         }
     }
 
+    // Jump-to-message: when ViewModel sets a highlighted message ID, scroll to it
+    LaunchedEffect(state.highlightedMessageId) {
+        val id = state.highlightedMessageId ?: return@LaunchedEffect
+        onScrollToMessage(id)
+    }
+
     var viewerUrls by remember { mutableStateOf<List<String>>(emptyList()) }
     var viewerInitialIndex by remember { mutableStateOf(0) }
     var showViewer by remember { mutableStateOf(false) }
@@ -286,6 +293,20 @@ fun ChatScreen(
             imageUrls = viewerUrls,
             initialIndex = viewerInitialIndex,
             onDismiss = { showViewer = false },
+        )
+    }
+
+    state.expiryDialogMessageId?.let { msgId ->
+        ExpiryDurationDialog(
+            onDismiss = { vm.onIntent(ChatIntent.DismissExpiryDialog) },
+            onSelect = { vm.onIntent(ChatIntent.SetExpiry(msgId, it)) },
+        )
+    }
+
+    if (state.showMuteDialog) {
+        MuteDurationDialog(
+            onDismiss = { vm.onIntent(ChatIntent.DismissMuteDialog) },
+            onSelect = { vm.onIntent(ChatIntent.MuteFor(it)) },
         )
     }
 
@@ -425,7 +446,11 @@ fun ChatScreen(
                                 },
                                 onClick = {
                                     menuExpanded = false
-                                    vm.onIntent(ChatIntent.ToggleMute)
+                                    if (state.isMuted) {
+                                        vm.onIntent(ChatIntent.MuteFor(0L))
+                                    } else {
+                                        vm.onIntent(ChatIntent.ShowMuteDialog)
+                                    }
                                 },
                             )
                             if (state.isGroup) {
@@ -622,6 +647,7 @@ fun ChatScreen(
                                     onReplyClick = onScrollToMessage,
                                     onDelete = if (message.isFromMe) {{ vm.onIntent(ChatIntent.DeleteMessage(message.id)) }} else null,
                                     onEdit = if (message.isFromMe && message.content.isNotBlank()) {{ vm.onIntent(ChatIntent.StartEdit(message)) }} else null,
+                                    onSelfDestruct = if (message.isFromMe) {{ vm.onIntent(ChatIntent.ShowExpiryDialog(message.id)) }} else null,
                                 )
                             }
                         } else {
@@ -638,6 +664,7 @@ fun ChatScreen(
                                 onReplyClick = onScrollToMessage,
                                 onDelete = if (message.isFromMe) {{ vm.onIntent(ChatIntent.DeleteMessage(message.id)) }} else null,
                                 onEdit = if (message.isFromMe && message.content.isNotBlank()) {{ vm.onIntent(ChatIntent.StartEdit(message)) }} else null,
+                                onSelfDestruct = if (message.isFromMe) {{ vm.onIntent(ChatIntent.ShowExpiryDialog(message.id)) }} else null,
                                 messageReactions = reactions[message.id] ?: emptyList(),
                                 currentUserId = state.currentUserId,
                                 onToggleReaction = { emoji -> vm.onIntent(ChatIntent.ToggleReaction(message.id, emoji)) },
@@ -679,6 +706,7 @@ fun ChatScreen(
                     topPadding = innerPadding.calculateTopPadding(),
                     onQueryChange = { vm.onIntent(ChatIntent.SearchQueryChanged(it)) },
                     onClose = { vm.onIntent(ChatIntent.CloseSearch) },
+                    onJump = { vm.onIntent(ChatIntent.JumpToMessage(it)) },
                 )
             }
         }
@@ -693,6 +721,7 @@ private fun MessageSearchOverlay(
     topPadding: androidx.compose.ui.unit.Dp,
     onQueryChange: (String) -> Unit,
     onClose: () -> Unit,
+    onJump: (String) -> Unit = {},
 ) {
     Surface(
         modifier = Modifier
@@ -740,7 +769,7 @@ private fun MessageSearchOverlay(
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     itemsIndexed(results, key = { _, m -> m.id }) { _, message ->
-                        SearchResultItem(message = message)
+                        SearchResultItem(message = message, onClick = { onJump(message.id) })
                     }
                 }
             }
@@ -749,11 +778,12 @@ private fun MessageSearchOverlay(
 }
 
 @Composable
-private fun SearchResultItem(message: MessageBO) {
+private fun SearchResultItem(message: MessageBO, onClick: () -> Unit = {}) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
         Row(
@@ -974,6 +1004,7 @@ private fun LocalAudioPlayer(filePath: String, modifier: Modifier = Modifier) {
             if (mp.isPlaying) { mp.pause(); isPlaying = false }
             else { mp.start(); isPlaying = true }
         },
+        waveformSeed = filePath.hashCode(),
     )
 }
 
@@ -1016,6 +1047,7 @@ private fun RemoteAudioPlayer(url: String, modifier: Modifier = Modifier) {
             if (mp.isPlaying) { mp.pause(); isPlaying = false }
             else { mp.start(); isPlaying = true }
         },
+        waveformSeed = url.hashCode(),
     )
 }
 
@@ -1027,7 +1059,18 @@ private fun AudioPlayerRow(
     durationMs: Int,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
+    waveformSeed: Int = 0,
 ) {
+    val activeColor = MaterialTheme.colorScheme.primary
+    val inactiveColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
+    val progress = if (durationMs > 0) currentMs.toFloat() / durationMs else 0f
+
+    // Generate deterministic bar heights from seed (32 bars)
+    val bars = remember(waveformSeed) {
+        val rng = java.util.Random(waveformSeed.toLong())
+        List(32) { 0.2f + rng.nextFloat() * 0.8f }
+    }
+
     Row(
         modifier = modifier.widthIn(min = 160.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -1039,10 +1082,27 @@ private fun AudioPlayerRow(
             )
         }
         Column(modifier = Modifier.weight(1f).padding(end = 4.dp)) {
-            LinearProgressIndicator(
-                progress = { if (durationMs > 0) currentMs.toFloat() / durationMs else 0f },
-                modifier = Modifier.fillMaxWidth(),
-            )
+            Canvas(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(28.dp),
+            ) {
+                val barCount = bars.size
+                val gap = size.width * 0.015f
+                val barW = (size.width - gap * (barCount - 1)) / barCount
+                bars.forEachIndexed { i, h ->
+                    val barH = h * size.height
+                    val x = i * (barW + gap)
+                    val y = (size.height - barH) / 2f
+                    val fraction = (i + 1f) / barCount
+                    drawRoundRect(
+                        color = if (fraction <= progress) activeColor else inactiveColor,
+                        topLeft = androidx.compose.ui.geometry.Offset(x, y),
+                        size = androidx.compose.ui.geometry.Size(barW, barH),
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(barW / 2),
+                    )
+                }
+            }
             Spacer(Modifier.height(2.dp))
             Text(
                 text = formatAudioDuration(if (currentMs > 0) currentMs else durationMs),
@@ -1239,6 +1299,7 @@ private fun MessageBubble(
     onReplyClick: (String) -> Unit = {},
     onDelete: (() -> Unit)? = null,
     onEdit: (() -> Unit)? = null,
+    onSelfDestruct: (() -> Unit)? = null,
     messageReactions: List<com.ajrpachon.chatapp.domain.model.ReactionBO> = emptyList(),
     currentUserId: String? = null,
     onToggleReaction: (String) -> Unit = {},
@@ -1387,6 +1448,15 @@ private fun MessageBubble(
                                         onClick = { showMsgMenu = false; onEdit() },
                                     )
                                 }
+                                if (onSelfDestruct != null) {
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(if (message.expiresAt != null) "Quitar autodestrucción" else "Mensaje efímero")
+                                        },
+                                        leadingIcon = { Text(if (message.expiresAt != null) "♾️" else "⏱️") },
+                                        onClick = { showMsgMenu = false; onSelfDestruct() },
+                                    )
+                                }
                                 DropdownMenuItem(
                                     text = { Text("Copiar") },
                                     leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null) },
@@ -1407,6 +1477,14 @@ private fun MessageBubble(
                         horizontalArrangement = Arrangement.spacedBy(2.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        message.expiresAt?.let { exp ->
+                            val secsLeft = ((exp - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
+                            Text(
+                                "⏱️ ${if (secsLeft < 60) "${secsLeft}s" else "${secsLeft / 60}m"}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                            )
+                        }
                         if (message.isEdited) {
                             Text(
                                 "editado",
@@ -1795,3 +1873,70 @@ private fun formatAudioDuration(ms: Int): String {
 
 private fun formatCallDuration(seconds: Int): String =
     "%d:%02d".format(seconds / 60, seconds % 60)
+
+@Composable
+private fun ExpiryDurationDialog(onDismiss: () -> Unit, onSelect: (Long?) -> Unit) {
+    val options = listOf(
+        "1 minuto" to (System.currentTimeMillis() + 60_000L),
+        "1 hora" to (System.currentTimeMillis() + 3_600_000L),
+        "24 horas" to (System.currentTimeMillis() + 86_400_000L),
+        "7 días" to (System.currentTimeMillis() + 604_800_000L),
+        "Quitar autodestrucción" to null,
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Mensaje efímero") },
+        text = {
+            androidx.compose.foundation.layout.Column {
+                Text(
+                    "El mensaje se borrará localmente después de:",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(androidx.compose.ui.Modifier.height(8.dp))
+                options.forEach { (label, value) ->
+                    TextButton(
+                        onClick = { onSelect(value) },
+                        modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
+                    ) {
+                        Text(label, modifier = androidx.compose.ui.Modifier.fillMaxWidth())
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancelar") }
+        },
+    )
+}
+
+@Composable
+private fun MuteDurationDialog(onDismiss: () -> Unit, onSelect: (Long) -> Unit) {
+    val options = listOf(
+        "1 hora" to (System.currentTimeMillis() + 3_600_000L),
+        "8 horas" to (System.currentTimeMillis() + 28_800_000L),
+        "24 horas" to (System.currentTimeMillis() + 86_400_000L),
+        "Siempre" to -1L,
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Silenciar notificaciones") },
+        text = {
+            androidx.compose.foundation.layout.Column {
+                options.forEach { (label, value) ->
+                    TextButton(
+                        onClick = { onSelect(value) },
+                        modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
+                    ) {
+                        Text(label, modifier = androidx.compose.ui.Modifier.fillMaxWidth())
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancelar") }
+        },
+    )
+}

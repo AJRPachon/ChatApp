@@ -34,4 +34,6 @@ interface MessageRepository {
     suspend fun syncMessages(conversationId: String, since: Long = 0L)
     suspend fun clearMessages(conversationId: String)
     suspend fun searchMessages(conversationId: String, currentUserId: String, query: String): List<MessageBO>
+    suspend fun setMessageExpiry(messageId: String, expiresAt: Long?)
+    suspend fun deleteExpiredMessages()
 }

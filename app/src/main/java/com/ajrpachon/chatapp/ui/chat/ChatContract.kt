@@ -31,11 +31,15 @@ data class ChatState(
     val replyingTo: MessageBO? = null,
     val showStickerPicker: Boolean = false,
     val isMuted: Boolean = false,
+    val mutedUntil: Long = 0L,
+    val showMuteDialog: Boolean = false,
     val editingMessage: MessageBO? = null,
     val isSearchActive: Boolean = false,
     val searchQuery: String = "",
     val searchResults: List<MessageBO> = emptyList(),
     val isSearching: Boolean = false,
+    val highlightedMessageId: String? = null,
+    val expiryDialogMessageId: String? = null,
 )
 
 sealed interface ChatIntent {
@@ -55,6 +59,10 @@ sealed interface ChatIntent {
     data class SendGif(val url: String) : ChatIntent
     data class SendSticker(val emoji: String) : ChatIntent
     data object ToggleMute : ChatIntent
+    data object ShowMuteDialog : ChatIntent
+    data object DismissMuteDialog : ChatIntent
+    // mutedUntil: -1L = forever, 0L = unmute, positive = until epoch millis
+    data class MuteFor(val mutedUntil: Long) : ChatIntent
     data object LeaveGroup : ChatIntent
     data class DeleteMessage(val messageId: String) : ChatIntent
     data class StartEdit(val message: MessageBO) : ChatIntent
@@ -64,6 +72,11 @@ sealed interface ChatIntent {
     data object CloseSearch : ChatIntent
     data class SearchQueryChanged(val query: String) : ChatIntent
     data class ToggleReaction(val messageId: String, val emoji: String) : ChatIntent
+    data class JumpToMessage(val messageId: String) : ChatIntent
+    data class ShowExpiryDialog(val messageId: String) : ChatIntent
+    data object DismissExpiryDialog : ChatIntent
+    // expiresAt: null = remove expiry, positive = epoch millis
+    data class SetExpiry(val messageId: String, val expiresAt: Long?) : ChatIntent
 }
 
 sealed interface ChatEffect {

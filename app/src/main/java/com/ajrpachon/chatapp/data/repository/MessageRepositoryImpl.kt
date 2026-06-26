@@ -226,6 +226,14 @@ class MessageRepositoryImpl(
         }
     }
 
+    override suspend fun setMessageExpiry(messageId: String, expiresAt: Long?) {
+        messageDao.setExpiry(messageId, expiresAt)
+    }
+
+    override suspend fun deleteExpiredMessages() {
+        messageDao.deleteExpired(System.currentTimeMillis())
+    }
+
     // ---------------------------------------------------------------------------
     // E2EE helpers
     // ---------------------------------------------------------------------------

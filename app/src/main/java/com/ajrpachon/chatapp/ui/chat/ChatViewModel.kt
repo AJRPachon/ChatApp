@@ -38,7 +38,7 @@ import java.io.File
 
 
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 class ChatViewModel(
     private val conversationId: String,
     private val otherUserName: String,
@@ -82,6 +82,9 @@ class ChatViewModel(
     private var remoteSyncJob: Job? = null
 
     init {
+        // Delete expired self-destruct messages when the screen opens
+        viewModelScope.launch { catchResult { messageRepository.deleteExpiredMessages() } }
+
         _state.update { it.copy(conversationTitle = otherUserName) }
         val uid = currentUserId
         if (uid != null) {
@@ -98,7 +101,8 @@ class ChatViewModel(
                     isGroup = isGroup,
                     groupAvatarUrl = conv?.groupAvatarUrl,
                     isCurrentUserMember = true,
-                    isMuted = conv?.isMuted == true,
+                    isMuted = conv?.isEffectivelyMuted() == true,
+                    mutedUntil = conv?.mutedUntil ?: 0L,
                 )
             }
             _historyVisibleFrom.value = historyVisibleFrom
@@ -212,6 +216,9 @@ class ChatViewModel(
             is ChatIntent.SendGif -> sendGif(intent.url)
             is ChatIntent.SendSticker -> sendSticker(intent.emoji)
             is ChatIntent.ToggleMute -> toggleMute()
+            is ChatIntent.ShowMuteDialog -> _state.update { it.copy(showMuteDialog = true) }
+            is ChatIntent.DismissMuteDialog -> _state.update { it.copy(showMuteDialog = false) }
+            is ChatIntent.MuteFor -> muteFor(intent.mutedUntil)
             is ChatIntent.LeaveGroup -> leaveGroup()
             is ChatIntent.DeleteMessage -> deleteMessage(intent.messageId)
             is ChatIntent.StartEdit -> _state.update { it.copy(editingMessage = intent.message, inputText = intent.message.content) }
@@ -221,6 +228,10 @@ class ChatViewModel(
             is ChatIntent.CloseSearch -> _state.update { it.copy(isSearchActive = false, searchQuery = "", searchResults = emptyList()) }
             is ChatIntent.SearchQueryChanged -> searchMessages(intent.query)
             is ChatIntent.ToggleReaction -> toggleReaction(intent.messageId, intent.emoji)
+            is ChatIntent.JumpToMessage -> jumpToMessage(intent.messageId)
+            is ChatIntent.ShowExpiryDialog -> _state.update { it.copy(expiryDialogMessageId = intent.messageId) }
+            is ChatIntent.DismissExpiryDialog -> _state.update { it.copy(expiryDialogMessageId = null) }
+            is ChatIntent.SetExpiry -> setExpiry(intent.messageId, intent.expiresAt)
         }
     }
 
@@ -241,6 +252,30 @@ class ChatViewModel(
                 messageRepository.searchMessages(conversationId, uid, query)
             }.getOrDefault(emptyList())
             _state.update { it.copy(searchResults = results, isSearching = false) }
+        }
+    }
+
+    private fun setExpiry(messageId: String, expiresAt: Long?) {
+        _state.update { it.copy(expiryDialogMessageId = null) }
+        viewModelScope.launch {
+            catchResult { messageRepository.setMessageExpiry(messageId, expiresAt) }
+                .onFailure { e -> AppLogger.e(TAG, "setExpiry failed: ${e.message}") }
+        }
+    }
+
+    private fun jumpToMessage(messageId: String) {
+        _state.update {
+            it.copy(
+                isSearchActive = false,
+                searchQuery = "",
+                searchResults = emptyList(),
+                highlightedMessageId = messageId,
+            )
+        }
+        // Clear highlight after 2 seconds so the animation fades out
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(2_000)
+            _state.update { if (it.highlightedMessageId == messageId) it.copy(highlightedMessageId = null) else it }
         }
     }
 
@@ -460,6 +495,14 @@ class ChatViewModel(
                     _state.update { it.copy(isMuted = !newMuted) }
                     AppLogger.e(TAG, "Toggle mute failed", e)
                 }
+        }
+    }
+
+    private fun muteFor(mutedUntil: Long) {
+        _state.update { it.copy(showMuteDialog = false, isMuted = mutedUntil != 0L, mutedUntil = mutedUntil) }
+        viewModelScope.launch {
+            catchResult { conversationDao.updateMutedUntil(conversationId, mutedUntil) }
+                .onFailure { e -> AppLogger.e(TAG, "MuteFor failed", e) }
         }
     }
 
