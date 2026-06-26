@@ -23,4 +23,6 @@ data class MessageDBO(
     val gifUrl: String? = null,
     val stickerUrl: String? = null,
     @ColumnInfo(name = "isEncrypted") val isEncrypted: Boolean = false,
+    @ColumnInfo(name = "isEdited") val isEdited: Boolean = false,
+    @ColumnInfo(name = "editedAt") val editedAt: Long? = null,
 )

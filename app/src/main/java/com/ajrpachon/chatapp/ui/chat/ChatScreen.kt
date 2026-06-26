@@ -50,6 +50,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.NotificationsActive
@@ -453,6 +455,26 @@ fun ChatScreen(
         bottomBar = {
             if (state.isCurrentUserMember) Surface(shadowElevation = 4.dp) {
                 Column {
+                val editingMessage = state.editingMessage
+                if (editingMessage != null) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                            Column {
+                                Text("Editando mensaje", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                                Text(editingMessage.content.take(60), style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                        }
+                        IconButton(onClick = { vm.onIntent(ChatIntent.CancelEdit) }) {
+                            Icon(Icons.Default.Close, contentDescription = "Cancelar edición")
+                        }
+                    }
+                    HorizontalDivider()
+                }
                 val replyingTo = state.replyingTo
                 if (replyingTo != null) {
                     ReplyPreviewBar(
@@ -591,6 +613,7 @@ fun ChatScreen(
                                     onReply = { vm.onIntent(ChatIntent.SetReply(message)) },
                                     isHighlighted = message.id == highlightedMessageId,
                                     onReplyClick = onScrollToMessage,
+                                    onEdit = if (message.isFromMe && message.content.isNotBlank()) {{ vm.onIntent(ChatIntent.StartEdit(message)) }} else null,
                                 )
                             }
                         } else {
@@ -605,6 +628,7 @@ fun ChatScreen(
                                 onReply = { vm.onIntent(ChatIntent.SetReply(message)) },
                                 isHighlighted = message.id == highlightedMessageId,
                                 onReplyClick = onScrollToMessage,
+                                onEdit = if (message.isFromMe && message.content.isNotBlank()) {{ vm.onIntent(ChatIntent.StartEdit(message)) }} else null,
                             )
                         }
                     }
@@ -1053,6 +1077,7 @@ private fun MessageBubble(
     onReply: () -> Unit,
     isHighlighted: Boolean = false,
     onReplyClick: (String) -> Unit = {},
+    onEdit: (() -> Unit)? = null,
 ) {
     if (message.isCallMessage) {
         CallMessageBubble(message)
@@ -1164,20 +1189,32 @@ private fun MessageBubble(
                         RemoteAudioPlayer(url = message.audioUrl)
                     }
                     if (message.content.isNotBlank()) {
+                        var showMsgMenu by remember { mutableStateOf(false) }
                         Box(
                             modifier = Modifier.combinedClickable(
                                 onClick = {},
                                 onLongClick = {
-                                    ClipboardProtection.copyWithTimeout(
-                                        context = context,
-                                        label = "message",
-                                        text = message.content,
-                                        scope = scope,
-                                    )
+                                    if (onEdit != null) { showMsgMenu = true } else {
+                                        ClipboardProtection.copyWithTimeout(context, "message", message.content, scope)
+                                    }
                                 },
                             ),
                         ) {
                             Text(text = message.content, style = MaterialTheme.typography.bodyMedium)
+                            if (onEdit != null) {
+                                DropdownMenu(expanded = showMsgMenu, onDismissRequest = { showMsgMenu = false }) {
+                                    DropdownMenuItem(
+                                        text = { Text("Editar") },
+                                        leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                                        onClick = { showMsgMenu = false; onEdit() },
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Copiar") },
+                                        leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null) },
+                                        onClick = { showMsgMenu = false; ClipboardProtection.copyWithTimeout(context, "message", message.content, scope) },
+                                    )
+                                }
+                            }
                         }
                     }
                     Row(
@@ -1185,6 +1222,13 @@ private fun MessageBubble(
                         horizontalArrangement = Arrangement.spacedBy(2.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        if (message.isEdited) {
+                            Text(
+                                "editado",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                            )
+                        }
                         Text(
                             text = timeText,
                             style = MaterialTheme.typography.labelSmall,

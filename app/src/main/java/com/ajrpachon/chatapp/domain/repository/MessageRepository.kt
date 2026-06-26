@@ -28,6 +28,7 @@ interface MessageRepository {
     suspend fun uploadImage(conversationId: String, bytes: ByteArray, mimeType: String): String
     suspend fun uploadAudio(conversationId: String, bytes: ByteArray): String
     suspend fun markAsRead(conversationId: String, userId: String)
+    suspend fun editMessage(messageId: String, newContent: String): Result<Unit>
     suspend fun syncMessages(conversationId: String, since: Long = 0L)
     suspend fun clearMessages(conversationId: String)
 }

@@ -31,6 +31,7 @@ data class ChatState(
     val replyingTo: MessageBO? = null,
     val showStickerPicker: Boolean = false,
     val isMuted: Boolean = false,
+    val editingMessage: MessageBO? = null,
 )
 
 sealed interface ChatIntent {
@@ -51,6 +52,9 @@ sealed interface ChatIntent {
     data class SendSticker(val emoji: String) : ChatIntent
     data object ToggleMute : ChatIntent
     data object LeaveGroup : ChatIntent
+    data class StartEdit(val message: MessageBO) : ChatIntent
+    data object CancelEdit : ChatIntent
+    data object ConfirmEdit : ChatIntent
 }
 
 sealed interface ChatEffect {
