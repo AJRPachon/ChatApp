@@ -31,6 +31,10 @@ data class ChatState(
     val replyingTo: MessageBO? = null,
     val showStickerPicker: Boolean = false,
     val isMuted: Boolean = false,
+    val isSearchActive: Boolean = false,
+    val searchQuery: String = "",
+    val searchResults: List<MessageBO> = emptyList(),
+    val isSearching: Boolean = false,
 )
 
 sealed interface ChatIntent {
@@ -51,6 +55,9 @@ sealed interface ChatIntent {
     data class SendSticker(val emoji: String) : ChatIntent
     data object ToggleMute : ChatIntent
     data object LeaveGroup : ChatIntent
+    data object OpenSearch : ChatIntent
+    data object CloseSearch : ChatIntent
+    data class SearchQueryChanged(val query: String) : ChatIntent
 }
 
 sealed interface ChatEffect {

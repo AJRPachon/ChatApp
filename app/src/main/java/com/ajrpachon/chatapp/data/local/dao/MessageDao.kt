@@ -35,6 +35,9 @@ interface MessageDao {
     @Query("DELETE FROM messages WHERE conversationId = :conversationId AND createdAt < :threshold")
     suspend fun deleteMessagesBefore(conversationId: String, threshold: Long)
 
+    @Query("SELECT * FROM messages WHERE conversationId = :conversationId AND content LIKE '%' || :query || '%' ORDER BY createdAt DESC")
+    suspend fun searchMessages(conversationId: String, query: String): List<MessageDBO>
+
     @Query("""
         SELECT COUNT(*) FROM messages
         WHERE conversationId = :conversationId

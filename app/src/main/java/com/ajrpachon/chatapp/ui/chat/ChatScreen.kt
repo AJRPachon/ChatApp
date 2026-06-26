@@ -71,7 +71,9 @@ import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Reply
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -395,6 +397,9 @@ fun ChatScreen(
                             Icon(Icons.Default.Videocam, contentDescription = "Videollamada")
                         }
                     }
+                    IconButton(onClick = { vm.onIntent(ChatIntent.OpenSearch) }) {
+                        Icon(Icons.Default.Search, contentDescription = "Buscar mensajes")
+                    }
                     var menuExpanded by remember { mutableStateOf(false) }
                     Box {
                         IconButton(onClick = { menuExpanded = true }) {
@@ -635,7 +640,118 @@ fun ChatScreen(
                     Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Ir al final")
                 }
             }
+            if (state.isSearchActive) {
+                MessageSearchOverlay(
+                    query = state.searchQuery,
+                    results = state.searchResults,
+                    isSearching = state.isSearching,
+                    topPadding = innerPadding.calculateTopPadding(),
+                    onQueryChange = { vm.onIntent(ChatIntent.SearchQueryChanged(it)) },
+                    onClose = { vm.onIntent(ChatIntent.CloseSearch) },
+                )
+            }
         }
+    }
+}
+
+@Composable
+private fun MessageSearchOverlay(
+    query: String,
+    results: List<MessageBO>,
+    isSearching: Boolean,
+    topPadding: androidx.compose.ui.unit.Dp,
+    onQueryChange: (String) -> Unit,
+    onClose: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = topPadding),
+        color = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = onQueryChange,
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text("Buscar mensajes...") },
+                    singleLine = true,
+                    leadingIcon = {
+                        if (isSearching) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                        } else {
+                            Icon(Icons.Default.Search, contentDescription = null)
+                        }
+                    },
+                    trailingIcon = if (query.isNotEmpty()) {
+                        { IconButton(onClick = { onQueryChange("") }) { Icon(Icons.Default.Close, contentDescription = "Limpiar") } }
+                    } else null,
+                )
+                IconButton(onClick = onClose) {
+                    Icon(Icons.Default.Close, contentDescription = "Cerrar búsqueda")
+                }
+            }
+            HorizontalDivider()
+            if (query.isNotBlank() && results.isEmpty() && !isSearching) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Sin resultados", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(vertical = 8.dp, horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    itemsIndexed(results, key = { _, m -> m.id }) { _, message ->
+                        SearchResultItem(message = message)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchResultItem(message: MessageBO) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = message.senderName,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            val timeText = remember(message.createdAt) {
+                val local = message.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
+                "%02d:%02d".format(local.hour, local.minute)
+            }
+            Text(
+                text = timeText,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline,
+            )
+        }
+        Spacer(Modifier.height(2.dp))
+        Text(
+            text = message.content.ifBlank { message.replySnippet() },
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

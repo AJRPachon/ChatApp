@@ -207,6 +207,29 @@ class ChatViewModel(
             is ChatIntent.SendSticker -> sendSticker(intent.emoji)
             is ChatIntent.ToggleMute -> toggleMute()
             is ChatIntent.LeaveGroup -> leaveGroup()
+            is ChatIntent.OpenSearch -> _state.update { it.copy(isSearchActive = true, searchQuery = "", searchResults = emptyList()) }
+            is ChatIntent.CloseSearch -> _state.update { it.copy(isSearchActive = false, searchQuery = "", searchResults = emptyList()) }
+            is ChatIntent.SearchQueryChanged -> searchMessages(intent.query)
+        }
+    }
+
+    private var searchJob: Job? = null
+
+    private fun searchMessages(query: String) {
+        _state.update { it.copy(searchQuery = query) }
+        searchJob?.cancel()
+        if (query.isBlank()) {
+            _state.update { it.copy(searchResults = emptyList(), isSearching = false) }
+            return
+        }
+        searchJob = viewModelScope.launch {
+            _state.update { it.copy(isSearching = true) }
+            delay(300L) // debounce
+            val uid = currentUserId ?: return@launch
+            val results = runCatching {
+                messageRepository.searchMessages(conversationId, uid, query)
+            }.getOrDefault(emptyList())
+            _state.update { it.copy(searchResults = results, isSearching = false) }
         }
     }
 

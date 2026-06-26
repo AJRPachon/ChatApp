@@ -30,4 +30,5 @@ interface MessageRepository {
     suspend fun markAsRead(conversationId: String, userId: String)
     suspend fun syncMessages(conversationId: String, since: Long = 0L)
     suspend fun clearMessages(conversationId: String)
+    suspend fun searchMessages(conversationId: String, currentUserId: String, query: String): List<MessageBO>
 }
