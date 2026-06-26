@@ -1227,7 +1227,7 @@ private fun DeletedMessageBubble(message: MessageBO) {
 
 // ── MessageBubble ─────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun MessageBubble(
     message: MessageBO,
@@ -1364,6 +1364,8 @@ private fun MessageBubble(
                     }
                     if (message.content.isNotBlank()) {
                         var showMsgMenu by remember { mutableStateOf(false) }
+                        var showEmojiPicker by remember { mutableStateOf(false) }
+                        val emojiSheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
                         Box(
                             modifier = Modifier.combinedClickable(
                                 onClick = {},
@@ -1372,22 +1374,11 @@ private fun MessageBubble(
                         ) {
                             Text(text = message.content, style = MaterialTheme.typography.bodyMedium)
                             DropdownMenu(expanded = showMsgMenu, onDismissRequest = { showMsgMenu = false }) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    listOf("👍", "❤️", "😂", "😮", "😢", "🙏").forEach { emoji ->
-                                        Text(
-                                            text = emoji,
-                                            style = MaterialTheme.typography.titleMedium,
-                                            modifier = Modifier.clickable {
-                                                showMsgMenu = false
-                                                onToggleReaction(emoji)
-                                            },
-                                        )
-                                    }
-                                }
-                                HorizontalDivider()
+                                DropdownMenuItem(
+                                    text = { Text("Reaccionar") },
+                                    leadingIcon = { Text("😊") },
+                                    onClick = { showMsgMenu = false; showEmojiPicker = true },
+                                )
                                 if (onEdit != null) {
                                     DropdownMenuItem(
                                         text = { Text("Editar") },
@@ -1401,6 +1392,13 @@ private fun MessageBubble(
                                     onClick = { showMsgMenu = false; ClipboardProtection.copyWithTimeout(context, "message", message.content, scope) },
                                 )
                             }
+                        }
+                        if (showEmojiPicker) {
+                            com.ajrpachon.chatapp.ui.components.EmojiPickerBottomSheet(
+                                sheetState = emojiSheetState,
+                                onDismiss = { showEmojiPicker = false },
+                                onEmojiSelected = { emoji -> onToggleReaction(emoji) },
+                            )
                         }
                     }
                     Row(
