@@ -9,6 +9,7 @@ import com.ajrpachon.chatapp.data.local.entity.MessageDBO
 import kotlinx.coroutines.flow.Flow
 
 @Dao
+@Suppress("TooManyFunctions")
 interface MessageDao {
     @Query("SELECT * FROM messages WHERE conversationId = :conversationId AND createdAt >= :since ORDER BY createdAt ASC")
     fun observeByConversation(conversationId: String, since: Long): Flow<List<MessageDBO>>
@@ -26,6 +27,12 @@ interface MessageDao {
     @Query("UPDATE messages SET isRead = 1 WHERE conversationId = :conversationId")
     suspend fun markAllRead(conversationId: String)
 
+    @Query("UPDATE messages SET isDeleted = 1 WHERE id = :messageId")
+    suspend fun markDeleted(messageId: String)
+
+    @Query("UPDATE messages SET content = :content, isEdited = 1, editedAt = :editedAt WHERE id = :messageId")
+    suspend fun updateContent(messageId: String, content: String, editedAt: Long)
+
     @Query("SELECT * FROM messages WHERE conversationId = :conversationId ORDER BY createdAt DESC LIMIT 1")
     suspend fun getLastMessage(conversationId: String): MessageDBO?
 
@@ -34,6 +41,9 @@ interface MessageDao {
 
     @Query("DELETE FROM messages WHERE conversationId = :conversationId AND createdAt < :threshold")
     suspend fun deleteMessagesBefore(conversationId: String, threshold: Long)
+
+    @Query("SELECT * FROM messages WHERE conversationId = :conversationId AND content LIKE '%' || :query || '%' ORDER BY createdAt DESC")
+    suspend fun searchMessages(conversationId: String, query: String): List<MessageDBO>
 
     @Query("""
         SELECT COUNT(*) FROM messages

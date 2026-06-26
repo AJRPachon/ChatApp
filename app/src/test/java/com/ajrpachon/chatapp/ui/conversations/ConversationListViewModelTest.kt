@@ -10,6 +10,7 @@ import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
 import com.ajrpachon.chatapp.domain.usecase.ObserveConversationsUseCase
 import com.ajrpachon.chatapp.domain.usecase.ObserveInvitationsUseCase
 import com.ajrpachon.chatapp.service.FcmTokenManager
+import com.ajrpachon.chatapp.service.PresenceManager
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import com.ajrpachon.chatapp.util.sharedScheduler
 import io.mockk.coEvery
@@ -35,6 +36,7 @@ class ConversationListViewModelTest {
     private val conversationRepository = mockk<ConversationRepository>(relaxed = true)
     private val leaveGroupUseCase = mockk<LeaveGroupUseCase>(relaxed = true)
     private val fcmTokenManager = mockk<FcmTokenManager>(relaxed = true)
+    private val presenceManager = mockk<PresenceManager>(relaxed = true)
 
     private val testUser = UserBO(
         id = "user1",
@@ -63,6 +65,7 @@ class ConversationListViewModelTest {
         conversationRepository = conversationRepository,
         leaveGroupUseCase = leaveGroupUseCase,
         fcmTokenManager = fcmTokenManager,
+        presenceManager = presenceManager,
     )
 
     @Test

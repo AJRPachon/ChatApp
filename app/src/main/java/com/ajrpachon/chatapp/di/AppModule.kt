@@ -41,6 +41,7 @@ val databaseModule = module {
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().messageDao() }
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().invitationDao() }
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().groupMemberDao() }
+    single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().reactionDao() }
 }
 
 val networkModule = module {
@@ -82,7 +83,7 @@ val viewModelModule = module {
 
     // Needs runtime parameters — cannot use viewModelOf
     viewModel { (conversationId: String, otherUserName: String) ->
-        ChatViewModel(conversationId, otherUserName, get(), get(), get(), get(), get(), get(), get(), get())
+        ChatViewModel(conversationId, otherUserName, get(), get(), get(), get(), get(), get(), get(), get(), get())
     }
     viewModel { params ->
         CallViewModel(

@@ -163,6 +163,16 @@ class MessageRepositoryImpl(
         remoteSource.markAsRead(conversationId, userId)
     }
 
+    override suspend fun deleteMessage(messageId: String): Result<Unit> = catchResult {
+        remoteSource.deleteMessage(messageId)
+        messageDao.markDeleted(messageId)
+    }
+
+    override suspend fun editMessage(messageId: String, newContent: String): Result<Unit> = catchResult {
+        remoteSource.editMessage(messageId, newContent)
+        messageDao.updateContent(messageId, newContent, System.currentTimeMillis())
+    }
+
     override fun syncRemote(conversationId: String, historyVisibleFrom: Long): Flow<Unit> = channelFlow {
         launch {
             catchResult {
@@ -206,6 +216,14 @@ class MessageRepositoryImpl(
 
     override suspend fun clearMessages(conversationId: String) {
         messageDao.deleteByConversation(conversationId)
+    }
+
+    override suspend fun searchMessages(conversationId: String, currentUserId: String, query: String): List<MessageBO> {
+        if (query.isBlank()) return emptyList()
+        return messageDao.searchMessages(conversationId, query.trim()).map { dbo ->
+            val senderName = userDao.getById(dbo.senderId)?.displayName ?: dbo.senderId
+            dbo.toBO(currentUserId, senderName)
+        }
     }
 
     // ---------------------------------------------------------------------------

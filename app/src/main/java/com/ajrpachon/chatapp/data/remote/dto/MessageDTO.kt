@@ -22,4 +22,7 @@ data class MessageDTO(
     @SerialName("gif_url") val gifUrl: String? = null,
     @SerialName("sticker_url") val stickerUrl: String? = null,
     @SerialName("is_encrypted") val isEncrypted: Boolean = false,
+    @SerialName("is_deleted") val isDeleted: Boolean = false,
+    @SerialName("is_edited") val isEdited: Boolean = false,
+    @SerialName("edited_at") val editedAt: String? = null,
 )

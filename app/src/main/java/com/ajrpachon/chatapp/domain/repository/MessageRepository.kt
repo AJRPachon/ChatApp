@@ -4,6 +4,7 @@ import androidx.paging.PagingData
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import kotlinx.coroutines.flow.Flow
 
+@Suppress("TooManyFunctions")
 interface MessageRepository {
     fun observeMessages(conversationId: String, currentUserId: String, historyVisibleFrom: Long = 0L): Flow<List<MessageBO>>
     fun syncRemote(conversationId: String, historyVisibleFrom: Long = 0L): Flow<Unit>
@@ -28,6 +29,9 @@ interface MessageRepository {
     suspend fun uploadImage(conversationId: String, bytes: ByteArray, mimeType: String): String
     suspend fun uploadAudio(conversationId: String, bytes: ByteArray): String
     suspend fun markAsRead(conversationId: String, userId: String)
+    suspend fun deleteMessage(messageId: String): Result<Unit>
+    suspend fun editMessage(messageId: String, newContent: String): Result<Unit>
     suspend fun syncMessages(conversationId: String, since: Long = 0L)
     suspend fun clearMessages(conversationId: String)
+    suspend fun searchMessages(conversationId: String, currentUserId: String, query: String): List<MessageBO>
 }

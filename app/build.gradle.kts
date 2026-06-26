@@ -194,6 +194,9 @@ dependencies {
     implementation(firebaseBom)
     implementation(libs.firebase.messaging)
 
+    // Baseline profiles — pre-compiles Compose hot paths for faster startup
+    implementation(libs.profileinstaller)
+
     // Tests
     testImplementation(libs.junit)
     testImplementation(libs.mockk)

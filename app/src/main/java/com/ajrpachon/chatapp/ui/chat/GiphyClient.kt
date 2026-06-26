@@ -13,24 +13,37 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
+sealed interface GiphyResult {
+    data class Success(val gifs: List<GiphyGif>) : GiphyResult
+    data object ApiKeyInvalid : GiphyResult
+    data object NetworkError : GiphyResult
+}
+
 @Serializable
 internal data class GiphyResponse(
     @SerialName("data") val data: List<GiphyGif> = emptyList(),
+    @SerialName("meta") val meta: GiphyMeta = GiphyMeta(),
 )
 
 @Serializable
-internal data class GiphyGif(
+internal data class GiphyMeta(
+    @SerialName("status") val status: Int = 200,
+    @SerialName("msg") val msg: String = "",
+)
+
+@Serializable
+data class GiphyGif(
     @SerialName("images") val images: GiphyImages,
 )
 
 @Serializable
-internal data class GiphyImages(
+data class GiphyImages(
     @SerialName("fixed_height_small") val fixedHeightSmall: GiphyImageData,
     @SerialName("original") val original: GiphyImageData,
 )
 
 @Serializable
-internal data class GiphyImageData(
+data class GiphyImageData(
     @SerialName("url") val url: String = "",
 )
 
@@ -41,18 +54,24 @@ internal val giphyClient = HttpClient(OkHttp) {
     }
 }
 
-internal suspend fun searchGiphy(query: String): List<GiphyGif> {
+internal suspend fun searchGiphy(query: String): GiphyResult {
+    if (BuildConfig.GIPHY_API_KEY.isBlank()) return GiphyResult.ApiKeyInvalid
     val endpoint = if (query.isBlank()) {
         "https://api.giphy.com/v1/gifs/trending"
     } else {
         "https://api.giphy.com/v1/gifs/search"
     }
     return runCatching {
-        giphyClient.get(endpoint) {
+        val response = giphyClient.get(endpoint) {
             parameter("api_key", BuildConfig.GIPHY_API_KEY)
             parameter("limit", 24)
             if (query.isNotBlank()) parameter("q", query)
             parameter("rating", "g")
-        }.body<GiphyResponse>().data
-    }.getOrElse { emptyList() }
+        }.body<GiphyResponse>()
+        when (response.meta.status) {
+            200 -> GiphyResult.Success(response.data)
+            401, 403 -> GiphyResult.ApiKeyInvalid
+            else -> GiphyResult.NetworkError
+        }
+    }.getOrElse { GiphyResult.NetworkError }
 }

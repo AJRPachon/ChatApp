@@ -59,6 +59,13 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="com.ajrpachon.chatapp" android:host="auth-callback" />
             </intent-filter>
+            <!-- Deep link: chatapp://chat/{conversationId}?name={otherUserName} -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="chatapp" android:host="chat" />
+            </intent-filter>
         </activity>
 
     </application>

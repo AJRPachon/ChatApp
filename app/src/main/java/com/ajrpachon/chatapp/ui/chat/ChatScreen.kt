@@ -50,6 +50,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.NotificationsActive
@@ -71,7 +74,9 @@ import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Reply
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -161,6 +166,7 @@ fun ChatScreen(
     val vm: ChatViewModel = koinViewModel(key = conversationId, parameters = { parametersOf(conversationId, otherUserName) })
     val state by vm.state.collectAsStateWithLifecycle()
     val lazyPagingItems = vm.messages.collectAsLazyPagingItems()
+    val reactions by vm.reactions.collectAsStateWithLifecycle(initialValue = emptyMap())
     val listState = rememberLazyListState()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -395,6 +401,9 @@ fun ChatScreen(
                             Icon(Icons.Default.Videocam, contentDescription = "Videollamada")
                         }
                     }
+                    IconButton(onClick = { vm.onIntent(ChatIntent.OpenSearch) }) {
+                        Icon(Icons.Default.Search, contentDescription = "Buscar mensajes")
+                    }
                     var menuExpanded by remember { mutableStateOf(false) }
                     Box {
                         IconButton(onClick = { menuExpanded = true }) {
@@ -453,6 +462,26 @@ fun ChatScreen(
         bottomBar = {
             if (state.isCurrentUserMember) Surface(shadowElevation = 4.dp) {
                 Column {
+                val editingMessage = state.editingMessage
+                if (editingMessage != null) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                            Column {
+                                Text("Editando mensaje", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                                Text(editingMessage.content.take(60), style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                        }
+                        IconButton(onClick = { vm.onIntent(ChatIntent.CancelEdit) }) {
+                            Icon(Icons.Default.Close, contentDescription = "Cancelar edición")
+                        }
+                    }
+                    HorizontalDivider()
+                }
                 val replyingTo = state.replyingTo
                 if (replyingTo != null) {
                     ReplyPreviewBar(
@@ -591,6 +620,8 @@ fun ChatScreen(
                                     onReply = { vm.onIntent(ChatIntent.SetReply(message)) },
                                     isHighlighted = message.id == highlightedMessageId,
                                     onReplyClick = onScrollToMessage,
+                                    onDelete = if (message.isFromMe) {{ vm.onIntent(ChatIntent.DeleteMessage(message.id)) }} else null,
+                                    onEdit = if (message.isFromMe && message.content.isNotBlank()) {{ vm.onIntent(ChatIntent.StartEdit(message)) }} else null,
                                 )
                             }
                         } else {
@@ -605,6 +636,11 @@ fun ChatScreen(
                                 onReply = { vm.onIntent(ChatIntent.SetReply(message)) },
                                 isHighlighted = message.id == highlightedMessageId,
                                 onReplyClick = onScrollToMessage,
+                                onDelete = if (message.isFromMe) {{ vm.onIntent(ChatIntent.DeleteMessage(message.id)) }} else null,
+                                onEdit = if (message.isFromMe && message.content.isNotBlank()) {{ vm.onIntent(ChatIntent.StartEdit(message)) }} else null,
+                                messageReactions = reactions[message.id] ?: emptyList(),
+                                currentUserId = state.currentUserId,
+                                onToggleReaction = { emoji -> vm.onIntent(ChatIntent.ToggleReaction(message.id, emoji)) },
                             )
                         }
                     }
@@ -635,7 +671,118 @@ fun ChatScreen(
                     Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Ir al final")
                 }
             }
+            if (state.isSearchActive) {
+                MessageSearchOverlay(
+                    query = state.searchQuery,
+                    results = state.searchResults,
+                    isSearching = state.isSearching,
+                    topPadding = innerPadding.calculateTopPadding(),
+                    onQueryChange = { vm.onIntent(ChatIntent.SearchQueryChanged(it)) },
+                    onClose = { vm.onIntent(ChatIntent.CloseSearch) },
+                )
+            }
         }
+    }
+}
+
+@Composable
+private fun MessageSearchOverlay(
+    query: String,
+    results: List<MessageBO>,
+    isSearching: Boolean,
+    topPadding: androidx.compose.ui.unit.Dp,
+    onQueryChange: (String) -> Unit,
+    onClose: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = topPadding),
+        color = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = onQueryChange,
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text("Buscar mensajes...") },
+                    singleLine = true,
+                    leadingIcon = {
+                        if (isSearching) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                        } else {
+                            Icon(Icons.Default.Search, contentDescription = null)
+                        }
+                    },
+                    trailingIcon = if (query.isNotEmpty()) {
+                        { IconButton(onClick = { onQueryChange("") }) { Icon(Icons.Default.Close, contentDescription = "Limpiar") } }
+                    } else null,
+                )
+                IconButton(onClick = onClose) {
+                    Icon(Icons.Default.Close, contentDescription = "Cerrar búsqueda")
+                }
+            }
+            HorizontalDivider()
+            if (query.isNotBlank() && results.isEmpty() && !isSearching) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Sin resultados", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(vertical = 8.dp, horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    itemsIndexed(results, key = { _, m -> m.id }) { _, message ->
+                        SearchResultItem(message = message)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchResultItem(message: MessageBO) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = message.senderName,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            val timeText = remember(message.createdAt) {
+                val local = message.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
+                "%02d:%02d".format(local.hour, local.minute)
+            }
+            Text(
+                text = timeText,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline,
+            )
+        }
+        Spacer(Modifier.height(2.dp))
+        Text(
+            text = message.content.ifBlank { message.replySnippet() },
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
@@ -1042,9 +1189,46 @@ private fun StickerBubble(message: MessageBO, onReply: () -> Unit) {
     }
 }
 
+// ── DeletedMessageBubble ──────────────────────────────────────────────────────
+
+@Composable
+private fun DeletedMessageBubble(message: MessageBO) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 2.dp),
+        horizontalArrangement = if (message.isFromMe) Arrangement.End else Arrangement.Start,
+    ) {
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Icon(
+                    Icons.Default.Block,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.outline,
+                )
+                Text(
+                    "Este mensaje fue eliminado",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic),
+                    color = MaterialTheme.colorScheme.outline,
+                )
+            }
+        }
+    }
+}
+
 // ── MessageBubble ─────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalFoundationApi::class)
+@Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList")
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun MessageBubble(
     message: MessageBO,
@@ -1053,7 +1237,16 @@ private fun MessageBubble(
     onReply: () -> Unit,
     isHighlighted: Boolean = false,
     onReplyClick: (String) -> Unit = {},
+    onDelete: (() -> Unit)? = null,
+    onEdit: (() -> Unit)? = null,
+    messageReactions: List<com.ajrpachon.chatapp.domain.model.ReactionBO> = emptyList(),
+    currentUserId: String? = null,
+    onToggleReaction: (String) -> Unit = {},
 ) {
+    if (message.isDeleted) {
+        DeletedMessageBubble(message)
+        return
+    }
     if (message.isCallMessage) {
         CallMessageBubble(message)
         return
@@ -1108,16 +1301,23 @@ private fun MessageBubble(
                 .padding(start = 4.dp)
                 .alpha(iconAlpha),
         )
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .graphicsLayer { translationX = swipeOffset.value },
+            horizontalAlignment = if (message.isFromMe) Alignment.End else Alignment.Start,
+        ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = if (message.isFromMe) Arrangement.End else Arrangement.Start,
         ) {
+            var showBubbleMenu by remember { mutableStateOf(false) }
+            Box {
             Surface(
                 shape = RoundedCornerShape(12.dp),
                 color = if (message.isFromMe) MaterialTheme.colorScheme.primaryContainer
                         else MaterialTheme.colorScheme.surfaceVariant,
+                modifier = if (onDelete != null) Modifier.combinedClickable(onClick = {}, onLongClick = { showBubbleMenu = true }) else Modifier,
             ) {
                 Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                     if (isGroup && !message.isFromMe && message.senderName.isNotBlank()) {
@@ -1164,20 +1364,42 @@ private fun MessageBubble(
                         RemoteAudioPlayer(url = message.audioUrl)
                     }
                     if (message.content.isNotBlank()) {
+                        var showMsgMenu by remember { mutableStateOf(false) }
+                        var showEmojiPicker by remember { mutableStateOf(false) }
+                        val emojiSheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
                         Box(
                             modifier = Modifier.combinedClickable(
                                 onClick = {},
-                                onLongClick = {
-                                    ClipboardProtection.copyWithTimeout(
-                                        context = context,
-                                        label = "message",
-                                        text = message.content,
-                                        scope = scope,
-                                    )
-                                },
+                                onLongClick = { showMsgMenu = true },
                             ),
                         ) {
                             Text(text = message.content, style = MaterialTheme.typography.bodyMedium)
+                            DropdownMenu(expanded = showMsgMenu, onDismissRequest = { showMsgMenu = false }) {
+                                DropdownMenuItem(
+                                    text = { Text("Reaccionar") },
+                                    leadingIcon = { Text("😊") },
+                                    onClick = { showMsgMenu = false; showEmojiPicker = true },
+                                )
+                                if (onEdit != null) {
+                                    DropdownMenuItem(
+                                        text = { Text("Editar") },
+                                        leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                                        onClick = { showMsgMenu = false; onEdit() },
+                                    )
+                                }
+                                DropdownMenuItem(
+                                    text = { Text("Copiar") },
+                                    leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null) },
+                                    onClick = { showMsgMenu = false; ClipboardProtection.copyWithTimeout(context, "message", message.content, scope) },
+                                )
+                            }
+                        }
+                        if (showEmojiPicker) {
+                            com.ajrpachon.chatapp.ui.components.EmojiPickerBottomSheet(
+                                sheetState = emojiSheetState,
+                                onDismiss = { showEmojiPicker = false },
+                                onEmojiSelected = { emoji -> onToggleReaction(emoji) },
+                            )
                         }
                     }
                     Row(
@@ -1185,6 +1407,13 @@ private fun MessageBubble(
                         horizontalArrangement = Arrangement.spacedBy(2.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        if (message.isEdited) {
+                            Text(
+                                "editado",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                            )
+                        }
                         Text(
                             text = timeText,
                             style = MaterialTheme.typography.labelSmall,
@@ -1196,7 +1425,41 @@ private fun MessageBubble(
                     }
                 }
             }
+            if (onDelete != null) {
+                DropdownMenu(expanded = showBubbleMenu, onDismissRequest = { showBubbleMenu = false }) {
+                    DropdownMenuItem(
+                        text = { Text("Eliminar mensaje") },
+                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
+                        onClick = { showBubbleMenu = false; onDelete() },
+                    )
+                }
+            }
+            } // Box
         }
+        if (messageReactions.isNotEmpty()) {
+            val grouped = messageReactions.groupBy { it.emoji }
+            Row(
+                modifier = Modifier.padding(top = 2.dp, start = 4.dp, end = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                grouped.forEach { (emoji, reactors) ->
+                    val isMine = reactors.any { it.userId == currentUserId }
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = if (isMine) MaterialTheme.colorScheme.primaryContainer
+                                else MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier.clickable { onToggleReaction(emoji) },
+                    ) {
+                        Text(
+                            text = "$emoji ${reactors.size}",
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        )
+                    }
+                }
+            }
+        }
+        } // close Column
         Box(
             modifier = Modifier
                 .matchParentSize()
