@@ -29,13 +29,16 @@ Proyecto personal para poner en práctica lo aprendido en desarrollo Android nat
 | 🔐 | Registro e inicio de sesión con **email/contraseña** y **Google Sign-In** |
 | 💬 | Chat individual y grupal con **texto, imágenes, audio, GIFs y stickers** |
 | 📞 | **Llamadas de voz y videollamadas** entre usuarios via LiveKit WebRTC |
-| 🔔 | **Notificaciones push** con Firebase Cloud Messaging |
+| 🔔 | **Notificaciones push** con Firebase Cloud Messaging y **deep links** directos a la conversación (`chatapp://chat/{id}`) |
 | 👥 | Gestión completa de grupos: crear, editar, roles, añadir/expulsar miembros |
 | 🤝 | Sistema de **invitaciones de amistad** con bloqueo de usuarios |
 | 🖼️ | Perfil de usuario con **avatar** e información editable |
 | ⚡ | Lista de conversaciones **en tiempo real** via Supabase Realtime |
 | ✅ | **Confirmación de lectura** (doble check gris/azul) con badge de no leídos |
 | 🟢 | **Estado de presencia** — indicador "En línea" / "última vez" y punto verde en avatares; toggle de privacidad en perfil |
+| 😀 | **Reacciones con emoji** — pulsación larga sobre un mensaje abre el picker (10 categorías, ~1800 emojis, recientes); reacciones agrupadas bajo cada burbuja |
+| 🔍 | **Búsqueda de mensajes** en la conversación activa con debounce de 300 ms y resaltado del resultado |
+| ✏️ | **Edición y borrado** de mensajes propios — borrado lógico (`isDeleted`) y marca de edición (`isEdited` + `editedAt`) |
 
 ---
 
@@ -57,8 +60,8 @@ com.ajrpachon.chatapp/
 │   ├── local/
 │   │   ├── entity/                   Entidades Room (DBO)
 │   │   ├── dao/                      DAOs de acceso a la BD
-│   │   ├── ChatDatabase.kt           Base de datos Room (versión 12, cifrada con SQLCipher)
-│   │   ├── DatabaseBuilder.kt        Migraciones v1 → v11
+│   │   ├── ChatDatabase.kt           Base de datos Room (versión 15, cifrada con SQLCipher)
+│   │   ├── DatabaseBuilder.kt        Migraciones v1 → v15
 │   │   └── DatabaseKeyProvider.kt    Clave AES-256 en Android KeyStore
 │   ├── remote/
 │   │   ├── dto/                      Data Transfer Objects de Supabase
@@ -70,14 +73,14 @@ com.ajrpachon.chatapp/
 ├── 🟢 ui/                         ← Jetpack Compose + MVI
 │   ├── auth/                         Login, registro e IntegrityBlockedScreen
 │   ├── conversations/                Lista de conversaciones
-│   ├── chat/                         Chat (+ GiphyClient, StickerPicker)
+│   ├── chat/                         Chat (+ GiphyClient, StickerPicker, EmojiPickerBottomSheet)
 │   ├── call/                         Llamada en curso + overlay de entrante
 │   ├── newchat/                      Buscar usuario / importar contactos
 │   ├── group/                        Crear grupo y gestión de miembros
 │   ├── invitations/                  Invitaciones de amistad
 │   ├── profile/                      Perfil propio
 │   ├── userinfo/                     Perfil de otro usuario
-│   ├── components/                   Avatar, Button, TextField, Shimmer
+│   ├── components/                   Avatar, Button, TextField, Shimmer, EmojiPickerBottomSheet
 │   └── theme/                        Color, Shape, Theme (Material3 pastel)
 │
 ├── 🔴 service/                    ← Servicios en background
@@ -199,7 +202,13 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 ```
 master        ← releases estables (v1.0, v1.1…)
 └── develop   ← integración continua
-    ├── feature/…                  (31 feature branches de funcionalidad)
+    ├── feature/…                  (35+ feature branches de funcionalidad)
+    ├── feature/emoji-picker
+    ├── feature/message-reactions
+    ├── feature/message-search
+    ├── feature/edit-messages
+    ├── feature/deep-links
+    ├── feature/supabase-presence-migration
     ├── feature/coil-disk-cache
     ├── feature/strictmode-debug
     ├── fix/viewmodel-coroutine-leaks
