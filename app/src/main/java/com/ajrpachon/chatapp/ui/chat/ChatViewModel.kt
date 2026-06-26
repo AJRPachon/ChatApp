@@ -104,10 +104,20 @@ class ChatViewModel(
                 catchResult { conversationDao.resetUnreadCount(conversationId) }
             }
 
-            launch {
-                if (otherUserId != null) {
-                    val profile = catchResult { userRepository.getUserById(otherUserId) }.getOrNull()
-                    _state.update { it.copy(otherUserAvatarUrl = profile?.avatarUrl) }
+            if (otherUserId != null) {
+                launch {
+                    userRepository.observeUserById(otherUserId).collect { user ->
+                        _state.update {
+                            it.copy(
+                                otherUserAvatarUrl = user?.avatarUrl ?: it.otherUserAvatarUrl,
+                                isOtherUserOnline = user?.isOnline() == true,
+                                otherUserLastSeenMs = user?.lastSeen?.toEpochMilliseconds(),
+                            )
+                        }
+                    }
+                }
+                launch {
+                    catchResult { userRepository.getUserById(otherUserId) }
                 }
             }
 

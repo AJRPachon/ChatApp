@@ -23,6 +23,8 @@ data class ChatState(
     val audioState: AudioState = AudioState(),
     val otherUserId: String? = null,
     val otherUserAvatarUrl: String? = null,
+    val isOtherUserOnline: Boolean = false,
+    val otherUserLastSeenMs: Long? = null,
     val groupAvatarUrl: String? = null,
     val isGroup: Boolean = false,
     val isCurrentUserMember: Boolean = true,

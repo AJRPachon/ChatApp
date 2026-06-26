@@ -13,6 +13,8 @@ fun UserDTO.toBO(email: String = "") = UserBO(
     avatarUrl = avatarUrl,
     createdAt = if (createdAt.isNotEmpty()) Instant.parse(createdAt)
                 else Instant.fromEpochMilliseconds(System.currentTimeMillis()),
+    lastSeen = lastSeen?.let { runCatching { Instant.parse(it) }.getOrNull() },
+    showOnlineStatus = showOnlineStatus,
 )
 
 fun UserDTO.toDBO(email: String = "", isCurrentUser: Boolean = false) = UserDBO(
@@ -24,6 +26,8 @@ fun UserDTO.toDBO(email: String = "", isCurrentUser: Boolean = false) = UserDBO(
     createdAt = if (createdAt.isNotEmpty()) Instant.parse(createdAt).toEpochMilliseconds()
                 else System.currentTimeMillis(),
     isCurrentUser = isCurrentUser,
+    lastSeen = lastSeen?.let { runCatching { Instant.parse(it).toEpochMilliseconds() }.getOrNull() },
+    showOnlineStatus = showOnlineStatus,
 )
 
 fun UserDBO.toBO() = UserBO(
@@ -33,4 +37,6 @@ fun UserDBO.toBO() = UserBO(
     displayName = displayName,
     avatarUrl = avatarUrl,
     createdAt = Instant.fromEpochMilliseconds(createdAt),
+    lastSeen = lastSeen?.let { Instant.fromEpochMilliseconds(it) },
+    showOnlineStatus = showOnlineStatus,
 )
