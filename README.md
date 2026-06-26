@@ -34,6 +34,8 @@ Proyecto personal para poner en práctica lo aprendido en desarrollo Android nat
 | 🤝 | Sistema de **invitaciones de amistad** con bloqueo de usuarios |
 | 🖼️ | Perfil de usuario con **avatar** e información editable |
 | ⚡ | Lista de conversaciones **en tiempo real** via Supabase Realtime |
+| ✅ | **Confirmación de lectura** (doble check gris/azul) con badge de no leídos |
+| 🟢 | **Estado de presencia** — indicador "En línea" / "última vez" y punto verde en avatares; toggle de privacidad en perfil |
 
 ---
 
@@ -55,7 +57,7 @@ com.ajrpachon.chatapp/
 │   ├── local/
 │   │   ├── entity/                   Entidades Room (DBO)
 │   │   ├── dao/                      DAOs de acceso a la BD
-│   │   ├── ChatDatabase.kt           Base de datos Room (versión 11, cifrada con SQLCipher)
+│   │   ├── ChatDatabase.kt           Base de datos Room (versión 12, cifrada con SQLCipher)
 │   │   ├── DatabaseBuilder.kt        Migraciones v1 → v11
 │   │   └── DatabaseKeyProvider.kt    Clave AES-256 en Android KeyStore
 │   ├── remote/
