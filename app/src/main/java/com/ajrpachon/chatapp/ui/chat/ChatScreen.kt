@@ -987,6 +987,7 @@ private fun LocalAudioPlayer(filePath: String, modifier: Modifier = Modifier) {
             if (mp.isPlaying) { mp.pause(); isPlaying = false }
             else { mp.start(); isPlaying = true }
         },
+        waveformSeed = filePath.hashCode(),
     )
 }
 
@@ -1029,6 +1030,7 @@ private fun RemoteAudioPlayer(url: String, modifier: Modifier = Modifier) {
             if (mp.isPlaying) { mp.pause(); isPlaying = false }
             else { mp.start(); isPlaying = true }
         },
+        waveformSeed = url.hashCode(),
     )
 }
 
@@ -1040,7 +1042,18 @@ private fun AudioPlayerRow(
     durationMs: Int,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
+    waveformSeed: Int = 0,
 ) {
+    val activeColor = MaterialTheme.colorScheme.primary
+    val inactiveColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
+    val progress = if (durationMs > 0) currentMs.toFloat() / durationMs else 0f
+
+    // Generate deterministic bar heights from seed (32 bars)
+    val bars = remember(waveformSeed) {
+        val rng = java.util.Random(waveformSeed.toLong())
+        List(32) { 0.2f + rng.nextFloat() * 0.8f }
+    }
+
     Row(
         modifier = modifier.widthIn(min = 160.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -1052,10 +1065,27 @@ private fun AudioPlayerRow(
             )
         }
         Column(modifier = Modifier.weight(1f).padding(end = 4.dp)) {
-            LinearProgressIndicator(
-                progress = { if (durationMs > 0) currentMs.toFloat() / durationMs else 0f },
-                modifier = Modifier.fillMaxWidth(),
-            )
+            Canvas(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(28.dp),
+            ) {
+                val barCount = bars.size
+                val gap = size.width * 0.015f
+                val barW = (size.width - gap * (barCount - 1)) / barCount
+                bars.forEachIndexed { i, h ->
+                    val barH = h * size.height
+                    val x = i * (barW + gap)
+                    val y = (size.height - barH) / 2f
+                    val fraction = (i + 1f) / barCount
+                    drawRoundRect(
+                        color = if (fraction <= progress) activeColor else inactiveColor,
+                        topLeft = androidx.compose.ui.geometry.Offset(x, y),
+                        size = androidx.compose.ui.geometry.Size(barW, barH),
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(barW / 2),
+                    )
+                }
+            }
             Spacer(Modifier.height(2.dp))
             Text(
                 text = formatAudioDuration(if (currentMs > 0) currentMs else durationMs),
