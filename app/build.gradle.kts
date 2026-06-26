@@ -198,6 +198,7 @@ dependencies {
     implementation(libs.profileinstaller)
 
     // Tests
+    testImplementation(libs.androidx.room.testing)
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
     testImplementation(libs.turbine)

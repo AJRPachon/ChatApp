@@ -1876,7 +1876,6 @@ private fun formatCallDuration(seconds: Int): String =
     "%d:%02d".format(seconds / 60, seconds % 60)
 
 @Composable
-@Composable
 private fun ExpiryDurationDialog(onDismiss: () -> Unit, onSelect: (Long?) -> Unit) {
     val options = listOf(
         "1 minuto" to (System.currentTimeMillis() + 60_000L),

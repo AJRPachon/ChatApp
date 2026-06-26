@@ -308,9 +308,9 @@ class CallViewModel(
         val front = _state.value.isFrontCamera
         val newPosition = if (front) CameraPosition.BACK else CameraPosition.FRONT
         viewModelScope.launch {
-            catchResult { room?.localParticipant?.setCameraEnabled(true, position = newPosition) }
             val cameraTrack = room?.localParticipant
                 ?.getTrackPublication(Track.Source.CAMERA)?.track as? LocalVideoTrack
+            catchResult { cameraTrack?.switchCamera(position = newPosition) }
             _state.update { it.copy(isFrontCamera = !front, localVideoTrack = cameraTrack) }
         }
     }
