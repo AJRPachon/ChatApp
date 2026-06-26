@@ -32,6 +32,10 @@ data class ChatState(
     val showStickerPicker: Boolean = false,
     val isMuted: Boolean = false,
     val editingMessage: MessageBO? = null,
+    val isSearchActive: Boolean = false,
+    val searchQuery: String = "",
+    val searchResults: List<MessageBO> = emptyList(),
+    val isSearching: Boolean = false,
 )
 
 sealed interface ChatIntent {
@@ -56,6 +60,9 @@ sealed interface ChatIntent {
     data class StartEdit(val message: MessageBO) : ChatIntent
     data object CancelEdit : ChatIntent
     data object ConfirmEdit : ChatIntent
+    data object OpenSearch : ChatIntent
+    data object CloseSearch : ChatIntent
+    data class SearchQueryChanged(val query: String) : ChatIntent
 }
 
 sealed interface ChatEffect {

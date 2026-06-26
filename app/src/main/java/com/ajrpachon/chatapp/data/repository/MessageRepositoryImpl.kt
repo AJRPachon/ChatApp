@@ -218,6 +218,14 @@ class MessageRepositoryImpl(
         messageDao.deleteByConversation(conversationId)
     }
 
+    override suspend fun searchMessages(conversationId: String, currentUserId: String, query: String): List<MessageBO> {
+        if (query.isBlank()) return emptyList()
+        return messageDao.searchMessages(conversationId, query.trim()).map { dbo ->
+            val senderName = userDao.getById(dbo.senderId)?.displayName ?: dbo.senderId
+            dbo.toBO(currentUserId, senderName)
+        }
+    }
+
     // ---------------------------------------------------------------------------
     // E2EE helpers
     // ---------------------------------------------------------------------------
