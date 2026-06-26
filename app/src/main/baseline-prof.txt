@@ -1,0 +1,21 @@
+# MainActivity and main Compose entry points
+Lcom/ajrpachon/chatapp/MainActivity;
+Lcom/ajrpachon/chatapp/MainActivity$*;
+
+# Compose runtime internals
+Landroidx/compose/runtime/ComposerImpl;->**
+Landroidx/compose/runtime/RecomposerKt;->**
+Landroidx/compose/ui/platform/AndroidComposeView;->**
+
+# Key screens on startup path
+Lcom/ajrpachon/chatapp/ui/auth/AuthScreen*;->**
+Lcom/ajrpachon/chatapp/ui/conversations/ConversationListScreen*;->**
+Lcom/ajrpachon/chatapp/ui/chat/ChatScreen*;->**
+
+# Coil image loading
+Lcoil3/ImageLoader*;->**
+Lcoil3/compose/AsyncImage*;->**
+
+# Koin DI initialization
+Lorg/koin/core/KoinApplication;->**
+Lorg/koin/android/ext/android/KoinExtensionsKt;->**
