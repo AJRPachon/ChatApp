@@ -338,15 +338,39 @@ fun ChatScreen(
                             }
                         }
                         Spacer(Modifier.width(10.dp))
-                        Text(state.conversationTitle.ifBlank { "Chat" })
-                        if (!state.isGroup) {
-                            Spacer(Modifier.width(6.dp))
-                            Icon(
-                                imageVector = Icons.Default.Lock,
-                                contentDescription = "Cifrado extremo a extremo",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(14.dp),
-                            )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(state.conversationTitle.ifBlank { "Chat" })
+                                if (!state.isGroup) {
+                                    Spacer(Modifier.width(4.dp))
+                                    Icon(
+                                        imageVector = Icons.Default.Lock,
+                                        contentDescription = "Cifrado extremo a extremo",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(12.dp),
+                                    )
+                                }
+                            }
+                            if (!state.isGroup) {
+                                val presenceText = when {
+                                    state.isOtherUserOnline -> "En línea"
+                                    state.otherUserLastSeenMs != null -> {
+                                        val diffMs = System.currentTimeMillis() - state.otherUserLastSeenMs!!
+                                        formatLastSeen(diffMs)
+                                    }
+                                    else -> null
+                                }
+                                if (presenceText != null) {
+                                    Text(
+                                        text = presenceText,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (state.isOtherUserOnline)
+                                            androidx.compose.ui.graphics.Color(0xFF4CAF50)
+                                        else
+                                            MaterialTheme.colorScheme.outline,
+                                    )
+                                }
+                            }
                         }
                     }
                 },
@@ -1192,6 +1216,13 @@ private fun ReadReceiptIcon(isRead: Boolean) {
         else
             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
     )
+}
+
+private fun formatLastSeen(diffMs: Long): String = when {
+    diffMs < 60_000L -> "última vez hace un momento"
+    diffMs < 3_600_000L -> "última vez hace ${diffMs / 60_000} min"
+    diffMs < 86_400_000L -> "última vez hace ${diffMs / 3_600_000} h"
+    else -> "última vez hace ${diffMs / 86_400_000} d"
 }
 
 // ── ImageGroupBubble ──────────────────────────────────────────────────────────

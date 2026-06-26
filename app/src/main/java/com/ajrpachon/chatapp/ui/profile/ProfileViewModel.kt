@@ -4,6 +4,7 @@ import com.ajrpachon.chatapp.utils.catchResult
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.data.local.dao.UserDao
+import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.service.FcmTokenManager
 import com.ajrpachon.chatapp.utils.AppLogger
@@ -31,6 +32,7 @@ class ProfileViewModel(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val userDao: UserDao,
     private val fcmTokenManager: FcmTokenManager,
+    private val userRepository: UserRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ProfileState())
@@ -49,9 +51,26 @@ class ProfileViewModel(
                         username = user.username,
                         email = user.email,
                         avatarUrl = user.avatarUrl,
+                        showOnlineStatus = user.showOnlineStatus,
                     )
                 }
             }.onFailure { e -> AppLogger.e(TAG, "Load profile failed", e) }
+        }
+    }
+
+    fun onIntent(intent: ProfileIntent) {
+        when (intent) {
+            is ProfileIntent.ToggleOnlineStatus -> {
+                val userId = supabase.auth.currentUserOrNull()?.id ?: return
+                _state.update { it.copy(showOnlineStatus = intent.show) }
+                viewModelScope.launch {
+                    catchResult { userRepository.updateShowOnlineStatus(userId, intent.show) }
+                        .onFailure { e ->
+                            AppLogger.e(TAG, "updateShowOnlineStatus failed", e)
+                            _state.update { it.copy(showOnlineStatus = !intent.show) }
+                        }
+                }
+            }
         }
     }
 

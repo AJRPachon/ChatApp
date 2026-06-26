@@ -15,7 +15,7 @@ import com.ajrpachon.chatapp.data.local.entity.UserDBO
 
 @Database(
     entities = [UserDBO::class, ConversationDBO::class, MessageDBO::class, InvitationDBO::class, GroupMemberDBO::class],
-    version = 11,
+    version = 12,
     exportSchema = true,
 )
 abstract class ChatDatabase : RoomDatabase() {

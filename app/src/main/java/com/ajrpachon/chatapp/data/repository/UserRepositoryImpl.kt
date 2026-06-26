@@ -9,6 +9,7 @@ import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.filterNotNull
 
 class UserRepositoryImpl(
     private val userDao: UserDao,
@@ -46,6 +47,23 @@ class UserRepositoryImpl(
         userDao.upsert(user.toDBO())
     }
 
+    override suspend fun updateLastSeen(userId: String) {
+        remoteSource.updateLastSeen(userId)
+        userDao.getById(userId)?.let { dbo ->
+            userDao.upsert(dbo.copy(lastSeen = System.currentTimeMillis()))
+        }
+    }
+
+    override suspend fun updateShowOnlineStatus(userId: String, show: Boolean) {
+        remoteSource.updateShowOnlineStatus(userId, show)
+        userDao.getById(userId)?.let { dbo ->
+            userDao.upsert(dbo.copy(showOnlineStatus = show))
+        }
+    }
+
+    override fun observeUserById(id: String): Flow<UserBO?> =
+        userDao.observeById(id).map { it?.toBO() }
+
     private fun UserBO.toDBO(isCurrentUser: Boolean = false) =
         com.ajrpachon.chatapp.data.local.entity.UserDBO(
             id = id,
@@ -55,5 +73,7 @@ class UserRepositoryImpl(
             avatarUrl = avatarUrl,
             createdAt = createdAt.toEpochMilliseconds(),
             isCurrentUser = isCurrentUser,
+            lastSeen = lastSeen?.toEpochMilliseconds(),
+            showOnlineStatus = showOnlineStatus,
         )
 }

@@ -8,6 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,6 +22,7 @@ import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -199,6 +201,31 @@ fun ProfileScreen(
             }
 
             Spacer(Modifier.size(24.dp))
+            HorizontalDivider()
+            Spacer(Modifier.size(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column {
+                    Text(
+                        "Mostrar en línea",
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Text(
+                        "Los demás pueden ver cuándo estás activo",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                }
+                Switch(
+                    checked = state.showOnlineStatus,
+                    onCheckedChange = { vm.onIntent(ProfileIntent.ToggleOnlineStatus(it)) },
+                )
+            }
+
             HorizontalDivider()
             Spacer(Modifier.weight(1f))
 
