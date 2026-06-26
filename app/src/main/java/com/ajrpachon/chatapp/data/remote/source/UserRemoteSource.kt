@@ -7,6 +7,7 @@ import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.datetime.Clock
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
@@ -68,7 +69,7 @@ class UserRemoteSource(private val supabase: SupabaseClient) {
     suspend fun updateLastSeen(userId: String) {
         runCatching {
             supabase.postgrest["profiles"].update(
-                buildJsonObject { put("last_seen", java.time.Instant.now().toString()) }
+                buildJsonObject { put("last_seen", Clock.System.now().toString()) }
             ) { filter { eq("id", userId) } }
         }
     }
