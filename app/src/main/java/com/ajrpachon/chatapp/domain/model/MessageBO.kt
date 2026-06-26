@@ -24,7 +24,10 @@ data class MessageBO(
     val isEncrypted: Boolean = false,
     val isDeleted: Boolean = false,
     val isEdited: Boolean = false,
+    val expiresAt: Long? = null,
 ) {
+    fun isExpired(): Boolean = expiresAt != null && expiresAt <= System.currentTimeMillis()
+    fun expiresInSeconds(): Long? = expiresAt?.let { ((it - System.currentTimeMillis()) / 1000).coerceAtLeast(0) }
     val isCallMessage: Boolean get() = callType != null
 
     fun replySnippet(): String = when {

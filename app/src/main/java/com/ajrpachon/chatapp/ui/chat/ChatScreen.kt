@@ -297,6 +297,13 @@ fun ChatScreen(
         )
     }
 
+    state.expiryDialogMessageId?.let { msgId ->
+        ExpiryDurationDialog(
+            onDismiss = { vm.onIntent(ChatIntent.DismissExpiryDialog) },
+            onSelect = { vm.onIntent(ChatIntent.SetExpiry(msgId, it)) },
+        )
+    }
+
     if (state.showMuteDialog) {
         MuteDurationDialog(
             onDismiss = { vm.onIntent(ChatIntent.DismissMuteDialog) },
@@ -641,6 +648,7 @@ fun ChatScreen(
                                     onReplyClick = onScrollToMessage,
                                     onDelete = if (message.isFromMe) {{ vm.onIntent(ChatIntent.DeleteMessage(message.id)) }} else null,
                                     onEdit = if (message.isFromMe && message.content.isNotBlank()) {{ vm.onIntent(ChatIntent.StartEdit(message)) }} else null,
+                                    onSelfDestruct = if (message.isFromMe) {{ vm.onIntent(ChatIntent.ShowExpiryDialog(message.id)) }} else null,
                                 )
                             }
                         } else {
@@ -657,6 +665,7 @@ fun ChatScreen(
                                 onReplyClick = onScrollToMessage,
                                 onDelete = if (message.isFromMe) {{ vm.onIntent(ChatIntent.DeleteMessage(message.id)) }} else null,
                                 onEdit = if (message.isFromMe && message.content.isNotBlank()) {{ vm.onIntent(ChatIntent.StartEdit(message)) }} else null,
+                                onSelfDestruct = if (message.isFromMe) {{ vm.onIntent(ChatIntent.ShowExpiryDialog(message.id)) }} else null,
                                 messageReactions = reactions[message.id] ?: emptyList(),
                                 currentUserId = state.currentUserId,
                                 onToggleReaction = { emoji -> vm.onIntent(ChatIntent.ToggleReaction(message.id, emoji)) },
@@ -1291,6 +1300,7 @@ private fun MessageBubble(
     onReplyClick: (String) -> Unit = {},
     onDelete: (() -> Unit)? = null,
     onEdit: (() -> Unit)? = null,
+    onSelfDestruct: (() -> Unit)? = null,
     messageReactions: List<com.ajrpachon.chatapp.domain.model.ReactionBO> = emptyList(),
     currentUserId: String? = null,
     onToggleReaction: (String) -> Unit = {},
@@ -1439,6 +1449,15 @@ private fun MessageBubble(
                                         onClick = { showMsgMenu = false; onEdit() },
                                     )
                                 }
+                                if (onSelfDestruct != null) {
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(if (message.expiresAt != null) "Quitar autodestrucción" else "Mensaje efímero")
+                                        },
+                                        leadingIcon = { Text(if (message.expiresAt != null) "♾️" else "⏱️") },
+                                        onClick = { showMsgMenu = false; onSelfDestruct() },
+                                    )
+                                }
                                 DropdownMenuItem(
                                     text = { Text("Copiar") },
                                     leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null) },
@@ -1459,6 +1478,14 @@ private fun MessageBubble(
                         horizontalArrangement = Arrangement.spacedBy(2.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        message.expiresAt?.let { exp ->
+                            val secsLeft = ((exp - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
+                            Text(
+                                "⏱️ ${if (secsLeft < 60) "${secsLeft}s" else "${secsLeft / 60}m"}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                            )
+                        }
                         if (message.isEdited) {
                             Text(
                                 "editado",
@@ -1847,6 +1874,44 @@ private fun formatAudioDuration(ms: Int): String {
 
 private fun formatCallDuration(seconds: Int): String =
     "%d:%02d".format(seconds / 60, seconds % 60)
+
+@Composable
+@Composable
+private fun ExpiryDurationDialog(onDismiss: () -> Unit, onSelect: (Long?) -> Unit) {
+    val options = listOf(
+        "1 minuto" to (System.currentTimeMillis() + 60_000L),
+        "1 hora" to (System.currentTimeMillis() + 3_600_000L),
+        "24 horas" to (System.currentTimeMillis() + 86_400_000L),
+        "7 días" to (System.currentTimeMillis() + 604_800_000L),
+        "Quitar autodestrucción" to null,
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Mensaje efímero") },
+        text = {
+            androidx.compose.foundation.layout.Column {
+                Text(
+                    "El mensaje se borrará localmente después de:",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(androidx.compose.ui.Modifier.height(8.dp))
+                options.forEach { (label, value) ->
+                    TextButton(
+                        onClick = { onSelect(value) },
+                        modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
+                    ) {
+                        Text(label, modifier = androidx.compose.ui.Modifier.fillMaxWidth())
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancelar") }
+        },
+    )
+}
 
 @Composable
 private fun MuteDurationDialog(onDismiss: () -> Unit, onSelect: (Long) -> Unit) {

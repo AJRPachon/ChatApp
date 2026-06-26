@@ -39,6 +39,7 @@ data class ChatState(
     val searchResults: List<MessageBO> = emptyList(),
     val isSearching: Boolean = false,
     val highlightedMessageId: String? = null,
+    val expiryDialogMessageId: String? = null,
 )
 
 sealed interface ChatIntent {
@@ -72,6 +73,10 @@ sealed interface ChatIntent {
     data class SearchQueryChanged(val query: String) : ChatIntent
     data class ToggleReaction(val messageId: String, val emoji: String) : ChatIntent
     data class JumpToMessage(val messageId: String) : ChatIntent
+    data class ShowExpiryDialog(val messageId: String) : ChatIntent
+    data object DismissExpiryDialog : ChatIntent
+    // expiresAt: null = remove expiry, positive = epoch millis
+    data class SetExpiry(val messageId: String, val expiresAt: Long?) : ChatIntent
 }
 
 sealed interface ChatEffect {

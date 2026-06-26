@@ -26,4 +26,6 @@ data class MessageDBO(
     @ColumnInfo(name = "isDeleted") val isDeleted: Boolean = false,
     @ColumnInfo(name = "isEdited") val isEdited: Boolean = false,
     @ColumnInfo(name = "editedAt") val editedAt: Long? = null,
+    // Epoch millis when the message should auto-delete locally. null = never.
+    @ColumnInfo(name = "expiresAt") val expiresAt: Long? = null,
 )
