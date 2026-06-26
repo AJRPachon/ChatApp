@@ -7,8 +7,10 @@ import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 
 @Serializable
 private data class IdOnly(@SerialName("id") val id: String)
@@ -62,4 +64,18 @@ class UserRemoteSource(private val supabase: SupabaseClient) {
         supabase.postgrest["profiles"]
             .select { filter { ilike("username", "%$query%") } }
             .decodeList<UserDTO>()
+
+    suspend fun updateLastSeen(userId: String) {
+        runCatching {
+            supabase.postgrest["profiles"].update(
+                buildJsonObject { put("last_seen", java.time.Instant.now().toString()) }
+            ) { filter { eq("id", userId) } }
+        }
+    }
+
+    suspend fun updateShowOnlineStatus(userId: String, show: Boolean) {
+        supabase.postgrest["profiles"].update(
+            buildJsonObject { put("show_online_status", show) }
+        ) { filter { eq("id", userId) } }
+    }
 }

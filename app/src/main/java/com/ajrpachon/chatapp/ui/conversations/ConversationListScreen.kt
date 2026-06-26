@@ -2,6 +2,7 @@ package com.ajrpachon.chatapp.ui.conversations
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -200,6 +201,7 @@ fun ConversationListScreen(
                 items(state.conversations, key = { it.id }) { conv ->
                     ConversationItem(
                         conversation = conv,
+                        currentUserId = state.currentUserId,
                         showMenu = menuConvId == conv.id,
                         onClick = dropUnlessResumed {
                             vm.onIntent(ConversationListIntent.OpenConversation(conv.id, conv.name, conv.isGroup))
@@ -235,6 +237,7 @@ fun ConversationListScreen(
 @Composable
 private fun ConversationItem(
     conversation: ConversationBO,
+    currentUserId: String?,
     showMenu: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
@@ -256,12 +259,28 @@ private fun ConversationItem(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            ChatAppAvatar(
-                name = conversation.name,
-                url = conversation.displayAvatarUrl,
-                isGroup = conversation.isGroup,
-                size = 56.dp,
-            )
+            val isOtherUserOnline = !conversation.isGroup &&
+                conversation.participants.any { it.id != currentUserId && it.isOnline() }
+            Box {
+                ChatAppAvatar(
+                    name = conversation.name,
+                    url = conversation.displayAvatarUrl,
+                    isGroup = conversation.isGroup,
+                    size = 56.dp,
+                )
+                if (isOtherUserOnline) {
+                    Box(
+                        modifier = Modifier
+                            .size(14.dp)
+                            .align(Alignment.BottomEnd)
+                            .background(
+                                androidx.compose.ui.graphics.Color(0xFF4CAF50),
+                                CircleShape,
+                            )
+                            .border(2.dp, MaterialTheme.colorScheme.background, CircleShape),
+                    )
+                }
+            }
 
             Spacer(Modifier.width(12.dp))
 
