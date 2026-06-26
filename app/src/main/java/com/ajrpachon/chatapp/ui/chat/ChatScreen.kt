@@ -355,8 +355,8 @@ fun ChatScreen(
                                 val presenceText = when {
                                     state.isOtherUserOnline -> "En línea"
                                     state.otherUserLastSeenMs != null -> {
-                                        val diffMs = System.currentTimeMillis() - state.otherUserLastSeenMs!!
-                                        formatLastSeen(diffMs)
+                                        val lastSeenMs = state.otherUserLastSeenMs ?: 0L
+                                        formatLastSeen(System.currentTimeMillis() - lastSeenMs)
                                     }
                                     else -> null
                                 }

@@ -127,7 +127,7 @@ class ChatViewModel(
                         _state.update {
                             it.copy(
                                 groupAvatarUrl = conv.groupAvatarUrl,
-                                conversationTitle = if (conv.isGroup && !conv.name.isNullOrBlank()) conv.name!! else it.conversationTitle,
+                                conversationTitle = if (conv.isGroup) conv.name?.takeIf { n -> n.isNotBlank() } ?: it.conversationTitle else it.conversationTitle,
                             )
                         }
                     }
