@@ -49,6 +49,7 @@ class ChatViewModel(
     private val getGroupMembersUseCase: GetGroupMembersUseCase,
     private val leaveGroupUseCase: LeaveGroupUseCase,
     private val groupRepository: GroupRepository,
+    private val reactionRepository: com.ajrpachon.chatapp.domain.repository.ReactionRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ChatState())
@@ -61,6 +62,9 @@ class ChatViewModel(
     private val currentUserId: String? = userRepository.getCurrentUserId()
 
     private val _historyVisibleFrom = MutableStateFlow(0L)
+
+    val reactions: Flow<Map<String, List<com.ajrpachon.chatapp.domain.model.ReactionBO>>> =
+        reactionRepository.observeReactions(conversationId)
 
     val messages: Flow<PagingData<MessageBO>> = _historyVisibleFrom
         .flatMapLatest { since ->
@@ -207,6 +211,14 @@ class ChatViewModel(
             is ChatIntent.SendSticker -> sendSticker(intent.emoji)
             is ChatIntent.ToggleMute -> toggleMute()
             is ChatIntent.LeaveGroup -> leaveGroup()
+            is ChatIntent.ToggleReaction -> toggleReaction(intent.messageId, intent.emoji)
+        }
+    }
+
+    private fun toggleReaction(messageId: String, emoji: String) {
+        val uid = currentUserId ?: return
+        viewModelScope.launch {
+            runCatching { reactionRepository.toggleReaction(messageId, uid, emoji) }
         }
     }
 

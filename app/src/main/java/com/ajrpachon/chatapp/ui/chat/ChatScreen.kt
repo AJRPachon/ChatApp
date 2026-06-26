@@ -161,6 +161,7 @@ fun ChatScreen(
     val vm: ChatViewModel = koinViewModel(key = conversationId, parameters = { parametersOf(conversationId, otherUserName) })
     val state by vm.state.collectAsStateWithLifecycle()
     val lazyPagingItems = vm.messages.collectAsLazyPagingItems()
+    val reactions by vm.reactions.collectAsStateWithLifecycle(initialValue = emptyMap())
     val listState = rememberLazyListState()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -605,6 +606,9 @@ fun ChatScreen(
                                 onReply = { vm.onIntent(ChatIntent.SetReply(message)) },
                                 isHighlighted = message.id == highlightedMessageId,
                                 onReplyClick = onScrollToMessage,
+                                messageReactions = reactions[message.id] ?: emptyList(),
+                                currentUserId = state.currentUserId,
+                                onToggleReaction = { emoji -> vm.onIntent(ChatIntent.ToggleReaction(message.id, emoji)) },
                             )
                         }
                     }
@@ -1053,6 +1057,9 @@ private fun MessageBubble(
     onReply: () -> Unit,
     isHighlighted: Boolean = false,
     onReplyClick: (String) -> Unit = {},
+    messageReactions: List<com.ajrpachon.chatapp.domain.model.ReactionBO> = emptyList(),
+    currentUserId: String? = null,
+    onToggleReaction: (String) -> Unit = {},
 ) {
     if (message.isCallMessage) {
         CallMessageBubble(message)
@@ -1108,10 +1115,14 @@ private fun MessageBubble(
                 .padding(start = 4.dp)
                 .alpha(iconAlpha),
         )
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .graphicsLayer { translationX = swipeOffset.value },
+            horizontalAlignment = if (message.isFromMe) Alignment.End else Alignment.Start,
+        ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = if (message.isFromMe) Arrangement.End else Arrangement.Start,
         ) {
             Surface(
@@ -1164,20 +1175,42 @@ private fun MessageBubble(
                         RemoteAudioPlayer(url = message.audioUrl)
                     }
                     if (message.content.isNotBlank()) {
+                        var showReactionPicker by remember { mutableStateOf(false) }
                         Box(
                             modifier = Modifier.combinedClickable(
                                 onClick = {},
-                                onLongClick = {
-                                    ClipboardProtection.copyWithTimeout(
-                                        context = context,
-                                        label = "message",
-                                        text = message.content,
-                                        scope = scope,
-                                    )
-                                },
+                                onLongClick = { showReactionPicker = true },
                             ),
                         ) {
                             Text(text = message.content, style = MaterialTheme.typography.bodyMedium)
+                            DropdownMenu(
+                                expanded = showReactionPicker,
+                                onDismissRequest = { showReactionPicker = false },
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    listOf("👍", "❤️", "😂", "😮", "😢", "🙏").forEach { emoji ->
+                                        Text(
+                                            text = emoji,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            modifier = Modifier.clickable {
+                                                showReactionPicker = false
+                                                onToggleReaction(emoji)
+                                            },
+                                        )
+                                    }
+                                }
+                                HorizontalDivider()
+                                DropdownMenuItem(
+                                    text = { Text("Copiar") },
+                                    onClick = {
+                                        showReactionPicker = false
+                                        ClipboardProtection.copyWithTimeout(context, "message", message.content, scope)
+                                    },
+                                )
+                            }
                         }
                     }
                     Row(
@@ -1197,6 +1230,30 @@ private fun MessageBubble(
                 }
             }
         }
+        if (messageReactions.isNotEmpty()) {
+            val grouped = messageReactions.groupBy { it.emoji }
+            Row(
+                modifier = Modifier.padding(top = 2.dp, start = 4.dp, end = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                grouped.forEach { (emoji, reactors) ->
+                    val isMine = reactors.any { it.userId == currentUserId }
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = if (isMine) MaterialTheme.colorScheme.primaryContainer
+                                else MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier.clickable { onToggleReaction(emoji) },
+                    ) {
+                        Text(
+                            text = "$emoji ${reactors.size}",
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        )
+                    }
+                }
+            }
+        }
+        } // close Column
         Box(
             modifier = Modifier
                 .matchParentSize()
