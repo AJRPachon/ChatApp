@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CallEnd
+import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.Phone
@@ -303,6 +304,16 @@ private fun CallScreenContent(
                         imageVector = if (state.isCameraOff) Icons.Default.VideocamOff else Icons.Default.Videocam,
                         contentDescription = "Cámara",
                     )
+                }
+                // Switch front/back camera (only when camera is active)
+                if (!state.isCameraOff) {
+                    CallControlButton(
+                        onClick = { vm.switchCamera() },
+                        containerColor = Color.White.copy(alpha = 0.2f),
+                        iconTint = Color.White,
+                    ) {
+                        Icon(Icons.Default.Cameraswitch, contentDescription = "Voltear cámara")
+                    }
                 }
             }
 
