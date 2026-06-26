@@ -100,6 +100,11 @@ class ChatViewModel(
             startRemoteSync(historyVisibleFrom)
 
             launch {
+                catchResult { messageRepository.markAsRead(conversationId, uid) }
+                catchResult { conversationDao.resetUnreadCount(conversationId) }
+            }
+
+            launch {
                 if (otherUserId != null) {
                     val profile = catchResult { userRepository.getUserById(otherUserId) }.getOrNull()
                     _state.update { it.copy(otherUserAvatarUrl = profile?.avatarUrl) }
