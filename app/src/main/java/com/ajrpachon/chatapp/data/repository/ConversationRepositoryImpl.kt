@@ -212,7 +212,8 @@ class ConversationRepositoryImpl(
                     otherUserAvatarUrl = otherUser?.avatarUrl,
                     groupAvatarUrl = dbo.groupAvatarUrl,
                     description = dbo.description,
-                    isMuted = dbo.isMuted,
+                    isMuted = dbo.isEffectivelyMuted(),
+                    mutedUntil = dbo.mutedUntil,
                 )
             }
         }.collect { send(it) }
@@ -269,6 +270,10 @@ class ConversationRepositoryImpl(
 
     override suspend fun toggleMute(conversationId: String, muted: Boolean) {
         conversationDao.updateMuted(conversationId, muted)
+    }
+
+    override suspend fun muteFor(conversationId: String, mutedUntil: Long) {
+        conversationDao.updateMutedUntil(conversationId, mutedUntil)
     }
 
     override suspend fun clearChat(conversationId: String) {

@@ -15,6 +15,7 @@ data class ConversationBO(
     val groupAvatarUrl: String? = null,
     val description: String? = null,
     val isMuted: Boolean = false,
+    val mutedUntil: Long = 0L,
 ) {
     val displayAvatarUrl: String? get() = if (isGroup) groupAvatarUrl else otherUserAvatarUrl
 }
