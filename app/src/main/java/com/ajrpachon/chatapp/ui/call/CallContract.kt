@@ -9,6 +9,7 @@ data class CallState(
     val phase: CallPhase = CallPhase.CONNECTING,
     val isMicMuted: Boolean = false,
     val isCameraOff: Boolean = false,
+    val isFrontCamera: Boolean = true,
     val remoteVideoTrack: VideoTrack? = null,
     val remoteVideoTracks: List<VideoTrack> = emptyList(),
     val localVideoTrack: LocalVideoTrack? = null,

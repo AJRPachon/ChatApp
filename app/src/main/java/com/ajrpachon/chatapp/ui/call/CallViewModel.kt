@@ -13,6 +13,7 @@ import io.livekit.android.events.DisconnectReason
 import io.livekit.android.events.ParticipantEvent
 import io.livekit.android.events.RoomEvent
 import io.livekit.android.room.Room
+import io.livekit.android.room.track.CameraPosition
 import io.livekit.android.room.track.LocalVideoTrack
 import io.livekit.android.room.track.Track
 import io.livekit.android.room.track.VideoTrack
@@ -300,6 +301,17 @@ class CallViewModel(
                     ?.getTrackPublication(Track.Source.CAMERA)?.track as? LocalVideoTrack
                 _state.update { it.copy(isCameraOff = false, localVideoTrack = cameraTrack) }
             }
+        }
+    }
+
+    fun switchCamera() {
+        val front = _state.value.isFrontCamera
+        val newPosition = if (front) CameraPosition.BACK else CameraPosition.FRONT
+        viewModelScope.launch {
+            catchResult { room?.localParticipant?.setCameraEnabled(true, position = newPosition) }
+            val cameraTrack = room?.localParticipant
+                ?.getTrackPublication(Track.Source.CAMERA)?.track as? LocalVideoTrack
+            _state.update { it.copy(isFrontCamera = !front, localVideoTrack = cameraTrack) }
         }
     }
 
