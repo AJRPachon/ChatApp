@@ -123,13 +123,13 @@ private fun StickerTab(onSelected: (String) -> Unit) {
 @Composable
 private fun GifTab(onSelected: (String) -> Unit) {
     var query by remember { mutableStateOf("") }
-    var gifs by remember { mutableStateOf<List<GiphyGif>>(emptyList()) }
+    var result by remember { mutableStateOf<GiphyResult>(GiphyResult.Success(emptyList())) }
     var isLoading by remember { mutableStateOf(true) }
 
     LaunchedEffect(query) {
         if (query.isNotBlank()) delay(400)
         isLoading = true
-        gifs = searchGiphy(query)
+        result = searchGiphy(query)
         isLoading = false
     }
 
@@ -140,11 +140,22 @@ private fun GifTab(onSelected: (String) -> Unit) {
             placeholder = "Buscar GIFs…",
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
         )
-        if (isLoading) {
-            Box(Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
+        when {
+            isLoading -> Box(Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
-        } else {
+            result is GiphyResult.ApiKeyInvalid -> Box(
+                Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center
+            ) {
+                Text("GIFs no disponibles: configura una clave API de Giphy válida", color = Color.Gray)
+            }
+            result is GiphyResult.NetworkError -> Box(
+                Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center
+            ) {
+                Text("Error de red. Inténtalo de nuevo.", color = Color.Gray)
+            }
+            else -> {
+            val gifs = (result as GiphyResult.Success).gifs
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
                 contentPadding = PaddingValues(4.dp),
@@ -166,6 +177,7 @@ private fun GifTab(onSelected: (String) -> Unit) {
                             .clickable { onSelected(fullUrl) },
                     )
                 }
+            }
             }
         }
     }
