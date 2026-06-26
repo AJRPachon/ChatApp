@@ -82,6 +82,14 @@ class ChatViewModel(
     private var remoteSyncJob: Job? = null
 
     init {
+        // Periodically delete locally-expired self-destruct messages
+        viewModelScope.launch {
+            while (isActive) {
+                catchResult { messageRepository.deleteExpiredMessages() }
+                delay(30_000L)
+            }
+        }
+
         _state.update { it.copy(conversationTitle = otherUserName) }
         val uid = currentUserId
         if (uid != null) {
@@ -226,6 +234,9 @@ class ChatViewModel(
             is ChatIntent.SearchQueryChanged -> searchMessages(intent.query)
             is ChatIntent.ToggleReaction -> toggleReaction(intent.messageId, intent.emoji)
             is ChatIntent.JumpToMessage -> jumpToMessage(intent.messageId)
+            is ChatIntent.ShowExpiryDialog -> _state.update { it.copy(expiryDialogMessageId = intent.messageId) }
+            is ChatIntent.DismissExpiryDialog -> _state.update { it.copy(expiryDialogMessageId = null) }
+            is ChatIntent.SetExpiry -> setExpiry(intent.messageId, intent.expiresAt)
         }
     }
 
@@ -246,6 +257,14 @@ class ChatViewModel(
                 messageRepository.searchMessages(conversationId, uid, query)
             }.getOrDefault(emptyList())
             _state.update { it.copy(searchResults = results, isSearching = false) }
+        }
+    }
+
+    private fun setExpiry(messageId: String, expiresAt: Long?) {
+        _state.update { it.copy(expiryDialogMessageId = null) }
+        viewModelScope.launch {
+            catchResult { messageRepository.setMessageExpiry(messageId, expiresAt) }
+                .onFailure { e -> AppLogger.e(TAG, "setExpiry failed: ${e.message}") }
         }
     }
 

@@ -106,6 +106,12 @@ private val migration13To14 = object : Migration(13, 14) {
     }
 }
 
+private val migration16To17 = object : Migration(16, 17) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE messages ADD COLUMN expiresAt INTEGER")
+    }
+}
+
 private val migration15To16 = object : Migration(15, 16) {
     override fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE conversations ADD COLUMN mutedUntil INTEGER NOT NULL DEFAULT 0")
@@ -138,7 +144,7 @@ fun buildChatDatabase(context: Context): ChatDatabase {
             MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
             MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
             MIGRATION_9_10, MIGRATION_10_11, migration11To12,
-            migration12To13, migration13To14, migration14To15, migration15To16,
+            migration12To13, migration13To14, migration14To15, migration15To16, migration16To17,
         )
         .build()
 }

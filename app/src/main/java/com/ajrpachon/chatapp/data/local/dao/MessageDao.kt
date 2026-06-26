@@ -42,6 +42,12 @@ interface MessageDao {
     @Query("DELETE FROM messages WHERE conversationId = :conversationId AND createdAt < :threshold")
     suspend fun deleteMessagesBefore(conversationId: String, threshold: Long)
 
+    @Query("UPDATE messages SET expiresAt = :expiresAt WHERE id = :messageId")
+    suspend fun setExpiry(messageId: String, expiresAt: Long?)
+
+    @Query("DELETE FROM messages WHERE expiresAt IS NOT NULL AND expiresAt <= :now")
+    suspend fun deleteExpired(now: Long)
+
     @Query("SELECT * FROM messages WHERE conversationId = :conversationId AND content LIKE '%' || :query || '%' ORDER BY createdAt DESC")
     suspend fun searchMessages(conversationId: String, query: String): List<MessageDBO>
 

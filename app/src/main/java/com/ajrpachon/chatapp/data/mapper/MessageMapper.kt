@@ -52,4 +52,5 @@ fun MessageDBO.toBO(currentUserId: String, senderName: String) = MessageBO(
     isEncrypted = isEncrypted,
     isDeleted = isDeleted,
     isEdited = isEdited,
+    expiresAt = expiresAt,
 )
