@@ -11,4 +11,7 @@ interface UserRepository {
     suspend fun setUsername(userId: String, username: String): Result<UserBO>
     suspend fun isUsernameAvailable(username: String): Boolean
     suspend fun upsertProfile(user: UserBO)
+    suspend fun updateLastSeen(userId: String)
+    suspend fun updateShowOnlineStatus(userId: String, show: Boolean)
+    fun observeUserById(id: String): Flow<UserBO?>
 }
