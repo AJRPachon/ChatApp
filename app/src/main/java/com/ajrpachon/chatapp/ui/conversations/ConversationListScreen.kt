@@ -30,7 +30,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.DropdownMenu
@@ -61,7 +61,7 @@ import androidx.lifecycle.compose.dropUnlessResumed
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.ui.components.ChatAppAvatar
 import com.ajrpachon.chatapp.ui.components.ConversationListSkeleton
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import com.github.skydoves.navgraph.annotations.NavDestination
@@ -349,7 +349,7 @@ private fun ConversationItem(
                     ) {
                         if (conversation.isMuted) {
                             Icon(
-                                Icons.Default.VolumeOff,
+                                Icons.AutoMirrored.Filled.VolumeOff,
                                 contentDescription = "Silenciado",
                                 modifier = Modifier.size(14.dp),
                                 tint = MaterialTheme.colorScheme.outline,
@@ -408,6 +408,7 @@ private fun ConversationItem(
     }
 }
 
+@Suppress("DEPRECATION")
 private fun formatConversationTime(instant: Instant): String {
     val tz = TimeZone.currentSystemDefault()
     val now = Instant.fromEpochMilliseconds(System.currentTimeMillis()).toLocalDateTime(tz)
