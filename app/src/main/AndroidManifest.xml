@@ -43,6 +43,14 @@
             </intent-filter>
         </service>
 
+        <receiver
+            android:name=".service.NotificationReplyReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.ajrpachon.chatapp.ACTION_NOTIFICATION_REPLY" />
+            </intent-filter>
+        </receiver>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
