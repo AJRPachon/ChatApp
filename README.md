@@ -39,6 +39,10 @@ Proyecto personal para poner en práctica lo aprendido en desarrollo Android nat
 | 😀 | **Reacciones con emoji** — pulsación larga sobre un mensaje abre el picker (10 categorías, ~1800 emojis, recientes); reacciones agrupadas bajo cada burbuja |
 | 🔍 | **Búsqueda de mensajes** en la conversación activa con debounce de 300 ms y resaltado del resultado |
 | ✏️ | **Edición y borrado** de mensajes propios — borrado lógico (`isDeleted`) y marca de edición (`isEdited` + `editedAt`) |
+| 🔔 | **Respuesta inline a notificaciones** — `RemoteInput` + `NotificationReplyReceiver` + estilo `MessagingStyle` agrupado por conversación |
+| 🎥 | **Cambio de cámara** en videollamada — botón flip (frontal/trasero) via `LocalVideoTrack.switchCamera()` |
+| 🔇 | **Silenciar conversaciones** — opciones de duración (1h, 8h, 24h, Siempre) almacenadas en `mutedUntil` (DB v16) |
+| 💣 | **Mensajes efímeros** — autodestrucción con countdown visible, opciones 1min/1h/24h/7d (DB v17) |
 
 ---
 
@@ -60,8 +64,8 @@ com.ajrpachon.chatapp/
 │   ├── local/
 │   │   ├── entity/                   Entidades Room (DBO)
 │   │   ├── dao/                      DAOs de acceso a la BD
-│   │   ├── ChatDatabase.kt           Base de datos Room (versión 15, cifrada con SQLCipher)
-│   │   ├── DatabaseBuilder.kt        Migraciones v1 → v15
+│   │   ├── ChatDatabase.kt           Base de datos Room (versión 17, cifrada con SQLCipher)
+│   │   ├── DatabaseBuilder.kt        Migraciones v1 → v17
 │   │   └── DatabaseKeyProvider.kt    Clave AES-256 en Android KeyStore
 │   ├── remote/
 │   │   ├── dto/                      Data Transfer Objects de Supabase
@@ -86,7 +90,8 @@ com.ajrpachon.chatapp/
 ├── 🔴 service/                    ← Servicios en background
 │   ├── ChatFirebaseMessagingService.kt
 │   ├── FcmTokenManager.kt
-│   ├── FcmMessageHandler.kt
+│   ├── FcmMessageHandler.kt          MessagingStyle + RemoteInput + grouping
+│   ├── NotificationReplyReceiver.kt  Inline reply from notification
 │   └── ActiveChatTracker.kt
 │
 ├── di/                            ← Módulos Koin (AppModule, SharedModules)
@@ -171,6 +176,7 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | **Turbine** | 1.2.0 | Assertions sobre Flows |
 | **Coroutines Test** | 1.10.1 | TestDispatcher y runTest |
 | **Robolectric** | 4.14.1 | Tests unitarios con contexto Android |
+| **Room Testing** | 2.8.4 | Tests de integración en memoria para DAOs (MessageDaoTest, ConversationDaoTest — 33 tests) |
 
 ### CI/CD
 
@@ -210,6 +216,11 @@ master        ← releases estables (v1.0, v1.1…)
     ├── feature/deep-links
     ├── feature/supabase-presence-migration
     ├── feature/coil-disk-cache
+    ├── feature/camera-switch-call
+    ├── feature/notification-reply
+    ├── feature/mute-snooze
+    ├── feature/self-destruct
+    ├── feature/room-integration-tests
     ├── feature/strictmode-debug
     ├── fix/viewmodel-coroutine-leaks
     ├── fix/e2ee-key-cache
