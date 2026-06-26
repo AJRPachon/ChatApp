@@ -63,6 +63,7 @@ sealed interface ChatIntent {
     data object OpenSearch : ChatIntent
     data object CloseSearch : ChatIntent
     data class SearchQueryChanged(val query: String) : ChatIntent
+    data class ToggleReaction(val messageId: String, val emoji: String) : ChatIntent
 }
 
 sealed interface ChatEffect {

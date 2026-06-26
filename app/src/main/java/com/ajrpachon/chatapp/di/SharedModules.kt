@@ -11,12 +11,14 @@ import com.ajrpachon.chatapp.data.repository.ConversationRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.GroupRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.InvitationRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.MessageRepositoryImpl
+import com.ajrpachon.chatapp.data.repository.ReactionRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.UserRepositoryImpl
 import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
 import com.ajrpachon.chatapp.domain.repository.InvitationRepository
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
+import com.ajrpachon.chatapp.domain.repository.ReactionRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.AddGroupMemberUseCase
 import com.ajrpachon.chatapp.domain.usecase.BlockUserUseCase
@@ -57,6 +59,7 @@ val repositoryModule = module {
     singleOf(::InvitationRepositoryImpl) { bind<InvitationRepository>() }
     singleOf(::GroupRepositoryImpl) { bind<GroupRepository>() }
     singleOf(::CallRepositoryImpl) { bind<CallRepository>() }
+    singleOf(::ReactionRepositoryImpl) { bind<ReactionRepository>() }
 }
 
 val useCaseModule = module {

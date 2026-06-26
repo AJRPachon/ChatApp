@@ -49,6 +49,7 @@ class ChatViewModel(
     private val getGroupMembersUseCase: GetGroupMembersUseCase,
     private val leaveGroupUseCase: LeaveGroupUseCase,
     private val groupRepository: GroupRepository,
+    private val reactionRepository: com.ajrpachon.chatapp.domain.repository.ReactionRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ChatState())
@@ -61,6 +62,9 @@ class ChatViewModel(
     private val currentUserId: String? = userRepository.getCurrentUserId()
 
     private val _historyVisibleFrom = MutableStateFlow(0L)
+
+    val reactions: Flow<Map<String, List<com.ajrpachon.chatapp.domain.model.ReactionBO>>> =
+        reactionRepository.observeReactions(conversationId)
 
     val messages: Flow<PagingData<MessageBO>> = _historyVisibleFrom
         .flatMapLatest { since ->
@@ -214,6 +218,7 @@ class ChatViewModel(
             is ChatIntent.OpenSearch -> _state.update { it.copy(isSearchActive = true, searchQuery = "", searchResults = emptyList()) }
             is ChatIntent.CloseSearch -> _state.update { it.copy(isSearchActive = false, searchQuery = "", searchResults = emptyList()) }
             is ChatIntent.SearchQueryChanged -> searchMessages(intent.query)
+            is ChatIntent.ToggleReaction -> toggleReaction(intent.messageId, intent.emoji)
         }
     }
 
@@ -234,6 +239,13 @@ class ChatViewModel(
                 messageRepository.searchMessages(conversationId, uid, query)
             }.getOrDefault(emptyList())
             _state.update { it.copy(searchResults = results, isSearching = false) }
+        }
+    }
+
+    private fun toggleReaction(messageId: String, emoji: String) {
+        val uid = currentUserId ?: return
+        viewModelScope.launch {
+            runCatching { reactionRepository.toggleReaction(messageId, uid, emoji) }
         }
     }
 

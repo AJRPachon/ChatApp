@@ -166,6 +166,7 @@ fun ChatScreen(
     val vm: ChatViewModel = koinViewModel(key = conversationId, parameters = { parametersOf(conversationId, otherUserName) })
     val state by vm.state.collectAsStateWithLifecycle()
     val lazyPagingItems = vm.messages.collectAsLazyPagingItems()
+    val reactions by vm.reactions.collectAsStateWithLifecycle(initialValue = emptyMap())
     val listState = rememberLazyListState()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -637,6 +638,9 @@ fun ChatScreen(
                                 onReplyClick = onScrollToMessage,
                                 onDelete = if (message.isFromMe) {{ vm.onIntent(ChatIntent.DeleteMessage(message.id)) }} else null,
                                 onEdit = if (message.isFromMe && message.content.isNotBlank()) {{ vm.onIntent(ChatIntent.StartEdit(message)) }} else null,
+                                messageReactions = reactions[message.id] ?: emptyList(),
+                                currentUserId = state.currentUserId,
+                                onToggleReaction = { emoji -> vm.onIntent(ChatIntent.ToggleReaction(message.id, emoji)) },
                             )
                         }
                     }
@@ -1234,6 +1238,9 @@ private fun MessageBubble(
     onReplyClick: (String) -> Unit = {},
     onDelete: (() -> Unit)? = null,
     onEdit: (() -> Unit)? = null,
+    messageReactions: List<com.ajrpachon.chatapp.domain.model.ReactionBO> = emptyList(),
+    currentUserId: String? = null,
+    onToggleReaction: (String) -> Unit = {},
 ) {
     if (message.isDeleted) {
         DeletedMessageBubble(message)
@@ -1293,10 +1300,14 @@ private fun MessageBubble(
                 .padding(start = 4.dp)
                 .alpha(iconAlpha),
         )
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .graphicsLayer { translationX = swipeOffset.value },
+            horizontalAlignment = if (message.isFromMe) Alignment.End else Alignment.Start,
+        ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = if (message.isFromMe) Arrangement.End else Arrangement.Start,
         ) {
             var showBubbleMenu by remember { mutableStateOf(false) }
@@ -1356,27 +1367,39 @@ private fun MessageBubble(
                         Box(
                             modifier = Modifier.combinedClickable(
                                 onClick = {},
-                                onLongClick = {
-                                    if (onEdit != null) { showMsgMenu = true } else {
-                                        ClipboardProtection.copyWithTimeout(context, "message", message.content, scope)
-                                    }
-                                },
+                                onLongClick = { showMsgMenu = true },
                             ),
                         ) {
                             Text(text = message.content, style = MaterialTheme.typography.bodyMedium)
-                            if (onEdit != null) {
-                                DropdownMenu(expanded = showMsgMenu, onDismissRequest = { showMsgMenu = false }) {
+                            DropdownMenu(expanded = showMsgMenu, onDismissRequest = { showMsgMenu = false }) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    listOf("👍", "❤️", "😂", "😮", "😢", "🙏").forEach { emoji ->
+                                        Text(
+                                            text = emoji,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            modifier = Modifier.clickable {
+                                                showMsgMenu = false
+                                                onToggleReaction(emoji)
+                                            },
+                                        )
+                                    }
+                                }
+                                HorizontalDivider()
+                                if (onEdit != null) {
                                     DropdownMenuItem(
                                         text = { Text("Editar") },
                                         leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
                                         onClick = { showMsgMenu = false; onEdit() },
                                     )
-                                    DropdownMenuItem(
-                                        text = { Text("Copiar") },
-                                        leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null) },
-                                        onClick = { showMsgMenu = false; ClipboardProtection.copyWithTimeout(context, "message", message.content, scope) },
-                                    )
                                 }
+                                DropdownMenuItem(
+                                    text = { Text("Copiar") },
+                                    leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null) },
+                                    onClick = { showMsgMenu = false; ClipboardProtection.copyWithTimeout(context, "message", message.content, scope) },
+                                )
                             }
                         }
                     }
@@ -1414,6 +1437,30 @@ private fun MessageBubble(
             }
             } // Box
         }
+        if (messageReactions.isNotEmpty()) {
+            val grouped = messageReactions.groupBy { it.emoji }
+            Row(
+                modifier = Modifier.padding(top = 2.dp, start = 4.dp, end = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                grouped.forEach { (emoji, reactors) ->
+                    val isMine = reactors.any { it.userId == currentUserId }
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = if (isMine) MaterialTheme.colorScheme.primaryContainer
+                                else MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier.clickable { onToggleReaction(emoji) },
+                    ) {
+                        Text(
+                            text = "$emoji ${reactors.size}",
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        )
+                    }
+                }
+            }
+        }
+        } // close Column
         Box(
             modifier = Modifier
                 .matchParentSize()
