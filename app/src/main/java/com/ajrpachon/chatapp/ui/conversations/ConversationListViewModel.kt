@@ -9,6 +9,7 @@ import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
 import com.ajrpachon.chatapp.domain.usecase.ObserveConversationsUseCase
 import com.ajrpachon.chatapp.domain.usecase.ObserveInvitationsUseCase
 import com.ajrpachon.chatapp.service.FcmTokenManager
+import com.ajrpachon.chatapp.service.PresenceManager
 import com.ajrpachon.chatapp.utils.AppLogger
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,6 +28,7 @@ class ConversationListViewModel(
     private val conversationRepository: ConversationRepository,
     private val leaveGroupUseCase: LeaveGroupUseCase,
     private val fcmTokenManager: FcmTokenManager,
+    private val presenceManager: PresenceManager,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ConversationListState())
@@ -36,6 +38,7 @@ class ConversationListViewModel(
     val effect = _effect.receiveAsFlow()
 
     init {
+        presenceManager.start()
         viewModelScope.launch { fcmTokenManager.syncToken() }
         viewModelScope.launch {
             catchResult {

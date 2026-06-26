@@ -86,6 +86,13 @@ private val MIGRATION_10_11 = object : Migration(10, 11) {
     }
 }
 
+private val MIGRATION_11_12 = object : Migration(11, 12) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE users ADD COLUMN lastSeen INTEGER")
+        connection.execSQL("ALTER TABLE users ADD COLUMN showOnlineStatus INTEGER NOT NULL DEFAULT 1")
+    }
+}
+
 fun buildChatDatabase(context: Context): ChatDatabase {
     System.loadLibrary("sqlcipher")
     val passphrase = DatabaseKeyProvider.getPassphrase(context.applicationContext)
@@ -98,7 +105,7 @@ fun buildChatDatabase(context: Context): ChatDatabase {
         .addMigrations(
             MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
             MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
-            MIGRATION_9_10, MIGRATION_10_11,
+            MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12,
         )
         .build()
 }

@@ -12,4 +12,6 @@ data class UserDBO(
     val avatarUrl: String?,
     val createdAt: Long,  // epochMilliseconds — no java.util.*
     val isCurrentUser: Boolean = false,
+    val lastSeen: Long? = null,
+    val showOnlineStatus: Boolean = true,
 )
