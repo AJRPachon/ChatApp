@@ -1227,6 +1227,7 @@ private fun DeletedMessageBubble(message: MessageBO) {
 
 // ── MessageBubble ─────────────────────────────────────────────────────────────
 
+@Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList")
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun MessageBubble(

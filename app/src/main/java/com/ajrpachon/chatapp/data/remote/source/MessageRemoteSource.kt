@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
 
 private val lenientJson = Json { ignoreUnknownKeys = true }
@@ -61,7 +62,7 @@ class MessageRemoteSource(private val supabase: SupabaseClient) {
             .update({
                 set("content", newContent)
                 set("is_edited", true)
-                set("edited_at", kotlinx.datetime.Clock.System.now().toString())
+                set("edited_at", Instant.fromEpochMilliseconds(System.currentTimeMillis()).toString())
             }) {
                 filter { eq("id", messageId) }
             }

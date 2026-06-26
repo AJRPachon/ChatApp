@@ -32,18 +32,18 @@ internal data class GiphyMeta(
 )
 
 @Serializable
-internal data class GiphyGif(
+data class GiphyGif(
     @SerialName("images") val images: GiphyImages,
 )
 
 @Serializable
-internal data class GiphyImages(
+data class GiphyImages(
     @SerialName("fixed_height_small") val fixedHeightSmall: GiphyImageData,
     @SerialName("original") val original: GiphyImageData,
 )
 
 @Serializable
-internal data class GiphyImageData(
+data class GiphyImageData(
     @SerialName("url") val url: String = "",
 )
 

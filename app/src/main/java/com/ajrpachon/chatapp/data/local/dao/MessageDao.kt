@@ -9,6 +9,7 @@ import com.ajrpachon.chatapp.data.local.entity.MessageDBO
 import kotlinx.coroutines.flow.Flow
 
 @Dao
+@Suppress("TooManyFunctions")
 interface MessageDao {
     @Query("SELECT * FROM messages WHERE conversationId = :conversationId AND createdAt >= :since ORDER BY createdAt ASC")
     fun observeByConversation(conversationId: String, since: Long): Flow<List<MessageDBO>>

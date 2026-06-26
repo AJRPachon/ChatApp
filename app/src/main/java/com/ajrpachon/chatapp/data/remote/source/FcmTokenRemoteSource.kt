@@ -3,7 +3,7 @@ package com.ajrpachon.chatapp.data.remote.source
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
-import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -15,7 +15,7 @@ class FcmTokenRemoteSource(private val supabase: SupabaseClient) {
             buildJsonObject {
                 put("user_id", userId)
                 put("token", token)
-                put("updated_at", Clock.System.now().toString())
+                put("updated_at", Instant.fromEpochMilliseconds(System.currentTimeMillis()).toString())
             }
         )
     }

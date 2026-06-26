@@ -56,7 +56,7 @@ class InvitationRepositoryImpl(
             val invitationDbo = invitationDto.toDBO()
             invitationDao.upsert(invitationDbo)
             val sender = userDao.getById(senderId)?.toBO()
-                ?: throw IllegalStateException("Sender user not found: $senderId")
+                ?: error("Sender user not found: $senderId")
             invitationDbo.toBO(sender)
         }
 
