@@ -1,7 +1,7 @@
 [versions]
 agp = "9.1.1"
-kotlin = "2.1.20"
-ksp = "2.1.20-1.0.32"
+kotlin = "2.3.21"
+ksp = "2.3.6"
 
 # Compose
 composeBom = "2026.05.00"
