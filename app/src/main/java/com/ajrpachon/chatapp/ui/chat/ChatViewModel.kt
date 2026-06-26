@@ -82,13 +82,8 @@ class ChatViewModel(
     private var remoteSyncJob: Job? = null
 
     init {
-        // Periodically delete locally-expired self-destruct messages
-        viewModelScope.launch {
-            while (isActive) {
-                catchResult { messageRepository.deleteExpiredMessages() }
-                delay(30_000L)
-            }
-        }
+        // Delete expired self-destruct messages when the screen opens
+        viewModelScope.launch { catchResult { messageRepository.deleteExpiredMessages() } }
 
         _state.update { it.copy(conversationTitle = otherUserName) }
         val uid = currentUserId
