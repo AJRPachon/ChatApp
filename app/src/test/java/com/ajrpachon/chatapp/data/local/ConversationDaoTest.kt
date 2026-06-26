@@ -13,13 +13,13 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import android.app.Application
 import org.junit.runner.RunWith
-import org.koin.core.context.stopKoin
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35])
+@Config(sdk = [35], application = Application::class)
 class ConversationDaoTest {
 
     private lateinit var db: ChatDatabase
@@ -36,7 +36,6 @@ class ConversationDaoTest {
     @After
     fun tearDown() {
         db.close()
-        stopKoin()
     }
 
     // ── upsert / observeAll ───────────────────────────────────────────────────

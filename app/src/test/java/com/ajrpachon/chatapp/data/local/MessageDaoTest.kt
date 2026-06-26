@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.ajrpachon.chatapp.data.local.entity.MessageDBO
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import android.app.Application
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -13,12 +14,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.koin.core.context.stopKoin
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35])
+@Config(sdk = [35], application = Application::class)
 class MessageDaoTest {
 
     private lateinit var db: ChatDatabase
@@ -35,7 +35,6 @@ class MessageDaoTest {
     @After
     fun tearDown() {
         db.close()
-        stopKoin()
     }
 
     // ── upsert / observe ──────────────────────────────────────────────────────
