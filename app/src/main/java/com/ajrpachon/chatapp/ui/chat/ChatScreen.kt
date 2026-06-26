@@ -197,6 +197,12 @@ fun ChatScreen(
         }
     }
 
+    // Jump-to-message: when ViewModel sets a highlighted message ID, scroll to it
+    LaunchedEffect(state.highlightedMessageId) {
+        val id = state.highlightedMessageId ?: return@LaunchedEffect
+        onScrollToMessage(id)
+    }
+
     var viewerUrls by remember { mutableStateOf<List<String>>(emptyList()) }
     var viewerInitialIndex by remember { mutableStateOf(0) }
     var showViewer by remember { mutableStateOf(false) }
@@ -692,6 +698,7 @@ fun ChatScreen(
                     topPadding = innerPadding.calculateTopPadding(),
                     onQueryChange = { vm.onIntent(ChatIntent.SearchQueryChanged(it)) },
                     onClose = { vm.onIntent(ChatIntent.CloseSearch) },
+                    onJump = { vm.onIntent(ChatIntent.JumpToMessage(it)) },
                 )
             }
         }
@@ -706,6 +713,7 @@ private fun MessageSearchOverlay(
     topPadding: androidx.compose.ui.unit.Dp,
     onQueryChange: (String) -> Unit,
     onClose: () -> Unit,
+    onJump: (String) -> Unit = {},
 ) {
     Surface(
         modifier = Modifier
@@ -753,7 +761,7 @@ private fun MessageSearchOverlay(
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     itemsIndexed(results, key = { _, m -> m.id }) { _, message ->
-                        SearchResultItem(message = message)
+                        SearchResultItem(message = message, onClick = { onJump(message.id) })
                     }
                 }
             }
@@ -762,11 +770,12 @@ private fun MessageSearchOverlay(
 }
 
 @Composable
-private fun SearchResultItem(message: MessageBO) {
+private fun SearchResultItem(message: MessageBO, onClick: () -> Unit = {}) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
         Row(

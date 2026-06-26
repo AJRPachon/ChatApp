@@ -225,6 +225,7 @@ class ChatViewModel(
             is ChatIntent.CloseSearch -> _state.update { it.copy(isSearchActive = false, searchQuery = "", searchResults = emptyList()) }
             is ChatIntent.SearchQueryChanged -> searchMessages(intent.query)
             is ChatIntent.ToggleReaction -> toggleReaction(intent.messageId, intent.emoji)
+            is ChatIntent.JumpToMessage -> jumpToMessage(intent.messageId)
         }
     }
 
@@ -245,6 +246,22 @@ class ChatViewModel(
                 messageRepository.searchMessages(conversationId, uid, query)
             }.getOrDefault(emptyList())
             _state.update { it.copy(searchResults = results, isSearching = false) }
+        }
+    }
+
+    private fun jumpToMessage(messageId: String) {
+        _state.update {
+            it.copy(
+                isSearchActive = false,
+                searchQuery = "",
+                searchResults = emptyList(),
+                highlightedMessageId = messageId,
+            )
+        }
+        // Clear highlight after 2 seconds so the animation fades out
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(2_000)
+            _state.update { if (it.highlightedMessageId == messageId) it.copy(highlightedMessageId = null) else it }
         }
     }
 

@@ -38,6 +38,7 @@ data class ChatState(
     val searchQuery: String = "",
     val searchResults: List<MessageBO> = emptyList(),
     val isSearching: Boolean = false,
+    val highlightedMessageId: String? = null,
 )
 
 sealed interface ChatIntent {
@@ -70,6 +71,7 @@ sealed interface ChatIntent {
     data object CloseSearch : ChatIntent
     data class SearchQueryChanged(val query: String) : ChatIntent
     data class ToggleReaction(val messageId: String, val emoji: String) : ChatIntent
+    data class JumpToMessage(val messageId: String) : ChatIntent
 }
 
 sealed interface ChatEffect {
