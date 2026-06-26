@@ -4,13 +4,13 @@ kotlin = "2.1.20"
 ksp = "2.1.20-1.0.32"
 
 # Compose
-composeBom = "2026.05.00"
-activityCompose = "1.10.1"
-lifecycleViewmodelCompose = "2.9.0"
+composeBom = "2026.06.00"
+activityCompose = "1.13.0"
+lifecycleViewmodelCompose = "2.11.0"
 
 # Navigation 3
-nav3Core = "1.0.0"
-lifecycleViewmodelNav3 = "2.10.0-rc01"
+nav3Core = "1.1.3"
+lifecycleViewmodelNav3 = "2.11.0"
 
 # Room KMP
 room = "2.8.4"
@@ -46,21 +46,24 @@ sqlcipher = "4.6.1"
 playIntegrity = "1.4.0"
 
 # AndroidX
-coreKtx = "1.18.0"
+coreKtx = "1.19.0"
 appcompat = "1.7.0"
 junit = "4.13.2"
 junitVersion = "1.3.0"
 espressoCore = "3.7.0"
 
 # Google Credentials
-credentials = "1.5.0"
+credentials = "1.6.0"
 googleid = "1.1.1"
 
 # Paging
-paging = "3.3.6"
+paging = "3.5.0"
 
 # Firebase
 firebaseBom = "33.14.0"
+
+# CI tooling
+detekt = "1.23.8"
 
 # Test
 mockk = "1.13.17"
@@ -161,3 +164,4 @@ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 androidx-room = { id = "androidx.room", version.ref = "room" }
 google-services = { id = "com.google.gms.google-services", version = "4.4.2" }
 compose-nav-graph = { id = "com.github.skydoves.navgraph", version.ref = "navgraph" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }

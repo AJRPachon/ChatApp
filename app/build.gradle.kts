@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.androidx.room)
     alias(libs.plugins.google.services)
     alias(libs.plugins.compose.nav.graph)
+    jacoco
 }
 
 val localProperties = Properties().apply {
@@ -17,16 +18,12 @@ val localProperties = Properties().apply {
 
 android {
     namespace = "com.ajrpachon.chatapp"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.ajrpachon.chatapp"
         minSdk = 28
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -41,6 +38,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            enableUnitTestCoverage = true
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -86,6 +86,30 @@ navgraph {
 
 ksp {
     arg("navgraph.annotatedOnly", "true")
+}
+
+tasks.register<JacocoReport>("jacocoTestReport") {
+    dependsOn("testDebugUnitTest")
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+    classDirectories.setFrom(
+        fileTree(layout.buildDirectory.dir("tmp/kotlin-classes/debug")) {
+            exclude(
+                "**/R.class", "**/R\$*.class", "**/BuildConfig.*",
+                "**/Manifest*.*", "**/*Test*.*", "android/**/*.*",
+                "**/*\$Lambda\$*.*", "**/*\$inlined*.*",
+                "**/ui/theme/**", "**/*_Factory*.*", "**/*_HiltComponents*.*"
+            )
+        }
+    )
+    sourceDirectories.setFrom(files("src/main/java", "src/main/kotlin"))
+    executionData.setFrom(
+        layout.buildDirectory.file(
+            "outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec"
+        )
+    )
 }
 
 dependencies {
