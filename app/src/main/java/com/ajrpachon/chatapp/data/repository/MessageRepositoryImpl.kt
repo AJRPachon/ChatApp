@@ -176,6 +176,11 @@ class MessageRepositoryImpl(
                 catchResult { messageDao.upsert(dto.toDBO()) }
             }
         }
+        launch {
+            remoteSource.observeMessageUpdates(conversationId).collect { dto ->
+                catchResult { messageDao.upsert(dto.toDBO()) }
+            }
+        }
         awaitCancellation()
     }
 

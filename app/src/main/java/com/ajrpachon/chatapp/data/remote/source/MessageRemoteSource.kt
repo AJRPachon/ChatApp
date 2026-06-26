@@ -60,6 +60,27 @@ class MessageRemoteSource(private val supabase: SupabaseClient) {
             }
     }
 
+    fun observeMessageUpdates(conversationId: String): Flow<MessageDTO> = channelFlow {
+        val channel = supabase.channel("messages:updates:$conversationId")
+        channel.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
+            table = "messages"
+        }.onEach { action ->
+            runCatching {
+                val dto = lenientJson.decodeFromString<MessageDTO>(action.record.toString())
+                if (dto.conversationId == conversationId) trySend(dto)
+            }
+        }.launchIn(this)
+        channel.subscribe()
+        try {
+            awaitCancellation()
+        } finally {
+            withContext(NonCancellable) {
+                runCatching { channel.unsubscribe() }
+                runCatching { supabase.realtime.removeChannel(channel) }
+            }
+        }
+    }
+
     // Cleanup via withContext(NonCancellable) ensures unsubscribe + removeChannel complete
     // synchronously before the flow terminates, preventing reuse of a stale joined channel.
     fun observeNewMessages(conversationId: String): Flow<MessageDTO> = channelFlow {

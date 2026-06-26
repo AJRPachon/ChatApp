@@ -32,4 +32,7 @@ interface ConversationDao {
 
     @Query("SELECT * FROM conversations WHERE id = :id LIMIT 1")
     fun observeById(id: String): Flow<ConversationDBO?>
+
+    @Query("UPDATE conversations SET unreadCount = 0 WHERE id = :id")
+    suspend fun resetUnreadCount(id: String)
 }
