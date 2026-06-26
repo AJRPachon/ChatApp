@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.CameraAlt
@@ -195,7 +196,7 @@ fun GroupInfoScreen(
                                 text = { Text("Salir del grupo", color = MaterialTheme.colorScheme.error) },
                                 leadingIcon = {
                                     Icon(
-                                        Icons.Default.ExitToApp,
+                                        Icons.AutoMirrored.Filled.ExitToApp,
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.error,
                                     )

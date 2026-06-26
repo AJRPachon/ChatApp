@@ -421,12 +421,12 @@ private fun formatConversationTime(instant: Instant): String {
         }
         dt.date.year == now.date.year && dt.date.dayOfYear == now.date.dayOfYear - 1 -> "Ayer"
         dt.date.year == now.date.year -> {
-            val day = dt.dayOfMonth.toString().padStart(2, '0')
+            val day = dt.day.toString().padStart(2, '0')
             val month = dt.monthNumber.toString().padStart(2, '0')
             "$day/$month"
         }
         else -> {
-            val day = dt.dayOfMonth.toString().padStart(2, '0')
+            val day = dt.day.toString().padStart(2, '0')
             val month = dt.monthNumber.toString().padStart(2, '0')
             val year = dt.year.toString().takeLast(2)
             "$day/$month/$year"
