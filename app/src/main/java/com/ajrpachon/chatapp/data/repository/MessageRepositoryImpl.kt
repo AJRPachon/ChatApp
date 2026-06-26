@@ -168,6 +168,11 @@ class MessageRepositoryImpl(
         messageDao.markDeleted(messageId)
     }
 
+    override suspend fun editMessage(messageId: String, newContent: String): Result<Unit> = catchResult {
+        remoteSource.editMessage(messageId, newContent)
+        messageDao.updateContent(messageId, newContent, System.currentTimeMillis())
+    }
+
     override fun syncRemote(conversationId: String, historyVisibleFrom: Long): Flow<Unit> = channelFlow {
         launch {
             catchResult {

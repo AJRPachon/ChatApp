@@ -191,7 +191,7 @@ class ChatViewModel(
     fun onIntent(intent: ChatIntent) {
         when (intent) {
             is ChatIntent.InputChanged -> _state.update { it.copy(inputText = intent.text) }
-            is ChatIntent.Send -> sendMessage()
+            is ChatIntent.Send -> if (_state.value.editingMessage != null) confirmEdit() else sendMessage()
             is ChatIntent.SendImages -> sendImages(intent.context, intent.uris)
             is ChatIntent.StartRecording -> startRecording(intent.context, intent.outputFilePath)
             is ChatIntent.StopRecording -> stopRecording()
@@ -208,6 +208,9 @@ class ChatViewModel(
             is ChatIntent.ToggleMute -> toggleMute()
             is ChatIntent.LeaveGroup -> leaveGroup()
             is ChatIntent.DeleteMessage -> deleteMessage(intent.messageId)
+            is ChatIntent.StartEdit -> _state.update { it.copy(editingMessage = intent.message, inputText = intent.message.content) }
+            is ChatIntent.CancelEdit -> _state.update { it.copy(editingMessage = null, inputText = "") }
+            is ChatIntent.ConfirmEdit -> confirmEdit()
         }
     }
 
@@ -419,6 +422,23 @@ class ChatViewModel(
                 .onFailure { e ->
                     _state.update { it.copy(isMuted = !newMuted) }
                     AppLogger.e(TAG, "Toggle mute failed", e)
+                }
+        }
+    }
+
+    private fun confirmEdit() {
+        val editingMsg = _state.value.editingMessage ?: return
+        val newContent = _state.value.inputText.trim()
+        if (newContent.isBlank() || newContent == editingMsg.content) {
+            _state.update { it.copy(editingMessage = null, inputText = "") }
+            return
+        }
+        viewModelScope.launch {
+            _state.update { it.copy(editingMessage = null, inputText = "") }
+            messageRepository.editMessage(editingMsg.id, newContent)
+                .onFailure { e ->
+                    AppLogger.e(TAG, "Edit message failed", e)
+                    _state.update { it.copy(error = "No se pudo editar el mensaje") }
                 }
         }
     }

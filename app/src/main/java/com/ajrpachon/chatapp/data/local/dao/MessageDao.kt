@@ -29,6 +29,9 @@ interface MessageDao {
     @Query("UPDATE messages SET isDeleted = 1 WHERE id = :messageId")
     suspend fun markDeleted(messageId: String)
 
+    @Query("UPDATE messages SET content = :content, isEdited = 1, editedAt = :editedAt WHERE id = :messageId")
+    suspend fun updateContent(messageId: String, content: String, editedAt: Long)
+
     @Query("SELECT * FROM messages WHERE conversationId = :conversationId ORDER BY createdAt DESC LIMIT 1")
     suspend fun getLastMessage(conversationId: String): MessageDBO?
 

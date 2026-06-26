@@ -26,6 +26,8 @@ fun MessageDTO.toDBO() = MessageDBO(
     stickerUrl = stickerUrl,
     isEncrypted = isEncrypted,
     isDeleted = isDeleted,
+    isEdited = isEdited,
+    editedAt = editedAt?.let { runCatching { Instant.parse(it).toEpochMilliseconds() }.getOrNull() },
 )
 
 fun MessageDBO.toBO(currentUserId: String, senderName: String) = MessageBO(
@@ -49,4 +51,5 @@ fun MessageDBO.toBO(currentUserId: String, senderName: String) = MessageBO(
     stickerUrl = stickerUrl,
     isEncrypted = isEncrypted,
     isDeleted = isDeleted,
+    isEdited = isEdited,
 )

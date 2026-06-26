@@ -56,6 +56,17 @@ class MessageRemoteSource(private val supabase: SupabaseClient) {
             }
     }
 
+    suspend fun editMessage(messageId: String, newContent: String) {
+        supabase.postgrest["messages"]
+            .update({
+                set("content", newContent)
+                set("is_edited", true)
+                set("edited_at", kotlinx.datetime.Clock.System.now().toString())
+            }) {
+                filter { eq("id", messageId) }
+            }
+    }
+
     suspend fun markAsRead(conversationId: String, userId: String) {
         supabase.postgrest["messages"]
             .update({ set("is_read", true) }) {
