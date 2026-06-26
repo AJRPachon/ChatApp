@@ -57,8 +57,10 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.EmojiEmotions
@@ -289,6 +291,13 @@ fun ChatScreen(
         )
     }
 
+    if (state.showMuteDialog) {
+        MuteDurationDialog(
+            onDismiss = { vm.onIntent(ChatIntent.DismissMuteDialog) },
+            onSelect = { vm.onIntent(ChatIntent.MuteFor(it)) },
+        )
+    }
+
     if (state.showStickerPicker) {
         StickerGifPicker(
             onStickerSelected = { vm.onIntent(ChatIntent.SendSticker(it)) },
@@ -425,7 +434,11 @@ fun ChatScreen(
                                 },
                                 onClick = {
                                     menuExpanded = false
-                                    vm.onIntent(ChatIntent.ToggleMute)
+                                    if (state.isMuted) {
+                                        vm.onIntent(ChatIntent.MuteFor(0L))
+                                    } else {
+                                        vm.onIntent(ChatIntent.ShowMuteDialog)
+                                    }
                                 },
                             )
                             if (state.isGroup) {
@@ -1795,3 +1808,33 @@ private fun formatAudioDuration(ms: Int): String {
 
 private fun formatCallDuration(seconds: Int): String =
     "%d:%02d".format(seconds / 60, seconds % 60)
+
+@Composable
+private fun MuteDurationDialog(onDismiss: () -> Unit, onSelect: (Long) -> Unit) {
+    val options = listOf(
+        "1 hora" to (System.currentTimeMillis() + 3_600_000L),
+        "8 horas" to (System.currentTimeMillis() + 28_800_000L),
+        "24 horas" to (System.currentTimeMillis() + 86_400_000L),
+        "Siempre" to -1L,
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Silenciar notificaciones") },
+        text = {
+            androidx.compose.foundation.layout.Column {
+                options.forEach { (label, value) ->
+                    TextButton(
+                        onClick = { onSelect(value) },
+                        modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
+                    ) {
+                        Text(label, modifier = androidx.compose.ui.Modifier.fillMaxWidth())
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancelar") }
+        },
+    )
+}

@@ -31,6 +31,8 @@ data class ChatState(
     val replyingTo: MessageBO? = null,
     val showStickerPicker: Boolean = false,
     val isMuted: Boolean = false,
+    val mutedUntil: Long = 0L,
+    val showMuteDialog: Boolean = false,
     val editingMessage: MessageBO? = null,
     val isSearchActive: Boolean = false,
     val searchQuery: String = "",
@@ -55,6 +57,10 @@ sealed interface ChatIntent {
     data class SendGif(val url: String) : ChatIntent
     data class SendSticker(val emoji: String) : ChatIntent
     data object ToggleMute : ChatIntent
+    data object ShowMuteDialog : ChatIntent
+    data object DismissMuteDialog : ChatIntent
+    // mutedUntil: -1L = forever, 0L = unmute, positive = until epoch millis
+    data class MuteFor(val mutedUntil: Long) : ChatIntent
     data object LeaveGroup : ChatIntent
     data class DeleteMessage(val messageId: String) : ChatIntent
     data class StartEdit(val message: MessageBO) : ChatIntent

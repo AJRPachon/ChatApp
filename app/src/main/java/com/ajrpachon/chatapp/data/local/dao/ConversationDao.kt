@@ -27,6 +27,9 @@ interface ConversationDao {
     @Query("UPDATE conversations SET isMuted = :muted WHERE id = :id")
     suspend fun updateMuted(id: String, muted: Boolean)
 
+    @Query("UPDATE conversations SET mutedUntil = :mutedUntil, isMuted = (:mutedUntil != 0) WHERE id = :id")
+    suspend fun updateMutedUntil(id: String, mutedUntil: Long)
+
     @Query("SELECT * FROM conversations WHERE otherUserId = :userId LIMIT 1")
     suspend fun getByOtherUserId(userId: String): ConversationDBO?
 
