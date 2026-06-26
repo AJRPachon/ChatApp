@@ -9,7 +9,6 @@ import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.filterNotNull
 
 class UserRepositoryImpl(
     private val userDao: UserDao,

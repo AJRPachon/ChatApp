@@ -4,6 +4,7 @@ import androidx.paging.PagingData
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import kotlinx.coroutines.flow.Flow
 
+@Suppress("TooManyFunctions")
 interface MessageRepository {
     fun observeMessages(conversationId: String, currentUserId: String, historyVisibleFrom: Long = 0L): Flow<List<MessageBO>>
     fun syncRemote(conversationId: String, historyVisibleFrom: Long = 0L): Flow<Unit>

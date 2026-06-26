@@ -86,27 +86,27 @@ private val MIGRATION_10_11 = object : Migration(10, 11) {
     }
 }
 
-private val MIGRATION_11_12 = object : Migration(11, 12) {
+private val migration11To12 = object : Migration(11, 12) {
     override fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE users ADD COLUMN lastSeen INTEGER")
         connection.execSQL("ALTER TABLE users ADD COLUMN showOnlineStatus INTEGER NOT NULL DEFAULT 1")
     }
 }
 
-private val MIGRATION_12_13 = object : Migration(12, 13) {
+private val migration12To13 = object : Migration(12, 13) {
     override fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE messages ADD COLUMN isDeleted INTEGER NOT NULL DEFAULT 0")
     }
 }
 
-private val MIGRATION_13_14 = object : Migration(13, 14) {
+private val migration13To14 = object : Migration(13, 14) {
     override fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE messages ADD COLUMN isEdited INTEGER NOT NULL DEFAULT 0")
         connection.execSQL("ALTER TABLE messages ADD COLUMN editedAt INTEGER")
     }
 }
 
-private val MIGRATION_14_15 = object : Migration(14, 15) {
+private val migration14To15 = object : Migration(14, 15) {
     override fun migrate(connection: SQLiteConnection) {
         connection.execSQL(
             """CREATE TABLE IF NOT EXISTS message_reactions (
@@ -131,8 +131,8 @@ fun buildChatDatabase(context: Context): ChatDatabase {
         .addMigrations(
             MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
             MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
-            MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12,
-            MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15,
+            MIGRATION_9_10, MIGRATION_10_11, migration11To12,
+            migration12To13, migration13To14, migration14To15,
         )
         .build()
 }

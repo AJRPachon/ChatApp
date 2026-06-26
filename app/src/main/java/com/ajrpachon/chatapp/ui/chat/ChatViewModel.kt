@@ -38,6 +38,7 @@ import java.io.File
 
 
 
+@Suppress("LongParameterList")
 class ChatViewModel(
     private val conversationId: String,
     private val otherUserName: String,
@@ -192,6 +193,7 @@ class ChatViewModel(
         }
     }
 
+    @Suppress("CyclomaticComplexMethod")
     fun onIntent(intent: ChatIntent) {
         when (intent) {
             is ChatIntent.InputChanged -> _state.update { it.copy(inputText = intent.text) }
