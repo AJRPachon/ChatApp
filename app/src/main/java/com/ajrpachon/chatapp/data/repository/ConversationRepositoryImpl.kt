@@ -108,7 +108,14 @@ class ConversationRepositoryImpl(
                         messageDao.upsert(messageDto.toDBO())
                         val existingConversation = conversationDao.getById(messageDto.conversationId)
                         if (existingConversation != null) {
-                            conversationDao.upsert(existingConversation.copy(updatedAt = System.currentTimeMillis()))
+                            val newUnread = if (messageDto.senderId != userId)
+                                existingConversation.unreadCount + 1
+                            else
+                                existingConversation.unreadCount
+                            conversationDao.upsert(existingConversation.copy(
+                                updatedAt = System.currentTimeMillis(),
+                                unreadCount = newUnread,
+                            ))
                         } else {
                             syncConversations(userId)
                         }

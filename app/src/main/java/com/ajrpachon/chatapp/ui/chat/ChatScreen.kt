@@ -67,6 +67,8 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Reply
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Stop
@@ -1154,12 +1156,20 @@ private fun MessageBubble(
                             Text(text = message.content, style = MaterialTheme.typography.bodyMedium)
                         }
                     }
-                    Text(
-                        text = timeText,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    Row(
                         modifier = Modifier.align(Alignment.End),
-                    )
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = timeText,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        )
+                        if (message.isFromMe) {
+                            ReadReceiptIcon(isRead = message.isRead)
+                        }
+                    }
                 }
             }
         }
@@ -1169,6 +1179,19 @@ private fun MessageBubble(
                 .background(MaterialTheme.colorScheme.primary.copy(alpha = highlightAlpha)),
         )
     }
+}
+
+@Composable
+private fun ReadReceiptIcon(isRead: Boolean) {
+    Icon(
+        imageVector = if (isRead) Icons.Default.DoneAll else Icons.Default.Done,
+        contentDescription = if (isRead) "Leído" else "Enviado",
+        modifier = Modifier.size(14.dp),
+        tint = if (isRead)
+            androidx.compose.ui.graphics.Color(0xFF4FC3F7)
+        else
+            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+    )
 }
 
 // ── ImageGroupBubble ──────────────────────────────────────────────────────────
