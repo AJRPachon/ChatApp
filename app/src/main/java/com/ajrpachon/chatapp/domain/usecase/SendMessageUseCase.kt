@@ -27,8 +27,9 @@ class SendMessageUseCase(private val messageRepository: MessageRepository) {
             content.isNotBlank() || imageUrl != null || audioUrl != null ||
                     callType != null || gifUrl != null || stickerUrl != null
         ) { "Message cannot be blank" }
-        if (content.length > MessageLimits.MAX_CONTENT_LENGTH)
-            return@catchResult Result.failure(IllegalArgumentException("Message exceeds ${MessageLimits.MAX_CONTENT_LENGTH} characters"))
+        require(content.length <= MessageLimits.MAX_CONTENT_LENGTH) {
+            "Message exceeds ${MessageLimits.MAX_CONTENT_LENGTH} characters"
+        }
         messageRepository.sendMessage(
             conversationId, senderId, content.trim(),
             imageUrl, audioUrl,
