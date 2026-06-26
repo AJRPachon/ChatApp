@@ -14,6 +14,8 @@ import com.ajrpachon.chatapp.data.remote.dto.UserDTO
 import com.ajrpachon.chatapp.domain.usecase.SetUsernameUseCase
 import com.ajrpachon.chatapp.service.FcmTokenManager
 import com.ajrpachon.chatapp.utils.AppLogger
+import com.ajrpachon.chatapp.utils.IntegrityChecker
+import com.ajrpachon.chatapp.utils.IntegrityResult
 import com.ajrpachon.chatapp.utils.SessionGuard
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
