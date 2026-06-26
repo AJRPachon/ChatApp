@@ -163,6 +163,11 @@ class MessageRepositoryImpl(
         remoteSource.markAsRead(conversationId, userId)
     }
 
+    override suspend fun deleteMessage(messageId: String): Result<Unit> = catchResult {
+        remoteSource.deleteMessage(messageId)
+        messageDao.markDeleted(messageId)
+    }
+
     override fun syncRemote(conversationId: String, historyVisibleFrom: Long): Flow<Unit> = channelFlow {
         launch {
             catchResult {
