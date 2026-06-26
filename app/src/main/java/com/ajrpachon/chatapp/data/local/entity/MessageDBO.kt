@@ -23,4 +23,5 @@ data class MessageDBO(
     val gifUrl: String? = null,
     val stickerUrl: String? = null,
     @ColumnInfo(name = "isEncrypted") val isEncrypted: Boolean = false,
+    @ColumnInfo(name = "isDeleted") val isDeleted: Boolean = false,
 )

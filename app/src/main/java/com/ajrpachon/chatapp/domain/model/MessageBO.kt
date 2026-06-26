@@ -22,6 +22,7 @@ data class MessageBO(
     val gifUrl: String? = null,
     val stickerUrl: String? = null,
     val isEncrypted: Boolean = false,
+    val isDeleted: Boolean = false,
 ) {
     val isCallMessage: Boolean get() = callType != null
 

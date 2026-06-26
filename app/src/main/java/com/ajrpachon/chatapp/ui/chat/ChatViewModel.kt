@@ -207,6 +207,7 @@ class ChatViewModel(
             is ChatIntent.SendSticker -> sendSticker(intent.emoji)
             is ChatIntent.ToggleMute -> toggleMute()
             is ChatIntent.LeaveGroup -> leaveGroup()
+            is ChatIntent.DeleteMessage -> deleteMessage(intent.messageId)
         }
     }
 
@@ -430,6 +431,16 @@ class ChatViewModel(
                 .onFailure { e ->
                     AppLogger.e(TAG, "Leave group failed", e)
                     _state.update { it.copy(error = e.message ?: "Error al salir del grupo") }
+                }
+        }
+    }
+
+    private fun deleteMessage(messageId: String) {
+        viewModelScope.launch {
+            messageRepository.deleteMessage(messageId)
+                .onFailure { e ->
+                    AppLogger.e(TAG, "Delete message failed", e)
+                    _state.update { it.copy(error = "No se pudo eliminar el mensaje") }
                 }
         }
     }

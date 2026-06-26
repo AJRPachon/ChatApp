@@ -50,6 +50,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.NotificationsActive
@@ -591,6 +592,7 @@ fun ChatScreen(
                                     onReply = { vm.onIntent(ChatIntent.SetReply(message)) },
                                     isHighlighted = message.id == highlightedMessageId,
                                     onReplyClick = onScrollToMessage,
+                                    onDelete = if (message.isFromMe) {{ vm.onIntent(ChatIntent.DeleteMessage(message.id)) }} else null,
                                 )
                             }
                         } else {
@@ -605,6 +607,7 @@ fun ChatScreen(
                                 onReply = { vm.onIntent(ChatIntent.SetReply(message)) },
                                 isHighlighted = message.id == highlightedMessageId,
                                 onReplyClick = onScrollToMessage,
+                                onDelete = if (message.isFromMe) {{ vm.onIntent(ChatIntent.DeleteMessage(message.id)) }} else null,
                             )
                         }
                     }
@@ -1042,6 +1045,42 @@ private fun StickerBubble(message: MessageBO, onReply: () -> Unit) {
     }
 }
 
+// ── DeletedMessageBubble ──────────────────────────────────────────────────────
+
+@Composable
+private fun DeletedMessageBubble(message: MessageBO) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 2.dp),
+        horizontalArrangement = if (message.isFromMe) Arrangement.End else Arrangement.Start,
+    ) {
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Icon(
+                    Icons.Default.Block,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.outline,
+                )
+                Text(
+                    "Este mensaje fue eliminado",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic),
+                    color = MaterialTheme.colorScheme.outline,
+                )
+            }
+        }
+    }
+}
+
 // ── MessageBubble ─────────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -1053,7 +1092,12 @@ private fun MessageBubble(
     onReply: () -> Unit,
     isHighlighted: Boolean = false,
     onReplyClick: (String) -> Unit = {},
+    onDelete: (() -> Unit)? = null,
 ) {
+    if (message.isDeleted) {
+        DeletedMessageBubble(message)
+        return
+    }
     if (message.isCallMessage) {
         CallMessageBubble(message)
         return
@@ -1114,10 +1158,13 @@ private fun MessageBubble(
                 .graphicsLayer { translationX = swipeOffset.value },
             horizontalArrangement = if (message.isFromMe) Arrangement.End else Arrangement.Start,
         ) {
+            var showBubbleMenu by remember { mutableStateOf(false) }
+            Box {
             Surface(
                 shape = RoundedCornerShape(12.dp),
                 color = if (message.isFromMe) MaterialTheme.colorScheme.primaryContainer
                         else MaterialTheme.colorScheme.surfaceVariant,
+                modifier = if (onDelete != null) Modifier.combinedClickable(onClick = {}, onLongClick = { showBubbleMenu = true }) else Modifier,
             ) {
                 Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                     if (isGroup && !message.isFromMe && message.senderName.isNotBlank()) {
@@ -1196,6 +1243,16 @@ private fun MessageBubble(
                     }
                 }
             }
+            if (onDelete != null) {
+                DropdownMenu(expanded = showBubbleMenu, onDismissRequest = { showBubbleMenu = false }) {
+                    DropdownMenuItem(
+                        text = { Text("Eliminar mensaje") },
+                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
+                        onClick = { showBubbleMenu = false; onDelete() },
+                    )
+                }
+            }
+            } // Box
         }
         Box(
             modifier = Modifier

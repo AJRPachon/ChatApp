@@ -49,6 +49,13 @@ class MessageRemoteSource(private val supabase: SupabaseClient) {
         supabase.postgrest["messages"].insert(dto)
     }
 
+    suspend fun deleteMessage(messageId: String) {
+        supabase.postgrest["messages"]
+            .update({ set("is_deleted", true) }) {
+                filter { eq("id", messageId) }
+            }
+    }
+
     suspend fun markAsRead(conversationId: String, userId: String) {
         supabase.postgrest["messages"]
             .update({ set("is_read", true) }) {

@@ -25,6 +25,7 @@ fun MessageDTO.toDBO() = MessageDBO(
     gifUrl = MediaUrlValidator.sanitize(gifUrl),
     stickerUrl = stickerUrl,
     isEncrypted = isEncrypted,
+    isDeleted = isDeleted,
 )
 
 fun MessageDBO.toBO(currentUserId: String, senderName: String) = MessageBO(
@@ -47,4 +48,5 @@ fun MessageDBO.toBO(currentUserId: String, senderName: String) = MessageBO(
     gifUrl = gifUrl,
     stickerUrl = stickerUrl,
     isEncrypted = isEncrypted,
+    isDeleted = isDeleted,
 )

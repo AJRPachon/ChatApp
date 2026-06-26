@@ -51,6 +51,7 @@ sealed interface ChatIntent {
     data class SendSticker(val emoji: String) : ChatIntent
     data object ToggleMute : ChatIntent
     data object LeaveGroup : ChatIntent
+    data class DeleteMessage(val messageId: String) : ChatIntent
 }
 
 sealed interface ChatEffect {
