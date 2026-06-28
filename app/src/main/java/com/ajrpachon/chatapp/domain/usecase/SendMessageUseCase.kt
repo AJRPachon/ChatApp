@@ -20,12 +20,16 @@ class SendMessageUseCase(private val messageRepository: MessageRepository) {
         callDuration: Int? = null,
         gifUrl: String? = null,
         stickerUrl: String? = null,
+        fileUrl: String? = null,
+        fileName: String? = null,
+        fileSize: Long? = null,
+        fileMimeType: String? = null,
         // E2EE: pass the other user's ID for 1:1 conversations (null for group chats)
         otherUserId: String? = null,
     ): Result<MessageBO> = catchResult {
         require(
             content.isNotBlank() || imageUrl != null || audioUrl != null ||
-                    callType != null || gifUrl != null || stickerUrl != null
+                    callType != null || gifUrl != null || stickerUrl != null || fileUrl != null
         ) { "Message cannot be blank" }
         require(content.length <= MessageLimits.MAX_CONTENT_LENGTH) {
             "Message exceeds ${MessageLimits.MAX_CONTENT_LENGTH} characters"
@@ -36,6 +40,7 @@ class SendMessageUseCase(private val messageRepository: MessageRepository) {
             replyToId, replyToContent, replyToSenderName,
             callType, callStatus, callDuration,
             gifUrl, stickerUrl,
+            fileUrl, fileName, fileSize, fileMimeType,
             otherUserId = otherUserId,
         )
     }

@@ -28,6 +28,10 @@ fun MessageDTO.toDBO() = MessageDBO(
     isDeleted = isDeleted,
     isEdited = isEdited,
     editedAt = editedAt?.let { runCatching { Instant.parse(it).toEpochMilliseconds() }.getOrNull() },
+    fileUrl = MediaUrlValidator.sanitize(fileUrl),
+    fileName = fileName,
+    fileSize = fileSize,
+    fileMimeType = fileMimeType,
 )
 
 fun MessageDBO.toBO(currentUserId: String, senderName: String) = MessageBO(
@@ -53,4 +57,8 @@ fun MessageDBO.toBO(currentUserId: String, senderName: String) = MessageBO(
     isDeleted = isDeleted,
     isEdited = isEdited,
     expiresAt = expiresAt,
+    fileUrl = fileUrl,
+    fileName = fileName,
+    fileSize = fileSize,
+    fileMimeType = fileMimeType,
 )

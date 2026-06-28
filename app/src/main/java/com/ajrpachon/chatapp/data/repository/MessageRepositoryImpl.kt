@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap
 import javax.crypto.SecretKey
 import com.ajrpachon.chatapp.utils.UploadLimits.checkAudioSize
 import com.ajrpachon.chatapp.utils.UploadLimits.checkImageSize
+import com.ajrpachon.chatapp.utils.UploadLimits.checkFileSize
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -37,6 +38,7 @@ private const val TAG = "MsgRepo"
 
 private const val BUCKET = "chat-images"
 private const val AUDIO_BUCKET = "chat-audio"
+private const val FILE_BUCKET = "chat-files"
 
 /** Minimal DTO for fetching only the public_key field from profiles. */
 @Serializable
@@ -100,6 +102,10 @@ class MessageRepositoryImpl(
         callDuration: Int?,
         gifUrl: String?,
         stickerUrl: String?,
+        fileUrl: String?,
+        fileName: String?,
+        fileSize: Long?,
+        fileMimeType: String?,
         otherUserId: String?,
     ): MessageBO {
         // Attempt E2EE for 1:1 text messages (skip for media/call messages and group chats)
@@ -107,7 +113,7 @@ class MessageRepositoryImpl(
             otherUserId != null &&
             content.isNotBlank() &&
             imageUrl == null && audioUrl == null && callType == null &&
-            gifUrl == null && stickerUrl == null
+            gifUrl == null && stickerUrl == null && fileUrl == null
         ) {
             tryEncrypt(senderId, otherUserId, content)
         } else {
@@ -131,6 +137,10 @@ class MessageRepositoryImpl(
             callDuration = callDuration,
             gifUrl = gifUrl,
             stickerUrl = stickerUrl,
+            fileUrl = fileUrl,
+            fileName = fileName,
+            fileSize = fileSize,
+            fileMimeType = fileMimeType,
             isEncrypted = isEncrypted,
         )
         remoteSource.sendMessage(messageDto)
@@ -156,6 +166,14 @@ class MessageRepositoryImpl(
         val path = "$conversationId/${java.util.UUID.randomUUID()}.$ext"
         supabase.storage[BUCKET].upload(path, bytes) { upsert = false }
         return supabase.storage[BUCKET].publicUrl(path)
+    }
+
+    override suspend fun uploadFile(conversationId: String, bytes: ByteArray, fileName: String, mimeType: String): String {
+        bytes.checkFileSize()
+        val safeName = fileName.replace(Regex("[^A-Za-z0-9._-]"), "_")
+        val path = "$conversationId/${java.util.UUID.randomUUID()}_$safeName"
+        supabase.storage[FILE_BUCKET].upload(path, bytes) { upsert = false }
+        return supabase.storage[FILE_BUCKET].publicUrl(path)
     }
 
     override suspend fun markAsRead(conversationId: String, userId: String) {

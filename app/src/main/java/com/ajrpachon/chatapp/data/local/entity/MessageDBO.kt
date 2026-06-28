@@ -28,4 +28,8 @@ data class MessageDBO(
     @ColumnInfo(name = "editedAt") val editedAt: Long? = null,
     // Epoch millis when the message should auto-delete locally. null = never.
     @ColumnInfo(name = "expiresAt") val expiresAt: Long? = null,
+    @ColumnInfo(name = "fileUrl") val fileUrl: String? = null,
+    @ColumnInfo(name = "fileName") val fileName: String? = null,
+    @ColumnInfo(name = "fileSize") val fileSize: Long? = null,
+    @ColumnInfo(name = "fileMimeType") val fileMimeType: String? = null,
 )

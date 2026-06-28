@@ -17,6 +17,7 @@ data class ChatState(
     val inputText: String = "",
     val isSending: Boolean = false,
     val isUploadingImage: Boolean = false,
+    val isUploadingFile: Boolean = false,
     val currentUserId: String? = null,
     val conversationTitle: String = "",
     val error: String? = null,
@@ -46,6 +47,7 @@ sealed interface ChatIntent {
     data class InputChanged(val text: String) : ChatIntent
     data object Send : ChatIntent
     data class SendImages(val context: Context, val uris: List<Uri>) : ChatIntent
+    data class SendFile(val context: Context, val uri: Uri) : ChatIntent
     data class StartRecording(val context: Context, val outputFilePath: String) : ChatIntent
     data object StopRecording : ChatIntent
     data object DiscardAudio : ChatIntent
