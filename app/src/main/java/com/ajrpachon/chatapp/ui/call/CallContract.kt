@@ -16,4 +16,5 @@ data class CallState(
     val durationSeconds: Int = 0,
     val error: String? = null,
     val isRemoteVideoMuted: Boolean = false,
+    val isBackgroundBlurred: Boolean = false,
 )

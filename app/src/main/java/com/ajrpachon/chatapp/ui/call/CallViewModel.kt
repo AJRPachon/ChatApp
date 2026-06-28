@@ -315,6 +315,10 @@ class CallViewModel(
         }
     }
 
+    fun toggleBackgroundBlur() {
+        _state.update { it.copy(isBackgroundBlurred = !it.isBackgroundBlurred) }
+    }
+
     fun hangUp() {
         val phaseBefore = _state.value.phase
         AppLogger.d(TAG, "hangUp: called phaseBefore=$phaseBefore callId=$callId")
