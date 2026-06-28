@@ -27,12 +27,14 @@ interface MessageRepository {
         fileName: String? = null,
         fileSize: Long? = null,
         fileMimeType: String? = null,
+        videoUrl: String? = null,
         // E2EE: pass the other user's ID for 1:1 conversations (null = skip encryption)
         otherUserId: String? = null,
     ): MessageBO
     suspend fun uploadImage(conversationId: String, bytes: ByteArray, mimeType: String): String
     suspend fun uploadAudio(conversationId: String, bytes: ByteArray): String
     suspend fun uploadFile(conversationId: String, bytes: ByteArray, fileName: String, mimeType: String): String
+    suspend fun uploadVideo(conversationId: String, bytes: ByteArray): String
     suspend fun markAsRead(conversationId: String, userId: String)
     suspend fun deleteMessage(messageId: String): Result<Unit>
     suspend fun editMessage(messageId: String, newContent: String): Result<Unit>

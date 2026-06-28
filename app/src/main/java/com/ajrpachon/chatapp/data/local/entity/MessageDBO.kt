@@ -32,4 +32,5 @@ data class MessageDBO(
     @ColumnInfo(name = "fileName") val fileName: String? = null,
     @ColumnInfo(name = "fileSize") val fileSize: Long? = null,
     @ColumnInfo(name = "fileMimeType") val fileMimeType: String? = null,
+    @ColumnInfo(name = "videoUrl") val videoUrl: String? = null,
 )
