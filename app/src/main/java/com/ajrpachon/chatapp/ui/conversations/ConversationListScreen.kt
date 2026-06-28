@@ -62,6 +62,7 @@ import androidx.lifecycle.compose.dropUnlessResumed
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.ui.components.ChatAppAvatar
 import com.ajrpachon.chatapp.ui.components.ConversationListSkeleton
+import com.ajrpachon.chatapp.ui.status.StatusBar
 import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -89,6 +90,7 @@ fun ConversationListScreen(
     onNewChat: () -> Unit,
     onNewGroup: () -> Unit = {},
     onOpenProfile: () -> Unit,
+    onOpenStatusViewer: (userId: String) -> Unit = {},
 ) {
     val vm: ConversationListViewModel = koinViewModel()
     val state by vm.state.collectAsStateWithLifecycle()
@@ -198,6 +200,9 @@ fun ConversationListScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = innerPadding,
             ) {
+                item(key = "status_bar") {
+                    StatusBar(onViewStatus = { status -> onOpenStatusViewer(status.userId) })
+                }
                 items(state.conversations, key = { it.id }) { conv ->
                     ConversationItem(
                         conversation = conv,

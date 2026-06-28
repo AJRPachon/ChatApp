@@ -7,17 +7,19 @@ import com.ajrpachon.chatapp.data.local.dao.GroupMemberDao
 import com.ajrpachon.chatapp.data.local.dao.InvitationDao
 import com.ajrpachon.chatapp.data.local.dao.MessageDao
 import com.ajrpachon.chatapp.data.local.dao.ReactionDao
+import com.ajrpachon.chatapp.data.local.dao.StatusDao
 import com.ajrpachon.chatapp.data.local.dao.UserDao
 import com.ajrpachon.chatapp.data.local.entity.ConversationDBO
 import com.ajrpachon.chatapp.data.local.entity.GroupMemberDBO
 import com.ajrpachon.chatapp.data.local.entity.InvitationDBO
 import com.ajrpachon.chatapp.data.local.entity.MessageDBO
 import com.ajrpachon.chatapp.data.local.entity.ReactionDBO
+import com.ajrpachon.chatapp.data.local.entity.StatusDBO
 import com.ajrpachon.chatapp.data.local.entity.UserDBO
 
 @Database(
-    entities = [UserDBO::class, ConversationDBO::class, MessageDBO::class, InvitationDBO::class, GroupMemberDBO::class, ReactionDBO::class],
-    version = 19,
+    entities = [UserDBO::class, ConversationDBO::class, MessageDBO::class, InvitationDBO::class, GroupMemberDBO::class, ReactionDBO::class, StatusDBO::class],
+    version = 20,
     exportSchema = true,
 )
 abstract class ChatDatabase : RoomDatabase() {
@@ -27,4 +29,5 @@ abstract class ChatDatabase : RoomDatabase() {
     abstract fun invitationDao(): InvitationDao
     abstract fun groupMemberDao(): GroupMemberDao
     abstract fun reactionDao(): ReactionDao
+    abstract fun statusDao(): StatusDao
 }
