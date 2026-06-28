@@ -15,9 +15,13 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -37,6 +41,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ajrpachon.chatapp.ui.components.ChatAppSearchField
+import com.ajrpachon.chatapp.utils.GiphyKeyManager
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.delay
 
@@ -125,12 +130,25 @@ private fun GifTab(onSelected: (String) -> Unit) {
     var query by remember { mutableStateOf("") }
     var result by remember { mutableStateOf<GiphyResult>(GiphyResult.Success(emptyList())) }
     var isLoading by remember { mutableStateOf(true) }
+    var showKeyDialog by remember { mutableStateOf(false) }
+    var refresh by remember { mutableStateOf(0) }
 
-    LaunchedEffect(query) {
+    LaunchedEffect(query, refresh) {
         if (query.isNotBlank()) delay(400)
         isLoading = true
         result = searchGiphy(query)
         isLoading = false
+    }
+
+    if (showKeyDialog) {
+        GiphyApiKeyDialog(
+            onSave = { key ->
+                GiphyKeyManager.setKey(key)
+                showKeyDialog = false
+                refresh++
+            },
+            onDismiss = { showKeyDialog = false },
+        )
     }
 
     Column {
@@ -144,10 +162,16 @@ private fun GifTab(onSelected: (String) -> Unit) {
             isLoading -> Box(Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
-            result is GiphyResult.ApiKeyInvalid -> Box(
-                Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center
+            result is GiphyResult.ApiKeyInvalid -> Column(
+                Modifier.fillMaxWidth().padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text("GIFs no disponibles: configura una clave API de Giphy válida", color = Color.Gray)
+                Text("GIFs no disponibles", color = Color.Gray)
+                Text("Configura tu propia clave API de Giphy para activar esta función.", color = Color.Gray)
+                Button(onClick = { showKeyDialog = true }) {
+                    Text("Configurar clave API")
+                }
             }
             result is GiphyResult.NetworkError -> Box(
                 Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center
@@ -181,4 +205,33 @@ private fun GifTab(onSelected: (String) -> Unit) {
             }
         }
     }
+}
+
+// ── Giphy API key dialog ──────────────────────────────────────────────────────
+
+@Composable
+private fun GiphyApiKeyDialog(onSave: (String) -> Unit, onDismiss: () -> Unit) {
+    var key by remember { mutableStateOf(GiphyKeyManager.getKey() ?: "") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Clave API de Giphy") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Obtén una clave gratuita en developers.giphy.com y pégala aquí.")
+                OutlinedTextField(
+                    value = key,
+                    onValueChange = { key = it },
+                    label = { Text("API Key") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(key) }, enabled = key.isNotBlank()) { Text("Guardar") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancelar") }
+        },
+    )
 }

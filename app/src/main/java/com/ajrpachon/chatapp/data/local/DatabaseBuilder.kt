@@ -112,6 +112,37 @@ private val migration16To17 = object : Migration(16, 17) {
     }
 }
 
+private val migration17To18 = object : Migration(17, 18) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE messages ADD COLUMN fileUrl TEXT")
+        connection.execSQL("ALTER TABLE messages ADD COLUMN fileName TEXT")
+        connection.execSQL("ALTER TABLE messages ADD COLUMN fileSize INTEGER")
+        connection.execSQL("ALTER TABLE messages ADD COLUMN fileMimeType TEXT")
+    }
+}
+
+private val migration18To19 = object : Migration(18, 19) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE messages ADD COLUMN videoUrl TEXT")
+    }
+}
+
+private val migration19To20 = object : Migration(19, 20) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL(
+            """CREATE TABLE IF NOT EXISTS user_status (
+                id TEXT NOT NULL PRIMARY KEY,
+                userId TEXT NOT NULL,
+                text TEXT,
+                imageUrl TEXT,
+                backgroundColor INTEGER NOT NULL DEFAULT ${0xFF1976D2L},
+                createdAt INTEGER NOT NULL,
+                expiresAt INTEGER NOT NULL
+            )"""
+        )
+    }
+}
+
 private val migration15To16 = object : Migration(15, 16) {
     override fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE conversations ADD COLUMN mutedUntil INTEGER NOT NULL DEFAULT 0")
@@ -145,6 +176,7 @@ fun buildChatDatabase(context: Context): ChatDatabase {
             MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
             MIGRATION_9_10, MIGRATION_10_11, migration11To12,
             migration12To13, migration13To14, migration14To15, migration15To16, migration16To17,
+            migration17To18, migration18To19, migration19To20,
         )
         .build()
 }

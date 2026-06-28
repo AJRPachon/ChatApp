@@ -13,6 +13,7 @@ import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
 import okio.Path.Companion.toOkioPath
 import com.ajrpachon.chatapp.di.appModules
+import com.ajrpachon.chatapp.utils.GiphyKeyManager
 import com.ajrpachon.chatapp.utils.OkHttpProvider
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
@@ -22,6 +23,7 @@ class ChatApplication : Application(), SingletonImageLoader.Factory {
     override fun onCreate() {
         super.onCreate()
         if (BuildConfig.DEBUG) enableStrictMode()
+        GiphyKeyManager.init(this)
         createNotificationChannel()
         startKoin {
             androidContext(this@ChatApplication)

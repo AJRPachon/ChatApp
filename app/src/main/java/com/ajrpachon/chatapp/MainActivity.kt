@@ -49,6 +49,8 @@ import com.ajrpachon.chatapp.ui.group.GroupInfoScreen
 import com.ajrpachon.chatapp.ui.invitations.InvitationsScreen
 import com.ajrpachon.chatapp.ui.newchat.NewChatScreen
 import com.ajrpachon.chatapp.ui.profile.ProfileScreen
+import com.ajrpachon.chatapp.ui.status.StatusViewerScreen
+import com.ajrpachon.chatapp.ui.status.StatusViewModel
 import com.ajrpachon.chatapp.ui.userinfo.UserInfoScreen
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
@@ -86,6 +88,7 @@ import org.koin.androidx.compose.koinViewModel
 ) : NavKey
 @Serializable data object CreateGroupRoute : NavKey
 @Serializable data class UserInfoRoute(val userId: String) : NavKey
+@Serializable data class StatusViewerRoute(val userId: String) : NavKey
 @Serializable data class GroupInfoRoute(
     val conversationId: String,
     val groupName: String,
@@ -233,6 +236,9 @@ class MainActivity : ComponentActivity() {
                                     onOpenProfile = dropUnlessResumed {
                                         backStack.add(ProfileRoute)
                                     },
+                                    onOpenStatusViewer = { userId ->
+                                        backStack.add(StatusViewerRoute(userId))
+                                    },
                                 )
                             }
 
@@ -340,6 +346,20 @@ class MainActivity : ComponentActivity() {
                                     userId = key.userId,
                                     onBack = dropUnlessResumed { backStack.removeLastOrNull() },
                                 )
+                            }
+
+                            is StatusViewerRoute -> NavEntry(key) {
+                                val statusVm: StatusViewModel = koinViewModel()
+                                val statusState by statusVm.state.collectAsStateWithLifecycle()
+                                val initialStatus = statusState.statuses.firstOrNull { it.userId == key.userId }
+                                if (initialStatus != null) {
+                                    StatusViewerScreen(
+                                        initialStatus = initialStatus,
+                                        allStatuses = statusState.statuses,
+                                        onClose = dropUnlessResumed { backStack.removeLastOrNull() },
+                                        vm = statusVm,
+                                    )
+                                }
                             }
 
                                 else -> error("Unknown route: $key")

@@ -25,6 +25,11 @@ data class MessageBO(
     val isDeleted: Boolean = false,
     val isEdited: Boolean = false,
     val expiresAt: Long? = null,
+    val fileUrl: String? = null,
+    val fileName: String? = null,
+    val fileSize: Long? = null,
+    val fileMimeType: String? = null,
+    val videoUrl: String? = null,
 ) {
     fun isExpired(): Boolean = expiresAt != null && expiresAt <= System.currentTimeMillis()
     fun expiresInSeconds(): Long? = expiresAt?.let { ((it - System.currentTimeMillis()) / 1000).coerceAtLeast(0) }
@@ -36,6 +41,8 @@ data class MessageBO(
         gifUrl != null -> "GIF"
         imageUrl != null -> "Imagen"
         audioUrl != null -> "Audio"
+        fileUrl != null -> "📎 ${fileName ?: "Archivo"}"
+        videoUrl != null -> "🎥 Video"
         else -> content.take(80)
     }
 }
