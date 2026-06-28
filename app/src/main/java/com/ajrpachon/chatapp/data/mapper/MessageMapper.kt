@@ -32,6 +32,7 @@ fun MessageDTO.toDBO() = MessageDBO(
     fileName = fileName,
     fileSize = fileSize,
     fileMimeType = fileMimeType,
+    videoUrl = MediaUrlValidator.sanitize(videoUrl),
 )
 
 fun MessageDBO.toBO(currentUserId: String, senderName: String) = MessageBO(
@@ -61,4 +62,5 @@ fun MessageDBO.toBO(currentUserId: String, senderName: String) = MessageBO(
     fileName = fileName,
     fileSize = fileSize,
     fileMimeType = fileMimeType,
+    videoUrl = videoUrl,
 )

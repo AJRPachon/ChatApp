@@ -48,6 +48,7 @@ sealed interface ChatIntent {
     data object Send : ChatIntent
     data class SendImages(val context: Context, val uris: List<Uri>) : ChatIntent
     data class SendFile(val context: Context, val uri: Uri) : ChatIntent
+    data class SendVideo(val context: Context, val uri: Uri) : ChatIntent
     data class StartRecording(val context: Context, val outputFilePath: String) : ChatIntent
     data object StopRecording : ChatIntent
     data object DiscardAudio : ChatIntent

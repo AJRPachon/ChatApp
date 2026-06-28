@@ -204,6 +204,7 @@ class ChatViewModel(
             is ChatIntent.Send -> if (_state.value.editingMessage != null) confirmEdit() else sendMessage()
             is ChatIntent.SendImages -> sendImages(intent.context, intent.uris)
             is ChatIntent.SendFile -> sendFile(intent.context, intent.uri)
+            is ChatIntent.SendVideo -> sendVideo(intent.context, intent.uri)
             is ChatIntent.StartRecording -> startRecording(intent.context, intent.outputFilePath)
             is ChatIntent.StopRecording -> stopRecording()
             is ChatIntent.DiscardAudio -> discardAudio()
@@ -463,6 +464,32 @@ class ChatViewModel(
             }.onFailure { e ->
                 AppLogger.e(TAG, "Send file failed", e)
                 _state.update { it.copy(error = e.message ?: "Error al enviar el archivo") }
+            }
+            _state.update { it.copy(isUploadingFile = false) }
+        }
+    }
+
+    private fun sendVideo(context: Context, uri: android.net.Uri) {
+        val userId = _state.value.currentUserId ?: return
+        val reply = _state.value.replyingTo
+        viewModelScope.launch {
+            _effect.send(ChatEffect.ScrollToBottom)
+            _state.update { it.copy(isUploadingFile = true, replyingTo = null) }
+            catchResult {
+                val bytes = withContext(Dispatchers.IO) {
+                    context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                } ?: return@catchResult
+                val videoUrl = messageRepository.uploadVideo(conversationId, bytes)
+                sendMessageUseCase(
+                    conversationId, userId, "",
+                    videoUrl = videoUrl,
+                    replyToId = reply?.id,
+                    replyToContent = reply?.replySnippet(),
+                    replyToSenderName = reply?.senderName,
+                )
+            }.onFailure { e ->
+                AppLogger.e(TAG, "Send video failed", e)
+                _state.update { it.copy(error = e.message ?: "Error al enviar el video") }
             }
             _state.update { it.copy(isUploadingFile = false) }
         }

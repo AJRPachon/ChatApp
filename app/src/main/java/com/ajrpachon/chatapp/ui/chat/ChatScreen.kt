@@ -271,6 +271,10 @@ fun ChatScreen(
         ActivityResultContracts.OpenDocument()
     ) { uri -> if (uri != null) vm.onIntent(ChatIntent.SendFile(context, uri)) }
 
+    val videoLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri -> if (uri != null) vm.onIntent(ChatIntent.SendVideo(context, uri)) }
+
     val cameraLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()
     ) { success -> if (success) cameraUri?.let { vm.onIntent(ChatIntent.SendImages(context, listOf(it))) } }
@@ -568,6 +572,13 @@ fun ChatScreen(
                         },
                         onSticker = { vm.onIntent(ChatIntent.OpenStickerPicker) },
                         onAttachFile = { fileLauncher.launch(arrayOf("*/*")) },
+                        onAttachVideo = {
+                            videoLauncher.launch(
+                                androidx.activity.result.PickVisualMediaRequest(
+                                    androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.VideoOnly
+                                )
+                            )
+                        },
                     )
                 }
                 } // Column
@@ -836,6 +847,7 @@ private fun NormalInputBar(
     onMic: () -> Unit,
     onSticker: () -> Unit,
     onAttachFile: () -> Unit = {},
+    onAttachVideo: () -> Unit = {},
 ) {
     val busy = isUploadingImage || isSending
     Row(
@@ -854,6 +866,9 @@ private fun NormalInputBar(
         }
         IconButton(onClick = onAttachFile, enabled = !busy) {
             Icon(Icons.Default.AttachFile, contentDescription = "Adjuntar archivo")
+        }
+        IconButton(onClick = onAttachVideo, enabled = !busy) {
+            Icon(Icons.Default.Videocam, contentDescription = "Enviar video")
         }
         IconButton(onClick = onSticker, enabled = !busy) {
             Icon(Icons.Default.EmojiEmotions, contentDescription = "Stickers y GIFs")
@@ -1275,6 +1290,76 @@ private fun formatFileSize(bytes: Long): String {
     }
 }
 
+// ── VideoBubble ───────────────────────────────────────────────────────────────
+
+@Composable
+private fun VideoBubble(message: MessageBO, onReply: () -> Unit) {
+    val timeText = remember(message.createdAt) {
+        val local = message.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
+        "%02d:%02d".format(local.hour, local.minute)
+    }
+    val alignment = if (message.isFromMe) Alignment.CenterEnd else Alignment.CenterStart
+    val context = LocalContext.current
+    var showPlayer by remember { mutableStateOf(false) }
+
+    Box(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp)) {
+        Column(
+            modifier = Modifier.align(alignment),
+            horizontalAlignment = if (message.isFromMe) Alignment.End else Alignment.Start,
+        ) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = if (message.isFromMe) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                modifier = Modifier.widthIn(max = 240.dp).combinedClickable(
+                    onClick = {
+                        val uri = android.net.Uri.parse(message.videoUrl)
+                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                            setDataAndType(uri, "video/*")
+                            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        runCatching { context.startActivity(intent) }
+                    },
+                    onLongClick = onReply,
+                ),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .height(160.dp)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    AsyncImage(
+                        model = message.videoUrl,
+                        contentDescription = "Video",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)),
+                    )
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                        modifier = Modifier.size(48.dp),
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = "Reproducir",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(32.dp),
+                            )
+                        }
+                    }
+                }
+            }
+            Text(
+                text = timeText,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+            )
+        }
+    }
+}
+
 // ── StickerBubble ──────────────────────────────────────────────────────────────
 
 @Composable
@@ -1406,6 +1491,10 @@ private fun MessageBubble(
     }
     if (message.fileUrl != null) {
         FileBubble(message, onReply)
+        return
+    }
+    if (message.videoUrl != null) {
+        VideoBubble(message, onReply)
         return
     }
     val timeText = remember(message.createdAt) {
