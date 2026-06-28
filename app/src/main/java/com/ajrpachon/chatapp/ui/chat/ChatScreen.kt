@@ -1553,13 +1553,11 @@ private fun MessageBubble(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = if (message.isFromMe) Arrangement.End else Arrangement.Start,
         ) {
-            var showBubbleMenu by remember { mutableStateOf(false) }
             Box {
             Surface(
                 shape = RoundedCornerShape(12.dp),
                 color = if (message.isFromMe) MaterialTheme.colorScheme.primaryContainer
                         else MaterialTheme.colorScheme.surfaceVariant,
-                modifier = if (onDelete != null) Modifier.combinedClickable(onClick = {}, onLongClick = { showBubbleMenu = true }) else Modifier,
             ) {
                 Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                     if (isGroup && !message.isFromMe && message.senderName.isNotBlank()) {
@@ -1643,6 +1641,13 @@ private fun MessageBubble(
                                     leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null) },
                                     onClick = { showMsgMenu = false; ClipboardProtection.copyWithTimeout(context, "message", message.content, scope) },
                                 )
+                                if (onDelete != null) {
+                                    DropdownMenuItem(
+                                        text = { Text("Eliminar") },
+                                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
+                                        onClick = { showMsgMenu = false; onDelete() },
+                                    )
+                                }
                             }
                         }
                         if (showEmojiPicker) {
@@ -1682,15 +1687,6 @@ private fun MessageBubble(
                             ReadReceiptIcon(isRead = message.isRead)
                         }
                     }
-                }
-            }
-            if (onDelete != null) {
-                DropdownMenu(expanded = showBubbleMenu, onDismissRequest = { showBubbleMenu = false }) {
-                    DropdownMenuItem(
-                        text = { Text("Eliminar mensaje") },
-                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
-                        onClick = { showBubbleMenu = false; onDelete() },
-                    )
                 }
             }
             } // Box

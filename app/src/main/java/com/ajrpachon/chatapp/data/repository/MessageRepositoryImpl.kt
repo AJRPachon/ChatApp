@@ -8,7 +8,9 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
 import com.ajrpachon.chatapp.data.local.dao.MessageDao
+import com.ajrpachon.chatapp.data.local.dao.ReactionDao
 import com.ajrpachon.chatapp.data.local.dao.UserDao
+import com.ajrpachon.chatapp.data.local.entity.ReactionDBO
 import com.ajrpachon.chatapp.data.mapper.toDBO
 import com.ajrpachon.chatapp.data.mapper.toBO
 import com.ajrpachon.chatapp.data.remote.dto.MessageDTO
@@ -52,6 +54,7 @@ private data class PublicKeyDTO(
 class MessageRepositoryImpl(
     private val messageDao: MessageDao,
     private val userDao: UserDao,
+    private val reactionDao: ReactionDao,
     private val remoteSource: MessageRemoteSource,
     private val supabase: SupabaseClient,
 ) : MessageRepository {
@@ -208,6 +211,12 @@ class MessageRepositoryImpl(
                 val remote = remoteSource.getMessages(conversationId, historyVisibleFrom)
                 AppLogger.d(TAG, "syncRemote fetched ${remote.size} msgs conv=$conversationId since=$historyVisibleFrom")
                 messageDao.upsertAll(remote.map { it.toDBO() })
+                // Sync reactions for fetched messages
+                val messageIds = remote.map { it.id }
+                if (messageIds.isNotEmpty()) {
+                    val reactions = remoteSource.getReactionsForMessages(messageIds)
+                    reactionDao.upsertAll(reactions.map { ReactionDBO(it.messageId, it.userId, it.emoji) })
+                }
             }
         }
         launch {
