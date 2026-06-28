@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.ui.chat
 
 import com.ajrpachon.chatapp.BuildConfig
+import com.ajrpachon.chatapp.utils.GiphyKeyManager
 import com.ajrpachon.chatapp.utils.OkHttpProvider
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -55,7 +56,9 @@ internal val giphyClient = HttpClient(OkHttp) {
 }
 
 internal suspend fun searchGiphy(query: String): GiphyResult {
-    if (BuildConfig.GIPHY_API_KEY.isBlank()) return GiphyResult.ApiKeyInvalid
+    val apiKey = GiphyKeyManager.getKey()?.takeIf { it.isNotBlank() }
+        ?: BuildConfig.GIPHY_API_KEY.takeIf { it.isNotBlank() }
+        ?: return GiphyResult.ApiKeyInvalid
     val endpoint = if (query.isBlank()) {
         "https://api.giphy.com/v1/gifs/trending"
     } else {
@@ -63,7 +66,7 @@ internal suspend fun searchGiphy(query: String): GiphyResult {
     }
     return runCatching {
         val response = giphyClient.get(endpoint) {
-            parameter("api_key", BuildConfig.GIPHY_API_KEY)
+            parameter("api_key", apiKey)
             parameter("limit", 24)
             if (query.isNotBlank()) parameter("q", query)
             parameter("rating", "g")
