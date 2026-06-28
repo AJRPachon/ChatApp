@@ -50,6 +50,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Edit
@@ -265,6 +266,14 @@ fun ChatScreen(
     val galleryLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickMultipleVisualMedia()
     ) { uris -> if (uris.isNotEmpty()) vm.onIntent(ChatIntent.SendImages(context, uris)) }
+
+    val fileLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> if (uri != null) vm.onIntent(ChatIntent.SendFile(context, uri)) }
+
+    val videoLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri -> if (uri != null) vm.onIntent(ChatIntent.SendVideo(context, uri)) }
 
     val cameraLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()
@@ -531,7 +540,7 @@ fun ChatScreen(
                     else -> NormalInputBar(
                         inputText = state.inputText,
                         isSending = state.isSending,
-                        isUploadingImage = state.isUploadingImage,
+                        isUploadingImage = state.isUploadingImage || state.isUploadingFile,
                         onTextChange = { vm.onIntent(ChatIntent.InputChanged(it)) },
                         onSend = { vm.onIntent(ChatIntent.Send) },
                         onGallery = {
@@ -562,6 +571,14 @@ fun ChatScreen(
                             }
                         },
                         onSticker = { vm.onIntent(ChatIntent.OpenStickerPicker) },
+                        onAttachFile = { fileLauncher.launch(arrayOf("*/*")) },
+                        onAttachVideo = {
+                            videoLauncher.launch(
+                                androidx.activity.result.PickVisualMediaRequest(
+                                    androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.VideoOnly
+                                )
+                            )
+                        },
                     )
                 }
                 } // Column
@@ -829,6 +846,8 @@ private fun NormalInputBar(
     onCamera: () -> Unit,
     onMic: () -> Unit,
     onSticker: () -> Unit,
+    onAttachFile: () -> Unit = {},
+    onAttachVideo: () -> Unit = {},
 ) {
     val busy = isUploadingImage || isSending
     Row(
@@ -844,6 +863,12 @@ private fun NormalInputBar(
         }
         IconButton(onClick = onCamera, enabled = !busy) {
             Icon(Icons.Default.CameraAlt, contentDescription = "Cámara")
+        }
+        IconButton(onClick = onAttachFile, enabled = !busy) {
+            Icon(Icons.Default.AttachFile, contentDescription = "Adjuntar archivo")
+        }
+        IconButton(onClick = onAttachVideo, enabled = !busy) {
+            Icon(Icons.Default.Videocam, contentDescription = "Enviar video")
         }
         IconButton(onClick = onSticker, enabled = !busy) {
             Icon(Icons.Default.EmojiEmotions, contentDescription = "Stickers y GIFs")
@@ -1187,6 +1212,154 @@ private fun CallMessageBubble(message: MessageBO) {
     }
 }
 
+// ── FileBubble ────────────────────────────────────────────────────────────────
+
+@Composable
+private fun FileBubble(message: MessageBO, onReply: () -> Unit) {
+    val timeText = remember(message.createdAt) {
+        val local = message.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
+        "%02d:%02d".format(local.hour, local.minute)
+    }
+    val bubbleColor = if (message.isFromMe)
+        MaterialTheme.colorScheme.primaryContainer
+    else
+        MaterialTheme.colorScheme.surfaceVariant
+    val alignment = if (message.isFromMe) Alignment.CenterEnd else Alignment.CenterStart
+    val context = LocalContext.current
+
+    Box(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp)) {
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = bubbleColor,
+            modifier = Modifier.align(alignment).widthIn(max = 280.dp)
+                .combinedClickable(
+                    onClick = {
+                        message.fileUrl?.let { url ->
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                data = android.net.Uri.parse(url)
+                                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            runCatching { context.startActivity(intent) }
+                        }
+                    },
+                    onLongClick = onReply,
+                ),
+        ) {
+            Row(
+                modifier = Modifier.padding(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AttachFile,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp),
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = message.fileName ?: "Archivo",
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 2,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    )
+                    if (message.fileSize != null) {
+                        Text(
+                            text = formatFileSize(message.fileSize),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                Text(
+                    text = timeText,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.align(Alignment.Bottom),
+                )
+            }
+        }
+    }
+}
+
+private fun formatFileSize(bytes: Long): String {
+    return when {
+        bytes >= 1_048_576 -> "%.1f MB".format(bytes / 1_048_576.0)
+        bytes >= 1_024 -> "%.1f KB".format(bytes / 1_024.0)
+        else -> "$bytes B"
+    }
+}
+
+// ── VideoBubble ───────────────────────────────────────────────────────────────
+
+@Composable
+private fun VideoBubble(message: MessageBO, onReply: () -> Unit) {
+    val timeText = remember(message.createdAt) {
+        val local = message.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
+        "%02d:%02d".format(local.hour, local.minute)
+    }
+    val alignment = if (message.isFromMe) Alignment.CenterEnd else Alignment.CenterStart
+    val context = LocalContext.current
+    var showPlayer by remember { mutableStateOf(false) }
+
+    Box(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp)) {
+        Column(
+            modifier = Modifier.align(alignment),
+            horizontalAlignment = if (message.isFromMe) Alignment.End else Alignment.Start,
+        ) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = if (message.isFromMe) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                modifier = Modifier.widthIn(max = 240.dp).combinedClickable(
+                    onClick = {
+                        val uri = android.net.Uri.parse(message.videoUrl)
+                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                            setDataAndType(uri, "video/*")
+                            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        runCatching { context.startActivity(intent) }
+                    },
+                    onLongClick = onReply,
+                ),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .height(160.dp)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    AsyncImage(
+                        model = message.videoUrl,
+                        contentDescription = "Video",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)),
+                    )
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                        modifier = Modifier.size(48.dp),
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = "Reproducir",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(32.dp),
+                            )
+                        }
+                    }
+                }
+            }
+            Text(
+                text = timeText,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+            )
+        }
+    }
+}
+
 // ── StickerBubble ──────────────────────────────────────────────────────────────
 
 @Composable
@@ -1314,6 +1487,14 @@ private fun MessageBubble(
     }
     if (message.stickerUrl != null) {
         StickerBubble(message, onReply)
+        return
+    }
+    if (message.fileUrl != null) {
+        FileBubble(message, onReply)
+        return
+    }
+    if (message.videoUrl != null) {
+        VideoBubble(message, onReply)
         return
     }
     val timeText = remember(message.createdAt) {

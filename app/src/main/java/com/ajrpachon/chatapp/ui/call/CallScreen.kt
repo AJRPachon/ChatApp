@@ -18,6 +18,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CallEnd
+import android.os.Build
+import androidx.compose.material.icons.filled.BlurOff
+import androidx.compose.material.icons.filled.BlurOn
 import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
@@ -204,9 +207,10 @@ private fun CallScreenContent(
                             }
                         },
                 ) {
-                    VideoView(
+                    BlurredVideoView(
                         track = localVideo,
                         room = currentRoom,
+                        blurred = state.isBackgroundBlurred,
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -314,6 +318,19 @@ private fun CallScreenContent(
                     ) {
                         Icon(Icons.Default.Cameraswitch, contentDescription = "Voltear cámara")
                     }
+                    // Background blur toggle (API 31+)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        CallControlButton(
+                            onClick = { vm.toggleBackgroundBlur() },
+                            containerColor = if (state.isBackgroundBlurred) Color.White else Color.White.copy(alpha = 0.2f),
+                            iconTint = if (state.isBackgroundBlurred) Color.Black else Color.White,
+                        ) {
+                            Icon(
+                                imageVector = if (state.isBackgroundBlurred) Icons.Default.BlurOn else Icons.Default.BlurOff,
+                                contentDescription = "Fondo borroso",
+                            )
+                        }
+                    }
                 }
             }
 
@@ -358,6 +375,39 @@ fun VideoView(track: VideoTrack, room: Room? = null, modifier: Modifier = Modifi
                 TextureViewRenderer(ctx).also { view ->
                     room?.initVideoRenderer(view)
                     track.addRenderer(view)
+                }
+            },
+            onRelease = { view ->
+                track.removeRenderer(view)
+                view.release()
+            },
+            modifier = modifier,
+        )
+    }
+}
+
+@Composable
+private fun BlurredVideoView(
+    track: VideoTrack,
+    room: Room?,
+    blurred: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    key(track) {
+        AndroidView<TextureViewRenderer>(
+            factory = { ctx ->
+                TextureViewRenderer(ctx).also { view ->
+                    room?.initVideoRenderer(view)
+                    track.addRenderer(view)
+                }
+            },
+            update = { view ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    view.setRenderEffect(
+                        if (blurred) android.graphics.RenderEffect.createBlurEffect(
+                            25f, 25f, android.graphics.Shader.TileMode.CLAMP
+                        ) else null
+                    )
                 }
             },
             onRelease = { view ->

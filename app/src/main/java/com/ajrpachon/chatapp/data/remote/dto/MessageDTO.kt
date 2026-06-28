@@ -25,4 +25,9 @@ data class MessageDTO(
     @SerialName("is_deleted") val isDeleted: Boolean = false,
     @SerialName("is_edited") val isEdited: Boolean = false,
     @SerialName("edited_at") val editedAt: String? = null,
+    @SerialName("file_url") val fileUrl: String? = null,
+    @SerialName("file_name") val fileName: String? = null,
+    @SerialName("file_size") val fileSize: Long? = null,
+    @SerialName("file_mime_type") val fileMimeType: String? = null,
+    @SerialName("video_url") val videoUrl: String? = null,
 )
