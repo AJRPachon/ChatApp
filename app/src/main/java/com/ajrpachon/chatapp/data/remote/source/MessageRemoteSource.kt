@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.data.remote.source
 
 import com.ajrpachon.chatapp.data.remote.dto.MessageDTO
+import com.ajrpachon.chatapp.data.remote.dto.ReactionRemoteDTO
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
@@ -98,6 +99,17 @@ class MessageRemoteSource(private val supabase: SupabaseClient) {
                 runCatching { supabase.realtime.removeChannel(channel) }
             }
         }
+    }
+
+    suspend fun getReactionsForMessages(messageIds: List<String>): List<ReactionRemoteDTO> {
+        if (messageIds.isEmpty()) return emptyList()
+        return runCatching {
+            supabase.postgrest["message_reactions"]
+                .select {
+                    filter { isIn("message_id", messageIds) }
+                }
+                .decodeList<ReactionRemoteDTO>()
+        }.getOrDefault(emptyList())
     }
 
     // Cleanup via withContext(NonCancellable) ensures unsubscribe + removeChannel complete
