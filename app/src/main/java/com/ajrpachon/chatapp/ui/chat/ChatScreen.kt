@@ -32,7 +32,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -495,7 +499,7 @@ fun ChatScreen(
         },
         bottomBar = {
             if (state.isCurrentUserMember) Surface(shadowElevation = 4.dp) {
-                Column {
+                Column(modifier = Modifier.windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars))) {
                 val editingMessage = state.editingMessage
                 if (editingMessage != null) {
                     Row(
@@ -853,7 +857,6 @@ private fun NormalInputBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .imePadding()
             .padding(horizontal = 4.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(2.dp),
@@ -907,7 +910,6 @@ private fun RecordingBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .imePadding()
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -966,7 +968,6 @@ private fun AudioPreviewBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .imePadding()
             .padding(horizontal = 4.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
