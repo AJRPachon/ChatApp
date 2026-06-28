@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.data.repository
 
 import com.ajrpachon.chatapp.data.local.dao.MessageDao
+import com.ajrpachon.chatapp.data.local.dao.ReactionDao
 import com.ajrpachon.chatapp.data.local.dao.UserDao
 import com.ajrpachon.chatapp.data.remote.dto.MessageDTO
 import com.ajrpachon.chatapp.data.remote.source.MessageRemoteSource
@@ -20,10 +21,11 @@ class MessageRepositoryImplTest {
 
     private val messageDao = mockk<MessageDao>(relaxed = true)
     private val userDao = mockk<UserDao>(relaxed = true)
+    private val reactionDao = mockk<ReactionDao>(relaxed = true)
     private val remoteSource = mockk<MessageRemoteSource>(relaxed = true)
     private val supabase = mockk<SupabaseClient>(relaxed = true)
 
-    private val repo = MessageRepositoryImpl(messageDao, userDao, remoteSource, supabase)
+    private val repo = MessageRepositoryImpl(messageDao, userDao, reactionDao, remoteSource, supabase)
 
     // ── syncMessages — fetches remote and upserts ─────────────────────────────
 
