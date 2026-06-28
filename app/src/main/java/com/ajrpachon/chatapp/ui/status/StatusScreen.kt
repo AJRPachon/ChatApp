@@ -75,8 +75,6 @@ fun StatusBar(
         uri?.let { vm.onIntent(StatusIntent.PostImageStatus(context, it)) }
     }
 
-    if (state.statuses.isEmpty() && !state.isLoading) return
-
     Column(modifier = modifier) {
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),

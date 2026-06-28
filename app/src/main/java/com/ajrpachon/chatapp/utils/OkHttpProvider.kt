@@ -30,8 +30,9 @@ import javax.net.ssl.X509TrustManager
 object OkHttpProvider {
 
     private val certificatePinner = CertificatePinner.Builder()
-        // Supabase — project subdomain *.supabase.co (Let's Encrypt R13 intermediate)
-        .add("*.supabase.co", "sha256/AlSQhgtJirc8ahLyekmtX+Iw+v46yPYRLJt9Cq1GlB0=")
+        // Supabase — Google Trust Services WE1 intermediate + GTS Root R4 backup (rotated 2025)
+        .add("*.supabase.co", "sha256/kIdp6NNEd8wsugYyyIYFsi1ylMCED3hZbSR8ZFsa/A4=")
+        .add("*.supabase.co", "sha256/mEflZT5enoR1FuXLgYYGqnVEoZvmf9c2bVBpiOjYQ0c=")
         // LiveKit — leaf cert + ZeroSSL intermediate backup
         .add("*.livekit.cloud", "sha256/xbdEV2MzC3wuAL+M2CU3niDj279xZE/SH6IyrgqaoBs=")
         .add("*.livekit.cloud", "sha256/rnhtVs65ADYfQGtMuB0jq2kZwwHy6/iqnBiUKcK1m0Y=")

@@ -168,33 +168,6 @@ fun ConversationListScreen(
     ) { innerPadding ->
         if (state.isLoading) {
             ConversationListSkeleton(modifier = Modifier.padding(innerPadding))
-        } else if (state.conversations.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center,
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Default.Group,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.outlineVariant,
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                        "No hay conversaciones aún",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        "Toca el botón para empezar un chat",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                }
-            }
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
@@ -202,6 +175,36 @@ fun ConversationListScreen(
             ) {
                 item(key = "status_bar") {
                     StatusBar(onViewStatus = { status -> onOpenStatusViewer(status.userId) })
+                }
+                if (state.conversations.isEmpty()) {
+                    item(key = "empty_state") {
+                        Box(
+                            modifier = Modifier
+                                .fillParentMaxHeight(0.7f)
+                                .fillMaxWidth(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    Icons.Default.Group,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(64.dp),
+                                    tint = MaterialTheme.colorScheme.outlineVariant,
+                                )
+                                Spacer(Modifier.height(16.dp))
+                                Text(
+                                    "No hay conversaciones aún",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Text(
+                                    "Toca el botón para empezar un chat",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.outline,
+                                )
+                            }
+                        }
+                    }
                 }
                 items(state.conversations, key = { it.id }) { conv ->
                     ConversationItem(
