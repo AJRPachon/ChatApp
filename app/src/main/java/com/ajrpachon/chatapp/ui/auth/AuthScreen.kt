@@ -125,7 +125,7 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
             ) { CircularProgressIndicator() }
 
             state.needsUsername -> Box(
-                modifier = Modifier.fillMaxSize().padding(innerPadding).safeDrawingPadding(),
+                modifier = Modifier.fillMaxSize().padding(innerPadding),
                 contentAlignment = Alignment.Center,
             ) {
                 UsernameSetupContent(
@@ -140,6 +140,7 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
                 state = state,
                 onIntent = { vm.onIntent(it) },
                 onGoogleSignIn = { vm.onIntent(AuthIntent.SignInWithGoogle(context)) },
+                contentPadding = innerPadding,
             )
         }
     }
@@ -152,11 +153,13 @@ private fun LoginContent(
     state: AuthState,
     onIntent: (AuthIntent) -> Unit,
     onGoogleSignIn: () -> Unit,
+    contentPadding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.foundation.layout.PaddingValues(),
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState())
+            .padding(contentPadding),
     ) {
         // ── Gradient hero header ───────────────────────────────────────────────
         Box(
