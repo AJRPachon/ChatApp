@@ -3,6 +3,7 @@ package com.ajrpachon.chatapp.ui.chat
 import android.content.Context
 import android.net.Uri
 import com.ajrpachon.chatapp.domain.model.CallBO
+import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.MessageBO
 
 data class AudioState(
@@ -42,6 +43,9 @@ data class ChatState(
     val highlightedMessageId: String? = null,
     val expiryDialogMessageId: String? = null,
     val selectedMessageIds: Set<String> = emptySet(),
+    val showForwardDialog: Boolean = false,
+    val forwardingMessage: MessageBO? = null,
+    val forwardableConversations: List<ConversationBO> = emptyList(),
 ) {
     val isMultiSelectActive: Boolean get() = selectedMessageIds.isNotEmpty()
 }
@@ -86,10 +90,14 @@ sealed interface ChatIntent {
     data class ToggleMessageSelection(val messageId: String) : ChatIntent
     data object ClearSelection : ChatIntent
     data object DeleteSelectedMessages : ChatIntent
+    data class ShowForwardDialog(val message: MessageBO) : ChatIntent
+    data object DismissForwardDialog : ChatIntent
+    data class ForwardMessage(val messageId: String, val targetConversationId: String) : ChatIntent
 }
 
 sealed interface ChatEffect {
     data object ScrollToBottom : ChatEffect
     data class NavigateToCall(val call: CallBO) : ChatEffect
     data object NavigateBack : ChatEffect
+    data class ShowSnackbar(val message: String) : ChatEffect
 }

@@ -14,6 +14,7 @@ import com.ajrpachon.chatapp.domain.model.CallBO
 import com.ajrpachon.chatapp.domain.model.CallType
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.repository.CallRepository
+import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
@@ -28,6 +29,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
@@ -51,6 +53,7 @@ class ChatViewModel(
     private val leaveGroupUseCase: LeaveGroupUseCase,
     private val groupRepository: GroupRepository,
     private val reactionRepository: com.ajrpachon.chatapp.domain.repository.ReactionRepository,
+    private val conversationRepository: ConversationRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ChatState())
@@ -237,6 +240,11 @@ class ChatViewModel(
             is ChatIntent.ToggleMessageSelection -> toggleMessageSelection(intent.messageId)
             is ChatIntent.ClearSelection -> _state.update { it.copy(selectedMessageIds = emptySet()) }
             is ChatIntent.DeleteSelectedMessages -> deleteSelectedMessages()
+            is ChatIntent.ShowForwardDialog -> showForwardDialog(intent.message)
+            is ChatIntent.DismissForwardDialog -> _state.update {
+                it.copy(showForwardDialog = false, forwardingMessage = null, forwardableConversations = emptyList())
+            }
+            is ChatIntent.ForwardMessage -> forwardMessage(intent.messageId, intent.targetConversationId)
         }
     }
 
@@ -632,6 +640,49 @@ class ChatViewModel(
             for (id in ids) {
                 messageRepository.deleteMessage(id)
                     .onFailure { e -> AppLogger.e(TAG, "Delete message $id failed", e) }
+            }
+        }
+    }
+
+    private fun showForwardDialog(message: MessageBO) {
+        val uid = currentUserId ?: return
+        viewModelScope.launch {
+            catchResult {
+                val conversations = conversationRepository.observeConversations(uid).first()
+                    .filter { it.id != conversationId }
+                _state.update {
+                    it.copy(
+                        showForwardDialog = true,
+                        forwardingMessage = message,
+                        forwardableConversations = conversations,
+                    )
+                }
+            }.onFailure { e ->
+                AppLogger.e(TAG, "showForwardDialog failed", e)
+                _state.update { it.copy(error = "No se pudo cargar las conversaciones") }
+            }
+        }
+    }
+
+    private fun forwardMessage(messageId: String, targetConversationId: String) {
+        val uid = currentUserId ?: return
+        val message = _state.value.forwardingMessage ?: return
+        _state.update { it.copy(showForwardDialog = false, forwardingMessage = null, forwardableConversations = emptyList()) }
+        viewModelScope.launch {
+            catchResult {
+                messageRepository.sendMessage(
+                    conversationId = targetConversationId,
+                    senderId = uid,
+                    content = message.content,
+                    imageUrl = message.imageUrl,
+                    audioUrl = message.audioUrl,
+                    gifUrl = message.gifUrl,
+                    stickerUrl = message.stickerUrl,
+                )
+                _effect.send(ChatEffect.ShowSnackbar("Mensaje reenviado"))
+            }.onFailure { e ->
+                AppLogger.e(TAG, "forwardMessage failed", e)
+                _state.update { it.copy(error = "No se pudo reenviar el mensaje") }
             }
         }
     }

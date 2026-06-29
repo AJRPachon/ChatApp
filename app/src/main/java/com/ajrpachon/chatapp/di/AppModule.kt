@@ -85,7 +85,7 @@ val viewModelModule = module {
 
     // Needs runtime parameters — cannot use viewModelOf
     viewModel { (conversationId: String, otherUserName: String) ->
-        ChatViewModel(conversationId, otherUserName, get(), get(), get(), get(), get(), get(), get(), get(), get())
+        ChatViewModel(conversationId, otherUserName, get(), get(), get(), get(), get(), get(), get(), get(), get(), get())
     }
     viewModel { params ->
         CallViewModel(

@@ -52,6 +52,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.Forward
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.AttachFile
@@ -138,6 +139,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.domain.model.CallBO
+import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.MediaUrlValidator
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.MessageLimits
@@ -231,6 +233,7 @@ fun ChatScreen(
                 // new message arrives in the list (avoids scrolling before Paging delivers it).
                 ChatEffect.ScrollToBottom -> pendingSendScroll.value = true
                 ChatEffect.NavigateBack -> onBack()
+                is ChatEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message)
             }
         }
     }
@@ -342,6 +345,17 @@ fun ChatScreen(
         ExpiryDurationDialog(
             onDismiss = { vm.onIntent(ChatIntent.DismissExpiryDialog) },
             onSelect = { vm.onIntent(ChatIntent.SetExpiry(msgId, it)) },
+        )
+    }
+
+    if (state.showForwardDialog) {
+        ForwardConversationDialog(
+            conversations = state.forwardableConversations,
+            onDismiss = { vm.onIntent(ChatIntent.DismissForwardDialog) },
+            onSelect = { targetConversationId ->
+                val msgId = state.forwardingMessage?.id ?: return@ForwardConversationDialog
+                vm.onIntent(ChatIntent.ForwardMessage(msgId, targetConversationId))
+            },
         )
     }
 
@@ -715,6 +729,7 @@ fun ChatScreen(
                                     isSelected = message.id in state.selectedMessageIds,
                                     isMultiSelectActive = state.isMultiSelectActive,
                                     onToggleSelect = { vm.onIntent(ChatIntent.ToggleMessageSelection(message.id)) },
+                                    onForward = { vm.onIntent(ChatIntent.ShowForwardDialog(message)) },
                                 )
                             }
                         } else {
@@ -732,6 +747,7 @@ fun ChatScreen(
                                 onDelete = if (message.isFromMe) {{ vm.onIntent(ChatIntent.DeleteMessage(message.id)) }} else null,
                                 onEdit = if (message.isFromMe && message.content.isNotBlank()) {{ vm.onIntent(ChatIntent.StartEdit(message)) }} else null,
                                 onSelfDestruct = if (message.isFromMe) {{ vm.onIntent(ChatIntent.ShowExpiryDialog(message.id)) }} else null,
+                                onForward = { vm.onIntent(ChatIntent.ShowForwardDialog(message)) },
                                 messageReactions = reactions[message.id] ?: emptyList(),
                                 currentUserId = state.currentUserId,
                                 onToggleReaction = { emoji -> vm.onIntent(ChatIntent.ToggleReaction(message.id, emoji)) },
@@ -1666,6 +1682,7 @@ private fun MessageBubble(
     onDelete: (() -> Unit)? = null,
     onEdit: (() -> Unit)? = null,
     onSelfDestruct: (() -> Unit)? = null,
+    onForward: (() -> Unit)? = null,
     messageReactions: List<com.ajrpachon.chatapp.domain.model.ReactionBO> = emptyList(),
     currentUserId: String? = null,
     onToggleReaction: (String) -> Unit = {},
@@ -1846,6 +1863,13 @@ private fun MessageBubble(
                                         text = { Text("Eliminar") },
                                         leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
                                         onClick = { showMsgMenu = false; onDelete() },
+                                    )
+                                }
+                                if (onForward != null) {
+                                    DropdownMenuItem(
+                                        text = { Text("Reenviar") },
+                                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.Forward, contentDescription = null) },
+                                        onClick = { showMsgMenu = false; onForward() },
                                     )
                                 }
                             }
@@ -2403,6 +2427,82 @@ private fun MuteDurationDialog(onDismiss: () -> Unit, onSelect: (Long) -> Unit) 
                         modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
                     ) {
                         Text(label, modifier = androidx.compose.ui.Modifier.fillMaxWidth())
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancelar") }
+        },
+    )
+}
+
+@Composable
+private fun ForwardConversationDialog(
+    conversations: List<ConversationBO>,
+    onDismiss: () -> Unit,
+    onSelect: (String) -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Reenviar a...") },
+        text = {
+            if (conversations.isEmpty()) {
+                Text(
+                    "No hay otras conversaciones",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                    itemsIndexed(conversations, key = { _, c -> c.id }) { _, conv ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onSelect(conv.id) }
+                                .padding(vertical = 10.dp, horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            val avatarUrl = conv.displayAvatarUrl
+                            if (avatarUrl != null) {
+                                AsyncImage(
+                                    model = avatarUrl,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(36.dp).clip(CircleShape),
+                                    contentScale = ContentScale.Crop,
+                                )
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    if (conv.isGroup) {
+                                        Icon(
+                                            Icons.Default.Group,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                            modifier = Modifier.size(20.dp),
+                                        )
+                                    } else {
+                                        Text(
+                                            text = conv.name.firstOrNull()?.uppercase() ?: "?",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        )
+                                    }
+                                }
+                            }
+                            Text(
+                                text = conv.name,
+                                style = MaterialTheme.typography.bodyMedium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
                 }
             }
