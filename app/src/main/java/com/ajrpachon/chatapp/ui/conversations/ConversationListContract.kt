@@ -13,6 +13,7 @@ data class ConversationListState(
     val searchQuery: String = "",
     val isSearchActive: Boolean = false,
     val showArchivedSheet: Boolean = false,
+    val drafts: Map<String, String> = emptyMap(),
 ) {
     val filteredConversations: List<ConversationBO>
         get() = if (searchQuery.isBlank()) conversations

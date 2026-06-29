@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.ajrpachon.chatapp.data.local.DraftRepository
 import com.ajrpachon.chatapp.data.local.dao.ConversationDao
 import com.ajrpachon.chatapp.domain.model.CallBO
 import com.ajrpachon.chatapp.domain.model.CallType
@@ -73,6 +74,7 @@ class ChatViewModel(
     private val reactionRepository: com.ajrpachon.chatapp.domain.repository.ReactionRepository,
     private val conversationRepository: ConversationRepository,
     private val supabaseClient: SupabaseClient,
+    private val draftRepository: DraftRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ChatState())
@@ -105,10 +107,19 @@ class ChatViewModel(
     private var typingChannel: RealtimeChannel? = null
     private var typingResetJob: Job? = null
     private var typingPresenceJob: Job? = null
+    private var draftSaveJob: Job? = null
 
     init {
         // Delete expired self-destruct messages when the screen opens
         viewModelScope.launch { catchResult { messageRepository.deleteExpiredMessages() } }
+
+        // Load saved draft for this conversation
+        viewModelScope.launch {
+            val draft = draftRepository.getDraft(conversationId).first()
+            if (draft.isNotBlank()) {
+                _state.update { it.copy(inputText = draft) }
+            }
+        }
 
         _state.update { it.copy(conversationTitle = otherUserName) }
         val uid = currentUserId
@@ -265,6 +276,11 @@ class ChatViewModel(
         when (intent) {
             is ChatIntent.InputChanged -> {
                 _state.update { it.copy(inputText = intent.text) }
+                draftSaveJob?.cancel()
+                draftSaveJob = viewModelScope.launch {
+                    delay(500)
+                    draftRepository.saveDraft(conversationId, intent.text)
+                }
                 if (intent.text.isNotEmpty()) {
                     sendTypingPresence(true)
                     typingResetJob?.cancel()
@@ -403,6 +419,8 @@ class ChatViewModel(
         viewModelScope.launch {
             _effect.send(ChatEffect.ScrollToBottom)
             _state.update { it.copy(isSending = true, inputText = "", replyingTo = null) }
+            draftSaveJob?.cancel()
+            draftRepository.saveDraft(conversationId, "")
             sendMessageUseCase(
                 conversationId, userId, text,
                 replyToId = reply?.id,
@@ -514,6 +532,8 @@ class ChatViewModel(
         viewModelScope.launch {
             _effect.send(ChatEffect.ScrollToBottom)
             _state.update { it.copy(audioState = it.audioState.copy(isUploading = true), replyingTo = null) }
+            draftSaveJob?.cancel()
+            draftRepository.saveDraft(conversationId, "")
             catchResult {
                 val bytes = withContext(Dispatchers.IO) { File(filePath).readBytes() }
                 val audioUrl = messageRepository.uploadAudio(conversationId, bytes)
@@ -789,6 +809,7 @@ class ChatViewModel(
         remoteSyncJob?.cancel()
         typingResetJob?.cancel()
         typingPresenceJob?.cancel()
+        draftSaveJob?.cancel()
         viewModelScope.launch {
             withContext(NonCancellable) {
                 try {

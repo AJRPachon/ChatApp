@@ -2,6 +2,7 @@ package com.ajrpachon.chatapp.ui.conversations
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.data.local.DraftRepository
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
@@ -29,6 +30,7 @@ class ConversationListViewModel(
     private val leaveGroupUseCase: LeaveGroupUseCase,
     private val fcmTokenManager: FcmTokenManager,
     private val presenceManager: PresenceManager,
+    private val draftRepository: DraftRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ConversationListState())
@@ -40,6 +42,11 @@ class ConversationListViewModel(
     init {
         presenceManager.start()
         viewModelScope.launch { fcmTokenManager.syncToken() }
+        viewModelScope.launch {
+            draftRepository.getAllDrafts().collect { drafts ->
+                _state.update { it.copy(drafts = drafts) }
+            }
+        }
         viewModelScope.launch {
             catchResult {
                 val user = getCurrentUserUseCase().filterNotNull().first()

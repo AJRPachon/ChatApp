@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.di
 
 import com.ajrpachon.chatapp.BuildConfig
+import com.ajrpachon.chatapp.data.local.DraftRepository
 import com.ajrpachon.chatapp.data.local.ThemeRepository
 import com.ajrpachon.chatapp.data.local.buildChatDatabase
 import com.ajrpachon.chatapp.data.session.AndroidSessionManager
@@ -85,7 +86,7 @@ val viewModelModule = module {
 
     // Needs runtime parameters — cannot use viewModelOf
     viewModel { (conversationId: String, otherUserName: String) ->
-        ChatViewModel(conversationId, otherUserName, get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get())
+        ChatViewModel(conversationId, otherUserName, get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get())
     }
     viewModel { params ->
         CallViewModel(
@@ -115,6 +116,7 @@ val utilsModule = module {
     single { PresenceManager(get()) }
     single { LinkPreviewFetcher() }
     single { ThemeRepository(androidContext()) }
+    single { DraftRepository(androidContext()) }
 }
 
 val appModules = listOf(
