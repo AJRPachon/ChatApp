@@ -45,6 +45,9 @@ sqlcipher = "4.6.1"
 # Play Integrity
 playIntegrity = "1.4.0"
 
+# DataStore
+datastorePreferences = "1.1.1"
+
 # AndroidX
 coreKtx = "1.19.0"
 appcompat = "1.7.0"
@@ -74,6 +77,9 @@ turbine = "1.2.0"
 robolectric = "4.14.1"
 
 [libraries]
+# DataStore
+datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastorePreferences" }
+
 # AndroidX
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AddAPhoto
@@ -28,10 +29,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,6 +47,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.ajrpachon.chatapp.data.local.ThemePreference
 import com.ajrpachon.chatapp.ui.components.ChatAppDestructiveButton
 import com.ajrpachon.chatapp.ui.components.ChatAppTopBar
 import com.github.skydoves.navgraph.annotations.NavDestination
@@ -227,6 +229,25 @@ fun ProfileScreen(
             }
 
             HorizontalDivider()
+            Spacer(Modifier.size(8.dp))
+
+            // ── Apariencia ──────────────────────────────────────────────────
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    "Apariencia",
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                ThemeSelector(
+                    selected = state.themePreference,
+                    onSelect = { vm.onIntent(ProfileIntent.SetTheme(it)) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            HorizontalDivider()
             Spacer(Modifier.weight(1f))
 
             ChatAppDestructiveButton(
@@ -244,6 +265,49 @@ fun ProfileScreen(
                     .fillMaxWidth()
                     .padding(bottom = 24.dp),
             )
+        }
+    }
+}
+
+@Composable
+private fun ThemeSelector(
+    selected: ThemePreference,
+    onSelect: (ThemePreference) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val options = listOf(
+        ThemePreference.SYSTEM to "Sistema",
+        ThemePreference.LIGHT to "Claro",
+        ThemePreference.DARK to "Oscuro",
+    )
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        options.forEach { (pref, label) ->
+            val isSelected = pref == selected
+            Surface(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onSelect(pref) },
+                shape = RoundedCornerShape(8.dp),
+                color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                        else MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                               else MaterialTheme.colorScheme.onSurfaceVariant,
+                tonalElevation = if (isSelected) 0.dp else 0.dp,
+            ) {
+                Box(
+                    modifier = Modifier.padding(vertical = 10.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                    )
+                }
+            }
         }
     }
 }

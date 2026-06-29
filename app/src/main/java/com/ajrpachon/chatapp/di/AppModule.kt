@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.di
 
 import com.ajrpachon.chatapp.BuildConfig
+import com.ajrpachon.chatapp.data.local.ThemeRepository
 import com.ajrpachon.chatapp.data.local.buildChatDatabase
 import com.ajrpachon.chatapp.data.session.AndroidSessionManager
 import com.ajrpachon.chatapp.domain.repository.UserRepository
@@ -14,7 +15,6 @@ import com.ajrpachon.chatapp.ui.group.GroupInfoViewModel
 import com.ajrpachon.chatapp.ui.invitations.InvitationsViewModel
 import com.ajrpachon.chatapp.ui.newchat.NewChatViewModel
 import com.ajrpachon.chatapp.ui.profile.ProfileViewModel
-import com.ajrpachon.chatapp.ui.status.StatusViewModel
 import com.ajrpachon.chatapp.ui.userinfo.UserInfoViewModel
 import com.ajrpachon.chatapp.service.PresenceManager
 import com.ajrpachon.chatapp.utils.LinkPreviewFetcher
@@ -44,7 +44,6 @@ val databaseModule = module {
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().invitationDao() }
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().groupMemberDao() }
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().reactionDao() }
-    single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().statusDao() }
 }
 
 val networkModule = module {
@@ -72,7 +71,6 @@ val viewModelModule = module {
     viewModel { AuthViewModel(androidApplication(), get(), get(), BuildConfig.GOOGLE_WEB_CLIENT_ID, get(), get(), get()) }
 
     viewModelOf(::ConversationListViewModel)
-    viewModelOf(::StatusViewModel)
     viewModelOf(::InvitationsViewModel)
     viewModelOf(::NewChatViewModel)
     viewModelOf(::ProfileViewModel)
@@ -116,6 +114,7 @@ val utilsModule = module {
     single { SessionGuard(androidContext()) }
     single { PresenceManager(get()) }
     single { LinkPreviewFetcher() }
+    single { ThemeRepository(androidContext()) }
 }
 
 val appModules = listOf(

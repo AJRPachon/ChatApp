@@ -115,6 +115,7 @@ tasks.register<JacocoReport>("jacocoTestReport") {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
+    implementation(libs.datastore.preferences)
 
     // Compose BOM
     val composeBom = platform(libs.compose.bom)
