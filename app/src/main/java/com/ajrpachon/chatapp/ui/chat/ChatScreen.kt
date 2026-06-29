@@ -1106,6 +1106,7 @@ private fun LocalAudioPlayer(filePath: String, modifier: Modifier = Modifier) {
     var isPlaying by remember { mutableStateOf(false) }
     var currentMs by remember { mutableStateOf(0) }
     var durationMs by remember { mutableStateOf(0) }
+    var playbackSpeed by remember { mutableStateOf(1f) }
     val playerRef = remember { mutableStateOf<MediaPlayer?>(null) }
 
     DisposableEffect(filePath) {
@@ -1141,6 +1142,13 @@ private fun LocalAudioPlayer(filePath: String, modifier: Modifier = Modifier) {
             else { mp.start(); isPlaying = true }
         },
         waveformSeed = filePath.hashCode(),
+        playbackSpeed = playbackSpeed,
+        onSpeedChange = { speed ->
+            playbackSpeed = speed
+            playerRef.value?.let { mp ->
+                mp.playbackParams = mp.playbackParams.setSpeed(speed)
+            }
+        },
     )
 }
 
@@ -1150,6 +1158,7 @@ private fun RemoteAudioPlayer(url: String, modifier: Modifier = Modifier) {
     var isPlaying by remember { mutableStateOf(false) }
     var currentMs by remember { mutableStateOf(0) }
     var durationMs by remember { mutableStateOf(0) }
+    var playbackSpeed by remember { mutableStateOf(1f) }
     val playerRef = remember { mutableStateOf<MediaPlayer?>(null) }
 
     DisposableEffect(url) {
@@ -1184,6 +1193,13 @@ private fun RemoteAudioPlayer(url: String, modifier: Modifier = Modifier) {
             else { mp.start(); isPlaying = true }
         },
         waveformSeed = url.hashCode(),
+        playbackSpeed = playbackSpeed,
+        onSpeedChange = { speed ->
+            playbackSpeed = speed
+            playerRef.value?.let { mp ->
+                mp.playbackParams = mp.playbackParams.setSpeed(speed)
+            }
+        },
     )
 }
 
@@ -1196,6 +1212,8 @@ private fun AudioPlayerRow(
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
     waveformSeed: Int = 0,
+    playbackSpeed: Float = 1f,
+    onSpeedChange: (Float) -> Unit = {},
 ) {
     val activeColor = MaterialTheme.colorScheme.primary
     val inactiveColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
@@ -1206,6 +1224,8 @@ private fun AudioPlayerRow(
         val rng = java.util.Random(waveformSeed.toLong())
         List(32) { 0.2f + rng.nextFloat() * 0.8f }
     }
+
+    val speedSteps = listOf(1f, 1.5f, 2f)
 
     Row(
         modifier = modifier.widthIn(min = 160.dp),
@@ -1244,6 +1264,22 @@ private fun AudioPlayerRow(
                 text = formatAudioDuration(if (currentMs > 0) currentMs else durationMs),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            )
+        }
+        // Speed chip: cycles ×1 → ×1.5 → ×2 → ×1
+        Surface(
+            onClick = {
+                val nextIndex = (speedSteps.indexOf(playbackSpeed) + 1) % speedSteps.size
+                onSpeedChange(speedSteps[nextIndex])
+            },
+            shape = RoundedCornerShape(50),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier.padding(start = 4.dp),
+        ) {
+            Text(
+                text = "×${if (playbackSpeed % 1f == 0f) playbackSpeed.toInt().toString() else playbackSpeed.toString()}",
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
             )
         }
     }
