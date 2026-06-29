@@ -5,4 +5,5 @@ data class UserInfoState(
     val username: String = "",
     val avatarUrl: String? = null,
     val isLoading: Boolean = true,
+    val mediaUrls: List<String> = emptyList(),
 )

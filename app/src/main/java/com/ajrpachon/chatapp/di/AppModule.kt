@@ -106,7 +106,7 @@ val viewModelModule = module {
         GroupInfoViewModel(conversationId, get(), get(), get(), get(), get(), get(), get())
     }
     viewModel { (userId: String) ->
-        UserInfoViewModel(userId, get())
+        UserInfoViewModel(userId, get(), get(), get())
     }
 }
 
