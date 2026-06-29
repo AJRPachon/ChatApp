@@ -77,6 +77,7 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Reply
@@ -90,6 +91,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.SnackbarHost
@@ -97,6 +99,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.DisposableEffect
@@ -840,6 +843,7 @@ private fun SearchResultItem(message: MessageBO, onClick: () -> Unit = {}) {
 // ── Bottom bar composables ────────────────────────────────────────────────────
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 private fun NormalInputBar(
     inputText: String,
     isSending: Boolean,
@@ -854,6 +858,10 @@ private fun NormalInputBar(
     onAttachVideo: () -> Unit = {},
 ) {
     val busy = isUploadingImage || isSending
+    var showAttachSheet by rememberSaveable { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -861,20 +869,15 @@ private fun NormalInputBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        IconButton(onClick = onGallery, enabled = !busy) {
-            Icon(Icons.Default.AddPhotoAlternate, contentDescription = "Galería")
-        }
-        IconButton(onClick = onCamera, enabled = !busy) {
-            Icon(Icons.Default.CameraAlt, contentDescription = "Cámara")
-        }
-        IconButton(onClick = onAttachFile, enabled = !busy) {
-            Icon(Icons.Default.AttachFile, contentDescription = "Adjuntar archivo")
-        }
-        IconButton(onClick = onAttachVideo, enabled = !busy) {
-            Icon(Icons.Default.Videocam, contentDescription = "Enviar video")
-        }
-        IconButton(onClick = onSticker, enabled = !busy) {
-            Icon(Icons.Default.EmojiEmotions, contentDescription = "Stickers y GIFs")
+        IconButton(
+            onClick = { showAttachSheet = true },
+            enabled = !busy,
+        ) {
+            Icon(
+                Icons.Default.Add,
+                contentDescription = "Adjuntar",
+                tint = MaterialTheme.colorScheme.primary,
+            )
         }
         ChatAppTextField(
             value = inputText,
@@ -896,6 +899,113 @@ private fun NormalInputBar(
         } else {
             IconButton(onClick = onMic, enabled = !busy) {
                 Icon(Icons.Default.Mic, contentDescription = "Grabar audio")
+            }
+        }
+    }
+
+    if (showAttachSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showAttachSheet = false },
+            sheetState = sheetState,
+        ) {
+            AttachmentBottomSheet(
+                onGallery = {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        showAttachSheet = false
+                        onGallery()
+                    }
+                },
+                onCamera = {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        showAttachSheet = false
+                        onCamera()
+                    }
+                },
+                onFile = {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        showAttachSheet = false
+                        onAttachFile()
+                    }
+                },
+                onVideo = {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        showAttachSheet = false
+                        onAttachVideo()
+                    }
+                },
+                onSticker = {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        showAttachSheet = false
+                        onSticker()
+                    }
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun AttachmentBottomSheet(
+    onGallery: () -> Unit,
+    onCamera: () -> Unit,
+    onFile: () -> Unit,
+    onVideo: () -> Unit,
+    onSticker: () -> Unit,
+) {
+    val options = listOf(
+        Triple(Icons.Default.AddPhotoAlternate, "Galería", onGallery),
+        Triple(Icons.Default.CameraAlt, "Cámara", onCamera),
+        Triple(Icons.Default.AttachFile, "Archivo", onFile),
+        Triple(Icons.Default.Videocam, "Video", onVideo),
+        Triple(Icons.Default.EmojiEmotions, "Stickers", onSticker),
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp, bottom = 32.dp),
+    ) {
+        Text(
+            text = "Adjuntar",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+        ) {
+            options.forEach { (icon, label, action) ->
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable(onClick = action)
+                        .padding(vertical = 12.dp),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = label,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(28.dp),
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
             }
         }
     }
