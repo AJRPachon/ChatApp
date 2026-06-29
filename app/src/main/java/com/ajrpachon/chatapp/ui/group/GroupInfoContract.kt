@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.ui.group
 
 import com.ajrpachon.chatapp.domain.model.GroupMemberBO
+import com.ajrpachon.chatapp.domain.model.GroupRole
 import com.ajrpachon.chatapp.domain.model.UserBO
 
 data class GroupInfoState(
@@ -9,6 +10,8 @@ data class GroupInfoState(
     val groupName: String = "",
     val groupDescription: String = "",
     val groupAvatarUrl: String? = null,
+    /** Role of the currently authenticated user in this group. */
+    val currentUserRole: GroupRole = GroupRole.MEMBER,
     val isCurrentUserAdmin: Boolean = false,
     val isSaving: Boolean = false,
     val error: String? = null,
