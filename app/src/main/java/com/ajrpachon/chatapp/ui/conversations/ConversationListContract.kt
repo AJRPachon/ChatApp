@@ -8,6 +8,7 @@ data class ConversationListState(
     val currentUserId: String? = null,
     val pendingInvitationsCount: Int = 0,
     val error: String? = null,
+    val sortByUnread: Boolean = false,
 )
 
 sealed interface ConversationListIntent {
@@ -17,6 +18,7 @@ sealed interface ConversationListIntent {
     data class ToggleMute(val conversationId: String, val muted: Boolean) : ConversationListIntent
     data class ClearChat(val conversationId: String) : ConversationListIntent
     data class LeaveGroup(val conversationId: String) : ConversationListIntent
+    data object ToggleSortByUnread : ConversationListIntent
 }
 
 sealed interface ConversationListEffect {

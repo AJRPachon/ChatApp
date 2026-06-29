@@ -52,7 +52,7 @@ class ConversationListViewModel(
                     }
                     launch {
                         observeConversationsUseCase(user.id).collect { convs ->
-                            _state.update { it.copy(conversations = convs) }
+                            _state.update { it.copy(conversations = sortedConversations(convs, it.sortByUnread)) }
                         }
                     }
                 }
@@ -90,6 +90,28 @@ class ConversationListViewModel(
                     leaveGroupUseCase(intent.conversationId, userId)
                         .onFailure { e -> _state.update { it.copy(error = e.message) } }
                 }
+            is ConversationListIntent.ToggleSortByUnread -> {
+                _state.update { current ->
+                    val newSort = !current.sortByUnread
+                    current.copy(
+                        sortByUnread = newSort,
+                        conversations = sortedConversations(current.conversations, newSort),
+                    )
+                }
+            }
+        }
+    }
+
+    private fun sortedConversations(
+        convs: List<com.ajrpachon.chatapp.domain.model.ConversationBO>,
+        sortByUnread: Boolean,
+    ): List<com.ajrpachon.chatapp.domain.model.ConversationBO> {
+        return if (sortByUnread) {
+            val withUnread = convs.filter { it.unreadCount > 0 }.sortedByDescending { it.unreadCount }
+            val withoutUnread = convs.filter { it.unreadCount == 0 }.sortedByDescending { it.updatedAt }
+            withUnread + withoutUnread
+        } else {
+            convs.sortedByDescending { it.updatedAt }
         }
     }
 }
