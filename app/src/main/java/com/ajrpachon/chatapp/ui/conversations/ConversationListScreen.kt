@@ -20,20 +20,21 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Gif
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,11 +42,16 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -54,6 +60,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -95,6 +102,7 @@ fun ConversationListScreen(
     val vm: ConversationListViewModel = koinViewModel()
     val state by vm.state.collectAsStateWithLifecycle()
     var menuConvId by remember { mutableStateOf<String?>(null) }
+    val archivedSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     LaunchedEffect(Unit) {
         vm.effect.collect { effect ->
@@ -102,6 +110,60 @@ fun ConversationListScreen(
                 is ConversationListEffect.NavigateToChat ->
                     onOpenConversation(effect.conversationId, effect.conversationName, effect.isGroup)
             }
+        }
+    }
+
+    if (state.showArchivedSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { vm.onIntent(ConversationListIntent.DismissArchivedSheet) },
+            sheetState = archivedSheetState,
+            dragHandle = { BottomSheetDefaults.DragHandle() },
+        ) {
+            Text(
+                text = "Archivados",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+            if (state.archivedConversations.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            Icons.Default.Inventory2,
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.outlineVariant,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "No hay chats archivados",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            } else {
+                LazyColumn {
+                    items(state.archivedConversations, key = { it.id }) { conv ->
+                        ArchivedConversationItem(
+                            conversation = conv,
+                            onClick = dropUnlessResumed {
+                                vm.onIntent(ConversationListIntent.DismissArchivedSheet)
+                                vm.onIntent(ConversationListIntent.OpenConversation(conv.id, conv.name, conv.isGroup))
+                            },
+                            onUnarchive = {
+                                vm.onIntent(ConversationListIntent.ArchiveConversation(conv.id, false))
+                            },
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(32.dp))
         }
     }
 
@@ -115,6 +177,15 @@ fun ConversationListScreen(
                     )
                 },
                 actions = {
+                    IconButton(onClick = { vm.onIntent(ConversationListIntent.ShowArchivedSheet) }) {
+                        BadgedBox(badge = {
+                            if (state.archivedConversations.isNotEmpty()) {
+                                Badge { Text(state.archivedConversations.size.toString()) }
+                            }
+                        }) {
+                            Icon(Icons.Default.Inventory2, contentDescription = "Archivados")
+                        }
+                    }
                     IconButton(onClick = dropUnlessResumed { onOpenProfile() }) {
                         Icon(
                             Icons.Default.Person,
@@ -207,7 +278,7 @@ fun ConversationListScreen(
                     }
                 }
                 items(state.conversations, key = { it.id }) { conv ->
-                    ConversationItem(
+                    SwipeableConversationItem(
                         conversation = conv,
                         currentUserId = state.currentUserId,
                         showMenu = menuConvId == conv.id,
@@ -234,9 +305,132 @@ fun ConversationListScreen(
                             menuConvId = null
                             vm.onIntent(ConversationListIntent.DeleteConversation(conv.id))
                         },
+                        onArchive = {
+                            vm.onIntent(ConversationListIntent.ArchiveConversation(conv.id, true))
+                        },
                     )
                 }
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SwipeableConversationItem(
+    conversation: ConversationBO,
+    currentUserId: String?,
+    showMenu: Boolean,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+    onMenuDismiss: () -> Unit,
+    onMuteToggle: () -> Unit,
+    onClearChat: () -> Unit,
+    onLeaveGroup: (() -> Unit)?,
+    onDelete: () -> Unit,
+    onArchive: () -> Unit,
+) {
+    val dismissState = rememberSwipeToDismissBoxState(
+        positionalThreshold = { totalDistance -> totalDistance * 0.4f },
+    )
+
+    LaunchedEffect(dismissState.currentValue) {
+        if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+            onArchive()
+            dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+        }
+    }
+
+    SwipeToDismissBox(
+        state = dismissState,
+        enableDismissFromStartToEnd = false,
+        enableDismissFromEndToStart = true,
+        backgroundContent = {
+            val color = when (dismissState.targetValue) {
+                SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.tertiaryContainer
+                else -> Color.Transparent
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(color)
+                    .padding(horizontal = 20.dp),
+                contentAlignment = Alignment.CenterEnd,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Default.Archive,
+                        contentDescription = "Archivar",
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                    Text(
+                        "Archivar",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                }
+            }
+        },
+    ) {
+        ConversationItem(
+            conversation = conversation,
+            currentUserId = currentUserId,
+            showMenu = showMenu,
+            onClick = onClick,
+            onLongClick = onLongClick,
+            onMenuDismiss = onMenuDismiss,
+            onMuteToggle = onMuteToggle,
+            onClearChat = onClearChat,
+            onLeaveGroup = onLeaveGroup,
+            onDelete = onDelete,
+        )
+    }
+}
+
+@Composable
+private fun ArchivedConversationItem(
+    conversation: ConversationBO,
+    onClick: () -> Unit,
+    onUnarchive: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        ChatAppAvatar(
+            name = conversation.name,
+            url = conversation.displayAvatarUrl,
+            isGroup = conversation.isGroup,
+            size = 48.dp,
+        )
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = conversation.name,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            conversation.lastMessage?.let { msg ->
+                Text(
+                    text = msg.content,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        IconButton(onClick = onUnarchive) {
+            Icon(
+                Icons.Default.Unarchive,
+                contentDescription = "Desarchivar",
+                tint = MaterialTheme.colorScheme.primary,
+            )
         }
     }
 }

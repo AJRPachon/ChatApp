@@ -11,4 +11,6 @@ interface ConversationRepository {
     suspend fun muteFor(conversationId: String, mutedUntil: Long)
     suspend fun clearChat(conversationId: String)
     suspend fun deleteConversation(conversationId: String)
+    suspend fun archiveConversation(conversationId: String, archived: Boolean)
+    fun observeArchivedConversations(userId: String): Flow<List<ConversationBO>>
 }

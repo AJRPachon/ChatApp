@@ -38,4 +38,13 @@ interface ConversationDao {
 
     @Query("UPDATE conversations SET unreadCount = 0 WHERE id = :id")
     suspend fun resetUnreadCount(id: String)
+
+    @Query("UPDATE conversations SET is_archived = :archived WHERE id = :id")
+    suspend fun setArchived(id: String, archived: Boolean)
+
+    @Query("SELECT * FROM conversations WHERE is_archived = 0 ORDER BY updatedAt DESC")
+    fun observeActive(): Flow<List<ConversationDBO>>
+
+    @Query("SELECT * FROM conversations WHERE is_archived = 1 ORDER BY updatedAt DESC")
+    fun observeArchived(): Flow<List<ConversationDBO>>
 }
