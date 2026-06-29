@@ -113,6 +113,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import android.util.Patterns
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -132,6 +134,8 @@ import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.MessageLimits
 import com.ajrpachon.chatapp.domain.model.StickerValidation
 import com.ajrpachon.chatapp.utils.ClipboardProtection
+import com.ajrpachon.chatapp.utils.LinkPreviewData
+import com.ajrpachon.chatapp.utils.LinkPreviewFetcher
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
@@ -144,6 +148,7 @@ import com.ajrpachon.chatapp.GroupInfoRoute
 import com.ajrpachon.chatapp.UserInfoRoute
 import com.ajrpachon.chatapp.ui.components.ChatAppTextField
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 import java.io.File
 
@@ -1472,6 +1477,26 @@ private fun MessageBubble(
                             )
                         }
                     }
+                    // Link preview — shown only for plain text messages (no image/audio/gif)
+                    val hasAttachment = message.imageUrl != null || message.audioUrl != null ||
+                        message.gifUrl != null
+                    if (!hasAttachment && message.content.isNotBlank()) {
+                        val detectedUrl = remember(message.content) {
+                            val matcher = Patterns.WEB_URL.matcher(message.content)
+                            if (matcher.find()) matcher.group() else null
+                        }
+                        if (detectedUrl != null) {
+                            val fetcher: LinkPreviewFetcher = koinInject()
+                            var previewData by remember(detectedUrl) { mutableStateOf<LinkPreviewData?>(null) }
+                            LaunchedEffect(detectedUrl) {
+                                previewData = fetcher.fetchLinkPreview(detectedUrl)
+                            }
+                            if (previewData != null) {
+                                Spacer(Modifier.height(6.dp))
+                                LinkPreviewCard(data = previewData!!)
+                            }
+                        }
+                    }
                     Row(
                         modifier = Modifier.align(Alignment.End),
                         horizontalArrangement = Arrangement.spacedBy(2.dp),
@@ -1729,6 +1754,66 @@ private fun ReplyQuote(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+        }
+    }
+}
+
+// ── LinkPreviewCard ───────────────────────────────────────────────────────────
+
+@Composable
+private fun LinkPreviewCard(data: LinkPreviewData) {
+    val context = LocalContext.current
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(data.url)).apply {
+                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                runCatching { context.startActivity(intent) }
+            },
+    ) {
+        Column {
+            if (data.imageUrl != null) {
+                AsyncImage(
+                    model = data.imageUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)),
+                )
+            }
+            Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+                Text(
+                    text = data.title,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (data.description != null) {
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = data.description,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = runCatching { java.net.URL(data.url).host }.getOrDefault(data.url),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }

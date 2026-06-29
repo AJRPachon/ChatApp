@@ -16,6 +16,7 @@ import com.ajrpachon.chatapp.ui.newchat.NewChatViewModel
 import com.ajrpachon.chatapp.ui.profile.ProfileViewModel
 import com.ajrpachon.chatapp.ui.userinfo.UserInfoViewModel
 import com.ajrpachon.chatapp.service.PresenceManager
+import com.ajrpachon.chatapp.utils.LinkPreviewFetcher
 import com.ajrpachon.chatapp.utils.OkHttpProvider
 import com.ajrpachon.chatapp.utils.SessionGuard
 import io.github.jan.supabase.auth.Auth
@@ -111,6 +112,7 @@ val viewModelModule = module {
 val utilsModule = module {
     single { SessionGuard(androidContext()) }
     single { PresenceManager(get()) }
+    single { LinkPreviewFetcher() }
 }
 
 val appModules = listOf(
