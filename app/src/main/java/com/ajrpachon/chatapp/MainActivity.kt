@@ -11,6 +11,7 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.core.content.ContextCompat
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
@@ -49,10 +50,10 @@ import com.ajrpachon.chatapp.ui.group.GroupInfoScreen
 import com.ajrpachon.chatapp.ui.invitations.InvitationsScreen
 import com.ajrpachon.chatapp.ui.newchat.NewChatScreen
 import com.ajrpachon.chatapp.ui.profile.ProfileScreen
-import com.ajrpachon.chatapp.ui.status.StatusViewerScreen
-import com.ajrpachon.chatapp.ui.status.StatusViewModel
 import com.ajrpachon.chatapp.ui.userinfo.UserInfoScreen
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
+import com.ajrpachon.chatapp.data.local.ThemePreference
+import com.ajrpachon.chatapp.data.local.ThemeRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.utils.SessionGuard
 import kotlinx.coroutines.flow.first
@@ -88,7 +89,6 @@ import org.koin.androidx.compose.koinViewModel
 ) : NavKey
 @Serializable data object CreateGroupRoute : NavKey
 @Serializable data class UserInfoRoute(val userId: String) : NavKey
-@Serializable data class StatusViewerRoute(val userId: String) : NavKey
 @Serializable data class GroupInfoRoute(
     val conversationId: String,
     val groupName: String,
@@ -124,7 +124,14 @@ class MainActivity : ComponentActivity() {
         val getCurrentUser: GetCurrentUserUseCase = get()
         val supabase: SupabaseClient = get()
         setContent {
-            ChatAppTheme {
+            val themeRepository: ThemeRepository = get()
+            val themePreference by themeRepository.observe().collectAsState(initial = ThemePreference.SYSTEM)
+            val darkTheme = when (themePreference) {
+                ThemePreference.DARK -> true
+                ThemePreference.LIGHT -> false
+                ThemePreference.SYSTEM -> isSystemInDarkTheme()
+            }
+            ChatAppTheme(darkTheme = darkTheme) {
                 // ── 1. Play Integrity gate ──────────────────────────────────
                 val integrityResult by produceState<IntegrityResult?>(initialValue = null) {
                     value = IntegrityChecker.check(this@MainActivity, supabase)
@@ -236,9 +243,6 @@ class MainActivity : ComponentActivity() {
                                     onOpenProfile = dropUnlessResumed {
                                         backStack.add(ProfileRoute)
                                     },
-                                    onOpenStatusViewer = { userId ->
-                                        backStack.add(StatusViewerRoute(userId))
-                                    },
                                 )
                             }
 
@@ -346,20 +350,6 @@ class MainActivity : ComponentActivity() {
                                     userId = key.userId,
                                     onBack = dropUnlessResumed { backStack.removeLastOrNull() },
                                 )
-                            }
-
-                            is StatusViewerRoute -> NavEntry(key) {
-                                val statusVm: StatusViewModel = koinViewModel()
-                                val statusState by statusVm.state.collectAsStateWithLifecycle()
-                                val initialStatus = statusState.statuses.firstOrNull { it.userId == key.userId }
-                                if (initialStatus != null) {
-                                    StatusViewerScreen(
-                                        initialStatus = initialStatus,
-                                        allStatuses = statusState.statuses,
-                                        onClose = dropUnlessResumed { backStack.removeLastOrNull() },
-                                        vm = statusVm,
-                                    )
-                                }
                             }
 
                                 else -> error("Unknown route: $key")
