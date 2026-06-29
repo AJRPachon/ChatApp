@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -19,6 +20,7 @@ data class ConversationDBO(
     val historyVisibleFrom: Long = 0L,
     // 0 = not muted, -1 = muted forever, >0 = muted until this epoch millis timestamp
     val mutedUntil: Long = 0L,
+    @ColumnInfo(name = "is_archived") val isArchived: Boolean = false,
 ) {
     fun isEffectivelyMuted(): Boolean =
         isMuted || mutedUntil == -1L || (mutedUntil > 0L && mutedUntil > System.currentTimeMillis())

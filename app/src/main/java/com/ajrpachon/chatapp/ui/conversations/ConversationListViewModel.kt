@@ -1,5 +1,4 @@
 package com.ajrpachon.chatapp.ui.conversations
-import com.ajrpachon.chatapp.utils.catchResult
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,6 +10,7 @@ import com.ajrpachon.chatapp.domain.usecase.ObserveInvitationsUseCase
 import com.ajrpachon.chatapp.service.FcmTokenManager
 import com.ajrpachon.chatapp.service.PresenceManager
 import com.ajrpachon.chatapp.utils.AppLogger
+import com.ajrpachon.chatapp.utils.catchResult
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -53,6 +53,11 @@ class ConversationListViewModel(
                     launch {
                         observeConversationsUseCase(user.id).collect { convs ->
                             _state.update { it.copy(conversations = sortedConversations(convs, it.sortByUnread)) }
+                        }
+                    }
+                    launch {
+                        conversationRepository.observeArchivedConversations(user.id).collect { convs ->
+                            _state.update { it.copy(archivedConversations = convs) }
                         }
                     }
                 }
@@ -99,6 +104,22 @@ class ConversationListViewModel(
                     )
                 }
             }
+            is ConversationListIntent.SearchQueryChanged ->
+                _state.update { it.copy(searchQuery = intent.query) }
+            is ConversationListIntent.ToggleSearch ->
+                _state.update { current ->
+                    if (current.isSearchActive) current.copy(isSearchActive = false, searchQuery = "")
+                    else current.copy(isSearchActive = true)
+                }
+            is ConversationListIntent.ArchiveConversation ->
+                viewModelScope.launch {
+                    catchResult { conversationRepository.archiveConversation(intent.conversationId, intent.archived) }
+                        .onFailure { e -> _state.update { it.copy(error = e.message) } }
+                }
+            is ConversationListIntent.ShowArchivedSheet ->
+                _state.update { it.copy(showArchivedSheet = true) }
+            is ConversationListIntent.DismissArchivedSheet ->
+                _state.update { it.copy(showArchivedSheet = false) }
         }
     }
 

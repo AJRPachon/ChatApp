@@ -192,31 +192,37 @@ class ConversationRepositoryImpl(
             }
         }
 
-        conversationDao.observeAll().map { dbos ->
-            dbos.mapNotNull { dbo ->
-                val lastMsg = messageDao.getLastMessage(dbo.id)?.let { msgDbo ->
-                    val sender = userDao.getById(msgDbo.senderId)?.toBO()
-                    msgDbo.toBO(userId, sender?.displayName ?: msgDbo.senderId)
-                }
-                val trailingImages = messageDao.getTrailingImageCount(dbo.id)
-                val otherUser = dbo.otherUserId?.let { userDao.getById(it) }
-                ConversationBO(
-                    id = dbo.id,
-                    name = dbo.name ?: "Chat",
-                    isGroup = dbo.isGroup,
-                    participants = emptyList(),
-                    lastMessage = lastMsg,
-                    unreadCount = dbo.unreadCount,
-                    updatedAt = Instant.fromEpochMilliseconds(dbo.updatedAt),
-                    trailingImageCount = trailingImages,
-                    otherUserAvatarUrl = otherUser?.avatarUrl,
-                    groupAvatarUrl = dbo.groupAvatarUrl,
-                    description = dbo.description,
-                    isMuted = dbo.isEffectivelyMuted(),
-                    mutedUntil = dbo.mutedUntil,
-                )
-            }
+        conversationDao.observeActive().map { dbos ->
+            dbos.mapNotNull { dbo -> dbo.toBO(userId) }
         }.collect { send(it) }
+    }
+
+    override fun observeArchivedConversations(userId: String): Flow<List<ConversationBO>> =
+        conversationDao.observeArchived().map { dbos -> dbos.mapNotNull { dbo -> dbo.toBO(userId) } }
+
+    private suspend fun ConversationDBO.toBO(userId: String): ConversationBO? {
+        val lastMsg = messageDao.getLastMessage(id)?.let { msgDbo ->
+            val sender = userDao.getById(msgDbo.senderId)?.toBO()
+            msgDbo.toBO(userId, sender?.displayName ?: msgDbo.senderId)
+        }
+        val trailingImages = messageDao.getTrailingImageCount(id)
+        val otherUser = otherUserId?.let { userDao.getById(it) }
+        return ConversationBO(
+            id = id,
+            name = name ?: "Chat",
+            isGroup = isGroup,
+            participants = emptyList(),
+            lastMessage = lastMsg,
+            unreadCount = unreadCount,
+            updatedAt = Instant.fromEpochMilliseconds(updatedAt),
+            trailingImageCount = trailingImages,
+            otherUserAvatarUrl = otherUser?.avatarUrl,
+            groupAvatarUrl = groupAvatarUrl,
+            description = description,
+            isMuted = isEffectivelyMuted(),
+            mutedUntil = mutedUntil,
+            isArchived = isArchived,
+        )
     }
 
     override suspend fun getOrCreateDirectConversation(
@@ -286,6 +292,10 @@ class ConversationRepositoryImpl(
         conversationDao.deleteById(conversationId)
     }
 
+    override suspend fun archiveConversation(conversationId: String, archived: Boolean) {
+        conversationDao.setArchived(conversationId, archived)
+    }
+
     override suspend fun syncConversations(userId: String) = syncMutex.withLock {
         val rows = supabase.postgrest["conversation_participants"]
             .select(Columns.raw("conversation_id, joined_at, conversations(id,name,is_group,created_by,updated_at,avatar_url,description)")) {
@@ -344,6 +354,7 @@ class ConversationRepositoryImpl(
                     description = conversationDto.description ?: existingConversation?.description,
                     groupAvatarUrl = conversationDto.avatarUrl ?: existingConversation?.groupAvatarUrl,
                     historyVisibleFrom = historyVisibleFrom,
+                    isArchived = existingConversation?.isArchived ?: false,
                 )
             )
 
