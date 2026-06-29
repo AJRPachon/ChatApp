@@ -585,6 +585,24 @@ fun ChatScreen(
                     )
                     HorizontalDivider()
                 }
+                // Typing indicator
+                val typingUserNames = state.typingUserNames
+                AnimatedVisibility(
+                    visible = typingUserNames.isNotEmpty(),
+                    enter = fadeIn(),
+                    exit = fadeOut(),
+                ) {
+                    val typingText = when (typingUserNames.size) {
+                        1 -> "${typingUserNames[0]} está escribiendo…"
+                        else -> "${typingUserNames.take(2).joinToString(" y ")} están escribiendo…"
+                    }
+                    Text(
+                        text = typingText,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
+                    )
+                }
                 val audioState = state.audioState
                 when {
                     audioState.isRecording -> RecordingBar(

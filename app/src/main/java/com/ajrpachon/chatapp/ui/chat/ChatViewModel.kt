@@ -22,8 +22,14 @@ import com.ajrpachon.chatapp.domain.usecase.GetGroupMembersUseCase
 import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
 import com.ajrpachon.chatapp.utils.AppLogger
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.realtime.RealtimeChannel
+import io.github.jan.supabase.realtime.channel
+import io.github.jan.supabase.realtime.presenceDataFlow
+import io.github.jan.supabase.realtime.realtime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -31,14 +37,26 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.io.File
 
 
+
+@Serializable
+private data class TypingPresence(
+    val isTyping: Boolean = false,
+    val userId: String = "",
+    val userName: String = "",
+)
 
 @Suppress("LongParameterList", "TooManyFunctions")
 class ChatViewModel(
@@ -54,6 +72,7 @@ class ChatViewModel(
     private val groupRepository: GroupRepository,
     private val reactionRepository: com.ajrpachon.chatapp.domain.repository.ReactionRepository,
     private val conversationRepository: ConversationRepository,
+    private val supabaseClient: SupabaseClient,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ChatState())
@@ -83,6 +102,9 @@ class ChatViewModel(
     private var recorder: MediaRecorder? = null
     private var recordingTimerJob: Job? = null
     private var remoteSyncJob: Job? = null
+    private var typingChannel: RealtimeChannel? = null
+    private var typingResetJob: Job? = null
+    private var typingPresenceJob: Job? = null
 
     init {
         // Delete expired self-destruct messages when the screen opens
@@ -110,6 +132,7 @@ class ChatViewModel(
             }
             _historyVisibleFrom.value = historyVisibleFrom
             startRemoteSync(historyVisibleFrom)
+            startTypingPresence()
 
             launch {
                 catchResult { messageRepository.markAsRead(conversationId, uid) }
@@ -192,6 +215,43 @@ class ChatViewModel(
         }
     }
 
+    private fun startTypingPresence() {
+        typingPresenceJob?.cancel()
+        typingPresenceJob = viewModelScope.launch {
+            try {
+                val channel = supabaseClient.channel("typing-$conversationId")
+                typingChannel = channel
+                channel.presenceDataFlow<TypingPresence>()
+                    .onEach { presences ->
+                        val uid = currentUserId
+                        val typingNames = presences
+                            .filter { it.isTyping && it.userId != uid }
+                            .map { it.userName }
+                        _state.update { it.copy(typingUserNames = typingNames) }
+                    }
+                    .launchIn(this)
+                channel.subscribe()
+            } catch (e: Exception) {
+                AppLogger.d(TAG, "typing presence failed (optional feature): ${e.message}")
+            }
+        }
+    }
+
+    private fun sendTypingPresence(isTyping: Boolean) {
+        val uid = currentUserId ?: return
+        viewModelScope.launch {
+            try {
+                typingChannel?.track(buildJsonObject {
+                    put("isTyping", isTyping)
+                    put("userId", uid)
+                    put("userName", if (isTyping) otherUserName.ifBlank { "Usuario" } else "")
+                })
+            } catch (e: Exception) {
+                // Typing presence is optional — silently ignore failures
+            }
+        }
+    }
+
     private fun startRemoteSync(historyVisibleFrom: Long) {
         remoteSyncJob?.cancel()
         remoteSyncJob = viewModelScope.launch {
@@ -203,7 +263,20 @@ class ChatViewModel(
     @Suppress("CyclomaticComplexMethod")
     fun onIntent(intent: ChatIntent) {
         when (intent) {
-            is ChatIntent.InputChanged -> _state.update { it.copy(inputText = intent.text) }
+            is ChatIntent.InputChanged -> {
+                _state.update { it.copy(inputText = intent.text) }
+                if (intent.text.isNotEmpty()) {
+                    sendTypingPresence(true)
+                    typingResetJob?.cancel()
+                    typingResetJob = viewModelScope.launch {
+                        delay(3_000)
+                        sendTypingPresence(false)
+                    }
+                } else {
+                    typingResetJob?.cancel()
+                    sendTypingPresence(false)
+                }
+            }
             is ChatIntent.Send -> if (_state.value.editingMessage != null) confirmEdit() else sendMessage()
             is ChatIntent.SendImages -> sendImages(intent.context, intent.uris)
             is ChatIntent.SendFile -> sendFile(intent.context, intent.uri)
@@ -692,6 +765,19 @@ class ChatViewModel(
         AppLogger.d(TAG, "onCleared conv=$conversationId")
         recordingTimerJob?.cancel()
         remoteSyncJob?.cancel()
+        typingResetJob?.cancel()
+        typingPresenceJob?.cancel()
+        viewModelScope.launch {
+            withContext(NonCancellable) {
+                try {
+                    typingChannel?.let { ch ->
+                        ch.unsubscribe()
+                        supabaseClient.realtime.removeChannel(ch)
+                    }
+                } catch (e: Exception) { /* optional feature */ }
+            }
+        }
+        typingChannel = null
         catchResult { recorder?.apply { stop(); release() } }
         recorder = null
     }

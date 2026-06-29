@@ -46,6 +46,7 @@ data class ChatState(
     val showForwardDialog: Boolean = false,
     val forwardingMessage: MessageBO? = null,
     val forwardableConversations: List<ConversationBO> = emptyList(),
+    val typingUserNames: List<String> = emptyList(),
 ) {
     val isMultiSelectActive: Boolean get() = selectedMessageIds.isNotEmpty()
 }
