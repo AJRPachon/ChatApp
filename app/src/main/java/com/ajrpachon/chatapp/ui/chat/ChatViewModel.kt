@@ -234,6 +234,9 @@ class ChatViewModel(
             is ChatIntent.ShowExpiryDialog -> _state.update { it.copy(expiryDialogMessageId = intent.messageId) }
             is ChatIntent.DismissExpiryDialog -> _state.update { it.copy(expiryDialogMessageId = null) }
             is ChatIntent.SetExpiry -> setExpiry(intent.messageId, intent.expiresAt)
+            is ChatIntent.ToggleMessageSelection -> toggleMessageSelection(intent.messageId)
+            is ChatIntent.ClearSelection -> _state.update { it.copy(selectedMessageIds = emptySet()) }
+            is ChatIntent.DeleteSelectedMessages -> deleteSelectedMessages()
         }
     }
 
@@ -608,6 +611,28 @@ class ChatViewModel(
                     AppLogger.e(TAG, "Delete message failed", e)
                     _state.update { it.copy(error = "No se pudo eliminar el mensaje") }
                 }
+        }
+    }
+
+    private fun toggleMessageSelection(messageId: String) {
+        _state.update { state ->
+            val updated = if (messageId in state.selectedMessageIds) {
+                state.selectedMessageIds - messageId
+            } else {
+                state.selectedMessageIds + messageId
+            }
+            state.copy(selectedMessageIds = updated)
+        }
+    }
+
+    private fun deleteSelectedMessages() {
+        val ids = _state.value.selectedMessageIds.toSet()
+        _state.update { it.copy(selectedMessageIds = emptySet()) }
+        viewModelScope.launch {
+            for (id in ids) {
+                messageRepository.deleteMessage(id)
+                    .onFailure { e -> AppLogger.e(TAG, "Delete message $id failed", e) }
+            }
         }
     }
 

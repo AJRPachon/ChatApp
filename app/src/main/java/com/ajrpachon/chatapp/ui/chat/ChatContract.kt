@@ -41,7 +41,10 @@ data class ChatState(
     val isSearching: Boolean = false,
     val highlightedMessageId: String? = null,
     val expiryDialogMessageId: String? = null,
-)
+    val selectedMessageIds: Set<String> = emptySet(),
+) {
+    val isMultiSelectActive: Boolean get() = selectedMessageIds.isNotEmpty()
+}
 
 sealed interface ChatIntent {
     data class InputChanged(val text: String) : ChatIntent
@@ -80,6 +83,9 @@ sealed interface ChatIntent {
     data object DismissExpiryDialog : ChatIntent
     // expiresAt: null = remove expiry, positive = epoch millis
     data class SetExpiry(val messageId: String, val expiresAt: Long?) : ChatIntent
+    data class ToggleMessageSelection(val messageId: String) : ChatIntent
+    data object ClearSelection : ChatIntent
+    data object DeleteSelectedMessages : ChatIntent
 }
 
 sealed interface ChatEffect {

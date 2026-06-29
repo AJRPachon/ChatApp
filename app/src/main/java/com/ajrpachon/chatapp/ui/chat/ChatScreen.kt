@@ -84,6 +84,7 @@ import androidx.compose.material.icons.filled.Reply
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -268,6 +269,26 @@ fun ChatScreen(
         }
     }
 
+    var showDeleteSelectionConfirm by remember { mutableStateOf(false) }
+
+    if (showDeleteSelectionConfirm) {
+        val count = state.selectedMessageIds.size
+        AlertDialog(
+            onDismissRequest = { showDeleteSelectionConfirm = false },
+            title = { Text("Eliminar mensajes") },
+            text = { Text("¿Borrar $count ${if (count == 1) "mensaje" else "mensajes"}?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteSelectionConfirm = false
+                    vm.onIntent(ChatIntent.DeleteSelectedMessages)
+                }) { Text("Eliminar", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteSelectionConfirm = false }) { Text("Cancelar") }
+            },
+        )
+    }
+
     var cameraUri by rememberSaveable { mutableStateOf<Uri?>(null) }
 
     val galleryLauncher = rememberLauncherForActivityResult(
@@ -337,7 +358,21 @@ fun ChatScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
+            if (state.isMultiSelectActive) {
+                TopAppBar(
+                    navigationIcon = {
+                        IconButton(onClick = { vm.onIntent(ChatIntent.ClearSelection) }) {
+                            Icon(Icons.Default.Close, contentDescription = "Cancelar selección")
+                        }
+                    },
+                    title = { Text("${state.selectedMessageIds.size} seleccionados") },
+                    actions = {
+                        IconButton(onClick = { showDeleteSelectionConfirm = true }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Eliminar seleccionados")
+                        }
+                    },
+                )
+            } else TopAppBar(
                 title = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -672,6 +707,9 @@ fun ChatScreen(
                                     onDelete = if (message.isFromMe) {{ vm.onIntent(ChatIntent.DeleteMessage(message.id)) }} else null,
                                     onEdit = if (message.isFromMe && message.content.isNotBlank()) {{ vm.onIntent(ChatIntent.StartEdit(message)) }} else null,
                                     onSelfDestruct = if (message.isFromMe) {{ vm.onIntent(ChatIntent.ShowExpiryDialog(message.id)) }} else null,
+                                    isSelected = message.id in state.selectedMessageIds,
+                                    isMultiSelectActive = state.isMultiSelectActive,
+                                    onToggleSelect = { vm.onIntent(ChatIntent.ToggleMessageSelection(message.id)) },
                                 )
                             }
                         } else {
@@ -692,6 +730,9 @@ fun ChatScreen(
                                 messageReactions = reactions[message.id] ?: emptyList(),
                                 currentUserId = state.currentUserId,
                                 onToggleReaction = { emoji -> vm.onIntent(ChatIntent.ToggleReaction(message.id, emoji)) },
+                                isSelected = message.id in state.selectedMessageIds,
+                                isMultiSelectActive = state.isMultiSelectActive,
+                                onToggleSelect = { vm.onIntent(ChatIntent.ToggleMessageSelection(message.id)) },
                             )
                         }
                     }
@@ -1587,6 +1628,9 @@ private fun MessageBubble(
     messageReactions: List<com.ajrpachon.chatapp.domain.model.ReactionBO> = emptyList(),
     currentUserId: String? = null,
     onToggleReaction: (String) -> Unit = {},
+    isSelected: Boolean = false,
+    isMultiSelectActive: Boolean = false,
+    onToggleSelect: () -> Unit = {},
 ) {
     if (message.isDeleted) {
         DeletedMessageBubble(message)
@@ -1626,10 +1670,14 @@ private fun MessageBubble(
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .combinedClickable(
+                onClick = { if (isMultiSelectActive) onToggleSelect() },
+                onLongClick = { onToggleSelect() },
+            )
             .pointerInput(Unit) {
                 detectHorizontalDragGestures(
                     onDragEnd = {
-                        if (swipeOffset.value >= swipeThreshold) onReply()
+                        if (!isMultiSelectActive && swipeOffset.value >= swipeThreshold) onReply()
                         scope.launch { swipeOffset.animateTo(0f, spring(stiffness = 400f)) }
                     },
                     onDragCancel = {
@@ -1831,6 +1879,22 @@ private fun MessageBubble(
                 .matchParentSize()
                 .background(MaterialTheme.colorScheme.primary.copy(alpha = highlightAlpha)),
         )
+        if (isSelected) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)),
+            )
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = "Seleccionado",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .align(if (message.isFromMe) Alignment.TopEnd else Alignment.TopStart)
+                    .padding(4.dp)
+                    .size(20.dp),
+            )
+        }
     }
 }
 
