@@ -60,8 +60,15 @@ class GroupInfoViewModel(
             }
             getGroupMembersUseCase(conversationId).collect { members ->
                 AppLogger.d("GroupInfoVM", "members updated: size=${members.size} ids=${members.map { it.userId }}")
-                val isAdmin = members.any { it.userId == currentUserId && it.role == GroupRole.ADMIN }
-                _state.update { currentState -> currentState.copy(members = members, isCurrentUserAdmin = isAdmin) }
+                val currentRole = members.firstOrNull { it.userId == currentUserId }?.role ?: GroupRole.MEMBER
+                val isAdmin = currentRole == GroupRole.ADMIN
+                _state.update { currentState ->
+                    currentState.copy(
+                        members = members,
+                        currentUserRole = currentRole,
+                        isCurrentUserAdmin = isAdmin,
+                    )
+                }
             }
         }
     }
