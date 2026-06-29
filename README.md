@@ -28,28 +28,28 @@ Proyecto personal para poner en práctica lo aprendido en desarrollo Android nat
 |---|---|
 | 🔐 | Registro e inicio de sesión con **email/contraseña** y **Google Sign-In** |
 | 💬 | Chat individual y grupal con **texto, imágenes, audio, GIFs y stickers** |
-| 📞 | **Llamadas de voz y videollamadas** entre usuarios via LiveKit WebRTC |
-| 🔔 | **Notificaciones push** con Firebase Cloud Messaging y **deep links** directos a la conversación (`chatapp://chat/{id}`) |
-| 👥 | Gestión completa de grupos: crear, editar, roles, añadir/expulsar miembros |
+| 📞 | **Llamadas de voz y videollamadas** entre usuarios |
+| 🔔 | **Notificaciones push** con deep links directos a la conversación |
+| 👥 | Gestión completa de grupos: crear, editar, añadir y expulsar miembros |
 | 🤝 | Sistema de **invitaciones de amistad** con bloqueo de usuarios |
 | 🖼️ | Perfil de usuario con **avatar** e información editable |
-| ⚡ | Lista de conversaciones **en tiempo real** via Supabase Realtime |
-| ✅ | **Confirmación de lectura** (doble check gris/azul) con badge de no leídos |
-| 🟢 | **Estado de presencia** — indicador "En línea" / "última vez" y punto verde en avatares; toggle de privacidad en perfil |
-| 😀 | **Reacciones con emoji** — pulsación larga sobre un mensaje abre el picker (10 categorías, ~1800 emojis, recientes); reacciones agrupadas bajo cada burbuja |
-| 🔍 | **Búsqueda de mensajes** en la conversación activa con debounce de 300 ms y resaltado del resultado |
-| ✏️ | **Edición y borrado** de mensajes propios — borrado lógico (`isDeleted`) y marca de edición (`isEdited` + `editedAt`) |
-| 🔔 | **Respuesta inline a notificaciones** — `RemoteInput` + `NotificationReplyReceiver` + estilo `MessagingStyle` agrupado por conversación |
-| 🎥 | **Cambio de cámara** en videollamada — botón flip (frontal/trasero) via `LocalVideoTrack.switchCamera()` |
-| 🔇 | **Silenciar conversaciones** — opciones de duración (1h, 8h, 24h, Siempre) almacenadas en `mutedUntil` (DB v16) |
-| 💣 | **Mensajes efímeros** — autodestrucción con countdown visible, opciones 1min/1h/24h/7d (DB v17) |
-| 📦 | **Adjuntos agrupados** — botón `+` desplegable con galería, cámara, archivo, vídeo y sticker; micrófono separado a la derecha |
-| ↩️ | **Reenvío de mensajes** — opción en el menú de cada burbuja para reenviar a otra conversación |
-| ☑️ | **Selección múltiple** — pulsación larga activa modo multiselect con barra contextual para borrar mensajes en lote |
-| ✍️ | **Indicador de escritura** — muestra "X está escribiendo…" en tiempo real via Supabase Realtime Presence |
-| 🗄️ | **Archivar conversaciones** — desliza para archivar, hoja de archivadas, búsqueda inline y orden por no leídos |
-| 🖼️ | **Galería de medios compartidos** — pestaña "Media" en el perfil del contacto con cuadrícula de imágenes y zoom con pinch |
-| 🛡️ | **Roles en grupos** — badge "Admin" en la lista de miembros; el administrador puede promover o degradar a otros miembros |
+| ⚡ | Lista de conversaciones **en tiempo real** |
+| ✅ | **Confirmación de lectura** con doble check y badge de mensajes no leídos |
+| 🟢 | **Estado de presencia** — "En línea" / "última vez" con opción de privacidad en el perfil |
+| 😀 | **Reacciones con emoji** — pulsación larga sobre un mensaje para reaccionar; reacciones agrupadas bajo cada burbuja |
+| 🔍 | **Búsqueda de mensajes** dentro de una conversación con resaltado del resultado |
+| ✏️ | **Edición y borrado** de mensajes propios |
+| 🔔 | **Respuesta desde la notificación** sin abrir la app |
+| 🎥 | **Cambio de cámara** durante una videollamada |
+| 🔇 | **Silenciar conversaciones** con opciones de duración (1h, 8h, 24h, siempre) |
+| 💣 | **Mensajes efímeros** con autodestrucción configurable y cuenta atrás visible |
+| 📦 | **Adjuntos agrupados** — botón `+` con galería, cámara, archivo, vídeo y sticker; micrófono separado |
+| ↩️ | **Reenvío de mensajes** a otra conversación |
+| ☑️ | **Selección múltiple** de mensajes para borrarlos en lote |
+| ✍️ | **Indicador de escritura** en tiempo real |
+| 🗄️ | **Archivar conversaciones** con búsqueda y orden por no leídos |
+| 🖼️ | **Galería de medios compartidos** en el perfil del contacto con zoom |
+| 🛡️ | **Roles en grupos** — el administrador puede promover o degradar a otros miembros |
 
 ---
 
