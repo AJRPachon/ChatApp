@@ -40,6 +40,7 @@ data class ChatState(
     val isSearching: Boolean = false,
     val highlightedMessageId: String? = null,
     val expiryDialogMessageId: String? = null,
+    val typingUserNames: List<String> = emptyList(),
 )
 
 sealed interface ChatIntent {
