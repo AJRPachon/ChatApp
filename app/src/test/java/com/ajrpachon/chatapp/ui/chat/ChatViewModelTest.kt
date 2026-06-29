@@ -254,6 +254,91 @@ class ChatViewModelTest {
         assertNull(vm.state.value.replyingTo)
     }
 
+    // ── Multi-select ──────────────────────────────────────────────────────────
+
+    @Test
+    fun `ToggleMessageSelection adds messageId to selectedMessageIds`() = runTest(sharedScheduler) {
+        val vm = buildViewModel()
+        advanceUntilIdle()
+        vm.onIntent(ChatIntent.ToggleMessageSelection("msg1"))
+        assertTrue("msg1" in vm.state.value.selectedMessageIds)
+    }
+
+    @Test
+    fun `ToggleMessageSelection removes already-selected messageId`() = runTest(sharedScheduler) {
+        val vm = buildViewModel()
+        advanceUntilIdle()
+        vm.onIntent(ChatIntent.ToggleMessageSelection("msg1"))
+        vm.onIntent(ChatIntent.ToggleMessageSelection("msg1"))
+        assertFalse("msg1" in vm.state.value.selectedMessageIds)
+    }
+
+    @Test
+    fun `ToggleMessageSelection can select multiple messages independently`() = runTest(sharedScheduler) {
+        val vm = buildViewModel()
+        advanceUntilIdle()
+        vm.onIntent(ChatIntent.ToggleMessageSelection("msg1"))
+        vm.onIntent(ChatIntent.ToggleMessageSelection("msg2"))
+        val selected = vm.state.value.selectedMessageIds
+        assertTrue("msg1" in selected)
+        assertTrue("msg2" in selected)
+    }
+
+    @Test
+    fun `ClearSelection empties selectedMessageIds`() = runTest(sharedScheduler) {
+        val vm = buildViewModel()
+        advanceUntilIdle()
+        vm.onIntent(ChatIntent.ToggleMessageSelection("msg1"))
+        vm.onIntent(ChatIntent.ToggleMessageSelection("msg2"))
+        vm.onIntent(ChatIntent.ClearSelection)
+        assertTrue(vm.state.value.selectedMessageIds.isEmpty())
+    }
+
+    @Test
+    fun `isMultiSelectActive is true when at least one message is selected`() = runTest(sharedScheduler) {
+        val vm = buildViewModel()
+        advanceUntilIdle()
+        assertFalse(vm.state.value.isMultiSelectActive)
+        vm.onIntent(ChatIntent.ToggleMessageSelection("msg1"))
+        assertTrue(vm.state.value.isMultiSelectActive)
+    }
+
+    @Test
+    fun `DeleteSelectedMessages calls deleteMessage for each selected id and clears selection`() = runTest(sharedScheduler) {
+        coEvery { messageRepository.deleteMessage(any()) } returns Result.success(Unit)
+        val vm = buildViewModel()
+        advanceUntilIdle()
+        vm.onIntent(ChatIntent.ToggleMessageSelection("msg1"))
+        vm.onIntent(ChatIntent.ToggleMessageSelection("msg2"))
+        vm.onIntent(ChatIntent.DeleteSelectedMessages)
+        advanceUntilIdle()
+        coVerify { messageRepository.deleteMessage("msg1") }
+        coVerify { messageRepository.deleteMessage("msg2") }
+        assertTrue(vm.state.value.selectedMessageIds.isEmpty())
+    }
+
+    // ── Forward dialog ────────────────────────────────────────────────────────
+
+    @Test
+    fun `ShowForwardDialog sets showForwardDialog to true and stores message`() = runTest(sharedScheduler) {
+        val vm = buildViewModel()
+        advanceUntilIdle()
+        val msg = mockk<MessageBO>(relaxed = true)
+        vm.onIntent(ChatIntent.ShowForwardDialog(msg))
+        assertTrue(vm.state.value.showForwardDialog)
+        assertEquals(msg, vm.state.value.forwardingMessage)
+    }
+
+    @Test
+    fun `DismissForwardDialog resets showForwardDialog and forwardingMessage`() = runTest(sharedScheduler) {
+        val vm = buildViewModel()
+        advanceUntilIdle()
+        vm.onIntent(ChatIntent.ShowForwardDialog(mockk(relaxed = true)))
+        vm.onIntent(ChatIntent.DismissForwardDialog)
+        assertFalse(vm.state.value.showForwardDialog)
+        assertNull(vm.state.value.forwardingMessage)
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private fun member(userId: String) = GroupMemberBO(

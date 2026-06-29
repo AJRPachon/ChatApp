@@ -349,6 +349,28 @@ class ChatViewModel(
         }
     }
 
+    private fun toggleMessageSelection(messageId: String) {
+        _state.update { state ->
+            val updated = if (messageId in state.selectedMessageIds) {
+                state.selectedMessageIds - messageId
+            } else {
+                state.selectedMessageIds + messageId
+            }
+            state.copy(selectedMessageIds = updated)
+        }
+    }
+
+    private fun deleteSelectedMessages() {
+        val ids = _state.value.selectedMessageIds.toSet()
+        _state.update { it.copy(selectedMessageIds = emptySet()) }
+        viewModelScope.launch {
+            for (id in ids) {
+                messageRepository.deleteMessage(id)
+                    .onFailure { e -> AppLogger.e(TAG, "Delete message $id failed", e) }
+            }
+        }
+    }
+
     private fun jumpToMessage(messageId: String) {
         _state.update {
             it.copy(
