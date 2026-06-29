@@ -43,6 +43,13 @@ Proyecto personal para poner en práctica lo aprendido en desarrollo Android nat
 | 🎥 | **Cambio de cámara** en videollamada — botón flip (frontal/trasero) via `LocalVideoTrack.switchCamera()` |
 | 🔇 | **Silenciar conversaciones** — opciones de duración (1h, 8h, 24h, Siempre) almacenadas en `mutedUntil` (DB v16) |
 | 💣 | **Mensajes efímeros** — autodestrucción con countdown visible, opciones 1min/1h/24h/7d (DB v17) |
+| 📦 | **Adjuntos agrupados** — botón `+` desplegable con galería, cámara, archivo, vídeo y sticker; micrófono separado a la derecha |
+| ↩️ | **Reenvío de mensajes** — opción en el menú de cada burbuja para reenviar a otra conversación |
+| ☑️ | **Selección múltiple** — pulsación larga activa modo multiselect con barra contextual para borrar mensajes en lote |
+| ✍️ | **Indicador de escritura** — muestra "X está escribiendo…" en tiempo real via Supabase Realtime Presence |
+| 🗄️ | **Archivar conversaciones** — desliza para archivar, hoja de archivadas, búsqueda inline y orden por no leídos |
+| 🖼️ | **Galería de medios compartidos** — pestaña "Media" en el perfil del contacto con cuadrícula de imágenes y zoom con pinch |
+| 🛡️ | **Roles en grupos** — badge "Admin" en la lista de miembros; el administrador puede promover o degradar a otros miembros |
 
 ---
 
@@ -177,6 +184,7 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | **Coroutines Test** | 1.10.1 | TestDispatcher y runTest |
 | **Robolectric** | 4.14.1 | Tests unitarios con contexto Android |
 | **Room Testing** | 2.8.4 | Tests de integración en memoria para DAOs (MessageDaoTest, ConversationDaoTest — 33 tests) |
+| **Coroutines Test + MockK** | — | Tests unitarios de ViewModel (ChatViewModelTest — 8 tests de multiselección y reenvío) |
 
 ### CI/CD
 
@@ -208,7 +216,7 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 ```
 master        ← releases estables (v1.0, v1.1…)
 └── develop   ← integración continua
-    ├── feature/…                  (35+ feature branches de funcionalidad)
+    ├── feature/…                  (40+ feature branches de funcionalidad)
     ├── feature/emoji-picker
     ├── feature/message-reactions
     ├── feature/message-search
@@ -222,8 +230,19 @@ master        ← releases estables (v1.0, v1.1…)
     ├── feature/self-destruct
     ├── feature/room-integration-tests
     ├── feature/strictmode-debug
+    ├── feature/attachment-bottom-sheet
+    ├── feature/link-preview
+    ├── feature/audio-playback-speed
+    ├── feature/dark-mode-setting
+    ├── feature/forward-message
+    ├── feature/typing-indicator
+    ├── feature/archive-chats
+    ├── feature/shared-media-gallery
+    ├── feature/chat-viewmodel-tests
+    ├── feature/group-roles
     ├── fix/viewmodel-coroutine-leaks
     ├── fix/e2ee-key-cache
+    ├── fix/edge-to-edge-insets
     ├── ci/improvements
     ├── security/flag-secure
     ├── security/backup-rules
