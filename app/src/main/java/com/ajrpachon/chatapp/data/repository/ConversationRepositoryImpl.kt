@@ -296,6 +296,10 @@ class ConversationRepositoryImpl(
         conversationDao.setArchived(conversationId, archived)
     }
 
+    override suspend fun setDisappearingMode(conversationId: String, seconds: Long) {
+        conversationDao.setDisappearingMode(conversationId, seconds)
+    }
+
     override suspend fun syncConversations(userId: String) = syncMutex.withLock {
         val rows = supabase.postgrest["conversation_participants"]
             .select(Columns.raw("conversation_id, joined_at, conversations(id,name,is_group,created_by,updated_at,avatar_url,description)")) {

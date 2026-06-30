@@ -79,4 +79,13 @@ class UserRemoteSource(private val supabase: SupabaseClient) {
             buildJsonObject { put("show_online_status", show) }
         ) { filter { eq("id", userId) } }
     }
+
+    suspend fun searchByEmails(emails: List<String>): List<UserDTO> {
+        if (emails.isEmpty()) return emptyList()
+        return runCatching {
+            supabase.postgrest["profiles"]
+                .select { filter { isIn("email", emails) } }
+                .decodeList<UserDTO>()
+        }.getOrDefault(emptyList())
+    }
 }

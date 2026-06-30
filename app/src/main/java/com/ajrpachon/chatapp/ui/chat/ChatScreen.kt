@@ -42,6 +42,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.paging.LoadState
@@ -83,9 +84,13 @@ import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Reply
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -139,6 +144,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.domain.model.CallBO
+import com.ajrpachon.chatapp.data.local.ChatTheme
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.MediaUrlValidator
 import com.ajrpachon.chatapp.domain.model.MessageBO
@@ -234,6 +240,14 @@ fun ChatScreen(
                 ChatEffect.ScrollToBottom -> pendingSendScroll.value = true
                 ChatEffect.NavigateBack -> onBack()
                 is ChatEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message)
+                is ChatEffect.ShowShareSheet -> {
+                    val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(android.content.Intent.EXTRA_STREAM, effect.uri)
+                        addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    context.startActivity(android.content.Intent.createChooser(shareIntent, "Exportar conversación"))
+                }
             }
         }
     }
@@ -333,6 +347,27 @@ fun ChatScreen(
         }
     }
 
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            val lm = context.getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
+            val providers = listOf(android.location.LocationManager.GPS_PROVIDER, android.location.LocationManager.NETWORK_PROVIDER)
+            val location = providers.firstNotNullOfOrNull { provider ->
+                runCatching {
+                    @Suppress("MissingPermission")
+                    lm.getLastKnownLocation(provider)
+                }.getOrNull()
+            }
+            if (location != null) {
+                val url = "https://maps.google.com/?q=${location.latitude},${location.longitude}"
+                vm.onIntent(ChatIntent.SendLocation(url))
+            } else {
+                scope.launch { snackbarHostState.showSnackbar("No se pudo obtener la ubicación") }
+            }
+        }
+    }
+
     if (showViewer && viewerUrls.isNotEmpty()) {
         ImageViewerDialog(
             imageUrls = viewerUrls,
@@ -366,15 +401,50 @@ fun ChatScreen(
         )
     }
 
+    var showStickerStore by remember { mutableStateOf(false) }
+
     if (state.showStickerPicker) {
         StickerGifPicker(
             onStickerSelected = { vm.onIntent(ChatIntent.SendSticker(it)) },
             onGifSelected = { vm.onIntent(ChatIntent.SendGif(it)) },
+            onOpenStore = {
+                vm.onIntent(ChatIntent.CloseStickerPicker)
+                showStickerStore = true
+            },
             onDismiss = { vm.onIntent(ChatIntent.CloseStickerPicker) },
         )
     }
 
+    if (showStickerStore) {
+        StickerStoreSheet(onDismiss = { showStickerStore = false })
+    }
+
+    val chatTheme = state.chatTheme
+
+    if (state.showThemePicker) {
+        ChatThemePickerSheet(
+            currentTheme = chatTheme,
+            onSelect = { vm.onIntent(ChatIntent.SetChatTheme(it)) },
+            onDismiss = { vm.onIntent(ChatIntent.DismissThemePicker) },
+        )
+    }
+
+    if (state.showDisappearingModeSheet) {
+        DisappearingModeSheet(
+            currentSeconds = state.disappearingModeSeconds,
+            onDismiss = { vm.onIntent(ChatIntent.DismissDisappearingModeSheet) },
+            onSelect = { seconds -> vm.onIntent(ChatIntent.SetDisappearingMode(conversationId, seconds)) },
+        )
+    }
+
+    val scaffoldContainerColor = if (chatTheme.backgroundTint == androidx.compose.ui.graphics.Color.Transparent) {
+        MaterialTheme.colorScheme.background
+    } else {
+        chatTheme.backgroundTint
+    }
+
     Scaffold(
+        containerColor = scaffoldContainerColor,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             if (state.isMultiSelectActive) {
@@ -445,6 +515,21 @@ fun ChatScreen(
                                         contentDescription = "Cifrado extremo a extremo",
                                         tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(12.dp),
+                                    )
+                                }
+                                if (state.disappearingModeSeconds > 0L) {
+                                    Spacer(Modifier.width(4.dp))
+                                    Icon(
+                                        imageVector = Icons.Default.Timer,
+                                        contentDescription = "Modo desaparición activo",
+                                        tint = MaterialTheme.colorScheme.tertiary,
+                                        modifier = Modifier.size(12.dp),
+                                    )
+                                    Spacer(Modifier.width(2.dp))
+                                    Text(
+                                        text = formatDisappearingDuration(state.disappearingModeSeconds),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.tertiary,
                                     )
                                 }
                             }
@@ -521,6 +606,37 @@ fun ChatScreen(
                                     } else {
                                         vm.onIntent(ChatIntent.ShowMuteDialog)
                                     }
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Tema del chat") },
+                                leadingIcon = { Icon(Icons.Default.Palette, contentDescription = null) },
+                                onClick = {
+                                    menuExpanded = false
+                                    vm.onIntent(ChatIntent.OpenThemePicker)
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Exportar conversación") },
+                                leadingIcon = {
+                                    if (state.isExporting) {
+                                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                                    } else {
+                                        Icon(Icons.Default.Share, contentDescription = null)
+                                    }
+                                },
+                                enabled = !state.isExporting,
+                                onClick = {
+                                    menuExpanded = false
+                                    vm.onIntent(ChatIntent.ExportConversation(context))
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Modo desaparición") },
+                                leadingIcon = { Icon(Icons.Default.Timer, contentDescription = null) },
+                                onClick = {
+                                    menuExpanded = false
+                                    vm.onIntent(ChatIntent.ShowDisappearingModeSheet)
                                 },
                             )
                             if (state.isGroup) {
@@ -658,6 +774,28 @@ fun ChatScreen(
                                 )
                             )
                         },
+                        onLocation = {
+                            when {
+                                ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+                                        == PackageManager.PERMISSION_GRANTED -> {
+                                    val lm = context.getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
+                                    val providers = listOf(android.location.LocationManager.GPS_PROVIDER, android.location.LocationManager.NETWORK_PROVIDER)
+                                    val location = providers.firstNotNullOfOrNull { provider ->
+                                        runCatching {
+                                            @Suppress("MissingPermission")
+                                            lm.getLastKnownLocation(provider)
+                                        }.getOrNull()
+                                    }
+                                    if (location != null) {
+                                        val url = "https://maps.google.com/?q=${location.latitude},${location.longitude}"
+                                        vm.onIntent(ChatIntent.SendLocation(url))
+                                    } else {
+                                        scope.launch { snackbarHostState.showSnackbar("No se pudo obtener la ubicación") }
+                                    }
+                                }
+                                else -> locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                            }
+                        },
                     )
                 }
                 } // Column
@@ -748,6 +886,7 @@ fun ChatScreen(
                                     isMultiSelectActive = state.isMultiSelectActive,
                                     onToggleSelect = { vm.onIntent(ChatIntent.ToggleMessageSelection(message.id)) },
                                     onForward = { vm.onIntent(ChatIntent.ShowForwardDialog(message)) },
+                                    outgoingBubbleColor = chatTheme.bubbleColor,
                                 )
                             }
                         } else {
@@ -772,6 +911,7 @@ fun ChatScreen(
                                 isSelected = message.id in state.selectedMessageIds,
                                 isMultiSelectActive = state.isMultiSelectActive,
                                 onToggleSelect = { vm.onIntent(ChatIntent.ToggleMessageSelection(message.id)) },
+                                outgoingBubbleColor = chatTheme.bubbleColor,
                             )
                         }
                     }
@@ -936,6 +1076,7 @@ private fun NormalInputBar(
     onSticker: () -> Unit,
     onAttachFile: () -> Unit = {},
     onAttachVideo: () -> Unit = {},
+    onLocation: () -> Unit = {},
 ) {
     val busy = isUploadingImage || isSending
     var showAttachSheet by rememberSaveable { mutableStateOf(false) }
@@ -1019,6 +1160,12 @@ private fun NormalInputBar(
                         onSticker()
                     }
                 },
+                onLocation = {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        showAttachSheet = false
+                        onLocation()
+                    }
+                },
             )
         }
     }
@@ -1031,6 +1178,7 @@ private fun AttachmentBottomSheet(
     onFile: () -> Unit,
     onVideo: () -> Unit,
     onSticker: () -> Unit,
+    onLocation: () -> Unit = {},
 ) {
     val options = listOf(
         Triple(Icons.Default.AddPhotoAlternate, "Galería", onGallery),
@@ -1038,6 +1186,7 @@ private fun AttachmentBottomSheet(
         Triple(Icons.Default.AttachFile, "Archivo", onFile),
         Triple(Icons.Default.Videocam, "Video", onVideo),
         Triple(Icons.Default.EmojiEmotions, "Stickers", onSticker),
+        Triple(Icons.Default.LocationOn, "Ubicación", onLocation),
     )
 
     Column(
@@ -1707,6 +1856,7 @@ private fun MessageBubble(
     isSelected: Boolean = false,
     isMultiSelectActive: Boolean = false,
     onToggleSelect: () -> Unit = {},
+    outgoingBubbleColor: Color = Color.Unspecified,
 ) {
     if (message.isDeleted) {
         DeletedMessageBubble(message)
@@ -1791,8 +1941,10 @@ private fun MessageBubble(
             Box {
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = if (message.isFromMe) MaterialTheme.colorScheme.primaryContainer
-                        else MaterialTheme.colorScheme.surfaceVariant,
+                color = if (message.isFromMe) {
+                    if (outgoingBubbleColor != Color.Unspecified) outgoingBubbleColor
+                    else MaterialTheme.colorScheme.primaryContainer
+                } else MaterialTheme.colorScheme.surfaceVariant,
             ) {
                 Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                     if (isGroup && !message.isFromMe && message.senderName.isNotBlank()) {
@@ -1842,6 +1994,17 @@ private fun MessageBubble(
                         var showMsgMenu by remember { mutableStateOf(false) }
                         var showEmojiPicker by remember { mutableStateOf(false) }
                         val emojiSheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
+                        val locationUrl = remember(message.content) {
+                            if (message.content.startsWith("📍 Mi ubicación: https://maps.google.com/?q=")) {
+                                message.content.substringAfter("📍 Mi ubicación: ")
+                            } else null
+                        }
+                        if (locationUrl != null) {
+                            LocationMessageCard(
+                                content = message.content,
+                                mapsUrl = locationUrl,
+                            )
+                        }
                         Box(
                             modifier = Modifier.combinedClickable(
                                 onClick = {},
@@ -1999,6 +2162,52 @@ private fun MessageBubble(
             )
         }
     }
+}
+
+private val LOCATION_MESSAGE_PREFIX = "📍 Mi ubicación: https://maps.google.com/?q="
+
+@Composable
+private fun LocationMessageCard(content: String, mapsUrl: String) {
+    val context = LocalContext.current
+    androidx.compose.material3.Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+        modifier = Modifier
+            .widthIn(min = 160.dp, max = 240.dp)
+            .clickable {
+                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(mapsUrl)).apply {
+                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                runCatching { context.startActivity(intent) }
+            },
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.LocationOn,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(24.dp),
+            )
+            Column {
+                Text(
+                    text = "Ubicación compartida",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = "Ver en Maps",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+    }
+    Spacer(Modifier.height(4.dp))
 }
 
 @Composable
@@ -2530,4 +2739,153 @@ private fun ForwardConversationDialog(
             TextButton(onClick = onDismiss) { Text("Cancelar") }
         },
     )
+}
+
+// ── ChatThemePickerSheet ───────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ChatThemePickerSheet(
+    currentTheme: ChatTheme,
+    onSelect: (ChatTheme) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(bottom = 24.dp),
+        ) {
+            Text(
+                text = "Tema del chat",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 16.dp),
+            )
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp),
+            ) {
+                items(ChatTheme.entries.size) { index ->
+                    val theme = ChatTheme.entries[index]
+                    val isSelected = theme == currentTheme
+                    val label = when (theme) {
+                        ChatTheme.DEFAULT -> "Default"
+                        ChatTheme.OCEAN -> "Ocean"
+                        ChatTheme.SUNSET -> "Sunset"
+                        ChatTheme.FOREST -> "Forest"
+                        ChatTheme.LAVENDER -> "Lavender"
+                        ChatTheme.ROSE -> "Rose"
+                        ChatTheme.MIDNIGHT -> "Midnight"
+                    }
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.clickable {
+                            onSelect(theme)
+                            onDismiss()
+                        },
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(52.dp)
+                                .background(
+                                    color = if (theme == ChatTheme.DEFAULT)
+                                        MaterialTheme.colorScheme.primaryContainer
+                                    else
+                                        theme.bubbleColor,
+                                    shape = CircleShape,
+                                ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (isSelected) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = "Seleccionado",
+                                    tint = if (theme == ChatTheme.MIDNIGHT)
+                                        Color.White
+                                    else
+                                        MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.size(24.dp),
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ── DisappearingModeSheet ──────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DisappearingModeSheet(
+    currentSeconds: Long,
+    onDismiss: () -> Unit,
+    onSelect: (Long) -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState()
+    val options = listOf(
+        "Desactivado" to 0L,
+        "24 horas" to 86_400L,
+        "7 días" to 604_800L,
+        "30 días" to 2_592_000L,
+    )
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+    ) {
+        Column(modifier = Modifier.padding(bottom = 32.dp)) {
+            Text(
+                "Modo desaparición",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            )
+            Text(
+                "Los nuevos mensajes desaparecerán automáticamente.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp),
+            )
+            options.forEach { (label, seconds) ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onSelect(seconds) }
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(label, modifier = Modifier.weight(1f))
+                    if (seconds == currentSeconds) {
+                        Icon(
+                            Icons.Default.Done,
+                            contentDescription = "Seleccionado",
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun formatDisappearingDuration(seconds: Long): String = when {
+    seconds <= 0L -> ""
+    seconds < 3_600L -> "${seconds / 60}m"
+    seconds < 86_400L -> "${seconds / 3_600}h"
+    seconds < 604_800L -> "${seconds / 86_400}d"
+    else -> "${seconds / 604_800}s"
 }

@@ -18,6 +18,11 @@ data class AuthState(
     val confirmPasswordInput: String = "",
     val showEmailVerification: Boolean = false,
     val showRegisterSuggestion: Boolean = false,
+    val needsMfaChallenge: Boolean = false,
+    val mfaFactorId: String? = null,
+    val mfaCodeInput: String = "",
+    val mfaError: String? = null,
+    val mfaIsLoading: Boolean = false,
 )
 
 sealed interface AuthIntent {
@@ -34,6 +39,8 @@ sealed interface AuthIntent {
     data object DismissError : AuthIntent
     data object DismissEmailVerification : AuthIntent
     data object SwitchToRegister : AuthIntent
+    data class MfaCodeChanged(val value: String) : AuthIntent
+    data object VerifyMfaCode : AuthIntent
 }
 
 sealed interface AuthEffect {

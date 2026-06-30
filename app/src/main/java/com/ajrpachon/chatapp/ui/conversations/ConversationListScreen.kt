@@ -310,6 +310,7 @@ fun ConversationListScreen(
                     SwipeableConversationItem(
                         conversation = conv,
                         currentUserId = state.currentUserId,
+                        draft = state.drafts[conv.id],
                         showMenu = menuConvId == conv.id,
                         onClick = dropUnlessResumed {
                             vm.onIntent(ConversationListIntent.OpenConversation(conv.id, conv.name, conv.isGroup))
@@ -349,6 +350,7 @@ fun ConversationListScreen(
 private fun SwipeableConversationItem(
     conversation: ConversationBO,
     currentUserId: String?,
+    draft: String? = null,
     showMenu: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
@@ -404,6 +406,7 @@ private fun SwipeableConversationItem(
         ConversationItem(
             conversation = conversation,
             currentUserId = currentUserId,
+            draft = draft,
             showMenu = showMenu,
             onClick = onClick,
             onLongClick = onLongClick,
@@ -469,6 +472,7 @@ private fun ArchivedConversationItem(
 private fun ConversationItem(
     conversation: ConversationBO,
     currentUserId: String?,
+    draft: String? = null,
     showMenu: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
@@ -548,6 +552,14 @@ private fun ConversationItem(
                 ) {
                     Box(modifier = Modifier.weight(1f)) {
                         when {
+                            !draft.isNullOrBlank() -> Text(
+                                text = "Borrador: $draft",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                                color = MaterialTheme.colorScheme.outline,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            )
                             conversation.trailingImageCount > 0 -> {
                                 val label = if (conversation.trailingImageCount == 1) "📷 Foto"
                                 else "📷 ${conversation.trailingImageCount} fotos"

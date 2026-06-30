@@ -43,4 +43,9 @@ interface MessageRepository {
     suspend fun searchMessages(conversationId: String, currentUserId: String, query: String): List<MessageBO>
     suspend fun setMessageExpiry(messageId: String, expiresAt: Long?)
     suspend fun deleteExpiredMessages()
+    fun getPinnedMessages(conversationId: String, currentUserId: String): Flow<List<MessageBO>>
+    suspend fun setPinned(messageId: String, pinned: Boolean)
+    fun getSavedMessages(currentUserId: String): Flow<List<MessageBO>>
+    suspend fun setSaved(messageId: String, saved: Boolean)
+    suspend fun getAllMessages(conversationId: String, currentUserId: String): List<MessageBO>
 }

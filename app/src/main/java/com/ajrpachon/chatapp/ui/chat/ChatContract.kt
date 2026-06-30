@@ -2,6 +2,7 @@ package com.ajrpachon.chatapp.ui.chat
 
 import android.content.Context
 import android.net.Uri
+import com.ajrpachon.chatapp.data.local.ChatTheme
 import com.ajrpachon.chatapp.domain.model.CallBO
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.MessageBO
@@ -12,6 +13,7 @@ data class AudioState(
     val pendingFilePath: String? = null,
     val isUploading: Boolean = false,
     val amplitudeHistory: List<Float> = emptyList(),
+    val transcription: String? = null,
 )
 
 data class ChatState(
@@ -47,8 +49,21 @@ data class ChatState(
     val forwardingMessage: MessageBO? = null,
     val forwardableConversations: List<ConversationBO> = emptyList(),
     val typingUserNames: List<String> = emptyList(),
+    // messageId → translated text
+    val translatedTexts: Map<String, String> = emptyMap(),
+    val translatingMessageIds: Set<String> = emptySet(),
+    val audioTranscriptions: Map<String, String> = emptyMap(),
+    val pinnedMessages: List<MessageBO> = emptyList(),
+    val showCreatePollSheet: Boolean = false,
+    val isExporting: Boolean = false,
+    val chatTheme: ChatTheme = ChatTheme.DEFAULT,
+    val showThemePicker: Boolean = false,
+    // 0 = off, >0 = seconds for new messages to auto-expire
+    val disappearingModeSeconds: Long = 0L,
+    val showDisappearingModeSheet: Boolean = false,
 ) {
     val isMultiSelectActive: Boolean get() = selectedMessageIds.isNotEmpty()
+    val latestPinnedMessage: MessageBO? get() = pinnedMessages.firstOrNull()
 }
 
 sealed interface ChatIntent {
@@ -94,6 +109,26 @@ sealed interface ChatIntent {
     data class ShowForwardDialog(val message: MessageBO) : ChatIntent
     data object DismissForwardDialog : ChatIntent
     data class ForwardMessage(val messageId: String, val targetConversationId: String) : ChatIntent
+    data class SendLocation(val mapsUrl: String) : ChatIntent
+    data class TranslateMessage(val messageId: String, val text: String) : ChatIntent
+    data class DismissTranslation(val messageId: String) : ChatIntent
+    data class TranscribeAudio(val context: Context, val messageId: String) : ChatIntent
+    data class PinMessage(val messageId: String) : ChatIntent
+    data class UnpinMessage(val messageId: String) : ChatIntent
+    data class SaveMessage(val messageId: String) : ChatIntent
+    data class UnsaveMessage(val messageId: String) : ChatIntent
+    data object OpenCreatePollSheet : ChatIntent
+    data object DismissCreatePollSheet : ChatIntent
+    data class CreatePoll(val question: String, val options: List<String>) : ChatIntent
+    data class VotePoll(val pollId: String, val optionId: String) : ChatIntent
+    data class SetChatTheme(val theme: ChatTheme) : ChatIntent
+    data object OpenThemePicker : ChatIntent
+    data object DismissThemePicker : ChatIntent
+    data class ExportConversation(val context: Context) : ChatIntent
+    data object ShowDisappearingModeSheet : ChatIntent
+    data object DismissDisappearingModeSheet : ChatIntent
+    // seconds: 0 = off, positive = duration in seconds
+    data class SetDisappearingMode(val conversationId: String, val seconds: Long) : ChatIntent
 }
 
 sealed interface ChatEffect {
@@ -101,4 +136,5 @@ sealed interface ChatEffect {
     data class NavigateToCall(val call: CallBO) : ChatEffect
     data object NavigateBack : ChatEffect
     data class ShowSnackbar(val message: String) : ChatEffect
+    data class ShowShareSheet(val uri: android.net.Uri) : ChatEffect
 }

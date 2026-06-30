@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.di
 
 import com.ajrpachon.chatapp.BuildConfig
+import com.ajrpachon.chatapp.data.local.DraftRepository
 import com.ajrpachon.chatapp.data.local.ThemeRepository
 import com.ajrpachon.chatapp.data.local.buildChatDatabase
 import com.ajrpachon.chatapp.data.session.AndroidSessionManager
@@ -9,6 +10,7 @@ import com.ajrpachon.chatapp.ui.auth.AuthViewModel
 import com.ajrpachon.chatapp.ui.call.CallViewModel
 import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
 import com.ajrpachon.chatapp.ui.chat.ChatViewModel
+import com.ajrpachon.chatapp.ui.chat.StickerPackViewModel
 import com.ajrpachon.chatapp.ui.conversations.ConversationListViewModel
 import com.ajrpachon.chatapp.ui.group.CreateGroupViewModel
 import com.ajrpachon.chatapp.ui.group.GroupInfoViewModel
@@ -20,6 +22,7 @@ import com.ajrpachon.chatapp.service.PresenceManager
 import com.ajrpachon.chatapp.utils.LinkPreviewFetcher
 import com.ajrpachon.chatapp.utils.OkHttpProvider
 import com.ajrpachon.chatapp.utils.SessionGuard
+import com.ajrpachon.chatapp.utils.TranslationManager
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.functions.Functions
@@ -44,6 +47,8 @@ val databaseModule = module {
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().invitationDao() }
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().groupMemberDao() }
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().reactionDao() }
+    single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().pollDao() }
+    single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().stickerPackDao() }
 }
 
 val networkModule = module {
@@ -82,10 +87,12 @@ val viewModelModule = module {
         )
     }
     viewModelOf(::CreateGroupViewModel)
+    viewModelOf(::com.ajrpachon.chatapp.ui.saved.SavedMessagesViewModel)
+    viewModelOf(::StickerPackViewModel)
 
     // Needs runtime parameters — cannot use viewModelOf
     viewModel { (conversationId: String, otherUserName: String) ->
-        ChatViewModel(conversationId, otherUserName, get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get())
+        ChatViewModel(conversationId, otherUserName, get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get())
     }
     viewModel { params ->
         CallViewModel(
@@ -115,6 +122,12 @@ val utilsModule = module {
     single { PresenceManager(get()) }
     single { LinkPreviewFetcher() }
     single { ThemeRepository(androidContext()) }
+    single { DraftRepository(androidContext()) }
+    single { TranslationManager() }
+    single { com.ajrpachon.chatapp.data.local.NotificationSoundRepository(androidContext()) }
+    single { com.ajrpachon.chatapp.utils.AudioTranscriber() }
+    single { com.ajrpachon.chatapp.data.local.ChatThemeRepository(androidContext()) }
+    single { com.ajrpachon.chatapp.utils.ContactSyncManager(androidContext().contentResolver) }
 }
 
 val appModules = listOf(

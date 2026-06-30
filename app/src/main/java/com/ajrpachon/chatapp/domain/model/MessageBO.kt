@@ -30,6 +30,8 @@ data class MessageBO(
     val fileSize: Long? = null,
     val fileMimeType: String? = null,
     val videoUrl: String? = null,
+    val isPinned: Boolean = false,
+    val isSaved: Boolean = false,
 ) {
     fun isExpired(): Boolean = expiresAt != null && expiresAt <= System.currentTimeMillis()
     fun expiresInSeconds(): Long? = expiresAt?.let { ((it - System.currentTimeMillis()) / 1000).coerceAtLeast(0) }

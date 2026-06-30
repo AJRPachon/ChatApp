@@ -5,6 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.model.UserRelationship
+import com.ajrpachon.chatapp.domain.repository.UserRepository
+import com.ajrpachon.chatapp.utils.ContactSyncManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.ajrpachon.chatapp.domain.usecase.BlockUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.SearchUsersUseCase
@@ -25,6 +29,8 @@ class NewChatViewModel(
     private val searchUsersUseCase: SearchUsersUseCase,
     private val sendInvitationUseCase: SendInvitationUseCase,
     private val blockUserUseCase: BlockUserUseCase,
+    private val userRepository: UserRepository,
+    private val contactSyncManager: ContactSyncManager,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(NewChatState())
@@ -49,13 +55,18 @@ class NewChatViewModel(
                 _state.update { it.copy(query = intent.query) }
                 viewModelScope.launch { searchUsers(intent.query) }
             }
-            is NewChatIntent.ContactsLoaded ->
+            is NewChatIntent.ContactsLoaded -> {
                 _state.update { it.copy(contacts = intent.contacts) }
+                loadSuggestedContacts()
+            }
             is NewChatIntent.ContactsPermissionDenied ->
                 _state.update { it.copy(contactsPermissionDenied = true) }
             is NewChatIntent.UserAction -> handleUserAction(intent.otherUser)
             is NewChatIntent.BlockUser -> handleBlockUser(intent.otherUser)
             is NewChatIntent.UnblockUser -> handleUnblockUser(intent.otherUser)
+            is NewChatIntent.UserScannedByQr -> handleQrScan(intent.userId)
+            is NewChatIntent.SuggestedContactsLoaded ->
+                _state.update { it.copy(suggestedContacts = intent.users, isLoadingSuggested = false) }
             is NewChatIntent.DismissError -> _state.update { it.copy(error = null) }
         }
     }
@@ -176,6 +187,53 @@ class NewChatViewModel(
                     _state.update { it.copy(error = e.message) }
                 }
             _state.update { it.copy(pendingUserIds = it.pendingUserIds - otherUser.id) }
+        }
+    }
+
+    private fun loadSuggestedContacts() {
+        _state.update { it.copy(isLoadingSuggested = true) }
+        viewModelScope.launch {
+            val emails = withContext(Dispatchers.IO) { contactSyncManager.readContactEmails() }
+            if (emails.isEmpty()) {
+                _state.update { it.copy(isLoadingSuggested = false) }
+                return@launch
+            }
+            catchResult { userRepository.searchUsersByEmails(emails) }
+                .onSuccess { users ->
+                    val selfId = _state.value.currentUserId
+                    val filtered = users.filter { it.id != selfId }
+                    _state.update { it.copy(suggestedContacts = filtered, isLoadingSuggested = false) }
+                    loadRelationships(filtered)
+                }
+                .onFailure { e ->
+                    AppLogger.e(TAG, "Suggested contacts load failed", e)
+                    _state.update { it.copy(isLoadingSuggested = false) }
+                }
+        }
+    }
+
+    private fun handleQrScan(userId: String) {
+        val selfId = _state.value.currentUserId
+        if (userId == selfId) {
+            viewModelScope.launch { _effect.send(NewChatEffect.ShowMessage("Este es tu propio código QR")) }
+            return
+        }
+        viewModelScope.launch {
+            _state.update { it.copy(isLoadingUsers = true) }
+            catchResult { userRepository.getUserById(userId) }
+                .onSuccess { user ->
+                    if (user != null) {
+                        _state.update { it.copy(appUsers = listOf(user), query = "") }
+                        loadRelationships(listOf(user))
+                    } else {
+                        _effect.send(NewChatEffect.ShowMessage("Usuario no encontrado"))
+                    }
+                }
+                .onFailure { e ->
+                    AppLogger.e(TAG, "QR scan lookup failed", e)
+                    _effect.send(NewChatEffect.ShowMessage("No se pudo encontrar el usuario"))
+                }
+            _state.update { it.copy(isLoadingUsers = false) }
         }
     }
 

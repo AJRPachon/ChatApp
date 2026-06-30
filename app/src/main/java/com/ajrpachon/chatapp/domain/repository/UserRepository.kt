@@ -14,4 +14,5 @@ interface UserRepository {
     suspend fun updateLastSeen(userId: String)
     suspend fun updateShowOnlineStatus(userId: String, show: Boolean)
     fun observeUserById(id: String): Flow<UserBO?>
+    suspend fun searchUsersByEmails(emails: List<String>): List<UserBO>
 }

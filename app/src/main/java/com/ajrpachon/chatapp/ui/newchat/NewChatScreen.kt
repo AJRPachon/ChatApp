@@ -17,9 +17,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -28,6 +32,7 @@ import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -40,7 +45,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import com.ajrpachon.chatapp.ui.components.ChatAppAvatar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -60,6 +69,8 @@ import com.ajrpachon.chatapp.ui.components.ChatAppSecondaryButton
 import com.ajrpachon.chatapp.ui.components.ChatAppSearchField
 import com.ajrpachon.chatapp.ui.components.ChatAppTextField
 import com.ajrpachon.chatapp.ui.components.ChatAppTopBar
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -108,6 +119,18 @@ fun NewChatScreen(
         }
     }
 
+    val qrScanLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
+        val raw = result.contents ?: return@rememberLauncherForActivityResult
+        val uri = runCatching { Uri.parse(raw) }.getOrNull() ?: return@rememberLauncherForActivityResult
+        if (uri.scheme == "chatapp" && uri.host == "user") {
+            val userId = uri.lastPathSegment?.takeIf { it.isNotBlank() }
+                ?: return@rememberLauncherForActivityResult
+            vm.onIntent(NewChatIntent.UserScannedByQr(userId))
+        } else {
+            scope.launch { snackbarHostState.showSnackbar("Código QR no reconocido") }
+        }
+    }
+
     LaunchedEffect(Unit) {
         val permission = Manifest.permission.READ_CONTACTS
         if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
@@ -120,7 +143,28 @@ fun NewChatScreen(
 
     Scaffold(
         topBar = {
-            ChatAppTopBar(title = "Nuevo chat", onBack = onBack)
+            ChatAppTopBar(
+                title = "Nuevo chat",
+                onBack = onBack,
+                actions = {
+                    IconButton(onClick = {
+                        qrScanLauncher.launch(
+                            ScanOptions().apply {
+                                setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                                setPrompt("Apunta al código QR del contacto")
+                                setBeepEnabled(false)
+                                setOrientationLocked(false)
+                            }
+                        )
+                    }) {
+                        Icon(
+                            Icons.Default.QrCodeScanner,
+                            contentDescription = "Escanear código QR",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                },
+            )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
@@ -148,6 +192,37 @@ fun NewChatScreen(
                             },
                             onShare = { shareInviteText(context, state.currentUsername) },
                         )
+                    }
+                }
+
+                // ── Sugeridos section ─────────────────────────────────────
+                if (state.isLoadingSuggested) {
+                    item {
+                        SectionHeader("Sugeridos")
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center,
+                        ) { CircularProgressIndicator(modifier = Modifier.size(24.dp)) }
+                    }
+                } else if (state.suggestedContacts.isNotEmpty()) {
+                    item {
+                        SectionHeader("Sugeridos")
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 8.dp),
+                        ) {
+                            items(state.suggestedContacts, key = { it.id }) { user ->
+                                SuggestedContactChip(
+                                    user = user,
+                                    onClick = { vm.onIntent(NewChatIntent.UserAction(user)) },
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -413,4 +488,40 @@ private fun loadContacts(resolver: ContentResolver): List<PhoneContact> {
         }
     }
     return contacts.distinctBy { it.phoneNumber }
+}
+
+@Composable
+private fun SuggestedContactChip(
+    user: com.ajrpachon.chatapp.domain.model.UserBO,
+    onClick: () -> Unit,
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .width(72.dp)
+            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp),
+    ) {
+        ChatAppAvatar(
+            name = user.displayName,
+            url = user.avatarUrl,
+            size = 52.dp,
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = user.displayName,
+            style = MaterialTheme.typography.labelSmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+        )
+        Text(
+            text = "@${user.username}",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.outline,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+        )
+    }
 }

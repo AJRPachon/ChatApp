@@ -22,6 +22,7 @@ import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.mfa
 import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.providers.builtin.IDToken
@@ -106,6 +107,8 @@ class AuthViewModel(
             is AuthIntent.SignOut -> signOut()
             is AuthIntent.DismissError -> _state.update { it.copy(error = null) }
             is AuthIntent.DismissEmailVerification -> _state.update { it.copy(showEmailVerification = false) }
+            is AuthIntent.MfaCodeChanged -> _state.update { it.copy(mfaCodeInput = intent.value, mfaError = null) }
+            is AuthIntent.VerifyMfaCode -> verifyMfaCode()
         }
     }
 
@@ -283,9 +286,53 @@ class AuthViewModel(
             userDao.upsert(profile.toDBO(email = email, isCurrentUser = true))
             catchResult { fcmTokenManager.syncToken() }
             sessionGuard.recordActivity()
+
+            // Check if MFA challenge is required (user has a verified TOTP factor but AAL1 session)
+            val mfaResult = catchResult { supabase.auth.mfa.getAuthenticatorAssuranceLevel() }
+            val aal = mfaResult.getOrNull()
+            if (aal != null && aal.currentLevel != aal.nextLevel) {
+                val factorsResult = catchResult { supabase.auth.mfa.listFactors() }
+                val totpFactor = factorsResult.getOrNull()?.totp
+                    ?.firstOrNull { it.status.name.equals("verified", ignoreCase = true) }
+                if (totpFactor != null) {
+                    _state.update { it.copy(
+                        needsMfaChallenge = true,
+                        mfaFactorId = totpFactor.id,
+                        isLoading = false,
+                    ) }
+                    return
+                }
+            }
+
             _effect.send(AuthEffect.NavigateToHome)
         } else {
             _state.update { it.copy(needsUsername = true) }
+        }
+    }
+
+    // ── MFA Challenge ──────────────────────────────────────────────────────────
+
+    private fun verifyMfaCode() {
+        val factorId = _state.value.mfaFactorId ?: return
+        val code = _state.value.mfaCodeInput.trim()
+        if (code.length != 6) {
+            _state.update { it.copy(mfaError = "Introduce los 6 dígitos del código") }
+            return
+        }
+        viewModelScope.launch {
+            _state.update { it.copy(mfaIsLoading = true, mfaError = null) }
+            catchResult {
+                val challenge = supabase.auth.mfa.createChallenge(factorId)
+                supabase.auth.mfa.verifyTotp(factorId = factorId, challengeId = challenge.id, code = code)
+                _state.update { it.copy(needsMfaChallenge = false, mfaCodeInput = "", mfaIsLoading = false) }
+                finishSignIn()
+            }.onFailure { e ->
+                AppLogger.e(TAG, "verifyMfaCode failed", e)
+                _state.update { it.copy(
+                    mfaIsLoading = false,
+                    mfaError = "Código incorrecto. Intenta de nuevo.",
+                ) }
+            }
         }
     }
 

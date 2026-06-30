@@ -3,6 +3,7 @@ import com.ajrpachon.chatapp.utils.catchResult
 
 import android.content.Context
 import android.media.MediaRecorder
+import androidx.core.content.FileProvider
 import android.net.Uri
 import android.os.Build
 import androidx.lifecycle.ViewModel
@@ -73,6 +74,11 @@ class ChatViewModel(
     private val reactionRepository: com.ajrpachon.chatapp.domain.repository.ReactionRepository,
     private val conversationRepository: ConversationRepository,
     private val supabaseClient: SupabaseClient,
+    private val draftRepository: com.ajrpachon.chatapp.data.local.DraftRepository,
+    private val translationManager: com.ajrpachon.chatapp.utils.TranslationManager,
+    private val audioTranscriber: com.ajrpachon.chatapp.utils.AudioTranscriber,
+    private val pollDao: com.ajrpachon.chatapp.data.local.dao.PollDao,
+    private val chatThemeRepository: com.ajrpachon.chatapp.data.local.ChatThemeRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ChatState())
@@ -99,16 +105,35 @@ class ChatViewModel(
         }
         .cachedIn(viewModelScope)
 
+    val pinnedMessages: kotlinx.coroutines.flow.Flow<List<MessageBO>> =
+        messageRepository.getPinnedMessages(conversationId, currentUserId ?: "")
+
     private var recorder: MediaRecorder? = null
     private var recordingTimerJob: Job? = null
     private var remoteSyncJob: Job? = null
     private var typingChannel: RealtimeChannel? = null
     private var typingResetJob: Job? = null
     private var typingPresenceJob: Job? = null
+    private var draftSaveJob: Job? = null
 
     init {
         // Delete expired self-destruct messages when the screen opens
         viewModelScope.launch { catchResult { messageRepository.deleteExpiredMessages() } }
+
+        // Load saved draft for this conversation
+        viewModelScope.launch {
+            val draft = draftRepository.getDraft(conversationId).first()
+            if (draft.isNotBlank()) {
+                _state.update { it.copy(inputText = draft) }
+            }
+        }
+
+        // Observe per-conversation chat theme
+        viewModelScope.launch {
+            chatThemeRepository.observe(conversationId).collect { theme ->
+                _state.update { it.copy(chatTheme = theme) }
+            }
+        }
 
         _state.update { it.copy(conversationTitle = otherUserName) }
         val uid = currentUserId
@@ -128,6 +153,7 @@ class ChatViewModel(
                     isCurrentUserMember = true,
                     isMuted = conv?.isEffectivelyMuted() == true,
                     mutedUntil = conv?.mutedUntil ?: 0L,
+                    disappearingModeSeconds = conv?.disappearingModeSeconds ?: 0L,
                 )
             }
             _historyVisibleFrom.value = historyVisibleFrom
@@ -265,6 +291,11 @@ class ChatViewModel(
         when (intent) {
             is ChatIntent.InputChanged -> {
                 _state.update { it.copy(inputText = intent.text) }
+                draftSaveJob?.cancel()
+                draftSaveJob = viewModelScope.launch {
+                    delay(500)
+                    draftRepository.saveDraft(conversationId, intent.text)
+                }
                 if (intent.text.isNotEmpty()) {
                     sendTypingPresence(true)
                     typingResetJob?.cancel()
@@ -318,6 +349,52 @@ class ChatViewModel(
                 it.copy(showForwardDialog = false, forwardingMessage = null, forwardableConversations = emptyList())
             }
             is ChatIntent.ForwardMessage -> forwardMessage(intent.messageId, intent.targetConversationId)
+            is ChatIntent.SendLocation -> sendLocationMessage(intent.mapsUrl)
+            is ChatIntent.TranslateMessage -> translateMessage(intent.messageId, intent.text)
+            is ChatIntent.DismissTranslation -> _state.update {
+                it.copy(translatedTexts = it.translatedTexts - intent.messageId)
+            }
+            is ChatIntent.TranscribeAudio -> transcribeAudio(intent.context, intent.messageId)
+            is ChatIntent.PinMessage -> pinMessage(intent.messageId)
+            is ChatIntent.UnpinMessage -> unpinMessage(intent.messageId)
+            is ChatIntent.SaveMessage -> viewModelScope.launch {
+                catchResult { messageRepository.setSaved(intent.messageId, true) }
+                    .onFailure { e -> AppLogger.e(TAG, "Save message failed", e) }
+            }
+            is ChatIntent.UnsaveMessage -> viewModelScope.launch {
+                catchResult { messageRepository.setSaved(intent.messageId, false) }
+                    .onFailure { e -> AppLogger.e(TAG, "Unsave message failed", e) }
+            }
+            is ChatIntent.OpenCreatePollSheet -> _state.update { it.copy(showCreatePollSheet = true) }
+            is ChatIntent.DismissCreatePollSheet -> _state.update { it.copy(showCreatePollSheet = false) }
+            is ChatIntent.CreatePoll -> createPoll(intent.question, intent.options)
+            is ChatIntent.VotePoll -> votePoll(intent.pollId, intent.optionId)
+            is ChatIntent.SetChatTheme -> setChatTheme(intent.theme)
+            is ChatIntent.OpenThemePicker -> _state.update { it.copy(showThemePicker = true) }
+            is ChatIntent.DismissThemePicker -> _state.update { it.copy(showThemePicker = false) }
+            is ChatIntent.ExportConversation -> exportConversation(intent.context)
+            is ChatIntent.ShowDisappearingModeSheet -> _state.update { it.copy(showDisappearingModeSheet = true) }
+            is ChatIntent.DismissDisappearingModeSheet -> _state.update { it.copy(showDisappearingModeSheet = false) }
+            is ChatIntent.SetDisappearingMode -> setDisappearingMode(intent.conversationId, intent.seconds)
+        }
+    }
+
+    private fun sendLocationMessage(mapsUrl: String) {
+        val userId = _state.value.currentUserId ?: return
+        val reply = _state.value.replyingTo
+        val content = "📍 Mi ubicación: $mapsUrl"
+        viewModelScope.launch {
+            _effect.send(ChatEffect.ScrollToBottom)
+            _state.update { it.copy(replyingTo = null) }
+            sendMessageUseCase(
+                conversationId, userId, content,
+                replyToId = reply?.id,
+                replyToContent = reply?.replySnippet(),
+                replyToSenderName = reply?.senderName,
+            ).onFailure { e ->
+                AppLogger.e(TAG, "Send location failed", e)
+                _state.update { it.copy(error = e.message ?: "Error al enviar la ubicación") }
+            }
         }
     }
 
@@ -399,20 +476,36 @@ class ChatViewModel(
         val userId = _state.value.currentUserId ?: return
         if (text.isBlank()) return
         val reply = _state.value.replyingTo
+        val disappearingSecs = _state.value.disappearingModeSeconds
 
         viewModelScope.launch {
             _effect.send(ChatEffect.ScrollToBottom)
             _state.update { it.copy(isSending = true, inputText = "", replyingTo = null) }
+            draftSaveJob?.cancel()
+            draftRepository.saveDraft(conversationId, "")
             sendMessageUseCase(
                 conversationId, userId, text,
                 replyToId = reply?.id,
                 replyToContent = reply?.replySnippet(),
                 replyToSenderName = reply?.senderName,
-            ).onFailure { e ->
+            ).onSuccess { msg ->
+                if (disappearingSecs > 0L) {
+                    val expiresAt = System.currentTimeMillis() + disappearingSecs * 1_000L
+                    catchResult { messageRepository.setMessageExpiry(msg.id, expiresAt) }
+                }
+            }.onFailure { e ->
                 AppLogger.e(TAG, "Send message failed", e)
                 _state.update { it.copy(error = e.message, inputText = text) }
             }
             _state.update { it.copy(isSending = false) }
+        }
+    }
+
+    private fun setDisappearingMode(conversationId: String, seconds: Long) {
+        _state.update { it.copy(showDisappearingModeSheet = false, disappearingModeSeconds = seconds) }
+        viewModelScope.launch {
+            catchResult { conversationRepository.setDisappearingMode(conversationId, seconds) }
+                .onFailure { e -> AppLogger.e(TAG, "setDisappearingMode failed", e) }
         }
     }
 
@@ -498,7 +591,15 @@ class ChatViewModel(
         val durationMs = _state.value.audioState.recordingDurationMs
         catchResult { recorder?.apply { stop(); release() } }
         recorder = null
-        _state.update { it.copy(audioState = it.audioState.copy(isRecording = false, recordingDurationMs = durationMs)) }
+        _state.update {
+            it.copy(
+                audioState = it.audioState.copy(
+                    isRecording = false,
+                    recordingDurationMs = durationMs,
+                    transcription = "Transcripción no disponible",
+                ),
+            )
+        }
     }
 
     private fun discardAudio() {
@@ -514,6 +615,8 @@ class ChatViewModel(
         viewModelScope.launch {
             _effect.send(ChatEffect.ScrollToBottom)
             _state.update { it.copy(audioState = it.audioState.copy(isUploading = true), replyingTo = null) }
+            draftSaveJob?.cancel()
+            draftRepository.saveDraft(conversationId, "")
             catchResult {
                 val bytes = withContext(Dispatchers.IO) { File(filePath).readBytes() }
                 val audioUrl = messageRepository.uploadAudio(conversationId, bytes)
@@ -782,6 +885,153 @@ class ChatViewModel(
         }
     }
 
+    private fun createPoll(question: String, options: List<String>) {
+        val userId = _state.value.currentUserId ?: return
+        _state.update { it.copy(showCreatePollSheet = false) }
+        viewModelScope.launch {
+            catchResult {
+                val pollId = java.util.UUID.randomUUID().toString()
+                pollDao.insertPoll(
+                    com.ajrpachon.chatapp.data.local.entity.PollDBO(
+                        id = pollId,
+                        conversationId = conversationId,
+                        question = question,
+                        createdBy = userId,
+                        createdAt = System.currentTimeMillis(),
+                    )
+                )
+                pollDao.insertOptions(
+                    options.mapIndexed { index, text ->
+                        com.ajrpachon.chatapp.data.local.entity.PollOptionDBO(
+                            id = "$pollId-$index",
+                            pollId = pollId,
+                            text = text,
+                        )
+                    }
+                )
+                sendMessageUseCase(conversationId, userId, "poll:$pollId")
+            }.onFailure { e ->
+                AppLogger.e(TAG, "CreatePoll failed", e)
+                _state.update { it.copy(error = "No se pudo crear la encuesta") }
+            }
+        }
+    }
+
+    private fun votePoll(pollId: String, optionId: String) {
+        val userId = _state.value.currentUserId ?: return
+        viewModelScope.launch {
+            catchResult {
+                pollDao.vote(pollId, userId, optionId)
+            }.onFailure { e ->
+                AppLogger.e(TAG, "VotePoll failed", e)
+                _state.update { it.copy(error = "No se pudo registrar el voto") }
+            }
+        }
+    }
+
+    private fun exportConversation(context: Context) {
+        val uid = currentUserId ?: return
+        viewModelScope.launch {
+            _state.update { it.copy(isExporting = true) }
+            catchResult {
+                val messages = withContext(Dispatchers.IO) {
+                    messageRepository.getAllMessages(conversationId, uid)
+                }
+                val formatter = java.text.SimpleDateFormat("HH:mm dd/MM/yyyy", java.util.Locale.getDefault())
+                val text = buildString {
+                    for (msg in messages) {
+                        if (msg.isDeleted) continue
+                        val date = formatter.format(java.util.Date(msg.createdAt.toEpochMilliseconds()))
+                        val line = when {
+                            msg.content.isNotBlank() -> "[$date] ${msg.senderName}: ${msg.content}"
+                            msg.imageUrl != null -> "[$date] ${msg.senderName}: [Imagen]"
+                            msg.audioUrl != null -> "[$date] ${msg.senderName}: [Audio]"
+                            msg.gifUrl != null -> "[$date] ${msg.senderName}: [GIF]"
+                            msg.stickerUrl != null -> "[$date] ${msg.senderName}: [Sticker]"
+                            msg.fileUrl != null -> "[$date] ${msg.senderName}: [Archivo: ${msg.fileName ?: ""}]"
+                            msg.videoUrl != null -> "[$date] ${msg.senderName}: [Video]"
+                            else -> continue
+                        }
+                        appendLine(line)
+                    }
+                }
+                val file = withContext(Dispatchers.IO) {
+                    val f = java.io.File(context.cacheDir, "chat_$conversationId.txt")
+                    java.io.FileOutputStream(f).use { it.write(text.toByteArray()) }
+                    f
+                }
+                val uri = FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.fileprovider",
+                    file,
+                )
+                _effect.send(ChatEffect.ShowShareSheet(uri))
+            }.onFailure { e ->
+                AppLogger.e(TAG, "exportConversation failed", e)
+                _effect.send(ChatEffect.ShowSnackbar("No se pudo exportar"))
+            }
+            _state.update { it.copy(isExporting = false) }
+        }
+    }
+
+    private fun setChatTheme(theme: com.ajrpachon.chatapp.data.local.ChatTheme) {
+        viewModelScope.launch {
+            catchResult { chatThemeRepository.set(conversationId, theme) }
+                .onFailure { e -> AppLogger.e(TAG, "setChatTheme failed", e) }
+        }
+    }
+
+    private fun pinMessage(messageId: String) {
+        viewModelScope.launch {
+            catchResult { messageRepository.setPinned(messageId, true) }
+                .onFailure { e -> AppLogger.e(TAG, "Pin message failed", e) }
+        }
+    }
+
+    private fun unpinMessage(messageId: String) {
+        viewModelScope.launch {
+            catchResult { messageRepository.setPinned(messageId, false) }
+                .onFailure { e -> AppLogger.e(TAG, "Unpin message failed", e) }
+        }
+    }
+
+    private fun transcribeAudio(context: Context, messageId: String) {
+        viewModelScope.launch {
+            val result = runCatching { audioTranscriber.transcribeFromMic(context) }
+                .getOrDefault("Transcripción no disponible")
+            _state.update { state ->
+                state.copy(
+                    audioTranscriptions = state.audioTranscriptions + (messageId to result),
+                )
+            }
+        }
+    }
+
+    private fun translateMessage(messageId: String, text: String) {
+        if (messageId in _state.value.translatingMessageIds) return
+        _state.update { it.copy(translatingMessageIds = it.translatingMessageIds + messageId) }
+        viewModelScope.launch {
+            runCatching { translationManager.translate(text) }
+                .onSuccess { translated ->
+                    _state.update {
+                        it.copy(
+                            translatedTexts = it.translatedTexts + (messageId to translated),
+                            translatingMessageIds = it.translatingMessageIds - messageId,
+                        )
+                    }
+                }
+                .onFailure { e ->
+                    AppLogger.e(TAG, "Translation failed for $messageId", e)
+                    _state.update {
+                        it.copy(
+                            translatingMessageIds = it.translatingMessageIds - messageId,
+                            error = "No se pudo traducir el mensaje",
+                        )
+                    }
+                }
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         AppLogger.d(TAG, "onCleared conv=$conversationId")
@@ -789,6 +1039,7 @@ class ChatViewModel(
         remoteSyncJob?.cancel()
         typingResetJob?.cancel()
         typingPresenceJob?.cancel()
+        draftSaveJob?.cancel()
         viewModelScope.launch {
             withContext(NonCancellable) {
                 try {

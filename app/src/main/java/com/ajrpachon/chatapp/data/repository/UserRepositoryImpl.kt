@@ -63,6 +63,11 @@ class UserRepositoryImpl(
     override fun observeUserById(id: String): Flow<UserBO?> =
         userDao.observeById(id).map { it?.toBO() }
 
+    override suspend fun searchUsersByEmails(emails: List<String>): List<UserBO> =
+        remoteSource.searchByEmails(emails).map { dto ->
+            dto.toBO().also { bo -> com.ajrpachon.chatapp.utils.catchResult { userDao.upsert(bo.toDBO()) } }
+        }
+
     private fun UserBO.toDBO(isCurrentUser: Boolean = false) =
         com.ajrpachon.chatapp.data.local.entity.UserDBO(
             id = id,

@@ -47,4 +47,7 @@ interface ConversationDao {
 
     @Query("SELECT * FROM conversations WHERE is_archived = 1 ORDER BY updatedAt DESC")
     fun observeArchived(): Flow<List<ConversationDBO>>
+
+    @Query("UPDATE conversations SET disappearing_mode_seconds = :seconds WHERE id = :id")
+    suspend fun setDisappearingMode(id: String, seconds: Long)
 }

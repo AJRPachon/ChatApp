@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.ui.conversations
 
 import com.ajrpachon.chatapp.domain.model.ConversationBO
+import com.ajrpachon.chatapp.domain.model.NotificationSound
 
 data class ConversationListState(
     val conversations: List<ConversationBO> = emptyList(),
@@ -13,6 +14,8 @@ data class ConversationListState(
     val searchQuery: String = "",
     val isSearchActive: Boolean = false,
     val showArchivedSheet: Boolean = false,
+    val drafts: Map<String, String> = emptyMap(),
+    val soundPickerConversationId: String? = null,
 ) {
     val filteredConversations: List<ConversationBO>
         get() = if (searchQuery.isBlank()) conversations
@@ -32,6 +35,9 @@ sealed interface ConversationListIntent {
     data class ArchiveConversation(val conversationId: String, val archived: Boolean) : ConversationListIntent
     data object ShowArchivedSheet : ConversationListIntent
     data object DismissArchivedSheet : ConversationListIntent
+    data class ShowSoundPicker(val conversationId: String) : ConversationListIntent
+    data object DismissSoundPicker : ConversationListIntent
+    data class SetNotificationSound(val conversationId: String, val sound: NotificationSound) : ConversationListIntent
 }
 
 sealed interface ConversationListEffect {

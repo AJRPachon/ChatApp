@@ -28,6 +28,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -44,14 +46,16 @@ import com.ajrpachon.chatapp.ui.components.ChatAppSearchField
 import com.ajrpachon.chatapp.utils.GiphyKeyManager
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.delay
+import org.koin.androidx.compose.koinViewModel
 
 // ── Main picker ───────────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StickerGifPicker(
-    onStickerSelected: (emoji: String) -> Unit,
+    onStickerSelected: (url: String) -> Unit,
     onGifSelected: (url: String) -> Unit,
+    onOpenStore: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState()
@@ -78,45 +82,89 @@ fun StickerGifPicker(
             )
         }
         when (selectedTab) {
-            0 -> StickerTab(onStickerSelected)
+            0 -> StickerTab(onStickerSelected, onOpenStore)
             1 -> GifTab(onGifSelected)
         }
     }
 }
 
-// ── Sticker tab ───────────────────────────────────────────────────────────────
+// ── Sticker tab (custom image packs) ─────────────────────────────────────────
 
 @Composable
-private fun StickerTab(onSelected: (String) -> Unit) {
-    var selectedPack by remember { mutableIntStateOf(0) }
+private fun StickerTab(
+    onSelected: (String) -> Unit,
+    onOpenStore: () -> Unit,
+    vm: StickerPackViewModel = koinViewModel(),
+) {
+    val packs by vm.installedPacks.collectAsState()
+    var selectedPackIndex by remember { mutableIntStateOf(0) }
+    val safeIndex by remember(packs.size) {
+        derivedStateOf { selectedPackIndex.coerceAtMost((packs.size - 1).coerceAtLeast(0)) }
+    }
+    val currentPackId by remember(packs, safeIndex) {
+        derivedStateOf { packs.getOrNull(safeIndex)?.id }
+    }
+    val stickers by remember(currentPackId) {
+        if (currentPackId != null) vm.stickersForPack(currentPackId!!)
+        else kotlinx.coroutines.flow.flowOf(emptyList())
+    }.collectAsState(initial = emptyList())
 
     Column {
         PrimaryScrollableTabRow(
-            selectedTabIndex = selectedPack,
+            selectedTabIndex = safeIndex,
             edgePadding = 8.dp,
         ) {
-            stickerPacks.forEachIndexed { i, pack ->
+            packs.forEachIndexed { i, pack ->
                 Tab(
-                    selected = selectedPack == i,
-                    onClick = { selectedPack = i },
-                    text = { Text(pack.name.take(4), fontSize = 18.sp) },
+                    selected = safeIndex == i,
+                    onClick = { selectedPackIndex = i },
+                ) {
+                    AsyncImage(
+                        model = pack.coverUrl,
+                        contentDescription = pack.name,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .padding(vertical = 6.dp)
+                            .size(28.dp),
+                    )
+                }
+            }
+            Tab(
+                selected = false,
+                onClick = onOpenStore,
+                text = { Text("+", fontSize = 20.sp) },
+            )
+        }
+
+        if (packs.isEmpty()) {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(120.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    "Instala packs desde la tienda →",
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-        }
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(56.dp),
-            contentPadding = PaddingValues(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            items(stickerPacks[selectedPack].emojis) { emoji ->
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clickable { onSelected(emoji) },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(text = emoji, fontSize = 32.sp)
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(64.dp),
+                contentPadding = PaddingValues(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                items(stickers, key = { it.id }) { sticker ->
+                    AsyncImage(
+                        model = sticker.imageUrl,
+                        contentDescription = sticker.tags,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { onSelected(sticker.imageUrl) },
+                    )
                 }
             }
         }

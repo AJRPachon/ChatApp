@@ -21,6 +21,8 @@ data class ConversationDBO(
     // 0 = not muted, -1 = muted forever, >0 = muted until this epoch millis timestamp
     val mutedUntil: Long = 0L,
     @ColumnInfo(name = "is_archived") val isArchived: Boolean = false,
+    // 0 = off, >0 = duration in seconds for new messages to auto-expire in this conversation
+    @ColumnInfo(name = "disappearing_mode_seconds") val disappearingModeSeconds: Long = 0L,
 ) {
     fun isEffectivelyMuted(): Boolean =
         isMuted || mutedUntil == -1L || (mutedUntil > 0L && mutedUntil > System.currentTimeMillis())
