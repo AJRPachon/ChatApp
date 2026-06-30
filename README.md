@@ -89,8 +89,8 @@ com.ajrpachon.chatapp/
 │   ├── local/
 │   │   ├── entity/                   Entidades Room (DBO)
 │   │   ├── dao/                      DAOs de acceso a la BD
-│   │   ├── ChatDatabase.kt           Base de datos Room (versión 17, cifrada con SQLCipher)
-│   │   ├── DatabaseBuilder.kt        Migraciones v1 → v17
+│   │   ├── ChatDatabase.kt           Base de datos Room (versión 26, cifrada con SQLCipher)
+│   │   ├── DatabaseBuilder.kt        Migraciones v1 → v26
 │   │   └── DatabaseKeyProvider.kt    Clave AES-256 en Android KeyStore
 │   ├── remote/
 │   │   ├── dto/                      Data Transfer Objects de Supabase
