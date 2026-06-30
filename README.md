@@ -50,6 +50,24 @@ Proyecto personal para poner en práctica lo aprendido en desarrollo Android nat
 | 🗄️ | **Archivar conversaciones** con búsqueda y orden por no leídos |
 | 🖼️ | **Galería de medios compartidos** en el perfil del contacto con zoom |
 | 🛡️ | **Roles en grupos** — el administrador puede promover o degradar a otros miembros |
+| 💬 | **Chat durante llamadas** — panel de mensajes de texto sin interrumpir la llamada |
+| 📍 | **Compartir ubicación** — envía tu posición con un enlace a Google Maps |
+| 🖥️ | **Compartir pantalla** en videollamadas |
+| 📝 | **Borradores** — el texto sin enviar se guarda al salir y se restaura al volver |
+| 🌐 | **Traducción de mensajes** — traduce al español con un toque (ML Kit, sin internet) |
+| 🔔 | **Sonidos de notificación personalizados** por conversación |
+| 🎙️ | **Transcripción de audios** — convierte un mensaje de voz en texto |
+| 🌫️ | **Desenfoque de fondo** en videollamadas |
+| 📌 | **Mensajes fijados** con banner y acceso directo al mensaje |
+| 🔖 | **Mensajes guardados** — marca mensajes como favoritos y accede desde tu perfil |
+| 📊 | **Encuestas en grupos** — crea y vota encuestas con múltiples opciones |
+| 🎨 | **Temas de color por conversación** — personaliza el fondo y el color de las burbujas |
+| 📦 | **Paquetes de stickers** — navega e instala colecciones desde la tienda |
+| 📷 | **Código QR de contacto** — comparte tu perfil o añade contactos escaneando un QR |
+| 📤 | **Exportar conversación** — descarga el historial como archivo de texto |
+| 👥 | **Sugerencias de la agenda** — descubre qué contactos ya usan la app |
+| 🔑 | **Autenticación de dos factores** (TOTP) — actívala desde tu perfil |
+| ⏱️ | **Modo de mensajes temporales** — todos los mensajes de una conversación se autodestruyen tras el tiempo elegido |
 
 ---
 
@@ -216,7 +234,7 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 ```
 master        ← releases estables (v1.0, v1.1…)
 └── develop   ← integración continua
-    ├── feature/…                  (40+ feature branches de funcionalidad)
+    ├── feature/…                  (60+ feature branches de funcionalidad)
     ├── feature/emoji-picker
     ├── feature/message-reactions
     ├── feature/message-search
@@ -266,5 +284,23 @@ master        ← releases estables (v1.0, v1.1…)
     ├── security/certificate-transparency
     ├── security/session-expiration
     ├── security/root-detection
-    └── security/e2ee-messages
+    ├── security/e2ee-messages
+    ├── feature/in-call-chat
+    ├── feature/location-sharing
+    ├── feature/screen-sharing
+    ├── feature/message-drafts
+    ├── feature/message-translation
+    ├── feature/custom-notification-sounds
+    ├── feature/audio-transcription
+    ├── feature/video-blur-background
+    ├── feature/pinned-messages
+    ├── feature/saved-messages
+    ├── feature/group-polls
+    ├── feature/sticker-packs
+    ├── feature/chat-themes
+    ├── feature/contact-qr
+    ├── feature/export-conversation
+    ├── feature/contact-sync
+    ├── feature/2fa
+    └── feature/disappearing-mode
 ```
