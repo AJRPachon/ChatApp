@@ -14,6 +14,8 @@ data class NewChatState(
     val error: String? = null,
     val userRelationships: Map<String, UserRelationship> = emptyMap(),
     val pendingUserIds: Set<String> = emptySet(),
+    val suggestedContacts: List<UserBO> = emptyList(),
+    val isLoadingSuggested: Boolean = false,
 )
 
 sealed interface NewChatIntent {
@@ -23,6 +25,8 @@ sealed interface NewChatIntent {
     data class UserAction(val otherUser: UserBO) : NewChatIntent
     data class BlockUser(val otherUser: UserBO) : NewChatIntent
     data class UnblockUser(val otherUser: UserBO) : NewChatIntent
+    data class UserScannedByQr(val userId: String) : NewChatIntent
+    data class SuggestedContactsLoaded(val users: List<UserBO>) : NewChatIntent
     data object DismissError : NewChatIntent
 }
 

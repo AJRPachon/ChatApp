@@ -1,8 +1,10 @@
 package com.ajrpachon.chatapp.ui.profile
 
+import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,11 +19,24 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.QrCode
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Icon
@@ -40,6 +55,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -49,6 +65,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.data.local.ThemePreference
 import com.ajrpachon.chatapp.ui.components.ChatAppDestructiveButton
+import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
+import com.ajrpachon.chatapp.ui.components.ChatAppSecondaryButton
+import com.ajrpachon.chatapp.ui.components.ChatAppTextField
+import qrcode.QRCode
 import com.ajrpachon.chatapp.ui.components.ChatAppTopBar
 import com.github.skydoves.navgraph.annotations.NavDestination
 import com.github.skydoves.navgraph.annotations.NavEdge
@@ -58,6 +78,7 @@ import org.koin.androidx.compose.koinViewModel
 
 @NavEdge(to = AuthRoute::class, label = "Sign Out")
 @NavDestination(route = ProfileRoute::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     onBack: () -> Unit,
@@ -68,6 +89,147 @@ fun ProfileScreen(
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     var showSignOutAllDialog by remember { mutableStateOf(false) }
+    var showQrSheet by remember { mutableStateOf(false) }
+    val qrSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val enrollSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    // ── QR Bottom Sheet ────────────────────────────────────────────────────
+    if (showQrSheet && state.userId.isNotBlank()) {
+        val qrContent = "chatapp://user/${state.userId}"
+        val qrBitmap = remember(qrContent) { generateQrBitmap(qrContent) }
+
+        ModalBottomSheet(
+            onDismissRequest = { showQrSheet = false },
+            sheetState = qrSheetState,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 40.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(
+                    "Mi código QR",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    "Comparte este código para que otros puedan añadirte como contacto",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.outline,
+                )
+                if (qrBitmap != null) {
+                    Image(
+                        bitmap = qrBitmap.asImageBitmap(),
+                        contentDescription = "Código QR",
+                        modifier = Modifier.size(220.dp),
+                    )
+                }
+                Text(
+                    text = state.userId,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace),
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+    }
+
+    // ── 2FA Enroll Bottom Sheet ────────────────────────────────────────────
+    if (state.twoFactor.showEnrollSheet) {
+        val keyboard = LocalSoftwareKeyboardController.current
+        var verifyCode by remember { mutableStateOf("") }
+        ModalBottomSheet(
+            onDismissRequest = { vm.onIntent(ProfileIntent.Dismiss2FASheet) },
+            sheetState = enrollSheetState,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 40.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    "Configurar verificación en dos pasos",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                )
+                Icon(
+                    Icons.Default.Security,
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                if (state.twoFactor.secret != null) {
+                    Text(
+                        "Escanea el código QR o introduce manualmente esta clave en tu aplicación de autenticación (Google Authenticator, Authy, etc.):",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            text = state.twoFactor.secret,
+                            style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace),
+                            color = MaterialTheme.colorScheme.primary,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(16.dp),
+                        )
+                    }
+                }
+                Text(
+                    "Una vez configurada, introduce el código de 6 dígitos para confirmar:",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+                ChatAppTextField(
+                    value = verifyCode,
+                    onValueChange = { if (it.length <= 6) verifyCode = it },
+                    label = "Código TOTP",
+                    isError = state.twoFactor.verifyError != null,
+                    supportingText = state.twoFactor.verifyError,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.NumberPassword,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(onDone = {
+                        keyboard?.hide()
+                        vm.onIntent(ProfileIntent.Verify2FACode(verifyCode))
+                    }),
+                )
+                if (state.twoFactor.enrollError != null) {
+                    Text(
+                        state.twoFactor.enrollError,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+                if (state.twoFactor.isLoading) {
+                    CircularProgressIndicator()
+                } else {
+                    ChatAppPrimaryButton(
+                        text = "Verificar y activar",
+                        onClick = {
+                            keyboard?.hide()
+                            vm.onIntent(ProfileIntent.Verify2FACode(verifyCode))
+                        },
+                        enabled = verifyCode.length == 6,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
         vm.effect.collect { effect ->
@@ -248,6 +410,53 @@ fun ProfileScreen(
             }
 
             HorizontalDivider()
+
+            ChatAppSecondaryButton(
+                text = "Mi código QR",
+                onClick = { showQrSheet = true },
+                leadingIcon = Icons.Default.QrCode,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            HorizontalDivider()
+
+            // ── 2FA ────────────────────────────────────────────────────────
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Verificación en dos pasos",
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Text(
+                        if (state.twoFactor.isEnrolled) "Activa" else "Inactiva",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (state.twoFactor.isEnrolled)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.outline,
+                    )
+                }
+                if (state.twoFactor.isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                } else if (state.twoFactor.isEnrolled) {
+                    ChatAppDestructiveButton(
+                        text = "Desactivar",
+                        onClick = { vm.onIntent(ProfileIntent.Disable2FA) },
+                    )
+                } else {
+                    ChatAppSecondaryButton(
+                        text = "Activar",
+                        onClick = { vm.onIntent(ProfileIntent.Enroll2FA) },
+                        leadingIcon = Icons.Default.Shield,
+                    )
+                }
+            }
+
+            HorizontalDivider()
             Spacer(Modifier.weight(1f))
 
             ChatAppDestructiveButton(
@@ -311,3 +520,10 @@ private fun ThemeSelector(
         }
     }
 }
+
+private fun generateQrBitmap(content: String): Bitmap? =
+    runCatching {
+        val qrCode = QRCode(content)
+        val rendered = qrCode.render()
+        rendered.nativeImage() as Bitmap
+    }.getOrNull()

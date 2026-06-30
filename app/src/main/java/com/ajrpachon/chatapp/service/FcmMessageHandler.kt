@@ -5,15 +5,22 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.media.RingtoneManager
 import android.net.Uri
 import androidx.core.app.NotificationCompat
 import androidx.core.app.Person
 import androidx.core.app.RemoteInput
 import com.ajrpachon.chatapp.MainActivity
 import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.data.local.NotificationSoundRepository
+import com.ajrpachon.chatapp.domain.model.NotificationSound
 import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.runBlocking
 
-class FcmMessageHandler(private val context: Context) {
+class FcmMessageHandler(
+    private val context: Context,
+    private val notificationSoundRepository: NotificationSoundRepository,
+) {
 
     data class Payload(val title: String, val body: String, val conversationId: String?)
 
@@ -89,7 +96,15 @@ class FcmMessageHandler(private val context: Context) {
             style.addMessage(msg.text, msg.timestampMs, sender)
         }
 
-        val notification = NotificationCompat.Builder(context, channelId)
+        // Resolve custom notification sound for this conversation
+        val soundUri: Uri? = if (payload.conversationId != null) {
+            val sound = runBlocking { notificationSoundRepository.get(payload.conversationId) }
+            resolveUri(sound)
+        } else {
+            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+        }
+
+        val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setStyle(style)
             .setAutoCancel(true)
@@ -97,9 +112,21 @@ class FcmMessageHandler(private val context: Context) {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .addAction(replyAction)
             .setGroup(convId)
-            .build()
 
-        nm.notify(notifId, notification)
+        if (soundUri != null) {
+            builder.setSound(soundUri)
+        }
+
+        nm.notify(notifId, builder.build())
+    }
+
+    private fun resolveUri(sound: NotificationSound): Uri? = when (sound) {
+        NotificationSound.DEFAULT ->
+            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+        NotificationSound.SILENT -> null
+        else -> sound.resId?.let { resId ->
+            Uri.parse("android.resource://${context.packageName}/$resId")
+        } ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
     }
 
     fun showIncomingCallNotification(data: Map<String, String>) {

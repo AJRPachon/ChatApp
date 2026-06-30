@@ -61,4 +61,19 @@ interface MessageDao {
             0)
     """)
     suspend fun getTrailingImageCount(conversationId: String): Int
+
+    @Query("SELECT * FROM messages WHERE isSaved = 1 ORDER BY createdAt DESC")
+    fun getSavedMessages(): Flow<List<MessageDBO>>
+
+    @Query("UPDATE messages SET isSaved = :saved WHERE id = :messageId")
+    suspend fun setSaved(messageId: String, saved: Boolean)
+
+    @Query("SELECT * FROM messages WHERE conversationId = :conversationId AND isPinned = 1 ORDER BY createdAt DESC")
+    fun getPinnedMessages(conversationId: String): Flow<List<MessageDBO>>
+
+    @Query("UPDATE messages SET isPinned = :pinned WHERE id = :messageId")
+    suspend fun setPinned(messageId: String, pinned: Boolean)
+
+    @Query("SELECT * FROM messages WHERE conversationId = :conversationId ORDER BY createdAt ASC")
+    suspend fun getAllMessages(conversationId: String): List<MessageDBO>
 }

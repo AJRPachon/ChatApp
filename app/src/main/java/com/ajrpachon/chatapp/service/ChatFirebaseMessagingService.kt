@@ -19,6 +19,7 @@ class ChatFirebaseMessagingService : FirebaseMessagingService() {
 
     private val fcmTokenRemoteSource: FcmTokenRemoteSource by inject()
     private val fcmTokenManager: FcmTokenManager by inject()
+    private val notificationSoundRepository: com.ajrpachon.chatapp.data.local.NotificationSoundRepository by inject()
     private val job = SupervisorJob()
     private val scope = CoroutineScope(job + Dispatchers.IO + CoroutineName("FCMService"))
 
@@ -38,7 +39,7 @@ class ChatFirebaseMessagingService : FirebaseMessagingService() {
         message.notification?.title?.let { data.putIfAbsent("title", it) }
         message.notification?.body?.let { data.putIfAbsent("body", it) }
 
-        FcmMessageHandler(this).handle(data, ActiveChatTracker.activeConversationId)
+        FcmMessageHandler(this, notificationSoundRepository).handle(data, ActiveChatTracker.activeConversationId)
     }
 
     override fun onDestroy() {

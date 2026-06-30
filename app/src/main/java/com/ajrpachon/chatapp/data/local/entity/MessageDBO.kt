@@ -33,4 +33,6 @@ data class MessageDBO(
     @ColumnInfo(name = "fileSize") val fileSize: Long? = null,
     @ColumnInfo(name = "fileMimeType") val fileMimeType: String? = null,
     @ColumnInfo(name = "videoUrl") val videoUrl: String? = null,
+    @ColumnInfo(name = "isPinned") val isPinned: Boolean = false,
+    @ColumnInfo(name = "isSaved") val isSaved: Boolean = false,
 )

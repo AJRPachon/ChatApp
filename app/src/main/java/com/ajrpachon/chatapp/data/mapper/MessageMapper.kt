@@ -63,4 +63,6 @@ fun MessageDBO.toBO(currentUserId: String, senderName: String) = MessageBO(
     fileSize = fileSize,
     fileMimeType = fileMimeType,
     videoUrl = videoUrl,
+    isPinned = isPinned,
+    isSaved = isSaved,
 )

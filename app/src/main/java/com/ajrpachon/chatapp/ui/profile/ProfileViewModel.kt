@@ -12,6 +12,7 @@ import com.ajrpachon.chatapp.utils.AppLogger
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.SignOutScope
+import io.github.jan.supabase.auth.mfa
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.channels.Channel
@@ -51,6 +52,7 @@ class ProfileViewModel(
                 val user = getCurrentUserUseCase().filterNotNull().first()
                 _state.update {
                     it.copy(
+                        userId = user.id,
                         displayName = user.displayName,
                         username = user.username,
                         email = user.email,
@@ -59,6 +61,7 @@ class ProfileViewModel(
                     )
                 }
             }.onFailure { e -> AppLogger.e(TAG, "Load profile failed", e) }
+            load2FAStatus()
         }
         themeRepository.observe()
             .onEach { pref -> _state.update { it.copy(themePreference = pref) } }
@@ -83,6 +86,18 @@ class ProfileViewModel(
                     catchResult { themeRepository.set(intent.theme) }
                         .onFailure { e -> AppLogger.e(TAG, "SetTheme failed", e) }
                 }
+            }
+            is ProfileIntent.Enroll2FA -> enroll2FA()
+            is ProfileIntent.Verify2FACode -> verify2FACode(intent.code)
+            is ProfileIntent.Disable2FA -> disable2FA()
+            is ProfileIntent.Dismiss2FASheet -> _state.update {
+                it.copy(twoFactor = it.twoFactor.copy(
+                    showEnrollSheet = false,
+                    qrCodeSvg = null,
+                    secret = null,
+                    enrollError = null,
+                    verifyError = null,
+                ))
             }
         }
     }
@@ -136,6 +151,80 @@ class ProfileViewModel(
                 userDao.clearCurrentUser()
             }.onFailure { e -> AppLogger.e(TAG, "Sign out all failed", e) }
             _effect.send(ProfileEffect.NavigateToAuth)
+        }
+    }
+
+    private suspend fun load2FAStatus() {
+        catchResult {
+            val factors = supabase.auth.mfa.listFactors()
+            val totpFactor = factors.totp.firstOrNull { it.status.name.equals("verified", ignoreCase = true) }
+            _state.update { it.copy(twoFactor = it.twoFactor.copy(
+                isEnrolled = totpFactor != null,
+                factorId = totpFactor?.id,
+            )) }
+        }.onFailure { e -> AppLogger.e(TAG, "load2FAStatus failed", e) }
+    }
+
+    private fun enroll2FA() {
+        viewModelScope.launch {
+            _state.update { it.copy(twoFactor = it.twoFactor.copy(isLoading = true, enrollError = null)) }
+            catchResult {
+                val response = supabase.auth.mfa.enrollTOTP()
+                _state.update { it.copy(twoFactor = it.twoFactor.copy(
+                    isLoading = false,
+                    showEnrollSheet = true,
+                    qrCodeSvg = response.qrCode,
+                    secret = response.secret,
+                    factorId = response.id,
+                )) }
+            }.onFailure { e ->
+                AppLogger.e(TAG, "enroll2FA failed", e)
+                _state.update { it.copy(twoFactor = it.twoFactor.copy(
+                    isLoading = false,
+                    enrollError = e.message ?: "Error al iniciar verificación en dos pasos",
+                )) }
+            }
+        }
+    }
+
+    private fun verify2FACode(code: String) {
+        val factorId = _state.value.twoFactor.factorId ?: return
+        viewModelScope.launch {
+            _state.update { it.copy(twoFactor = it.twoFactor.copy(isLoading = true, verifyError = null)) }
+            catchResult {
+                val challenge = supabase.auth.mfa.createChallenge(factorId)
+                supabase.auth.mfa.verifyTotp(factorId = factorId, challengeId = challenge.id, code = code)
+                _state.update { it.copy(twoFactor = it.twoFactor.copy(
+                    isLoading = false,
+                    isEnrolled = true,
+                    showEnrollSheet = false,
+                    qrCodeSvg = null,
+                    secret = null,
+                )) }
+            }.onFailure { e ->
+                AppLogger.e(TAG, "verify2FACode failed", e)
+                _state.update { it.copy(twoFactor = it.twoFactor.copy(
+                    isLoading = false,
+                    verifyError = e.message ?: "Código incorrecto. Intenta de nuevo.",
+                )) }
+            }
+        }
+    }
+
+    private fun disable2FA() {
+        val factorId = _state.value.twoFactor.factorId ?: return
+        viewModelScope.launch {
+            _state.update { it.copy(twoFactor = it.twoFactor.copy(isLoading = true)) }
+            catchResult {
+                supabase.auth.mfa.unenroll(factorId)
+                _state.update { it.copy(twoFactor = TwoFactorState(isEnrolled = false)) }
+            }.onFailure { e ->
+                AppLogger.e(TAG, "disable2FA failed", e)
+                _state.update { it.copy(twoFactor = it.twoFactor.copy(
+                    isLoading = false,
+                    enrollError = e.message ?: "Error al desactivar la verificación en dos pasos",
+                )) }
+            }
         }
     }
 

@@ -2,6 +2,7 @@ package com.ajrpachon.chatapp.ui.call
 import com.ajrpachon.chatapp.utils.catchResult
 
 import android.content.Context
+import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.domain.repository.CallRepository
@@ -20,7 +21,10 @@ import io.livekit.android.room.track.VideoTrack
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -50,6 +54,9 @@ class CallViewModel(
 
     private val _roomFlow = MutableStateFlow<Room?>(null)
     val roomFlow = _roomFlow.asStateFlow()
+
+    private val _effects = MutableSharedFlow<CallEffect>(extraBufferCapacity = 1)
+    val effects: SharedFlow<CallEffect> = _effects.asSharedFlow()
 
     private var room: Room? = null
     private var durationJob: Job? = null
@@ -319,6 +326,67 @@ class CallViewModel(
         _state.update { it.copy(isBackgroundBlurred = !it.isBackgroundBlurred) }
     }
 
+    fun processIntent(intent: CallIntent) {
+        when (intent) {
+            is CallIntent.ToggleScreenShare -> {
+                if (_state.value.isScreenSharing) {
+                    stopScreenShare()
+                } else {
+                    _effects.tryEmit(CallEffect.RequestScreenShare)
+                }
+            }
+        }
+    }
+
+    fun startScreenShare(mediaProjectionData: Intent) {
+        viewModelScope.launch {
+            AppLogger.d(TAG, "startScreenShare: enabling screen share")
+            catchResult {
+                room?.localParticipant?.setScreenShareEnabled(true, mediaProjectionData)
+            }.onSuccess {
+                AppLogger.d(TAG, "startScreenShare: OK")
+                _state.update { it.copy(isScreenSharing = true) }
+            }.onFailure { e ->
+                AppLogger.e(TAG, "startScreenShare: FAILED", e)
+            }
+        }
+    }
+
+    fun stopScreenShare() {
+        viewModelScope.launch {
+            AppLogger.d(TAG, "stopScreenShare: disabling screen share")
+            catchResult {
+                room?.localParticipant?.setScreenShareEnabled(false)
+            }.onSuccess {
+                AppLogger.d(TAG, "stopScreenShare: OK")
+                _state.update { it.copy(isScreenSharing = false) }
+            }.onFailure { e ->
+                AppLogger.e(TAG, "stopScreenShare: FAILED", e)
+            }
+        }
+    }
+
+    fun toggleInCallChat() {
+        _state.update { it.copy(showInCallChat = !it.showInCallChat) }
+    }
+
+    fun sendInCallMessage(text: String) {
+        val trimmed = text.trim()
+        if (trimmed.isBlank()) return
+        val userId = currentUserId ?: return
+        _state.update {
+            it.copy(inCallMessages = it.inCallMessages + InCallMessage(sender = userId, text = trimmed))
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            sendMessageUseCase(
+                conversationId = conversationId,
+                senderId = userId,
+                content = trimmed,
+            ).onFailure { e -> AppLogger.e(TAG, "sendInCallMessage: FAILED", e) }
+             .onSuccess { AppLogger.d(TAG, "sendInCallMessage: OK") }
+        }
+    }
+
     fun hangUp() {
         val phaseBefore = _state.value.phase
         AppLogger.d(TAG, "hangUp: called phaseBefore=$phaseBefore callId=$callId")
@@ -352,6 +420,9 @@ class CallViewModel(
         AppLogger.d(TAG, "onCleared: callId=$callId")
         missedCallJob?.cancel()
         durationJob?.cancel()
+        if (_state.value.isScreenSharing) {
+            catchResult { room?.localParticipant?.setScreenShareEnabled(false) }
+        }
         catchResult { room?.disconnect() }
         room = null
     }

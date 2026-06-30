@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.CircularProgressIndicator
@@ -123,6 +124,19 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
                 modifier = Modifier.fillMaxSize().padding(innerPadding),
                 contentAlignment = Alignment.Center,
             ) { CircularProgressIndicator() }
+
+            state.needsMfaChallenge -> Box(
+                modifier = Modifier.fillMaxSize().padding(innerPadding),
+                contentAlignment = Alignment.Center,
+            ) {
+                MfaChallengeContent(
+                    code = state.mfaCodeInput,
+                    error = state.mfaError,
+                    isLoading = state.mfaIsLoading,
+                    onCodeChange = { vm.onIntent(AuthIntent.MfaCodeChanged(it)) },
+                    onVerify = { vm.onIntent(AuthIntent.VerifyMfaCode) },
+                )
+            }
 
             state.needsUsername -> Box(
                 modifier = Modifier.fillMaxSize().padding(innerPadding),
@@ -417,6 +431,76 @@ private fun EmailPasswordForm(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text("¿Ya tienes cuenta? Inicia sesión")
+        }
+    }
+}
+
+// ── MFA Challenge ──────────────────────────────────────────────────────────────
+
+@Composable
+private fun MfaChallengeContent(
+    code: String,
+    error: String?,
+    isLoading: Boolean,
+    onCodeChange: (String) -> Unit,
+    onVerify: () -> Unit,
+) {
+    val keyboard = LocalSoftwareKeyboardController.current
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .padding(32.dp)
+            .safeDrawingPadding(),
+    ) {
+        Icon(
+            imageVector = Icons.Default.Security,
+            contentDescription = null,
+            modifier = Modifier.size(56.dp),
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(Modifier.height(16.dp))
+        Text(
+            "Verificación en dos pasos",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Introduce el código de 6 dígitos de tu aplicación de autenticación",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
+        Spacer(Modifier.height(24.dp))
+        ChatAppTextField(
+            value = code,
+            onValueChange = { if (it.length <= 6) onCodeChange(it) },
+            label = "Código TOTP",
+            leadingIcon = Icons.Default.Lock,
+            isError = error != null,
+            supportingText = error,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.NumberPassword,
+                imeAction = ImeAction.Done,
+            ),
+            keyboardActions = KeyboardActions(onDone = {
+                keyboard?.hide()
+                onVerify()
+            }),
+        )
+        Spacer(Modifier.height(16.dp))
+        if (isLoading) {
+            CircularProgressIndicator()
+        } else {
+            ChatAppPrimaryButton(
+                text = "Verificar",
+                onClick = {
+                    keyboard?.hide()
+                    onVerify()
+                },
+                enabled = code.length == 6,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }

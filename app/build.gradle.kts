@@ -190,6 +190,15 @@ dependencies {
     implementation(libs.credentials.play.services)
     implementation(libs.googleid)
 
+    // ML Kit Translation
+    implementation("com.google.mlkit:translate:17.0.3")
+
+    // QR Code generation (pure Kotlin, no native deps)
+    implementation("io.github.g0dkar:qrcode-kotlin:4.1.1")
+
+    // QR Code scanning via ZXing
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+
     // Firebase
     val firebaseBom = platform(libs.firebase.bom)
     implementation(firebaseBom)

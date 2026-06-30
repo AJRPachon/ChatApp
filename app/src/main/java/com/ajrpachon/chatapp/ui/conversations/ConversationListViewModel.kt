@@ -2,6 +2,7 @@ package com.ajrpachon.chatapp.ui.conversations
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.data.local.DraftRepository
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
@@ -29,6 +30,8 @@ class ConversationListViewModel(
     private val leaveGroupUseCase: LeaveGroupUseCase,
     private val fcmTokenManager: FcmTokenManager,
     private val presenceManager: PresenceManager,
+    private val draftRepository: DraftRepository,
+    private val notificationSoundRepository: com.ajrpachon.chatapp.data.local.NotificationSoundRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ConversationListState())
@@ -40,6 +43,11 @@ class ConversationListViewModel(
     init {
         presenceManager.start()
         viewModelScope.launch { fcmTokenManager.syncToken() }
+        viewModelScope.launch {
+            draftRepository.getAllDrafts().collect { drafts ->
+                _state.update { it.copy(drafts = drafts) }
+            }
+        }
         viewModelScope.launch {
             catchResult {
                 val user = getCurrentUserUseCase().filterNotNull().first()
@@ -120,6 +128,16 @@ class ConversationListViewModel(
                 _state.update { it.copy(showArchivedSheet = true) }
             is ConversationListIntent.DismissArchivedSheet ->
                 _state.update { it.copy(showArchivedSheet = false) }
+            is ConversationListIntent.ShowSoundPicker ->
+                _state.update { it.copy(soundPickerConversationId = intent.conversationId) }
+            is ConversationListIntent.DismissSoundPicker ->
+                _state.update { it.copy(soundPickerConversationId = null) }
+            is ConversationListIntent.SetNotificationSound ->
+                viewModelScope.launch {
+                    catchResult { notificationSoundRepository.set(intent.conversationId, intent.sound) }
+                        .onFailure { e -> _state.update { it.copy(error = e.message) } }
+                    _state.update { it.copy(soundPickerConversationId = null) }
+                }
         }
     }
 

@@ -272,6 +272,30 @@ class MessageRepositoryImpl(
         messageDao.deleteExpired(System.currentTimeMillis())
     }
 
+    override fun getPinnedMessages(conversationId: String, currentUserId: String): Flow<List<MessageBO>> =
+        messageDao.getPinnedMessages(conversationId).map { dbos ->
+            dbos.map { dbo ->
+                val senderName = userDao.getById(dbo.senderId)?.displayName ?: dbo.senderId
+                dbo.toBO(currentUserId, senderName)
+            }
+        }
+
+    override suspend fun setPinned(messageId: String, pinned: Boolean) {
+        messageDao.setPinned(messageId, pinned)
+    }
+
+    override fun getSavedMessages(currentUserId: String): Flow<List<MessageBO>> =
+        messageDao.getSavedMessages().map { dbos ->
+            dbos.map { dbo ->
+                val senderName = userDao.getById(dbo.senderId)?.displayName ?: dbo.senderId
+                dbo.toBO(currentUserId, senderName)
+            }
+        }
+
+    override suspend fun setSaved(messageId: String, saved: Boolean) {
+        messageDao.setSaved(messageId, saved)
+    }
+
     // ---------------------------------------------------------------------------
     // E2EE helpers
     // ---------------------------------------------------------------------------
@@ -328,6 +352,13 @@ class MessageRepositoryImpl(
         }.getOrElse { e ->
             android.util.Log.w("E2EE", "Decryption failed for msg ${bo.id}: ${e.message}")
             bo
+        }
+    }
+
+    override suspend fun getAllMessages(conversationId: String, currentUserId: String): List<MessageBO> {
+        return messageDao.getAllMessages(conversationId).map { dbo ->
+            val senderName = userDao.getById(dbo.senderId)?.displayName ?: dbo.senderId
+            dbo.toBO(currentUserId, senderName)
         }
     }
 }
