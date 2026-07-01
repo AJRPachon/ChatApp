@@ -25,6 +25,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material.icons.filled.DevicesOther
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Security
@@ -83,6 +86,8 @@ import org.koin.androidx.compose.koinViewModel
 fun ProfileScreen(
     onBack: () -> Unit,
     onSignOut: () -> Unit,
+    onBackup: () -> Unit = {},
+    onSessionAudit: () -> Unit = {},
 ) {
     val vm: ProfileViewModel = koinViewModel()
     val state by vm.state.collectAsStateWithLifecycle()
@@ -420,6 +425,42 @@ fun ProfileScreen(
 
             HorizontalDivider()
 
+            // ── App Lock ───────────────────────────────────────────────────
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Fingerprint,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Column {
+                        Text(
+                            "Bloqueo de la app",
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                        Text(
+                            "Requiere huella al abrir la app",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline,
+                        )
+                    }
+                }
+                Switch(
+                    checked = state.isAppLockEnabled,
+                    onCheckedChange = { vm.onIntent(ProfileIntent.ToggleAppLock) },
+                )
+            }
+
+            HorizontalDivider()
+
             // ── 2FA ────────────────────────────────────────────────────────
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -456,6 +497,62 @@ fun ProfileScreen(
                 }
             }
 
+            HorizontalDivider()
+
+            // ── Copia de seguridad ─────────────────────────────────────────
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onBackup() }
+                    .padding(vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Icon(
+                    Icons.Default.CloudUpload,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Copia de seguridad",
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Text(
+                        "Guarda y restaura mensajes en Google Drive",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                }
+            }
+            HorizontalDivider()
+
+            // ── Sesiones activas ───────────────────────────────────────────
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onSessionAudit() }
+                    .padding(vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Icon(
+                    Icons.Default.DevicesOther,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Sesiones activas",
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Text(
+                        "Ver y administrar dispositivos conectados",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                }
+            }
             HorizontalDivider()
             Spacer(Modifier.weight(1f))
 

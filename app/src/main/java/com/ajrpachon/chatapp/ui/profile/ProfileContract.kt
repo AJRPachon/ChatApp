@@ -23,6 +23,7 @@ data class ProfileState(
     val showOnlineStatus: Boolean = true,
     val themePreference: ThemePreference = ThemePreference.SYSTEM,
     val twoFactor: TwoFactorState = TwoFactorState(),
+    val isAppLockEnabled: Boolean = false,
     val error: String? = null,
 )
 
@@ -33,6 +34,7 @@ sealed interface ProfileIntent {
     data class Verify2FACode(val code: String) : ProfileIntent
     data object Disable2FA : ProfileIntent
     data object Dismiss2FASheet : ProfileIntent
+    data object ToggleAppLock : ProfileIntent
 }
 
 sealed interface ProfileEffect {

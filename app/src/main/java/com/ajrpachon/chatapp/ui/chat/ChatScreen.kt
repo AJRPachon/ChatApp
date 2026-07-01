@@ -90,7 +90,15 @@ import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.SmartToy
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerDefaults
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -185,6 +193,7 @@ fun ChatScreen(
     onStartCall: (CallBO) -> Unit = {},
     onGroupInfo: () -> Unit = {},
     onUserInfo: (userId: String) -> Unit = {},
+    onOpenPdf: (url: String, filename: String) -> Unit = { _, _ -> },
 ) {
     val vm: ChatViewModel = koinViewModel(key = conversationId, parameters = { parametersOf(conversationId, otherUserName) })
     val state by vm.state.collectAsStateWithLifecycle()
@@ -312,6 +321,7 @@ fun ChatScreen(
     }
 
     var cameraUri by rememberSaveable { mutableStateOf<Uri?>(null) }
+    var videoUri by rememberSaveable { mutableStateOf<Uri?>(null) }
 
     val galleryLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickMultipleVisualMedia()
@@ -322,8 +332,17 @@ fun ChatScreen(
     ) { uri -> if (uri != null) vm.onIntent(ChatIntent.SendFile(context, uri)) }
 
     val videoLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.PickVisualMedia()
-    ) { uri -> if (uri != null) vm.onIntent(ChatIntent.SendVideo(context, uri)) }
+        ActivityResultContracts.CaptureVideo()
+    ) { success -> if (success) videoUri?.let { vm.onIntent(ChatIntent.SendVideo(context, it)) } }
+
+    val videoPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            videoUri = createVideoUri(context)
+            videoUri?.let { videoLauncher.launch(it) }
+        }
+    }
 
     val cameraLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()
@@ -437,6 +456,25 @@ fun ChatScreen(
         )
     }
 
+    if (state.showScheduleDialog) {
+        ScheduleMessageDialog(
+            onDismiss = { vm.onIntent(ChatIntent.DismissScheduleDialog) },
+            onConfirm = { scheduledAtMs -> vm.onIntent(ChatIntent.ScheduleMessage(scheduledAtMs)) },
+        )
+    }
+
+    if (state.showAiSheet) {
+        AiAssistantSheet(
+            aiSuggestion = state.aiSuggestion,
+            isAiLoading = state.isAiLoading,
+            onDismiss = { vm.onIntent(ChatIntent.DismissAiSheet) },
+            onSummarize = { vm.onIntent(ChatIntent.AiSummarize) },
+            onSuggestReply = { vm.onIntent(ChatIntent.AiSuggestReply) },
+            onFreeform = { prompt -> vm.onIntent(ChatIntent.AiFreeform(prompt)) },
+            onInsert = { vm.onIntent(ChatIntent.InsertAiSuggestion) },
+        )
+    }
+
     val scaffoldContainerColor = if (chatTheme.backgroundTint == androidx.compose.ui.graphics.Color.Transparent) {
         MaterialTheme.colorScheme.background
     } else {
@@ -447,6 +485,23 @@ fun ChatScreen(
         containerColor = scaffoldContainerColor,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
+            Column {
+            if (state.isIncognito) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(androidx.compose.ui.graphics.Color(0xFF4A148C))
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    Text(
+                        text = "Modo incógnito — los mensajes no se guardan",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = androidx.compose.ui.graphics.Color.White,
+                    )
+                }
+            }
             if (state.isMultiSelectActive) {
                 TopAppBar(
                     navigationIcon = {
@@ -577,6 +632,27 @@ fun ChatScreen(
                             Icon(Icons.Default.Videocam, contentDescription = "Videollamada")
                         }
                     }
+                    if (state.scheduledMessageCount > 0) {
+                        Box {
+                            IconButton(onClick = { /* TODO: show scheduled list */ }) {
+                                Icon(Icons.Default.Schedule, contentDescription = "Mensajes programados")
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(4.dp)
+                                    .size(16.dp)
+                                    .background(MaterialTheme.colorScheme.error, androidx.compose.foundation.shape.CircleShape),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = state.scheduledMessageCount.toString(),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onError,
+                                )
+                            }
+                        }
+                    }
                     IconButton(onClick = { vm.onIntent(ChatIntent.OpenSearch) }) {
                         Icon(Icons.Default.Search, contentDescription = "Buscar mensajes")
                     }
@@ -639,6 +715,20 @@ fun ChatScreen(
                                     vm.onIntent(ChatIntent.ShowDisappearingModeSheet)
                                 },
                             )
+                            DropdownMenuItem(
+                                text = { Text(if (state.isIncognito) "Desactivar incógnito" else "Modo incógnito") },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Lock,
+                                        contentDescription = null,
+                                        tint = if (state.isIncognito) androidx.compose.ui.graphics.Color(0xFF7B1FA2) else MaterialTheme.colorScheme.onSurface,
+                                    )
+                                },
+                                onClick = {
+                                    menuExpanded = false
+                                    vm.onIntent(ChatIntent.ToggleIncognito)
+                                },
+                            )
                             if (state.isGroup) {
                                 DropdownMenuItem(
                                     text = { Text("Info del grupo") },
@@ -669,6 +759,7 @@ fun ChatScreen(
                     }
                 },
             )
+            } // Column wrapper for topBar (incognito banner + app bar)
         },
         bottomBar = {
             if (state.isCurrentUserMember) Surface(shadowElevation = 4.dp) {
@@ -768,11 +859,14 @@ fun ChatScreen(
                         onSticker = { vm.onIntent(ChatIntent.OpenStickerPicker) },
                         onAttachFile = { fileLauncher.launch(arrayOf("*/*")) },
                         onAttachVideo = {
-                            videoLauncher.launch(
-                                androidx.activity.result.PickVisualMediaRequest(
-                                    androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.VideoOnly
-                                )
-                            )
+                            when {
+                                ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
+                                        == PackageManager.PERMISSION_GRANTED -> {
+                                    videoUri = createVideoUri(context)
+                                    videoUri?.let { videoLauncher.launch(it) }
+                                }
+                                else -> videoPermissionLauncher.launch(Manifest.permission.CAMERA)
+                            }
                         },
                         onLocation = {
                             when {
@@ -796,6 +890,8 @@ fun ChatScreen(
                                 else -> locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                             }
                         },
+                        onSchedule = { vm.onIntent(ChatIntent.OpenScheduleDialog) },
+                        onAi = { vm.onIntent(ChatIntent.OpenAiSheet) },
                     )
                 }
                 } // Column
@@ -887,6 +983,7 @@ fun ChatScreen(
                                     onToggleSelect = { vm.onIntent(ChatIntent.ToggleMessageSelection(message.id)) },
                                     onForward = { vm.onIntent(ChatIntent.ShowForwardDialog(message)) },
                                     outgoingBubbleColor = chatTheme.bubbleColor,
+                                    onOpenPdf = onOpenPdf,
                                 )
                             }
                         } else {
@@ -912,6 +1009,7 @@ fun ChatScreen(
                                 isMultiSelectActive = state.isMultiSelectActive,
                                 onToggleSelect = { vm.onIntent(ChatIntent.ToggleMessageSelection(message.id)) },
                                 outgoingBubbleColor = chatTheme.bubbleColor,
+                                onOpenPdf = onOpenPdf,
                             )
                         }
                     }
@@ -1077,6 +1175,8 @@ private fun NormalInputBar(
     onAttachFile: () -> Unit = {},
     onAttachVideo: () -> Unit = {},
     onLocation: () -> Unit = {},
+    onSchedule: () -> Unit = {},
+    onAi: () -> Unit = {},
 ) {
     val busy = isUploadingImage || isSending
     var showAttachSheet by rememberSaveable { mutableStateOf(false) }
@@ -1114,10 +1214,27 @@ private fun NormalInputBar(
         if (isUploadingImage) {
             CircularProgressIndicator(modifier = Modifier.size(40.dp).padding(8.dp))
         } else if (inputText.isNotBlank()) {
-            IconButton(onClick = onSend, enabled = !isSending) {
-                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar")
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .combinedClickable(
+                        enabled = !isSending,
+                        onClick = onSend,
+                        onLongClick = onSchedule,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.Send,
+                    contentDescription = "Enviar (mantén para programar)",
+                    tint = MaterialTheme.colorScheme.primary,
+                )
             }
         } else {
+            IconButton(onClick = onAi, enabled = !busy) {
+                Icon(Icons.Default.SmartToy, contentDescription = "Asistente IA")
+            }
             IconButton(onClick = onMic, enabled = !busy) {
                 Icon(Icons.Default.Mic, contentDescription = "Grabar audio")
             }
@@ -1591,7 +1708,101 @@ private fun CallMessageBubble(message: MessageBO) {
 // ── FileBubble ────────────────────────────────────────────────────────────────
 
 @Composable
-private fun FileBubble(message: MessageBO, onReply: () -> Unit) {
+private fun FileBubble(
+    message: MessageBO,
+    onReply: () -> Unit,
+    onOpenPdf: (url: String, filename: String) -> Unit = { _, _ -> },
+) {
+    val isPdf = message.fileUrl?.endsWith(".pdf", ignoreCase = true) == true
+    if (isPdf) {
+        PdfFileCard(message = message, onReply = onReply, onOpenPdf = onOpenPdf)
+    } else {
+        GenericFileBubble(message = message, onReply = onReply)
+    }
+}
+
+@Composable
+private fun PdfFileCard(
+    message: MessageBO,
+    onReply: () -> Unit,
+    onOpenPdf: (url: String, filename: String) -> Unit,
+) {
+    val timeText = remember(message.createdAt) {
+        val local = message.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
+        "%02d:%02d".format(local.hour, local.minute)
+    }
+    val bubbleColor = if (message.isFromMe)
+        MaterialTheme.colorScheme.primaryContainer
+    else
+        MaterialTheme.colorScheme.surfaceVariant
+    val alignment = if (message.isFromMe) Alignment.CenterEnd else Alignment.CenterStart
+
+    Box(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp)) {
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = bubbleColor,
+            modifier = Modifier.align(alignment).widthIn(max = 280.dp)
+                .combinedClickable(onClick = {}, onLongClick = onReply),
+        ) {
+            Column(modifier = Modifier.padding(10.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AttachFile,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(28.dp),
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = message.fileName ?: "documento.pdf",
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 2,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        )
+                        if (message.fileSize != null) {
+                            Text(
+                                text = formatFileSize(message.fileSize),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    Text(
+                        text = timeText,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.align(Alignment.Bottom),
+                    )
+                }
+                Spacer(Modifier.height(6.dp))
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            val url = message.fileUrl ?: return@clickable
+                            val filename = message.fileName ?: "documento.pdf"
+                            onOpenPdf(url, filename)
+                        },
+                ) {
+                    Text(
+                        text = "Ver PDF",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GenericFileBubble(message: MessageBO, onReply: () -> Unit) {
     val timeText = remember(message.createdAt) {
         val local = message.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
         "%02d:%02d".format(local.hour, local.minute)
@@ -1857,6 +2068,7 @@ private fun MessageBubble(
     isMultiSelectActive: Boolean = false,
     onToggleSelect: () -> Unit = {},
     outgoingBubbleColor: Color = Color.Unspecified,
+    onOpenPdf: (url: String, filename: String) -> Unit = { _, _ -> },
 ) {
     if (message.isDeleted) {
         DeletedMessageBubble(message)
@@ -1871,7 +2083,7 @@ private fun MessageBubble(
         return
     }
     if (message.fileUrl != null) {
-        FileBubble(message, onReply)
+        FileBubble(message, onReply, onOpenPdf)
         return
     }
     if (message.videoUrl != null) {
@@ -2590,6 +2802,11 @@ private fun createCameraUri(context: Context): Uri {
     return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
 }
 
+private fun createVideoUri(context: Context): Uri {
+    val file = File.createTempFile("vid_", ".mp4", context.cacheDir)
+    return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+}
+
 private fun formatAudioDuration(ms: Int): String {
     val total = (ms / 1000).coerceAtLeast(0)
     return "%d:%02d".format(total / 60, total % 60)
@@ -2888,4 +3105,176 @@ private fun formatDisappearingDuration(seconds: Long): String = when {
     seconds < 86_400L -> "${seconds / 3_600}h"
     seconds < 604_800L -> "${seconds / 86_400}d"
     else -> "${seconds / 604_800}s"
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ScheduleMessageDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (Long) -> Unit,
+) {
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = System.currentTimeMillis() + 60_000,
+    )
+    val timePickerState = rememberTimePickerState(
+        initialHour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY),
+        initialMinute = java.util.Calendar.getInstance().get(java.util.Calendar.MINUTE) + 5,
+        is24Hour = true,
+    )
+    var showTimePicker by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+
+    if (!showTimePicker) {
+        DatePickerDialog(
+            onDismissRequest = onDismiss,
+            confirmButton = {
+                TextButton(onClick = { showTimePicker = true }) {
+                    Text("Siguiente")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss) { Text("Cancelar") }
+            },
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    } else {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text("Seleccionar hora") },
+            text = {
+                TimePicker(
+                    state = timePickerState,
+                    colors = TimePickerDefaults.colors(),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val selectedDateMs = datePickerState.selectedDateMillis ?: System.currentTimeMillis()
+                    val cal = java.util.Calendar.getInstance().apply {
+                        timeInMillis = selectedDateMs
+                        set(java.util.Calendar.HOUR_OF_DAY, timePickerState.hour)
+                        set(java.util.Calendar.MINUTE, timePickerState.minute)
+                        set(java.util.Calendar.SECOND, 0)
+                        set(java.util.Calendar.MILLISECOND, 0)
+                    }
+                    onConfirm(cal.timeInMillis)
+                }) {
+                    Text("Programar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss) { Text("Cancelar") }
+            },
+        )
+    }
+}
+
+// ── AI Assistant bottom sheet ─────────────────────────────────────────────────
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun AiAssistantSheet(
+    aiSuggestion: String?,
+    isAiLoading: Boolean,
+    onDismiss: () -> Unit,
+    onSummarize: () -> Unit,
+    onSuggestReply: () -> Unit,
+    onFreeform: (String) -> Unit,
+    onInsert: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var freeformText by rememberSaveable { mutableStateOf("") }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = "Asistente IA",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
+
+            // Action chips
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                androidx.compose.material3.SuggestionChip(
+                    onClick = onSummarize,
+                    label = { Text("Resumir") },
+                    enabled = !isAiLoading,
+                )
+                androidx.compose.material3.SuggestionChip(
+                    onClick = onSuggestReply,
+                    label = { Text("Sugerir respuesta") },
+                    enabled = !isAiLoading,
+                )
+            }
+
+            // Free-form input
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedTextField(
+                    value = freeformText,
+                    onValueChange = { freeformText = it },
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text("Escribe una pregunta...") },
+                    singleLine = true,
+                    enabled = !isAiLoading,
+                )
+                IconButton(
+                    onClick = {
+                        if (freeformText.isNotBlank()) {
+                            onFreeform(freeformText)
+                            freeformText = ""
+                        }
+                    },
+                    enabled = freeformText.isNotBlank() && !isAiLoading,
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar consulta")
+                }
+            }
+
+            // Loading indicator
+            if (isAiLoading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+            }
+
+            // Result area
+            if (aiSuggestion != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            MaterialTheme.colorScheme.surfaceVariant,
+                            shape = RoundedCornerShape(8.dp),
+                        )
+                        .padding(12.dp),
+                ) {
+                    Text(
+                        text = aiSuggestion,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                androidx.compose.material3.Button(
+                    onClick = onInsert,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Insertar en mensaje")
+                }
+            }
+        }
+    }
 }

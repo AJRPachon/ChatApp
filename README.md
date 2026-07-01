@@ -68,6 +68,23 @@ Proyecto personal para poner en práctica lo aprendido en desarrollo Android nat
 | 👥 | **Sugerencias de la agenda** — descubre qué contactos ya usan la app |
 | 🔑 | **Autenticación de dos factores** (TOTP) — actívala desde tu perfil |
 | ⏱️ | **Modo de mensajes temporales** — todos los mensajes de una conversación se autodestruyen tras el tiempo elegido |
+| 👥 | **Menciones en grupos** (`@nombre`) — autocompletado al escribir `@` con lista de miembros y resaltado en la burbuja |
+| 📹 | **Videollamadas grupales** — hasta 8 participantes con LiveKit, vista en cuadrícula y controles de cámara/micrófono |
+| ⏺️ | **Grabación de llamadas** — graba el audio de una llamada y descarga el archivo al finalizar |
+| 🎭 | **Filtros de cámara** — aplica filtros visuales (escala de grises, sepia, inversión) durante videollamadas |
+| ✅ | **Confirmaciones de lectura en grupos** — lista de quién ha visto cada mensaje, con nombre y timestamp |
+| 📁 | **Carpetas de conversaciones** — organiza chats en carpetas personalizadas accesibles desde la barra lateral |
+| 📊 | **Estadísticas de uso** — mensajes enviados, recibidos, medios compartidos y palabras totales por conversación |
+| 📢 | **Listas de difusión** — envía un mensaje a múltiples contactos a la vez sin crear un grupo |
+| 📅 | **Eventos de chat** — crea eventos con fecha, hora y RSVP dentro de una conversación |
+| ⏰ | **Mensajes programados** — redacta un mensaje y elige cuándo se enviará automáticamente |
+| 🎬 | **Mensajes de vídeo** — graba y envía clips de vídeo directamente desde la cámara |
+| 🔒 | **Bloqueo de app** — activa autenticación biométrica para abrir la app tras 30 s en segundo plano |
+| 🕵️ | **Modo incógnito** — actívalo por conversación para que los mensajes no se guarden en el dispositivo |
+| 🖥️ | **Auditoría de sesiones** — consulta los dispositivos activos y cierra sesiones de forma remota |
+| ☁️ | **Copia de seguridad en Drive** — exporta e importa el historial de mensajes a Google Drive |
+| 📄 | **Visor de PDF** — visualiza archivos PDF adjuntos directamente en la app con zoom y navegación |
+| 🤖 | **Asistente IA** — resume la conversación, sugiere una respuesta o lanza una consulta libre a un modelo de IA vía Supabase Edge Function |
 
 ---
 

@@ -8,6 +8,7 @@ import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
 import coil3.gif.AnimatedImageDecoder
+import coil3.video.VideoFrameDecoder
 import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
@@ -64,6 +65,7 @@ class ChatApplication : Application(), SingletonImageLoader.Factory {
             .components {
                 add(OkHttpNetworkFetcherFactory(callFactory = OkHttpProvider.client))
                 add(AnimatedImageDecoder.Factory())
+                add(VideoFrameDecoder.Factory())
             }
             .memoryCache {
                 MemoryCache.Builder()

@@ -76,4 +76,36 @@ interface MessageDao {
 
     @Query("SELECT * FROM messages WHERE conversationId = :conversationId ORDER BY createdAt ASC")
     suspend fun getAllMessages(conversationId: String): List<MessageDBO>
+
+    @Query("SELECT * FROM messages ORDER BY createdAt ASC")
+    suspend fun getAllMessages(): List<MessageDBO>
+
+    // ── Usage stats ──────────────────────────────────────────────────────────
+
+    @Query("SELECT COUNT(*) FROM messages WHERE senderId = :userId AND isDeleted = 0")
+    suspend fun countSent(userId: String): Int
+
+    @Query("SELECT COUNT(*) FROM messages WHERE senderId != :userId AND isDeleted = 0")
+    suspend fun countReceived(userId: String): Int
+
+    @Query("SELECT COUNT(*) FROM messages WHERE callType IS NOT NULL AND isDeleted = 0")
+    suspend fun countCalls(): Int
+
+    @Query("SELECT COALESCE(SUM(callDuration), 0) FROM messages WHERE callType IS NOT NULL AND callDuration IS NOT NULL AND isDeleted = 0")
+    suspend fun sumCallDurationSeconds(): Int
+
+    @Query("SELECT COUNT(*) FROM messages WHERE imageUrl IS NOT NULL AND isDeleted = 0")
+    suspend fun countImages(): Int
+
+    @Query("SELECT COUNT(*) FROM messages WHERE audioUrl IS NOT NULL AND isDeleted = 0")
+    suspend fun countAudio(): Int
+
+    @Query("SELECT COUNT(*) FROM messages WHERE videoUrl IS NOT NULL AND isDeleted = 0")
+    suspend fun countVideos(): Int
+
+    @Query("SELECT conversationId, COUNT(*) as count FROM messages WHERE isDeleted = 0 GROUP BY conversationId ORDER BY count DESC LIMIT 1")
+    suspend fun getMostActiveConversation(): ConversationMessageCount?
+
+    @Query("SELECT (createdAt / 86400000) as dayEpoch, COUNT(*) as count FROM messages WHERE createdAt >= :since AND isDeleted = 0 GROUP BY dayEpoch ORDER BY dayEpoch ASC")
+    suspend fun countMessagesByDay(since: Long): List<DayMessageCount>
 }

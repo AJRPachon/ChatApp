@@ -274,7 +274,113 @@ fun buildChatDatabase(context: Context): ChatDatabase {
             MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
             MIGRATION_9_10, MIGRATION_10_11, migration11To12,
             migration12To13, migration13To14, migration14To15, migration15To16, migration16To17,
-            migration17To18, migration18To19, migration19To20, migration20To21, migration21To22, migration22To23, migration23To24, migration24To25, migration25To26,
+            migration17To18, migration18To19, migration19To20, migration20To21, migration21To22, migration22To23, migration23To24, migration24To25, migration25To26, migration26To27, migration27To28, migration28To29, migration29To30, migration30To31, migration31To32,
         )
         .build()
+}
+
+private val migration26To27 = object : Migration(26, 27) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL(
+            """CREATE TABLE IF NOT EXISTS message_read_receipts (
+                messageId TEXT NOT NULL,
+                userId TEXT NOT NULL,
+                readAt INTEGER NOT NULL,
+                PRIMARY KEY(messageId, userId)
+            )"""
+        )
+    }
+}
+
+private val migration27To28 = object : Migration(27, 28) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL(
+            """CREATE TABLE IF NOT EXISTS folders (
+                id TEXT NOT NULL PRIMARY KEY,
+                name TEXT NOT NULL,
+                colorHex TEXT NOT NULL DEFAULT '#6200EE',
+                sortOrder INTEGER NOT NULL DEFAULT 0
+            )"""
+        )
+        connection.execSQL(
+            """CREATE TABLE IF NOT EXISTS folder_conversations (
+                folderId TEXT NOT NULL,
+                conversationId TEXT NOT NULL,
+                PRIMARY KEY(folderId, conversationId)
+            )"""
+        )
+    }
+}
+
+private val migration28To29 = object : Migration(28, 29) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL(
+            """CREATE TABLE IF NOT EXISTS broadcast_lists (
+                id TEXT NOT NULL PRIMARY KEY,
+                name TEXT NOT NULL,
+                createdAt INTEGER NOT NULL
+            )"""
+        )
+        connection.execSQL(
+            """CREATE TABLE IF NOT EXISTS broadcast_list_members (
+                listId TEXT NOT NULL,
+                userId TEXT NOT NULL,
+                PRIMARY KEY(listId, userId)
+            )"""
+        )
+        connection.execSQL("CREATE INDEX IF NOT EXISTS index_broadcast_list_members_listId ON broadcast_list_members(listId)")
+    }
+}
+
+private val migration31To32 = object : Migration(31, 32) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL(
+            """CREATE TABLE IF NOT EXISTS scheduled_messages (
+                id TEXT NOT NULL PRIMARY KEY,
+                conversationId TEXT NOT NULL,
+                senderId TEXT NOT NULL,
+                text TEXT NOT NULL,
+                scheduledAtMs INTEGER NOT NULL,
+                createdAt INTEGER NOT NULL
+            )"""
+        )
+    }
+}
+
+private val migration30To31 = object : Migration(30, 31) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL(
+            """CREATE TABLE IF NOT EXISTS active_sessions (
+                id TEXT NOT NULL PRIMARY KEY,
+                deviceInfo TEXT NOT NULL,
+                createdAt INTEGER NOT NULL,
+                lastActiveAt INTEGER NOT NULL,
+                isCurrent INTEGER NOT NULL DEFAULT 0
+            )"""
+        )
+    }
+}
+
+private val migration29To30 = object : Migration(29, 30) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL(
+            """CREATE TABLE IF NOT EXISTS chat_events (
+                id TEXT NOT NULL PRIMARY KEY,
+                conversationId TEXT NOT NULL,
+                title TEXT NOT NULL,
+                dateMs INTEGER NOT NULL,
+                location TEXT,
+                createdBy TEXT NOT NULL,
+                createdAt INTEGER NOT NULL
+            )"""
+        )
+        connection.execSQL(
+            """CREATE TABLE IF NOT EXISTS event_rsvps (
+                eventId TEXT NOT NULL,
+                userId TEXT NOT NULL,
+                status TEXT NOT NULL,
+                PRIMARY KEY(eventId, userId)
+            )"""
+        )
+    }
 }

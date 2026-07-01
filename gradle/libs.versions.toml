@@ -75,12 +75,18 @@ detekt = "1.23.8"
 mockk = "1.13.17"
 turbine = "1.2.0"
 robolectric = "4.14.1"
+workManager = "2.10.1"
+biometric = "1.2.0-alpha05"
 
 [libraries]
 # DataStore
 datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastorePreferences" }
 
+# Biometric
+androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
+
 # AndroidX
+androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workManager" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -146,6 +152,7 @@ livekit-android = { module = "io.livekit:livekit-android", version.ref = "liveki
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
 coil-gif = { module = "io.coil-kt.coil3:coil-gif", version.ref = "coil" }
+coil-video = { module = "io.coil-kt.coil3:coil-video", version.ref = "coil" }
 
 # Google Credentials (Sign-In)
 credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }

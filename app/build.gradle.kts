@@ -116,6 +116,8 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.datastore.preferences)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.biometric)
 
     // Compose BOM
     val composeBom = platform(libs.compose.bom)
@@ -184,6 +186,7 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
     implementation(libs.coil.gif)
+    implementation(libs.coil.video)
 
     // Google Sign-In
     implementation(libs.credentials)

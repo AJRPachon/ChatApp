@@ -3,6 +3,7 @@ import com.ajrpachon.chatapp.utils.catchResult
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.data.local.AppLockRepository
 import com.ajrpachon.chatapp.data.local.ThemeRepository
 import com.ajrpachon.chatapp.data.local.dao.UserDao
 import com.ajrpachon.chatapp.domain.repository.UserRepository
@@ -38,6 +39,7 @@ class ProfileViewModel(
     private val fcmTokenManager: FcmTokenManager,
     private val userRepository: UserRepository,
     private val themeRepository: ThemeRepository,
+    private val appLockRepository: AppLockRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ProfileState())
@@ -65,6 +67,9 @@ class ProfileViewModel(
         }
         themeRepository.observe()
             .onEach { pref -> _state.update { it.copy(themePreference = pref) } }
+            .launchIn(viewModelScope)
+        appLockRepository.isEnabled
+            .onEach { enabled -> _state.update { it.copy(isAppLockEnabled = enabled) } }
             .launchIn(viewModelScope)
     }
 
@@ -99,6 +104,7 @@ class ProfileViewModel(
                     verifyError = null,
                 ))
             }
+            is ProfileIntent.ToggleAppLock -> toggleAppLock()
         }
     }
 
@@ -208,6 +214,18 @@ class ProfileViewModel(
                     verifyError = e.message ?: "Código incorrecto. Intenta de nuevo.",
                 )) }
             }
+        }
+    }
+
+    private fun toggleAppLock() {
+        viewModelScope.launch {
+            catchResult {
+                if (_state.value.isAppLockEnabled) {
+                    appLockRepository.disable()
+                } else {
+                    appLockRepository.enable()
+                }
+            }.onFailure { e -> AppLogger.e(TAG, "toggleAppLock failed", e) }
         }
     }
 
