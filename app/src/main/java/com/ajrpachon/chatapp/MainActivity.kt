@@ -36,6 +36,13 @@ import androidx.navigation3.ui.NavDisplay
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import com.ajrpachon.chatapp.ui.auth.AuthScreen
 import com.ajrpachon.chatapp.ui.auth.IntegrityBlockedScreen
+import com.ajrpachon.chatapp.ui.broadcast.BroadcastListScreen
+import com.ajrpachon.chatapp.data.local.AppLockRepository
+import com.ajrpachon.chatapp.ui.applock.AppLockScreen
+import com.ajrpachon.chatapp.ui.backup.BackupScreen
+import com.ajrpachon.chatapp.ui.pdf.PdfViewerScreen
+import com.ajrpachon.chatapp.ui.profile.SessionAuditScreen
+import com.ajrpachon.chatapp.ui.usagestats.UsageStatsScreen
 import com.ajrpachon.chatapp.utils.IntegrityChecker
 import com.ajrpachon.chatapp.utils.IntegrityResult
 import androidx.compose.material3.CircularProgressIndicator
@@ -95,8 +102,16 @@ import org.koin.androidx.compose.koinViewModel
     val groupAvatarUrl: String? = null,
     val groupDescription: String? = null,
 ) : NavKey
+@Serializable data object BroadcastListRoute : NavKey
+@Serializable data object UsageStatsRoute : NavKey
+@Serializable data object SessionAuditRoute : NavKey
+@Serializable data object AppLockRoute : NavKey
+@Serializable data object BackupRoute : NavKey
+@Serializable data class PdfViewerRoute(val url: String, val filename: String) : NavKey
 
 // ── Activity ───────────────────────────────────────────────────────────────
+
+private const val APP_LOCK_TIMEOUT_MS = 30_000L
 
 class MainActivity : ComponentActivity() {
 
@@ -105,6 +120,7 @@ class MainActivity : ComponentActivity() {
     // Signals that the session has expired and the UI should redirect to AuthRoute
     private val sessionExpired = mutableStateOf(false)
     private var showRootWarning by mutableStateOf(false)
+    private val shouldShowAppLock = mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -185,6 +201,17 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
+                // Handle app lock trigger from onResume
+                val showLock by shouldShowAppLock
+                androidx.compose.runtime.LaunchedEffect(showLock) {
+                    if (showLock) {
+                        shouldShowAppLock.value = false
+                        if (backStack.none { it is AppLockRoute }) {
+                            backStack.add(AppLockRoute)
+                        }
+                    }
+                }
+
                 val conversationIdToOpen by pendingConversationId
                 val otherUserNameToOpen by pendingOtherUserName
                 androidx.compose.runtime.LaunchedEffect(conversationIdToOpen) {
@@ -222,6 +249,14 @@ class MainActivity : ComponentActivity() {
                                     onAuthenticated = dropUnlessResumed {
                                         backStack.clear()
                                         backStack.add(ConversationListRoute)
+                                    },
+                                )
+                            }
+
+                            is AppLockRoute -> NavEntry(key) {
+                                AppLockScreen(
+                                    onUnlocked = dropUnlessResumed {
+                                        backStack.removeAll { it is AppLockRoute }
                                     },
                                 )
                             }
@@ -275,6 +310,9 @@ class MainActivity : ComponentActivity() {
                                     onUserInfo = { userId ->
                                         backStack.add(UserInfoRoute(userId))
                                     },
+                                    onOpenPdf = { url, filename ->
+                                        backStack.add(PdfViewerRoute(url, filename))
+                                    },
                                 )
                             }
 
@@ -306,6 +344,36 @@ class MainActivity : ComponentActivity() {
                                 ProfileScreen(
                                     onBack = dropUnlessResumed { backStack.removeLastOrNull() },
                                     onSignOut = {
+                                        backStack.clear()
+                                        backStack.add(AuthRoute)
+                                    },
+                                    onBackup = dropUnlessResumed {
+                                        backStack.add(BackupRoute)
+                                    },
+                                    onSessionAudit = dropUnlessResumed {
+                                        backStack.add(SessionAuditRoute)
+                                    },
+                                )
+                            }
+
+                            is BackupRoute -> NavEntry(key) {
+                                BackupScreen(
+                                    onBack = dropUnlessResumed { backStack.removeLastOrNull() },
+                                )
+                            }
+
+                            is PdfViewerRoute -> NavEntry(key) {
+                                PdfViewerScreen(
+                                    url = key.url,
+                                    filename = key.filename,
+                                    onBack = dropUnlessResumed { backStack.removeLastOrNull() },
+                                )
+                            }
+
+                            is SessionAuditRoute -> NavEntry(key) {
+                                SessionAuditScreen(
+                                    onBack = dropUnlessResumed { backStack.removeLastOrNull() },
+                                    onSignedOut = {
                                         backStack.clear()
                                         backStack.add(AuthRoute)
                                     },
@@ -348,6 +416,18 @@ class MainActivity : ComponentActivity() {
                             is UserInfoRoute -> NavEntry(key) {
                                 UserInfoScreen(
                                     userId = key.userId,
+                                    onBack = dropUnlessResumed { backStack.removeLastOrNull() },
+                                )
+                            }
+
+                            is BroadcastListRoute -> NavEntry(key) {
+                                BroadcastListScreen(
+                                    onBack = dropUnlessResumed { backStack.removeLastOrNull() },
+                                )
+                            }
+
+                            is UsageStatsRoute -> NavEntry(key) {
+                                com.ajrpachon.chatapp.ui.usagestats.UsageStatsScreen(
                                     onBack = dropUnlessResumed { backStack.removeLastOrNull() },
                                 )
                             }
@@ -409,6 +489,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onPause() {
+        super.onPause()
+        val appLockRepository: AppLockRepository = get()
+        CoroutineScope(Dispatchers.IO).launch {
+            appLockRepository.recordBackgroundedAt(System.currentTimeMillis())
+        }
+    }
+
     override fun onResume() {
         super.onResume()
         val sessionGuard: SessionGuard = get()
@@ -421,6 +509,18 @@ class MainActivity : ComponentActivity() {
             sessionExpired.value = true
         } else {
             sessionGuard.recordActivity()
+        }
+        // App lock check: show lock screen if enabled and backgrounded for >30s
+        val appLockRepository: AppLockRepository = get()
+        CoroutineScope(Dispatchers.IO).launch {
+            val isEnabled = appLockRepository.isEnabled.first()
+            if (isEnabled) {
+                val backgroundedAt = appLockRepository.backgroundedAt.first()
+                val elapsed = System.currentTimeMillis() - backgroundedAt
+                if (backgroundedAt > 0L && elapsed > APP_LOCK_TIMEOUT_MS) {
+                    shouldShowAppLock.value = true
+                }
+            }
         }
     }
 

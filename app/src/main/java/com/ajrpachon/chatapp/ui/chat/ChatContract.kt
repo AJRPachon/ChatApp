@@ -5,6 +5,7 @@ import android.net.Uri
 import com.ajrpachon.chatapp.data.local.ChatTheme
 import com.ajrpachon.chatapp.domain.model.CallBO
 import com.ajrpachon.chatapp.domain.model.ConversationBO
+import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.MessageBO
 
 data class AudioState(
@@ -61,6 +62,18 @@ data class ChatState(
     // 0 = off, >0 = seconds for new messages to auto-expire
     val disappearingModeSeconds: Long = 0L,
     val showDisappearingModeSheet: Boolean = false,
+    val mentionSuggestions: List<GroupMemberBO> = emptyList(),
+    val showMentionSuggestions: Boolean = false,
+    // Incognito mode: when true, messages are NOT persisted to local Room DB
+    val isIncognito: Boolean = false,
+    // Scheduled messages
+    val showScheduleDialog: Boolean = false,
+    val scheduledAtMs: Long? = null,
+    val scheduledMessageCount: Int = 0,
+    // AI Assistant
+    val showAiSheet: Boolean = false,
+    val aiSuggestion: String? = null,
+    val isAiLoading: Boolean = false,
 ) {
     val isMultiSelectActive: Boolean get() = selectedMessageIds.isNotEmpty()
     val latestPinnedMessage: MessageBO? get() = pinnedMessages.firstOrNull()
@@ -129,6 +142,20 @@ sealed interface ChatIntent {
     data object DismissDisappearingModeSheet : ChatIntent
     // seconds: 0 = off, positive = duration in seconds
     data class SetDisappearingMode(val conversationId: String, val seconds: Long) : ChatIntent
+    data class SelectMention(val member: GroupMemberBO) : ChatIntent
+    data object ToggleIncognito : ChatIntent
+    // Scheduled messages
+    data object OpenScheduleDialog : ChatIntent
+    data object DismissScheduleDialog : ChatIntent
+    // scheduledAt: epoch millis when the message should be sent
+    data class ScheduleMessage(val scheduledAt: Long) : ChatIntent
+    // AI Assistant
+    data object OpenAiSheet : ChatIntent
+    data object DismissAiSheet : ChatIntent
+    data object AiSummarize : ChatIntent
+    data object AiSuggestReply : ChatIntent
+    data class AiFreeform(val prompt: String) : ChatIntent
+    data object InsertAiSuggestion : ChatIntent
 }
 
 sealed interface ChatEffect {

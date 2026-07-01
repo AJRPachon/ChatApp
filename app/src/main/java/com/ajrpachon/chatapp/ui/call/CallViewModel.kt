@@ -3,6 +3,8 @@ import com.ajrpachon.chatapp.utils.catchResult
 
 import android.content.Context
 import android.content.Intent
+import android.media.MediaRecorder
+import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.domain.repository.CallRepository
@@ -61,6 +63,7 @@ class CallViewModel(
     private var room: Room? = null
     private var durationJob: Job? = null
     private var missedCallJob: Job? = null
+    private var mediaRecorder: MediaRecorder? = null
 
     private var currentUserId: String? = null
     private var callMessageSent = false
@@ -174,6 +177,9 @@ class CallViewModel(
                 }
             }
 
+            // Populate participants list with anyone already in the room at connect time.
+            rebuildParticipants()
+
             if (!isOutgoing) {
                 AppLogger.d(TAG, "joinCall: accepting call callId=$callId")
                 callRepository.acceptCall(callId)
@@ -279,6 +285,26 @@ class CallViewModel(
          .onSuccess { AppLogger.d(TAG, "sendCallSummaryMessage: OK status=$status") }
     }
 
+    /**
+     * Rebuilds [CallState.participants] from the current [room] remote participants snapshot.
+     * Called after any event that changes participant presence, tracks, or speaking state.
+     */
+    private fun rebuildParticipants() {
+        val remotes = room?.remoteParticipants?.values ?: return
+        val list = remotes.map { p ->
+            ParticipantState(
+                identity = p.identity.value,
+                displayName = p.name?.takeIf { it.isNotBlank() } ?: p.identity.value,
+                videoTrack = p.videoTrackPublications.values
+                    .mapNotNull { it.track as? VideoTrack }
+                    .firstOrNull(),
+                isMuted = p.audioTrackPublications.values.firstOrNull()?.isMuted ?: false,
+                isSpeaking = p.isSpeaking,
+            )
+        }
+        _state.update { it.copy(participants = list) }
+    }
+
     private fun startDurationTimer() {
         durationJob?.cancel()
         durationJob = viewModelScope.launch {
@@ -335,6 +361,60 @@ class CallViewModel(
                     _effects.tryEmit(CallEffect.RequestScreenShare)
                 }
             }
+            is CallIntent.OpenFilterSheet -> _state.update { it.copy(showFilterSheet = true) }
+            is CallIntent.DismissFilterSheet -> _state.update { it.copy(showFilterSheet = false) }
+            is CallIntent.SetCameraFilter -> _state.update {
+                it.copy(selectedFilter = intent.filter, showFilterSheet = false)
+            }
+            is CallIntent.ToggleRecording -> {
+                if (_state.value.isRecording) {
+                    stopRecording()
+                } else {
+                    startRecording()
+                }
+            }
+        }
+    }
+
+    private fun startRecording() {
+        try {
+            val dir = context.getExternalFilesDir("recordings")
+            dir?.mkdirs()
+            val file = java.io.File(dir, "$callId.m4a")
+            val recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                MediaRecorder(context)
+            } else {
+                @Suppress("DEPRECATION")
+                MediaRecorder()
+            }
+            recorder.setAudioSource(MediaRecorder.AudioSource.MIC)
+            recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+            recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+            recorder.setOutputFile(file.absolutePath)
+            recorder.prepare()
+            recorder.start()
+            mediaRecorder = recorder
+            _state.update { it.copy(isRecording = true, recordingFilePath = file.absolutePath) }
+            AppLogger.d(TAG, "startRecording: OK path=${file.absolutePath}")
+        } catch (e: Exception) {
+            AppLogger.e(TAG, "startRecording: FAILED", e)
+        }
+    }
+
+    private fun stopRecording() {
+        try {
+            mediaRecorder?.stop()
+            mediaRecorder?.release()
+        } catch (e: Exception) {
+            AppLogger.e(TAG, "stopRecording: error during stop/release", e)
+        } finally {
+            mediaRecorder = null
+        }
+        val path = _state.value.recordingFilePath
+        _state.update { it.copy(isRecording = false) }
+        if (path != null) {
+            AppLogger.d(TAG, "stopRecording: saved to $path")
+            _effects.tryEmit(CallEffect.ShowRecordingSaved(path))
         }
     }
 
@@ -422,6 +502,11 @@ class CallViewModel(
         durationJob?.cancel()
         if (_state.value.isScreenSharing) {
             catchResult { room?.localParticipant?.setScreenShareEnabled(false) }
+        }
+        if (_state.value.isRecording) {
+            catchResult { mediaRecorder?.stop() }
+            catchResult { mediaRecorder?.release() }
+            mediaRecorder = null
         }
         catchResult { room?.disconnect() }
         room = null

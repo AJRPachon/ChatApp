@@ -79,6 +79,10 @@ class ChatViewModel(
     private val audioTranscriber: com.ajrpachon.chatapp.utils.AudioTranscriber,
     private val pollDao: com.ajrpachon.chatapp.data.local.dao.PollDao,
     private val chatThemeRepository: com.ajrpachon.chatapp.data.local.ChatThemeRepository,
+    private val scheduledMessageDao: com.ajrpachon.chatapp.data.local.dao.ScheduledMessageDao,
+    private val workManager: androidx.work.WorkManager,
+    private val incognitoRepository: com.ajrpachon.chatapp.data.local.IncognitoRepository,
+    private val aiAssistantRepository: com.ajrpachon.chatapp.data.repository.AiAssistantRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ChatState())
@@ -108,6 +112,9 @@ class ChatViewModel(
     val pinnedMessages: kotlinx.coroutines.flow.Flow<List<MessageBO>> =
         messageRepository.getPinnedMessages(conversationId, currentUserId ?: "")
 
+    // Cached group members used for @mention autocomplete
+    private var groupMembers: List<com.ajrpachon.chatapp.domain.model.GroupMemberBO> = emptyList()
+
     private var recorder: MediaRecorder? = null
     private var recordingTimerJob: Job? = null
     private var remoteSyncJob: Job? = null
@@ -119,6 +126,21 @@ class ChatViewModel(
     init {
         // Delete expired self-destruct messages when the screen opens
         viewModelScope.launch { catchResult { messageRepository.deleteExpiredMessages() } }
+
+        // Observe scheduled message count for this conversation
+        viewModelScope.launch {
+            scheduledMessageDao.observeAll().collect { all ->
+                val count = all.count { it.conversationId == conversationId }
+                _state.update { it.copy(scheduledMessageCount = count) }
+            }
+        }
+
+        // Observe incognito mode for this conversation
+        viewModelScope.launch {
+            incognitoRepository.isIncognito(conversationId).collect { incognito ->
+                _state.update { it.copy(isIncognito = incognito) }
+            }
+        }
 
         // Load saved draft for this conversation
         viewModelScope.launch {
@@ -206,6 +228,7 @@ class ChatViewModel(
                 var previousIsMember = true
                 try {
                     getGroupMembersUseCase(conversationId).collect { members ->
+                        groupMembers = members
                         val isMember = members.any { it.userId == uid }
                         AppLogger.d(TAG, "members emission: size=${members.size} isMember=$isMember prev=$previousIsMember")
                         _state.update { it.copy(isCurrentUserMember = isMember) }
@@ -296,6 +319,18 @@ class ChatViewModel(
                     delay(500)
                     draftRepository.saveDraft(conversationId, intent.text)
                 }
+                // @mention autocomplete: check last word
+                val lastWord = intent.text.substringAfterLast(' ')
+                if (_state.value.isGroup && lastWord.startsWith("@") && lastWord.length > 1) {
+                    val partial = lastWord.removePrefix("@").lowercase()
+                    val matches = groupMembers.filter { member ->
+                        member.username.lowercase().contains(partial) ||
+                            member.displayName.lowercase().contains(partial)
+                    }
+                    _state.update { it.copy(mentionSuggestions = matches, showMentionSuggestions = matches.isNotEmpty()) }
+                } else {
+                    _state.update { it.copy(mentionSuggestions = emptyList(), showMentionSuggestions = false) }
+                }
                 if (intent.text.isNotEmpty()) {
                     sendTypingPresence(true)
                     typingResetJob?.cancel()
@@ -376,6 +411,37 @@ class ChatViewModel(
             is ChatIntent.ShowDisappearingModeSheet -> _state.update { it.copy(showDisappearingModeSheet = true) }
             is ChatIntent.DismissDisappearingModeSheet -> _state.update { it.copy(showDisappearingModeSheet = false) }
             is ChatIntent.SetDisappearingMode -> setDisappearingMode(intent.conversationId, intent.seconds)
+            is ChatIntent.SelectMention -> selectMention(intent.member)
+            is ChatIntent.ToggleIncognito -> toggleIncognito()
+            is ChatIntent.OpenScheduleDialog -> _state.update { it.copy(showScheduleDialog = true) }
+            is ChatIntent.DismissScheduleDialog -> _state.update { it.copy(showScheduleDialog = false) }
+            is ChatIntent.ScheduleMessage -> scheduleMessage(intent.scheduledAt)
+            is ChatIntent.OpenAiSheet -> _state.update { it.copy(showAiSheet = true, aiSuggestion = null) }
+            is ChatIntent.DismissAiSheet -> _state.update { it.copy(showAiSheet = false, aiSuggestion = null) }
+            is ChatIntent.AiSummarize -> aiSummarize()
+            is ChatIntent.AiSuggestReply -> aiSuggestReply()
+            is ChatIntent.AiFreeform -> aiFreeform(intent.prompt)
+            is ChatIntent.InsertAiSuggestion -> {
+                val suggestion = _state.value.aiSuggestion ?: return
+                _state.update { it.copy(inputText = suggestion, showAiSheet = false, aiSuggestion = null) }
+            }
+        }
+    }
+
+    private fun selectMention(member: com.ajrpachon.chatapp.domain.model.GroupMemberBO) {
+        val currentText = _state.value.inputText
+        val lastAtIndex = currentText.lastIndexOf('@')
+        val newText = if (lastAtIndex >= 0) {
+            currentText.substring(0, lastAtIndex) + "@${member.username} "
+        } else {
+            currentText + "@${member.username} "
+        }
+        _state.update {
+            it.copy(
+                inputText = newText,
+                mentionSuggestions = emptyList(),
+                showMentionSuggestions = false,
+            )
         }
     }
 
@@ -1029,6 +1095,79 @@ class ChatViewModel(
                         )
                     }
                 }
+        }
+    }
+
+    private fun toggleIncognito() {
+        viewModelScope.launch {
+            val current = _state.value.isIncognito
+            incognitoRepository.setIncognito(conversationId, !current)
+        }
+    }
+
+    private fun scheduleMessage(scheduledAt: Long) {
+        val text = _state.value.inputText.trim()
+        val userId = _state.value.currentUserId ?: return
+        if (text.isBlank()) return
+        _state.update { it.copy(showScheduleDialog = false, inputText = "", scheduledAtMs = scheduledAt) }
+        draftSaveJob?.cancel()
+        viewModelScope.launch {
+            draftRepository.saveDraft(conversationId, "")
+            val id = java.util.UUID.randomUUID().toString()
+            val dbo = com.ajrpachon.chatapp.data.local.entity.ScheduledMessageDBO(
+                id = id,
+                conversationId = conversationId,
+                senderId = userId,
+                text = text,
+                scheduledAtMs = scheduledAt,
+                createdAt = System.currentTimeMillis(),
+            )
+            catchResult { scheduledMessageDao.insert(dbo) }
+                .onSuccess {
+                    val delayMs = (scheduledAt - System.currentTimeMillis()).coerceAtLeast(0L)
+                    val request = androidx.work.OneTimeWorkRequestBuilder<com.ajrpachon.chatapp.worker.ScheduledMessageWorker>()
+                        .setInitialDelay(delayMs, java.util.concurrent.TimeUnit.MILLISECONDS)
+                        .addTag(com.ajrpachon.chatapp.worker.ScheduledMessageWorker.WORK_TAG)
+                        .build()
+                    workManager.enqueue(request)
+                    _effect.send(ChatEffect.ShowSnackbar("Mensaje programado"))
+                }
+                .onFailure { _ ->
+                    _state.update { it.copy(error = "No se pudo programar el mensaje", inputText = text) }
+                }
+        }
+    }
+
+    private fun aiSummarize() {
+        val uid = currentUserId ?: return
+        _state.update { it.copy(isAiLoading = true) }
+        viewModelScope.launch {
+            val snippets = catchResult { messageRepository.getAllMessages(conversationId, uid).takeLast(20).map { it.text ?: "" } }
+                .getOrDefault(emptyList())
+            aiAssistantRepository.summarize(snippets)
+                .onSuccess { result -> _state.update { it.copy(aiSuggestion = result, isAiLoading = false) } }
+                .onFailure { e -> _state.update { it.copy(isAiLoading = false, error = e.message) } }
+        }
+    }
+
+    private fun aiSuggestReply() {
+        val uid = currentUserId ?: return
+        _state.update { it.copy(isAiLoading = true) }
+        viewModelScope.launch {
+            val last = catchResult { messageRepository.getAllMessages(conversationId, uid).lastOrNull { it.senderId != uid }?.text ?: "" }
+                .getOrDefault("")
+            aiAssistantRepository.suggestReply(last)
+                .onSuccess { result -> _state.update { it.copy(aiSuggestion = result, isAiLoading = false) } }
+                .onFailure { e -> _state.update { it.copy(isAiLoading = false, error = e.message) } }
+        }
+    }
+
+    private fun aiFreeform(prompt: String) {
+        _state.update { it.copy(isAiLoading = true) }
+        viewModelScope.launch {
+            aiAssistantRepository.freeform(prompt)
+                .onSuccess { result -> _state.update { it.copy(aiSuggestion = result, isAiLoading = false) } }
+                .onFailure { e -> _state.update { it.copy(isAiLoading = false, error = e.message) } }
         }
     }
 

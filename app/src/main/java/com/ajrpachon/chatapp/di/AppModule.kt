@@ -49,6 +49,16 @@ val databaseModule = module {
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().reactionDao() }
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().pollDao() }
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().stickerPackDao() }
+    single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().messageReadReceiptDao() }
+    single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().folderDao() }
+    single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().broadcastListDao() }
+    single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().chatEventDao() }
+    single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().sessionDao() }
+    single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().scheduledMessageDao() }
+}
+
+val workManagerModule = module {
+    single { androidx.work.WorkManager.getInstance(androidContext()) }
 }
 
 val networkModule = module {
@@ -89,10 +99,14 @@ val viewModelModule = module {
     viewModelOf(::CreateGroupViewModel)
     viewModelOf(::com.ajrpachon.chatapp.ui.saved.SavedMessagesViewModel)
     viewModelOf(::StickerPackViewModel)
+    viewModelOf(::com.ajrpachon.chatapp.ui.broadcast.BroadcastListViewModel)
+    viewModelOf(::com.ajrpachon.chatapp.ui.usagestats.UsageStatsViewModel)
+    viewModelOf(::com.ajrpachon.chatapp.ui.profile.SessionAuditViewModel)
+    viewModelOf(::com.ajrpachon.chatapp.ui.backup.BackupViewModel)
 
     // Needs runtime parameters — cannot use viewModelOf
     viewModel { (conversationId: String, otherUserName: String) ->
-        ChatViewModel(conversationId, otherUserName, get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get())
+        ChatViewModel(conversationId, otherUserName, get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get())
     }
     viewModel { params ->
         CallViewModel(
@@ -115,12 +129,15 @@ val viewModelModule = module {
     viewModel { (userId: String) ->
         UserInfoViewModel(userId, get(), get(), get())
     }
+    viewModel { com.ajrpachon.chatapp.ui.pdf.PdfViewerViewModel(androidContext(), com.ajrpachon.chatapp.utils.OkHttpProvider.client) }
 }
 
 val utilsModule = module {
     single { SessionGuard(androidContext()) }
     single { PresenceManager(get()) }
     single { LinkPreviewFetcher() }
+    single { com.ajrpachon.chatapp.data.local.AppLockRepository(androidContext()) }
+    single { com.ajrpachon.chatapp.data.local.IncognitoRepository(androidContext()) }
     single { ThemeRepository(androidContext()) }
     single { DraftRepository(androidContext()) }
     single { TranslationManager() }
@@ -128,6 +145,11 @@ val utilsModule = module {
     single { com.ajrpachon.chatapp.utils.AudioTranscriber() }
     single { com.ajrpachon.chatapp.data.local.ChatThemeRepository(androidContext()) }
     single { com.ajrpachon.chatapp.utils.ContactSyncManager(androidContext().contentResolver) }
+    single { com.ajrpachon.chatapp.utils.BackupManager(androidContext(), get()) }
+}
+
+val aiModule = module {
+    single { com.ajrpachon.chatapp.data.repository.AiAssistantRepository(get()) }
 }
 
 val appModules = listOf(
@@ -138,4 +160,6 @@ val appModules = listOf(
     useCaseModule,
     viewModelModule,
     utilsModule,
+    workManagerModule,
+    aiModule,
 )
