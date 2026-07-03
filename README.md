@@ -468,3 +468,5 @@ master        ← releases estables (v1.0, v1.1…)
     ├── feature/2fa
     └── feature/disappearing-mode
 ```
+
+> **Nota para desarrollo:** Las notificaciones push FCM no funcionan en emuladores a menos que el SHA-1 del debug keystore esté registrado en Firebase Console. Ejecuta `./gradlew signingReport` para obtener el SHA-1 y añádelo en Firebase Console → Configuración del proyecto → Tus apps → Android.
