@@ -12,6 +12,7 @@ import io.github.jan.supabase.realtime.realtime
 import com.ajrpachon.chatapp.utils.catchResult
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.launchIn
@@ -62,24 +63,36 @@ class InvitationRemoteSource(private val supabase: SupabaseClient) {
             .update({ set("status", status) }) { filter { eq("id", invitationId) } }
     }
 
-    // Returns all invitations between these two users in either direction (any status)
-    suspend fun getRelationshipInvitations(userA: String, userB: String): List<InvitationDTO> =
-        supabase.postgrest["invitations"]
-            .select {
-                filter {
-                    or {
-                        and {
-                            eq("sender_id", userA)
-                            eq("receiver_id", userB)
-                        }
-                        and {
-                            eq("sender_id", userB)
-                            eq("receiver_id", userA)
+    // Returns all invitations between these two users in either direction (any status).
+    // Retries once after 300 ms if the first call throws (e.g. PostgREST EOF on cold start).
+    suspend fun getRelationshipInvitations(userA: String, userB: String): List<InvitationDTO> {
+        suspend fun fetch(): List<InvitationDTO> =
+            supabase.postgrest["invitations"]
+                .select {
+                    filter {
+                        or {
+                            and {
+                                eq("sender_id", userA)
+                                eq("receiver_id", userB)
+                            }
+                            and {
+                                eq("sender_id", userB)
+                                eq("receiver_id", userA)
+                            }
                         }
                     }
                 }
-            }
-            .decodeList<InvitationDTO>()
+                .decodeList<InvitationDTO>()
+
+        return try {
+            fetch()
+        } catch (e: Exception) {
+            // PostgREST sometimes returns an empty body on the very first cold call
+            // (EOF parse error). Wait briefly and retry once.
+            delay(300)
+            fetch()
+        }
+    }
 
     suspend fun blockUser(blockerId: String, blockedId: String) {
         supabase.postgrest["blocked_users"]
