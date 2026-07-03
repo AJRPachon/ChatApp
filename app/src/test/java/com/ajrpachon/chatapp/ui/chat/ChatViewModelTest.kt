@@ -112,6 +112,7 @@ class ChatViewModelTest {
         coEvery { conversationDao.getById(any()) } returns groupConvDBO
         every { conversationDao.observeById(any()) } returns flowOf(groupConvDBO)
         every { draftRepository.getDraft(any()) } returns flowOf("")
+        every { conversationRepository.observeConversations(any()) } returns flowOf(emptyList())
         coEvery { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns
                 Result.success(mockk<MessageBO>(relaxed = true))
     }
