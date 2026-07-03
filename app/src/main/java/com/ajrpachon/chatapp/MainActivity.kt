@@ -450,7 +450,7 @@ class MainActivity : ComponentActivity() {
                                     callType = call.type.name.lowercase(),
                                     otherUserName = call.callerName,
                                     isOutgoing = false,
-                                    isGroup = call.calleeId == null,
+                                    isGroup = call.roomName.startsWith("group_"),
                                 )
                             )
                         },
