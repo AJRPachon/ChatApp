@@ -286,29 +286,75 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | **Robolectric** | 4.14.1 | Tests unitarios con contexto Android |
 | **Room Testing** | 2.8.4 | Tests de integración en memoria para DAOs |
 
-**174 tests** repartidos en 19 ficheros:
+**370 tests** repartidos en 38 ficheros:
+
+**ViewModels**
 
 | Fichero | Tests |
 |---|---|
 | `ChatViewModelTest` | 21 |
-| `FcmMessageHandlerTest` | 19 |
+| `StatusViewModelTest` | 14 |
+| `GroupInfoViewModelTest` | 12 |
+| `CreateGroupViewModelTest` | 11 |
+| `NewChatViewModelTest` | 10 |
+| `InvitationsViewModelTest` | 7 |
+| `ConversationListViewModelTest` | 5 |
+
+**DAOs (Room in-memory)**
+
+| Fichero | Tests |
+|---|---|
 | `ConversationDaoTest` | 18 |
 | `MessageDaoTest` | 15 |
-| `StatusViewModelTest` | 14 |
-| `MessageMapperTest` | 13 |
-| `GroupRepositoryImplTest` | 11 |
-| `SendMessageUseCaseTest` | 11 |
+| `GroupMemberDaoTest` | 12 |
 | `StatusDaoTest` | 10 |
+| `ReactionDaoTest` | 9 |
+| `InvitationDaoTest` | 7 |
+| `UserDaoTest` | 8 |
+
+**Repositorios**
+
+| Fichero | Tests |
+|---|---|
+| `GroupRepositoryImplTest` | 11 |
+| `InvitationRepositoryImplTest` | 12 |
 | `UserRepositoryImplTest` | 8 |
-| `GiphyKeyManagerTest` | 5 |
-| `ConversationListViewModelTest` | 5 |
-| `CatchResultTest` | 4 |
-| `ObserveConversationsUseCaseTest` | 4 |
-| `RespondInvitationUseCaseTest` | 4 |
-| `GetOrCreateConversationUseCaseTest` | 3 |
-| `LeaveGroupUseCaseTest` | 3 |
+| `ReactionRepositoryImplTest` | 5 |
 | `CallRepositoryImplTest` | 3 |
 | `MessageRepositoryImplTest` | 3 |
+
+**Use Cases**
+
+| Fichero | Tests |
+|---|---|
+| `SendMessageUseCaseTest` | 11 |
+| `SetUsernameUseCaseTest` | 12 |
+| `SendInvitationUseCaseTest` | 9 |
+| `CreateGroupUseCaseTest` | 8 |
+| `UpdateGroupUseCaseTest` | 7 |
+| `BlockUserUseCaseTest` | 6 |
+| `RespondInvitationUseCaseTest` | 4 |
+| `ObserveConversationsUseCaseTest` | 4 |
+| `GetOrCreateConversationUseCaseTest` | 3 |
+| `LeaveGroupUseCaseTest` | 3 |
+
+**Mappers y modelos**
+
+| Fichero | Tests |
+|---|---|
+| `UserMapperTest` | 16 |
+| `MediaUrlValidatorTest` | 17 |
+| `MessageMapperTest` | 13 |
+| `InvitationMapperTest` | 10 |
+
+**Utilidades y servicios**
+
+| Fichero | Tests |
+|---|---|
+| `UploadLimitsTest` | 18 |
+| `FcmMessageHandlerTest` | 19 |
+| `GiphyKeyManagerTest` | 5 |
+| `CatchResultTest` | 4 |
 
 ### CI/CD
 
