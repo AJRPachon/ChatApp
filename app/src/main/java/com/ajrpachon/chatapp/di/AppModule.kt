@@ -23,6 +23,7 @@ import com.ajrpachon.chatapp.ui.broadcast.BroadcastListViewModel
 import com.ajrpachon.chatapp.ui.usagestats.UsageStatsViewModel
 import com.ajrpachon.chatapp.ui.profile.SessionAuditViewModel
 import com.ajrpachon.chatapp.ui.backup.BackupViewModel
+import com.ajrpachon.chatapp.ui.status.StatusViewModel
 import com.ajrpachon.chatapp.service.PresenceManager
 import com.ajrpachon.chatapp.utils.LinkPreviewFetcher
 import com.ajrpachon.chatapp.utils.OkHttpProvider
@@ -60,6 +61,7 @@ val databaseModule = module {
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().chatEventDao() }
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().sessionDao() }
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().scheduledMessageDao() }
+    single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().statusDao() }
 }
 
 val workManagerModule = module {
@@ -108,6 +110,7 @@ val viewModelModule = module {
     viewModelOf(::UsageStatsViewModel)
     viewModelOf(::SessionAuditViewModel)
     viewModelOf(::BackupViewModel)
+    viewModelOf(::StatusViewModel)
 
     // Needs runtime parameters — cannot use viewModelOf
     viewModel { (conversationId: String, otherUserName: String) ->
