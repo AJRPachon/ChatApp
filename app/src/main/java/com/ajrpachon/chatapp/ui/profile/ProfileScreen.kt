@@ -211,9 +211,10 @@ fun ProfileScreen(
                         vm.onIntent(ProfileIntent.Verify2FACode(verifyCode))
                     }),
                 )
-                if (state.twoFactor.enrollError != null) {
+                val enrollError = state.twoFactor.enrollError
+                if (enrollError != null) {
                     Text(
-                        state.twoFactor.enrollError,
+                        enrollError,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                         textAlign = TextAlign.Center,
