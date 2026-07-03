@@ -85,6 +85,7 @@ Proyecto personal para poner en práctica lo aprendido en desarrollo Android nat
 | ☁️ | **Copia de seguridad en Drive** — exporta e importa el historial de mensajes a Google Drive |
 | 📄 | **Visor de PDF** — visualiza archivos PDF adjuntos directamente en la app con zoom y navegación |
 | 🤖 | **Asistente IA** — resume la conversación, sugiere una respuesta o lanza una consulta libre a un modelo de IA vía Supabase Edge Function |
+| 🔗 | **Vista previa de enlaces** — previsualización automática de URLs en los mensajes |
 
 ---
 
@@ -100,14 +101,17 @@ com.ajrpachon.chatapp/
 │   │                                 MediaUrlValidator, MessageLimits, StickerValidation,
 │   │                                 InputValidation — validación pura sin imports Android
 │   ├── repository/                   Interfaces (contratos)
-│   └── usecase/                      Un caso de uso por archivo
+│   └── usecase/                      Un caso de uso por archivo (18 en total)
 │
 ├── 🔵 data/                       ← Implementa las interfaces del dominio
 │   ├── local/
-│   │   ├── entity/                   Entidades Room (DBO)
-│   │   ├── dao/                      DAOs de acceso a la BD
-│   │   ├── ChatDatabase.kt           Base de datos Room (versión 26, cifrada con SQLCipher)
-│   │   ├── DatabaseBuilder.kt        Migraciones v1 → v26
+│   │   ├── entity/                   21 entidades Room (DBO): mensajes, conversaciones,
+│   │   │                             usuarios, invitaciones, reacciones, estados, encuestas,
+│   │   │                             stickers, recibos de lectura, carpetas, difusión,
+│   │   │                             eventos de chat, sesiones y mensajes programados
+│   │   ├── dao/                      15 DAOs de acceso a la BD
+│   │   ├── ChatDatabase.kt           Base de datos Room (versión 32, cifrada con SQLCipher)
+│   │   ├── DatabaseBuilder.kt        Migraciones v1 → v32 (31 migraciones explícitas)
 │   │   └── DatabaseKeyProvider.kt    Clave AES-256 en Android KeyStore
 │   ├── remote/
 │   │   ├── dto/                      Data Transfer Objects de Supabase
@@ -117,15 +121,22 @@ com.ajrpachon.chatapp/
 │   └── session/                      Gestión de sesión de autenticación
 │
 ├── 🟢 ui/                         ← Jetpack Compose + MVI
-│   ├── auth/                         Login, registro e IntegrityBlockedScreen
-│   ├── conversations/                Lista de conversaciones
-│   ├── chat/                         Chat (+ GiphyClient, StickerPicker, EmojiPickerBottomSheet)
-│   ├── call/                         Llamada en curso + overlay de entrante
-│   ├── newchat/                      Buscar usuario / importar contactos
+│   ├── auth/                         Login, registro, MFA challenge e IntegrityBlockedScreen
+│   ├── conversations/                Lista de conversaciones con carpetas y difusión
+│   ├── chat/                         Chat (StickerPicker, EmojiPicker, GiphyClient, asistente IA)
+│   ├── call/                         Llamada en curso + overlay de entrante (filtros, grabación, grid grupal)
+│   ├── newchat/                      Buscar usuario / importar contactos / escanear QR
 │   ├── group/                        Crear grupo y gestión de miembros
 │   ├── invitations/                  Invitaciones de amistad
-│   ├── profile/                      Perfil propio
-│   ├── userinfo/                     Perfil de otro usuario
+│   ├── profile/                      Perfil propio (2FA, sesiones, backup, estadísticas, bloqueo)
+│   ├── userinfo/                     Perfil de otro usuario con galería de medios compartidos
+│   ├── status/                       Estados de presencia estilo stories
+│   ├── applock/                      Pantalla de bloqueo biométrico
+│   ├── backup/                       Copia de seguridad en Google Drive
+│   ├── broadcast/                    Listas de difusión
+│   ├── pdf/                          Visor de PDF con PdfRenderer
+│   ├── saved/                        Mensajes guardados
+│   ├── usagestats/                   Estadísticas de uso con gráfico de barras
 │   ├── components/                   Avatar, Button, TextField, Shimmer, EmojiPickerBottomSheet
 │   └── theme/                        Color, Shape, Theme (Material3 pastel)
 │
@@ -134,12 +145,18 @@ com.ajrpachon.chatapp/
 │   ├── FcmTokenManager.kt
 │   ├── FcmMessageHandler.kt          MessagingStyle + RemoteInput + grouping
 │   ├── NotificationReplyReceiver.kt  Inline reply from notification
-│   └── ActiveChatTracker.kt
+│   ├── ActiveChatTracker.kt
+│   └── PresenceManager.kt            Estado online/offline vía Supabase Realtime
 │
+├── worker/                        ← WorkManager workers (ScheduledMessageWorker)
 ├── di/                            ← Módulos Koin (AppModule, SharedModules)
 ├── utils/                         ← AppLogger, catchResult, E2EEKeyManager,
 │                                     OkHttpProvider, SessionGuard, RootDetector,
-│                                     ClipboardProtection, IntegrityChecker
+│                                     ClipboardProtection, IntegrityChecker,
+│                                     TranslationManager, AudioTranscriber,
+│                                     ContactSyncManager, BackupManager,
+│                                     GiphyKeyManager, LinkPreviewFetcher,
+│                                     SecureStorage, UploadLimits
 ├── MainActivity.kt                ← NavDisplay + todas las rutas (Navigation 3)
 └── ChatApplication.kt             ← Inicialización de Koin y Supabase
 
@@ -148,6 +165,7 @@ supabase/
 │   ├── send-fcm-notification/     ← Edge Function: envía push via FCM v1
 │   ├── livekit-token/             ← Edge Function: genera JWT de LiveKit (secreto nunca en cliente)
 │   ├── verify-integrity/          ← Edge Function: valida Play Integrity token
+│   ├── ai-assistant/              ← Edge Function: proxy al modelo de IA (Claude via Anthropic API)
 │   └── assetlinks/                ← Edge Function: sirve /.well-known/assetlinks.json
 └── migrations/                    ← Migraciones SQL del esquema
 ```
@@ -187,13 +205,19 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | ![Compose](https://img.shields.io/badge/-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white) **Jetpack Compose BOM** | 2026.06.00 | UI declarativa |
 | ![M3](https://img.shields.io/badge/-Material%203-757575?logo=materialdesign&logoColor=white) **Material 3** | (BOM) | Sistema de diseño |
 | **Navigation 3** | 1.1.3 | Navegación entre pantallas |
-| ![Room](https://img.shields.io/badge/-Room-FF6F00?logo=android&logoColor=white) **Room** | 2.8.4 | Base de datos local con migraciones |
-| **SQLCipher** | 4.x | Cifrado AES-256 de la base de datos Room |
+| ![Room](https://img.shields.io/badge/-Room-FF6F00?logo=android&logoColor=white) **Room** | 2.8.4 | Base de datos local (v32, 21 entidades, 15 DAOs) |
+| **SQLCipher** | 4.6.1 | Cifrado AES-256 de la base de datos Room |
 | ![Koin](https://img.shields.io/badge/-Koin-F97316?logoColor=white) **Koin** | 4.2.0 | Inyección de dependencias |
 | **Kotlin Coroutines + Flow** | 1.10.1 | Concurrencia y streams asíncronos |
 | **Kotlin Serialization** | 1.8.0 | Serialización JSON |
+| **DataStore Preferences** | 1.1.1 | Almacenamiento de preferencias de usuario |
+| **WorkManager** | 2.10.1 | Ejecución de mensajes programados en background |
 | **Paging 3** | 3.5.0 | Carga paginada de mensajes |
-| ![Coil](https://img.shields.io/badge/-Coil-000000?logoColor=white) **Coil 3** | 3.1.0 | Carga de imágenes, GIFs y stickers (disk cache 50 MB + memory cache 20% heap) |
+| **Biometric** | 1.2.0-alpha05 | Autenticación biométrica para el bloqueo de app |
+| ![Coil](https://img.shields.io/badge/-Coil-000000?logoColor=white) **Coil 3** | 3.1.0 | Carga de imágenes, GIFs, stickers y vídeo (disk cache 50 MB + memory cache 20% heap) |
+| **ML Kit Translate** | 17.0.3 | Traducción offline de mensajes (sin conexión a internet) |
+| **QRCode Kotlin** | 4.1.1 | Generación de códigos QR de contacto |
+| **ZXing Android Embedded** | 4.3.0 | Escáner de códigos QR para añadir contactos |
 | **OkHttp** | 4.x | Cliente HTTP con certificate pinning |
 | **Play Integrity API** | 1.4.0 | Verificación de integridad del dispositivo y la app |
 
@@ -201,13 +225,13 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 
 | Tecnología | Versión | Uso |
 |---|---|---|
-| ![Supabase](https://img.shields.io/badge/-Supabase-3ECF8E?logo=supabase&logoColor=white) **Supabase** | 3.5.0 | PostgreSQL, Auth, Realtime y Storage |
+| ![Supabase](https://img.shields.io/badge/-Supabase-3ECF8E?logo=supabase&logoColor=white) **Supabase** | 3.5.0 | PostgreSQL, Auth, Realtime, Storage y Edge Functions |
 | ![Ktor](https://img.shields.io/badge/-Ktor-0095D5?logo=kotlin&logoColor=white) **Ktor Client** | 3.5.0 | Cliente HTTP |
 | ![Firebase](https://img.shields.io/badge/-Firebase%20FCM-FFCA28?logo=firebase&logoColor=black) **Firebase Cloud Messaging** | BOM 33.14.0 | Notificaciones push |
 | ![Google](https://img.shields.io/badge/-Google%20Sign--In-4285F4?logo=google&logoColor=white) **Credential Manager** | 1.6.0 | Autenticación con Google |
 | ![LiveKit](https://img.shields.io/badge/-LiveKit-E5363B?logoColor=white) **LiveKit** | 2.26.0 | Llamadas de voz y vídeo WebRTC |
 | **Giphy API** | — | Búsqueda y envío de GIFs |
-| ![Deno](https://img.shields.io/badge/-Deno%20%2F%20TypeScript-000000?logo=deno&logoColor=white) **Deno / TypeScript** | — | Supabase Edge Functions (FCM, LiveKit token, Play Integrity, assetlinks) |
+| ![Deno](https://img.shields.io/badge/-Deno%20%2F%20TypeScript-000000?logo=deno&logoColor=white) **Deno / TypeScript** | — | Supabase Edge Functions (FCM, LiveKit token, Play Integrity, IA, assetlinks) |
 
 ### Testing
 
@@ -218,8 +242,31 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | **Turbine** | 1.2.0 | Assertions sobre Flows |
 | **Coroutines Test** | 1.10.1 | TestDispatcher y runTest |
 | **Robolectric** | 4.14.1 | Tests unitarios con contexto Android |
-| **Room Testing** | 2.8.4 | Tests de integración en memoria para DAOs (MessageDaoTest, ConversationDaoTest — 33 tests) |
-| **Coroutines Test + MockK** | — | Tests unitarios de ViewModel (ChatViewModelTest — 8 tests de multiselección y reenvío) |
+| **Room Testing** | 2.8.4 | Tests de integración en memoria para DAOs |
+
+**174 tests** repartidos en 19 ficheros:
+
+| Fichero | Tests |
+|---|---|
+| `ChatViewModelTest` | 21 |
+| `FcmMessageHandlerTest` | 19 |
+| `ConversationDaoTest` | 18 |
+| `MessageDaoTest` | 15 |
+| `StatusViewModelTest` | 14 |
+| `MessageMapperTest` | 13 |
+| `GroupRepositoryImplTest` | 11 |
+| `SendMessageUseCaseTest` | 11 |
+| `StatusDaoTest` | 10 |
+| `UserRepositoryImplTest` | 8 |
+| `GiphyKeyManagerTest` | 5 |
+| `ConversationListViewModelTest` | 5 |
+| `CatchResultTest` | 4 |
+| `ObserveConversationsUseCaseTest` | 4 |
+| `RespondInvitationUseCaseTest` | 4 |
+| `GetOrCreateConversationUseCaseTest` | 3 |
+| `LeaveGroupUseCaseTest` | 3 |
+| `CallRepositoryImplTest` | 3 |
+| `MessageRepositoryImplTest` | 3 |
 
 ### CI/CD
 
@@ -229,14 +276,26 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | ![GitHub Secrets](https://img.shields.io/badge/-GitHub%20Secrets-181717?logo=github&logoColor=white) **GitHub Secrets** | Gestión segura de claves (Supabase, Firebase, LiveKit, Giphy) |
 | **Detekt 1.23.8** | Análisis estático de Kotlin con baseline para código heredado |
 | **Jacoco** | Cobertura de tests unitarios generada en cada CI run |
-| **OWASP Dependency Check** | Escaneo semanal de dependencias con vulnerabilidades conocidas (CVE) |
+| **OWASP Dependency Check** | Escaneo semanal de dependencias con vulnerabilidades conocidas (CVE ≥ 7.0) |
+| **Dependency Update workflow** | Regenera `gradle/verification-metadata.xml` semanalmente y abre PR automático a `develop` si hay cambios |
 
 ---
 
 ## 🚀 Setup local
 
+> Requiere Android 9 (API 28) o superior — `minSdk = 28`, `targetSdk = 37`.
+
 1. Clona el repositorio
-2. Copia `local.properties.example` → `local.properties` y rellena tus claves
+2. Copia `local.properties.example` → `local.properties` y rellena tus claves:
+
+```
+SUPABASE_URL=...
+SUPABASE_ANON_KEY=...
+GOOGLE_WEB_CLIENT_ID=...
+LIVEKIT_URL=...
+GIPHY_API_KEY=...
+```
+
 3. Descarga tu `google-services.json` de [Firebase Console](https://console.firebase.google.com) y colócalo en `app/`
 4. Abre el proyecto en Android Studio y ejecuta:
 
