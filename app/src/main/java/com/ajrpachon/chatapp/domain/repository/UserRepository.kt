@@ -13,6 +13,7 @@ interface UserRepository {
     suspend fun upsertProfile(user: UserBO)
     suspend fun updateLastSeen(userId: String)
     suspend fun updateShowOnlineStatus(userId: String, show: Boolean)
+    suspend fun updateDisplayName(userId: String, displayName: String)
     fun observeUserById(id: String): Flow<UserBO?>
     suspend fun searchUsersByEmails(emails: List<String>): List<UserBO>
 }

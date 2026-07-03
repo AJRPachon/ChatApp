@@ -56,6 +56,7 @@ class ProfileViewModel(
                     it.copy(
                         userId = user.id,
                         displayName = user.displayName,
+                        editingDisplayName = user.displayName,
                         username = user.username,
                         email = user.email,
                         avatarUrl = user.avatarUrl,
@@ -105,6 +106,8 @@ class ProfileViewModel(
                 ))
             }
             is ProfileIntent.ToggleAppLock -> toggleAppLock()
+            is ProfileIntent.EditDisplayName -> _state.update { it.copy(editingDisplayName = intent.value) }
+            is ProfileIntent.SaveDisplayName -> saveDisplayName()
         }
     }
 
@@ -243,6 +246,25 @@ class ProfileViewModel(
                     enrollError = e.message ?: "Error al desactivar la verificación en dos pasos",
                 )) }
             }
+        }
+    }
+
+    private fun saveDisplayName() {
+        val userId = supabase.auth.currentUserOrNull()?.id ?: return
+        val newName = _state.value.editingDisplayName.trim()
+        if (newName.isBlank() || newName == _state.value.displayName) return
+        viewModelScope.launch {
+            _state.update { it.copy(isSavingDisplayName = true, error = null) }
+            catchResult { userRepository.updateDisplayName(userId, newName) }
+                .onSuccess { _state.update { it.copy(displayName = newName, isSavingDisplayName = false) } }
+                .onFailure { e ->
+                    AppLogger.e(TAG, "updateDisplayName failed", e)
+                    _state.update { it.copy(
+                        isSavingDisplayName = false,
+                        editingDisplayName = it.displayName,
+                        error = e.message ?: "Error al guardar el nombre",
+                    ) }
+                }
         }
     }
 

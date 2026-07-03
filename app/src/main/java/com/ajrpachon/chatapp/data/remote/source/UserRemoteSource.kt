@@ -80,6 +80,12 @@ class UserRemoteSource(private val supabase: SupabaseClient) {
         ) { filter { eq("id", userId) } }
     }
 
+    suspend fun updateDisplayName(userId: String, displayName: String) {
+        supabase.postgrest["profiles"].update(
+            buildJsonObject { put("display_name", displayName) }
+        ) { filter { eq("id", userId) } }
+    }
+
     suspend fun searchByEmails(emails: List<String>): List<UserDTO> {
         if (emails.isEmpty()) return emptyList()
         return runCatching {

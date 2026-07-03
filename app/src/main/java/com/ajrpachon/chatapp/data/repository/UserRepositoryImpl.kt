@@ -60,6 +60,13 @@ class UserRepositoryImpl(
         }
     }
 
+    override suspend fun updateDisplayName(userId: String, displayName: String) {
+        remoteSource.updateDisplayName(userId, displayName)
+        userDao.getById(userId)?.let { dbo ->
+            userDao.upsert(dbo.copy(displayName = displayName))
+        }
+    }
+
     override fun observeUserById(id: String): Flow<UserBO?> =
         userDao.observeById(id).map { it?.toBO() }
 

@@ -353,11 +353,25 @@ fun ProfileScreen(
 
             Spacer(Modifier.size(16.dp))
 
-            Text(
-                state.displayName,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold,
+            val keyboard = LocalSoftwareKeyboardController.current
+            ChatAppTextField(
+                value = state.editingDisplayName,
+                onValueChange = { vm.onIntent(ProfileIntent.EditDisplayName(it)) },
+                label = "Nombre de display",
+                enabled = !state.isSavingDisplayName,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Done,
+                ),
+                keyboardActions = KeyboardActions(onDone = {
+                    keyboard?.hide()
+                    vm.onIntent(ProfileIntent.SaveDisplayName)
+                }),
+                modifier = Modifier.fillMaxWidth(),
             )
+            if (state.isSavingDisplayName) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp))
+            }
             Text(
                 "@${state.username}",
                 style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace),
