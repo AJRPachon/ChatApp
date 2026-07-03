@@ -35,6 +35,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeout
 
 private const val MISSED_CALL_TIMEOUT_MS = 20_000L
 
@@ -118,7 +119,11 @@ class CallViewModel(
     private suspend fun joinCall() {
         try {
             AppLogger.d(TAG, "joinCall: fetching user")
-            val user = getCurrentUserUseCase().filterNotNull().first()
+            // withTimeout prevents the Flow from hanging indefinitely if the Room DB
+            // hasn't cached the user yet (observed as infinite CONNECTING on caller side).
+            val user = withTimeout(5_000L) {
+                getCurrentUserUseCase().filterNotNull().first()
+            }
             currentUserId = user.id
             AppLogger.d(TAG, "joinCall: userId=${user.id} roomName=$roomName livekitUrl=$livekitUrl")
             val token = callRepository.fetchLivekitToken(roomName, user.id)
