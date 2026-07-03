@@ -12,12 +12,15 @@ class AndroidSessionManager(context: Context) : SessionManager {
 
     private val storage = AndroidSecureStorage(context, PREFS_NAME)
 
-    override suspend fun loadSession(): UserSession? = withContext(Dispatchers.IO) {
-        val encoded = storage.getString(KEY_SESSION) ?: return@withContext null
+    override suspend fun loadSession(): UserSession = withContext(Dispatchers.IO) {
+        val encoded = storage.getString(KEY_SESSION)
+            ?: error("No session stored")
         runCatching { json.decodeFromString<UserSession>(encoded) }
-            .onFailure { AppLogger.w(TAG, "Failed to restore session, clearing", it) }
-            .getOrNull()
-            .also { if (it == null) deleteSession() }
+            .onFailure {
+                AppLogger.w(TAG, "Failed to restore session, clearing", it)
+                deleteSession()
+            }
+            .getOrElse { error("Failed to decode session: ${it.message}") }
     }
 
     override suspend fun saveSession(session: UserSession) {
