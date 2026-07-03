@@ -22,7 +22,6 @@ import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.auth.mfa
 import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.providers.builtin.IDToken
@@ -290,10 +289,10 @@ class AuthViewModel(
             // Check if MFA challenge is required (user has a verified TOTP factor but AAL1 session)
             val mfaResult = catchResult { supabase.auth.mfa.getAuthenticatorAssuranceLevel() }
             val aal = mfaResult.getOrNull()
-            if (aal != null && aal.currentLevel != aal.nextLevel) {
-                val factorsResult = catchResult { supabase.auth.mfa.listFactors() }
-                val totpFactor = factorsResult.getOrNull()?.totp
-                    ?.firstOrNull { it.status.name.equals("verified", ignoreCase = true) }
+            if (aal != null && aal.current != aal.next) {
+                val factorsResult = catchResult { supabase.auth.mfa.retrieveFactorsForCurrentUser() }
+                val totpFactor = factorsResult.getOrNull()
+                    ?.firstOrNull { it.factorType == "totp" && it.isVerified }
                 if (totpFactor != null) {
                     _state.update { it.copy(
                         needsMfaChallenge = true,
@@ -323,7 +322,7 @@ class AuthViewModel(
             _state.update { it.copy(mfaIsLoading = true, mfaError = null) }
             catchResult {
                 val challenge = supabase.auth.mfa.createChallenge(factorId)
-                supabase.auth.mfa.verifyTotp(factorId = factorId, challengeId = challenge.id, code = code)
+                supabase.auth.mfa.verifyChallenge(factorId = factorId, challengeId = challenge.id, code = code)
                 _state.update { it.copy(needsMfaChallenge = false, mfaCodeInput = "", mfaIsLoading = false) }
                 finishSignIn()
             }.onFailure { e ->

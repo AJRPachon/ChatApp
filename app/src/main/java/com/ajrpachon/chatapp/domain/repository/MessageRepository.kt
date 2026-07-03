@@ -9,6 +9,7 @@ interface MessageRepository {
     fun observeMessages(conversationId: String, currentUserId: String, historyVisibleFrom: Long = 0L): Flow<List<MessageBO>>
     fun syncRemote(conversationId: String, historyVisibleFrom: Long = 0L): Flow<Unit>
     fun getMessagesPaged(conversationId: String, currentUserId: String, historyVisibleFrom: Long = 0L): Flow<PagingData<MessageBO>>
+    @Suppress("LongParameterList")
     suspend fun sendMessage(
         conversationId: String,
         senderId: String,

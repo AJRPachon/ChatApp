@@ -18,6 +18,11 @@ import com.ajrpachon.chatapp.ui.invitations.InvitationsViewModel
 import com.ajrpachon.chatapp.ui.newchat.NewChatViewModel
 import com.ajrpachon.chatapp.ui.profile.ProfileViewModel
 import com.ajrpachon.chatapp.ui.userinfo.UserInfoViewModel
+import com.ajrpachon.chatapp.ui.saved.SavedMessagesViewModel
+import com.ajrpachon.chatapp.ui.broadcast.BroadcastListViewModel
+import com.ajrpachon.chatapp.ui.usagestats.UsageStatsViewModel
+import com.ajrpachon.chatapp.ui.profile.SessionAuditViewModel
+import com.ajrpachon.chatapp.ui.backup.BackupViewModel
 import com.ajrpachon.chatapp.service.PresenceManager
 import com.ajrpachon.chatapp.utils.LinkPreviewFetcher
 import com.ajrpachon.chatapp.utils.OkHttpProvider
@@ -97,12 +102,12 @@ val viewModelModule = module {
         )
     }
     viewModelOf(::CreateGroupViewModel)
-    viewModelOf(::com.ajrpachon.chatapp.ui.saved.SavedMessagesViewModel)
+    viewModelOf(::SavedMessagesViewModel)
     viewModelOf(::StickerPackViewModel)
-    viewModelOf(::com.ajrpachon.chatapp.ui.broadcast.BroadcastListViewModel)
-    viewModelOf(::com.ajrpachon.chatapp.ui.usagestats.UsageStatsViewModel)
-    viewModelOf(::com.ajrpachon.chatapp.ui.profile.SessionAuditViewModel)
-    viewModelOf(::com.ajrpachon.chatapp.ui.backup.BackupViewModel)
+    viewModelOf(::BroadcastListViewModel)
+    viewModelOf(::UsageStatsViewModel)
+    viewModelOf(::SessionAuditViewModel)
+    viewModelOf(::BackupViewModel)
 
     // Needs runtime parameters — cannot use viewModelOf
     viewModel { (conversationId: String, otherUserName: String) ->

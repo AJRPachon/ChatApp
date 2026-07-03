@@ -181,6 +181,7 @@ private fun CallScreenContent(
                     val mgr = context.getSystemService(MediaProjectionManager::class.java)
                     screenShareLauncher.launch(mgr.createScreenCaptureIntent())
                 }
+                is CallEffect.ShowRecordingSaved -> { /* recording saved — no UI needed here */ }
             }
         }
     }

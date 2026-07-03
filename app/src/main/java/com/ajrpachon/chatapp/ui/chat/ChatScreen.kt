@@ -1160,6 +1160,7 @@ private fun SearchResultItem(message: MessageBO, onClick: () -> Unit = {}) {
 
 // ── Bottom bar composables ────────────────────────────────────────────────────
 
+@Suppress("LongParameterList")
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 private fun NormalInputBar(
@@ -1549,6 +1550,7 @@ private fun RemoteAudioPlayer(url: String, modifier: Modifier = Modifier) {
     )
 }
 
+@Suppress("LongParameterList")
 @Composable
 private fun AudioPlayerRow(
     isPrepared: Boolean,

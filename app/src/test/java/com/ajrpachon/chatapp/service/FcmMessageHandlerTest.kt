@@ -2,7 +2,9 @@ package com.ajrpachon.chatapp.service
 
 import android.app.NotificationManager
 import android.content.Context
+import com.ajrpachon.chatapp.data.local.NotificationSoundRepository
 import com.ajrpachon.chatapp.service.FcmMessageHandler.Payload
+import io.mockk.mockk
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -27,7 +29,7 @@ class FcmMessageHandlerTest {
     @Before
     fun setUp() {
         context = RuntimeEnvironment.getApplication()
-        handler = FcmMessageHandler(context)
+        handler = FcmMessageHandler(context, mockk<NotificationSoundRepository>(relaxed = true))
         nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     }
 

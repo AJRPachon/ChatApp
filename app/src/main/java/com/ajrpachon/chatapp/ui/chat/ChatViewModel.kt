@@ -886,28 +886,6 @@ class ChatViewModel(
         }
     }
 
-    private fun toggleMessageSelection(messageId: String) {
-        _state.update { state ->
-            val updated = if (messageId in state.selectedMessageIds) {
-                state.selectedMessageIds - messageId
-            } else {
-                state.selectedMessageIds + messageId
-            }
-            state.copy(selectedMessageIds = updated)
-        }
-    }
-
-    private fun deleteSelectedMessages() {
-        val ids = _state.value.selectedMessageIds.toSet()
-        _state.update { it.copy(selectedMessageIds = emptySet()) }
-        viewModelScope.launch {
-            for (id in ids) {
-                messageRepository.deleteMessage(id)
-                    .onFailure { e -> AppLogger.e(TAG, "Delete message $id failed", e) }
-            }
-        }
-    }
-
     private fun showForwardDialog(message: MessageBO) {
         val uid = currentUserId ?: return
         viewModelScope.launch {
@@ -1142,7 +1120,7 @@ class ChatViewModel(
         val uid = currentUserId ?: return
         _state.update { it.copy(isAiLoading = true) }
         viewModelScope.launch {
-            val snippets = catchResult { messageRepository.getAllMessages(conversationId, uid).takeLast(20).map { it.text ?: "" } }
+            val snippets = catchResult { messageRepository.getAllMessages(conversationId, uid).takeLast(20).map { it.content } }
                 .getOrDefault(emptyList())
             aiAssistantRepository.summarize(snippets)
                 .onSuccess { result -> _state.update { it.copy(aiSuggestion = result, isAiLoading = false) } }
@@ -1154,7 +1132,7 @@ class ChatViewModel(
         val uid = currentUserId ?: return
         _state.update { it.copy(isAiLoading = true) }
         viewModelScope.launch {
-            val last = catchResult { messageRepository.getAllMessages(conversationId, uid).lastOrNull { it.senderId != uid }?.text ?: "" }
+            val last = catchResult { messageRepository.getAllMessages(conversationId, uid).lastOrNull { it.senderId != uid }?.content ?: "" }
                 .getOrDefault("")
             aiAssistantRepository.suggestReply(last)
                 .onSuccess { result -> _state.update { it.copy(aiSuggestion = result, isAiLoading = false) } }
