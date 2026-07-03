@@ -52,6 +52,19 @@ class GroupRepositoryImpl(
                 description = description,
             )
         )
+        // Cache creator as ADMIN immediately so isCurrentUserMember is true when
+        // the ChatScreen loads, even before syncMembership completes.
+        groupMemberDao.upsert(
+            GroupMemberDBO(
+                userId = createdBy,
+                conversationId = convId,
+                role = "admin",
+                joinedAt = now,
+                displayName = "",
+                username = "",
+                avatarUrl = null,
+            )
+        )
         return ConversationBO(
             id = convId,
             name = name,
