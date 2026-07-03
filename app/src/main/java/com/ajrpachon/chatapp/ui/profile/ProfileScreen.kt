@@ -169,7 +169,8 @@ fun ProfileScreen(
                     modifier = Modifier.size(48.dp),
                     tint = MaterialTheme.colorScheme.primary,
                 )
-                if (state.twoFactor.secret != null) {
+                val secret = state.twoFactor.secret
+                if (secret != null) {
                     Text(
                         "Escanea el código QR o introduce manualmente esta clave en tu aplicación de autenticación (Google Authenticator, Authy, etc.):",
                         style = MaterialTheme.typography.bodyMedium,
@@ -182,7 +183,7 @@ fun ProfileScreen(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(
-                            text = state.twoFactor.secret,
+                            text = secret,
                             style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace),
                             color = MaterialTheme.colorScheme.primary,
                             textAlign = TextAlign.Center,

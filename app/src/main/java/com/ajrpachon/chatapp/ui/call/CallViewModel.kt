@@ -20,6 +20,7 @@ import io.livekit.android.room.track.CameraPosition
 import io.livekit.android.room.track.LocalVideoTrack
 import io.livekit.android.room.track.Track
 import io.livekit.android.room.track.VideoTrack
+import io.livekit.android.room.track.screencapture.ScreenCaptureParams
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -293,12 +294,12 @@ class CallViewModel(
         val remotes = room?.remoteParticipants?.values ?: return
         val list = remotes.map { p ->
             ParticipantState(
-                identity = p.identity.value,
-                displayName = p.name?.takeIf { it.isNotBlank() } ?: p.identity.value,
-                videoTrack = p.videoTrackPublications.values
-                    .mapNotNull { it.track as? VideoTrack }
+                identity = p.identity?.value ?: "",
+                displayName = p.name?.takeIf { it.isNotBlank() } ?: p.identity?.value ?: "",
+                videoTrack = p.videoTrackPublications
+                    .mapNotNull { (_, track) -> track as? VideoTrack }
                     .firstOrNull(),
-                isMuted = p.audioTrackPublications.values.firstOrNull()?.isMuted ?: false,
+                isMuted = p.audioTrackPublications.firstOrNull()?.first?.muted ?: false,
                 isSpeaking = p.isSpeaking,
             )
         }
@@ -422,7 +423,7 @@ class CallViewModel(
         viewModelScope.launch {
             AppLogger.d(TAG, "startScreenShare: enabling screen share")
             catchResult {
-                room?.localParticipant?.setScreenShareEnabled(true, mediaProjectionData)
+                room?.localParticipant?.setScreenShareEnabled(true, ScreenCaptureParams(mediaProjectionData))
             }.onSuccess {
                 AppLogger.d(TAG, "startScreenShare: OK")
                 _state.update { it.copy(isScreenSharing = true) }
@@ -500,9 +501,7 @@ class CallViewModel(
         AppLogger.d(TAG, "onCleared: callId=$callId")
         missedCallJob?.cancel()
         durationJob?.cancel()
-        if (_state.value.isScreenSharing) {
-            catchResult { room?.localParticipant?.setScreenShareEnabled(false) }
-        }
+        // Screen share is stopped automatically when the room disconnects below
         if (_state.value.isRecording) {
             catchResult { mediaRecorder?.stop() }
             catchResult { mediaRecorder?.release() }

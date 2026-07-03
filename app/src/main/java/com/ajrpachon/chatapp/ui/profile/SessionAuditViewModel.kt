@@ -36,7 +36,7 @@ class SessionAuditViewModel(
 
     private fun ensureCurrentSessionRecorded() {
         viewModelScope.launch {
-            val session = supabase.auth.currentSession ?: return@launch
+            val session = supabase.auth.currentSessionOrNull() ?: return@launch
             val now = System.currentTimeMillis()
             val deviceLabel = "${Build.MANUFACTURER} ${Build.MODEL}".trim()
             sessionDao.updateCurrentLastActive(now)

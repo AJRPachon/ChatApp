@@ -13,7 +13,7 @@ import com.ajrpachon.chatapp.utils.AppLogger
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.SignOutScope
-import io.github.jan.supabase.auth.mfa
+import io.github.jan.supabase.auth.mfa.FactorType
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.channels.Channel
@@ -162,8 +162,8 @@ class ProfileViewModel(
 
     private suspend fun load2FAStatus() {
         catchResult {
-            val factors = supabase.auth.mfa.listFactors()
-            val totpFactor = factors.totp.firstOrNull { it.status.name.equals("verified", ignoreCase = true) }
+            val factors = supabase.auth.mfa.retrieveFactorsForCurrentUser()
+            val totpFactor = factors.firstOrNull { it.factorType == "totp" && it.isVerified }
             _state.update { it.copy(twoFactor = it.twoFactor.copy(
                 isEnrolled = totpFactor != null,
                 factorId = totpFactor?.id,
@@ -175,12 +175,12 @@ class ProfileViewModel(
         viewModelScope.launch {
             _state.update { it.copy(twoFactor = it.twoFactor.copy(isLoading = true, enrollError = null)) }
             catchResult {
-                val response = supabase.auth.mfa.enrollTOTP()
+                val response = supabase.auth.mfa.enroll(FactorType.TOTP)
                 _state.update { it.copy(twoFactor = it.twoFactor.copy(
                     isLoading = false,
                     showEnrollSheet = true,
-                    qrCodeSvg = response.qrCode,
-                    secret = response.secret,
+                    qrCodeSvg = response.data.qrCode,
+                    secret = response.data.secret,
                     factorId = response.id,
                 )) }
             }.onFailure { e ->
@@ -199,7 +199,7 @@ class ProfileViewModel(
             _state.update { it.copy(twoFactor = it.twoFactor.copy(isLoading = true, verifyError = null)) }
             catchResult {
                 val challenge = supabase.auth.mfa.createChallenge(factorId)
-                supabase.auth.mfa.verifyTotp(factorId = factorId, challengeId = challenge.id, code = code)
+                supabase.auth.mfa.verifyChallenge(factorId = factorId, challengeId = challenge.id, code = code)
                 _state.update { it.copy(twoFactor = it.twoFactor.copy(
                     isLoading = false,
                     isEnrolled = true,

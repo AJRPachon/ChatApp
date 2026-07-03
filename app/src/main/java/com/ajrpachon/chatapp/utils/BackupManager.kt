@@ -4,7 +4,6 @@ import android.accounts.AccountManager
 import android.content.Context
 import com.ajrpachon.chatapp.data.local.dao.MessageDao
 import com.ajrpachon.chatapp.data.local.entity.MessageDBO
-import com.google.android.gms.auth.GoogleAuthUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -144,7 +143,8 @@ class BackupManager(
         val accounts = AccountManager.get(context).getAccountsByType("com.google")
         val account = accounts.firstOrNull()
             ?: error("No Google account found. Sign in with Google to enable backups.")
-        GoogleAuthUtil.getToken(context, account, DRIVE_SCOPE)
+        AccountManager.get(context).blockingGetAuthToken(account, DRIVE_SCOPE, true)
+            ?: error("Failed to get Google access token")
     }
 
     private suspend fun findExistingBackupFileId(token: String): String? =
