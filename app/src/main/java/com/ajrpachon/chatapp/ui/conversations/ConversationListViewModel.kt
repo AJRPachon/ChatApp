@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 
+@Suppress("LongParameterList")
 class ConversationListViewModel(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val observeConversationsUseCase: ObserveConversationsUseCase,

@@ -6,6 +6,7 @@ import com.ajrpachon.chatapp.domain.model.MessageLimits
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 
 class SendMessageUseCase(private val messageRepository: MessageRepository) {
+    @Suppress("LongParameterList")
     suspend operator fun invoke(
         conversationId: String,
         senderId: String,
