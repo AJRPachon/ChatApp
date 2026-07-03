@@ -24,68 +24,110 @@ Proyecto personal para poner en práctica lo aprendido en desarrollo Android nat
 
 ## ✨ Funcionalidades
 
+### 🔐 Autenticación y cuenta
+
 | | Funcionalidad |
 |---|---|
-| 🔐 | Registro e inicio de sesión con **email/contraseña** y **Google Sign-In** |
-| 💬 | Chat individual y grupal con **texto, imágenes, audio, GIFs y stickers** |
-| 📞 | **Llamadas de voz y videollamadas** entre usuarios |
-| 🔔 | **Notificaciones push** con deep links directos a la conversación |
-| 👥 | Gestión completa de grupos: crear, editar, añadir y expulsar miembros |
-| 🤝 | Sistema de **invitaciones de amistad** con bloqueo de usuarios |
+| 📧 | Registro e inicio de sesión con **email/contraseña** y **Google Sign-In** |
+| 🔑 | **Autenticación de dos factores** (TOTP) — actívala desde el perfil |
+| 🔒 | **Bloqueo de app** — autenticación biométrica tras 30 s en segundo plano |
+| 🖥️ | **Auditoría de sesiones** — consulta dispositivos activos y cierra sesiones remotamente |
 | 🖼️ | Perfil de usuario con **avatar** e información editable |
-| ⚡ | Lista de conversaciones **en tiempo real** |
-| ✅ | **Confirmación de lectura** con doble check y badge de mensajes no leídos |
-| 🟢 | **Estado de presencia** — "En línea" / "última vez" con opción de privacidad en el perfil |
-| 😀 | **Reacciones con emoji** — pulsación larga sobre un mensaje para reaccionar; reacciones agrupadas bajo cada burbuja |
-| 🔍 | **Búsqueda de mensajes** dentro de una conversación con resaltado del resultado |
-| ✏️ | **Edición y borrado** de mensajes propios |
-| 🔔 | **Respuesta desde la notificación** sin abrir la app |
-| 🎥 | **Cambio de cámara** durante una videollamada |
-| 🔇 | **Silenciar conversaciones** con opciones de duración (1h, 8h, 24h, siempre) |
-| 💣 | **Mensajes efímeros** con autodestrucción configurable y cuenta atrás visible |
-| 📦 | **Adjuntos agrupados** — botón `+` con galería, cámara, archivo, vídeo y sticker; micrófono separado |
+| ☁️ | **Copia de seguridad en Drive** — exporta e importa el historial a Google Drive |
+
+### 💬 Mensajería
+
+| | Funcionalidad |
+|---|---|
+| 💬 | Chat individual y grupal con **texto, imágenes, audio, GIFs y stickers** |
+| 🎬 | **Mensajes de vídeo** — graba y envía clips directamente desde la cámara |
+| 📍 | **Compartir ubicación** — envía tu posición con enlace a Google Maps |
+| 📎 | **Adjuntos agrupados** — botón `+` con galería, cámara, archivo, vídeo y sticker; micrófono separado |
 | ↩️ | **Reenvío de mensajes** a otra conversación |
+| ✏️ | **Edición y borrado** de mensajes propios |
 | ☑️ | **Selección múltiple** de mensajes para borrarlos en lote |
-| ✍️ | **Indicador de escritura** en tiempo real |
-| 🗄️ | **Archivar conversaciones** con búsqueda y orden por no leídos |
-| 🖼️ | **Galería de medios compartidos** en el perfil del contacto con zoom |
-| 🛡️ | **Roles en grupos** — el administrador puede promover o degradar a otros miembros |
-| 💬 | **Chat durante llamadas** — panel de mensajes de texto sin interrumpir la llamada |
-| 📍 | **Compartir ubicación** — envía tu posición con un enlace a Google Maps |
-| 🖥️ | **Compartir pantalla** en videollamadas |
+| 💣 | **Mensajes efímeros** con autodestrucción configurable y cuenta atrás visible |
+| ⏱️ | **Modo de mensajes temporales** — todos los mensajes de una conversación se autodestruyen tras el tiempo elegido |
+| ⏰ | **Mensajes programados** — redacta un mensaje y elige cuándo se enviará automáticamente |
 | 📝 | **Borradores** — el texto sin enviar se guarda al salir y se restaura al volver |
-| 🌐 | **Traducción de mensajes** — traduce al español con un toque (ML Kit, sin internet) |
-| 🔔 | **Sonidos de notificación personalizados** por conversación |
-| 🎙️ | **Transcripción de audios** — convierte un mensaje de voz en texto |
-| 🌫️ | **Desenfoque de fondo** en videollamadas |
 | 📌 | **Mensajes fijados** con banner y acceso directo al mensaje |
 | 🔖 | **Mensajes guardados** — marca mensajes como favoritos y accede desde tu perfil |
+| 😀 | **Reacciones con emoji** — pulsación larga para reaccionar; agrupadas bajo cada burbuja |
+| 🌐 | **Traducción de mensajes** — traduce al español con un toque (ML Kit, sin internet) |
+| 🎙️ | **Transcripción de audios** — convierte un mensaje de voz en texto |
+| 🔍 | **Búsqueda de mensajes** dentro de una conversación con resaltado del resultado |
+| 🔗 | **Vista previa de enlaces** — previsualización automática de URLs en los mensajes |
+| 📅 | **Eventos de chat** — crea eventos con fecha, hora y RSVP dentro de una conversación |
+| 📄 | **Visor de PDF** — visualiza archivos PDF adjuntos con zoom y navegación |
+
+### 👥 Grupos
+
+| | Funcionalidad |
+|---|---|
+| 👥 | Gestión completa de grupos: **crear, editar, añadir y expulsar miembros** |
+| 🛡️ | **Roles en grupos** — el administrador puede promover o degradar a otros miembros |
+| 📣 | **Menciones** (`@nombre`) — autocompletado al escribir `@` con lista de miembros y resaltado en la burbuja |
 | 📊 | **Encuestas en grupos** — crea y vota encuestas con múltiples opciones |
+| ✅ | **Confirmaciones de lectura en grupos** — lista de quién ha visto cada mensaje con timestamp |
+| 📢 | **Listas de difusión** — envía un mensaje a múltiples contactos a la vez sin crear un grupo |
+
+### 📞 Llamadas
+
+| | Funcionalidad |
+|---|---|
+| 📞 | **Llamadas de voz y videollamadas** individuales |
+| 📹 | **Videollamadas grupales** — hasta 8 participantes, vista en cuadrícula y controles de cámara/micrófono |
+| 🎥 | **Cambio de cámara** durante una videollamada |
+| 🖥️ | **Compartir pantalla** en videollamadas |
+| 💬 | **Chat durante llamadas** — panel de mensajes sin interrumpir la llamada |
+| ⏺️ | **Grabación de llamadas** — graba el audio y descarga el archivo al finalizar |
+| 🌫️ | **Desenfoque de fondo** en videollamadas |
+| 🎭 | **Filtros de cámara** — escala de grises, sepia e inversión durante videollamadas |
+
+### 🔔 Notificaciones
+
+| | Funcionalidad |
+|---|---|
+| 🔔 | **Notificaciones push** con deep links directos a la conversación |
+| ↩️ | **Respuesta desde la notificación** sin abrir la app |
+| 🎵 | **Sonidos de notificación personalizados** por conversación |
+| 🔇 | **Silenciar conversaciones** con opciones de duración (1h, 8h, 24h, siempre) |
+
+### 🗂️ Organización
+
+| | Funcionalidad |
+|---|---|
+| ⚡ | Lista de conversaciones **en tiempo real** |
+| 🗄️ | **Archivar conversaciones** con búsqueda y orden por no leídos |
+| 📁 | **Carpetas de conversaciones** — organiza chats en carpetas accesibles desde la barra lateral |
+| ✅ | **Confirmación de lectura** con doble check y badge de mensajes no leídos |
+| ✍️ | **Indicador de escritura** en tiempo real |
+| 🟢 | **Estado de presencia** — "En línea" / "última vez" con opción de privacidad |
+
+### 🤝 Contactos y social
+
+| | Funcionalidad |
+|---|---|
+| 🤝 | Sistema de **invitaciones de amistad** con bloqueo de usuarios |
+| 📷 | **Código QR de contacto** — comparte tu perfil o añade contactos escaneando un QR |
+| 👥 | **Sugerencias de la agenda** — descubre qué contactos ya usan la app |
+| 🖼️ | **Galería de medios compartidos** en el perfil del contacto con zoom |
+| 📊 | **Estadísticas de uso** — mensajes enviados, recibidos, medios y palabras por conversación |
+| 📤 | **Exportar conversación** — descarga el historial como archivo de texto |
+
+### 🔒 Seguridad y privacidad
+
+| | Funcionalidad |
+|---|---|
+| 🕵️ | **Modo incógnito** — actívalo por conversación para que los mensajes no se guarden en el dispositivo |
 | 🎨 | **Temas de color por conversación** — personaliza el fondo y el color de las burbujas |
 | 📦 | **Paquetes de stickers** — navega e instala colecciones desde la tienda |
-| 📷 | **Código QR de contacto** — comparte tu perfil o añade contactos escaneando un QR |
-| 📤 | **Exportar conversación** — descarga el historial como archivo de texto |
-| 👥 | **Sugerencias de la agenda** — descubre qué contactos ya usan la app |
-| 🔑 | **Autenticación de dos factores** (TOTP) — actívala desde tu perfil |
-| ⏱️ | **Modo de mensajes temporales** — todos los mensajes de una conversación se autodestruyen tras el tiempo elegido |
-| 👥 | **Menciones en grupos** (`@nombre`) — autocompletado al escribir `@` con lista de miembros y resaltado en la burbuja |
-| 📹 | **Videollamadas grupales** — hasta 8 participantes con LiveKit, vista en cuadrícula y controles de cámara/micrófono |
-| ⏺️ | **Grabación de llamadas** — graba el audio de una llamada y descarga el archivo al finalizar |
-| 🎭 | **Filtros de cámara** — aplica filtros visuales (escala de grises, sepia, inversión) durante videollamadas |
-| ✅ | **Confirmaciones de lectura en grupos** — lista de quién ha visto cada mensaje, con nombre y timestamp |
-| 📁 | **Carpetas de conversaciones** — organiza chats en carpetas personalizadas accesibles desde la barra lateral |
-| 📊 | **Estadísticas de uso** — mensajes enviados, recibidos, medios compartidos y palabras totales por conversación |
-| 📢 | **Listas de difusión** — envía un mensaje a múltiples contactos a la vez sin crear un grupo |
-| 📅 | **Eventos de chat** — crea eventos con fecha, hora y RSVP dentro de una conversación |
-| ⏰ | **Mensajes programados** — redacta un mensaje y elige cuándo se enviará automáticamente |
-| 🎬 | **Mensajes de vídeo** — graba y envía clips de vídeo directamente desde la cámara |
-| 🔒 | **Bloqueo de app** — activa autenticación biométrica para abrir la app tras 30 s en segundo plano |
-| 🕵️ | **Modo incógnito** — actívalo por conversación para que los mensajes no se guarden en el dispositivo |
-| 🖥️ | **Auditoría de sesiones** — consulta los dispositivos activos y cierra sesiones de forma remota |
-| ☁️ | **Copia de seguridad en Drive** — exporta e importa el historial de mensajes a Google Drive |
-| 📄 | **Visor de PDF** — visualiza archivos PDF adjuntos directamente en la app con zoom y navegación |
-| 🤖 | **Asistente IA** — resume la conversación, sugiere una respuesta o lanza una consulta libre a un modelo de IA vía Supabase Edge Function |
-| 🔗 | **Vista previa de enlaces** — previsualización automática de URLs en los mensajes |
+
+### 🤖 Inteligencia Artificial
+
+| | Funcionalidad |
+|---|---|
+| 🤖 | **Asistente IA** — resume la conversación, sugiere una respuesta o lanza consultas libres vía Supabase Edge Function |
 
 ---
 
