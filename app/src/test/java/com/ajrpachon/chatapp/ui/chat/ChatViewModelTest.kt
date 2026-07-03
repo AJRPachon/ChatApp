@@ -361,6 +361,7 @@ class ChatViewModelTest {
         advanceUntilIdle()
         val msg = mockk<MessageBO>(relaxed = true)
         vm.onIntent(ChatIntent.ShowForwardDialog(msg))
+        advanceUntilIdle()
         assertTrue(vm.state.value.showForwardDialog)
         assertEquals(msg, vm.state.value.forwardingMessage)
     }
