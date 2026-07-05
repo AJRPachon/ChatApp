@@ -92,7 +92,15 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.SmartToy
+import androidx.compose.material.icons.filled.HowToVote
+import androidx.compose.material3.Card
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.RadioButton
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.graphics.StrokeCap
+import com.ajrpachon.chatapp.data.local.dao.PollDao
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.TimePicker
@@ -475,6 +483,9 @@ fun ChatScreen(
         )
     }
 
+    val latestPinned = state.latestPinnedMessage
+    var pinnedBannerVisible by rememberSaveable(latestPinned?.id) { mutableStateOf(true) }
+
     val scaffoldContainerColor = if (chatTheme.backgroundTint == androidx.compose.ui.graphics.Color.Transparent) {
         MaterialTheme.colorScheme.background
     } else {
@@ -759,6 +770,16 @@ fun ChatScreen(
                     }
                 },
             )
+            if (latestPinned != null && pinnedBannerVisible) {
+                PinnedMessageBanner(
+                    message = latestPinned,
+                    pinnedCount = state.pinnedMessages.size,
+                    onTap = {
+                        scope.launch { snackbarHostState.showSnackbar("Ir al mensaje fijado") }
+                    },
+                    onDismiss = { vm.onIntent(ChatIntent.UnpinMessage(latestPinned.id)) },
+                )
+            }
             } // Column wrapper for topBar (incognito banner + app bar)
         },
         bottomBar = {
@@ -3276,6 +3297,52 @@ private fun AiAssistantSheet(
                 ) {
                     Text("Insertar en mensaje")
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PinnedMessageBanner(
+    message: MessageBO,
+    pinnedCount: Int,
+    onTap: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onTap),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        tonalElevation = 2.dp,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                Icons.Default.PushPin,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(16.dp),
+            )
+            Spacer(Modifier.width(8.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = if (pinnedCount > 1) "Mensaje fijado ($pinnedCount)" else "Mensaje fijado",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = message.content.ifBlank { "[Adjunto]" },
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            }
+            IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
+                Icon(Icons.Default.Close, contentDescription = "Desfijar", modifier = Modifier.size(16.dp))
             }
         }
     }
