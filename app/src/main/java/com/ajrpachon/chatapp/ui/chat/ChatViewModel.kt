@@ -127,11 +127,16 @@ class ChatViewModel(
         // Delete expired self-destruct messages when the screen opens
         viewModelScope.launch { catchResult { messageRepository.deleteExpiredMessages() } }
 
-        // Observe scheduled message count for this conversation
+        // Observe scheduled messages for this conversation
         viewModelScope.launch {
             scheduledMessageDao.observeAll().collect { all ->
-                val count = all.count { it.conversationId == conversationId }
-                _state.update { it.copy(scheduledMessageCount = count) }
+                val forThisConversation = all.filter { it.conversationId == conversationId }
+                _state.update {
+                    it.copy(
+                        scheduledMessageCount = forThisConversation.size,
+                        scheduledMessages = forThisConversation,
+                    )
+                }
             }
         }
 
@@ -416,6 +421,9 @@ class ChatViewModel(
             is ChatIntent.OpenScheduleDialog -> _state.update { it.copy(showScheduleDialog = true) }
             is ChatIntent.DismissScheduleDialog -> _state.update { it.copy(showScheduleDialog = false) }
             is ChatIntent.ScheduleMessage -> scheduleMessage(intent.scheduledAt)
+            is ChatIntent.ShowScheduledSheet -> _state.update { it.copy(showScheduledSheet = true) }
+            is ChatIntent.DismissScheduledSheet -> _state.update { it.copy(showScheduledSheet = false) }
+            is ChatIntent.CancelScheduledMessage -> cancelScheduledMessage(intent.id)
             is ChatIntent.OpenAiSheet -> _state.update { it.copy(showAiSheet = true, aiSuggestion = null) }
             is ChatIntent.DismissAiSheet -> _state.update { it.copy(showAiSheet = false, aiSuggestion = null) }
             is ChatIntent.AiSummarize -> aiSummarize()
@@ -1113,6 +1121,14 @@ class ChatViewModel(
                 .onFailure { _ ->
                     _state.update { it.copy(error = "No se pudo programar el mensaje", inputText = text) }
                 }
+        }
+    }
+
+    private fun cancelScheduledMessage(id: String) {
+        viewModelScope.launch {
+            workManager.cancelAllWorkByTag("scheduled_$id")
+            catchResult { scheduledMessageDao.deleteById(id) }
+                .onFailure { e -> AppLogger.e(TAG, "cancelScheduledMessage $id failed", e) }
         }
     }
 

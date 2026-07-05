@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.union
@@ -43,6 +44,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.paging.LoadState
@@ -463,6 +465,76 @@ fun ChatScreen(
         )
     }
 
+    if (state.showScheduledSheet) {
+        val scheduledSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ModalBottomSheet(
+            onDismissRequest = { vm.onIntent(ChatIntent.DismissScheduledSheet) },
+            sheetState = scheduledSheetState,
+        ) {
+            Text(
+                text = "Mensajes programados",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+            if (state.scheduledMessages.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            Icons.Default.Schedule,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.outlineVariant,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "No hay mensajes programados",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            } else {
+                LazyColumn {
+                    items(state.scheduledMessages, key = { it.id }) { msg ->
+                        val formatter = remember { java.text.SimpleDateFormat("dd MMM HH:mm", java.util.Locale.getDefault()) }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = msg.text,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                Text(
+                                    text = formatter.format(java.util.Date(msg.scheduledAtMs)),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            IconButton(onClick = { vm.onIntent(ChatIntent.CancelScheduledMessage(msg.id)) }) {
+                                Icon(Icons.Default.Delete, contentDescription = "Cancelar mensaje programado")
+                            }
+                        }
+                    }
+                }
+            }
+            Spacer(
+                Modifier.padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
+            )
+        }
+    }
+
     if (state.showAiSheet) {
         AiAssistantSheet(
             aiSuggestion = state.aiSuggestion,
@@ -634,7 +706,7 @@ fun ChatScreen(
                     }
                     if (state.scheduledMessageCount > 0) {
                         Box {
-                            IconButton(onClick = { /* TODO: show scheduled list */ }) {
+                            IconButton(onClick = { vm.onIntent(ChatIntent.ShowScheduledSheet) }) {
                                 Icon(Icons.Default.Schedule, contentDescription = "Mensajes programados")
                             }
                             Box(
