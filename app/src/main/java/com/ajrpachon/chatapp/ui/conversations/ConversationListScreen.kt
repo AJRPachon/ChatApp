@@ -415,6 +415,7 @@ private fun SwipeableConversationItem(
             onClearChat = onClearChat,
             onLeaveGroup = onLeaveGroup,
             onDelete = onDelete,
+            onArchive = onArchive,
         )
     }
 }
@@ -481,12 +482,13 @@ private fun ConversationItem(
     onClearChat: () -> Unit,
     onLeaveGroup: (() -> Unit)?,
     onDelete: () -> Unit,
+    onArchive: () -> Unit = {},
 ) {
     val lastMsg = conversation.lastMessage
     val fromMe = lastMsg?.isFromMe == true
     val hasUnread = conversation.unreadCount > 0
 
-    Box {
+    Box(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -659,6 +661,11 @@ private fun ConversationItem(
                     onClick = onLeaveGroup,
                 )
             }
+            DropdownMenuItem(
+                text = { Text("Archivar") },
+                leadingIcon = { Icon(Icons.Default.Archive, contentDescription = null) },
+                onClick = { onMenuDismiss(); onArchive() },
+            )
             DropdownMenuItem(
                 text = { Text("Eliminar", color = MaterialTheme.colorScheme.error) },
                 leadingIcon = {
