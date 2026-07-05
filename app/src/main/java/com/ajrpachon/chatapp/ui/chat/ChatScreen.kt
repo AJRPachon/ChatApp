@@ -387,6 +387,21 @@ fun ChatScreen(
         }
     }
 
+    val contactPickerLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickContact()
+    ) { uri ->
+        if (uri != null) {
+            val cursor = context.contentResolver.query(uri, null, null, null, null)
+            cursor?.use { c ->
+                if (c.moveToFirst()) {
+                    val nameIdx = c.getColumnIndex(android.provider.ContactsContract.Contacts.DISPLAY_NAME)
+                    val name = if (nameIdx >= 0) c.getString(nameIdx) else ""
+                    vm.onIntent(ChatIntent.SendContact(name = name, phone = ""))
+                }
+            }
+        }
+    }
+
     if (showViewer && viewerUrls.isNotEmpty()) {
         ImageViewerDialog(
             imageUrls = viewerUrls,
@@ -890,6 +905,7 @@ fun ChatScreen(
                                 else -> locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                             }
                         },
+                        onContact = { contactPickerLauncher.launch(null) },
                         onSchedule = { vm.onIntent(ChatIntent.OpenScheduleDialog) },
                         onAi = { vm.onIntent(ChatIntent.OpenAiSheet) },
                     )
@@ -2084,6 +2100,18 @@ private fun MessageBubble(
         StickerBubble(message, onReply)
         return
     }
+    if (message.content.startsWith("contact:{")) {
+        runCatching {
+            val json = message.content.removePrefix("contact:")
+            val obj = org.json.JSONObject(json)
+            ContactBubble(
+                name = obj.getString("name"),
+                phone = obj.optString("phone", ""),
+                isFromMe = message.isFromMe,
+            )
+        }
+        return
+    }
     if (message.fileUrl != null) {
         FileBubble(message, onReply, onOpenPdf)
         return
@@ -2793,6 +2821,60 @@ private fun ImageViewerDialog(
                     Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ContactBubble(name: String, phone: String, isFromMe: Boolean) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    Card(
+        modifier = Modifier.widthIn(max = 280.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isFromMe) MaterialTheme.colorScheme.primaryContainer
+            else MaterialTheme.colorScheme.surfaceVariant,
+        ),
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(40.dp),
+            ) {
+                Icon(
+                    Icons.Default.Person,
+                    contentDescription = null,
+                    modifier = Modifier.padding(8.dp),
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                if (phone.isNotBlank()) {
+                    Text(
+                        phone,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+        HorizontalDivider()
+        TextButton(
+            onClick = {
+                val dialIntent = android.content.Intent(
+                    android.content.Intent.ACTION_DIAL,
+                    android.net.Uri.parse("tel:$phone"),
+                )
+                context.startActivity(dialIntent)
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Llamar", style = MaterialTheme.typography.labelMedium)
         }
     }
 }

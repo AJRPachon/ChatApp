@@ -111,7 +111,7 @@ val viewModelModule = module {
 
     // Needs runtime parameters — cannot use viewModelOf
     viewModel { (conversationId: String, otherUserName: String) ->
-        ChatViewModel(conversationId, otherUserName, get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get())
+        ChatViewModel(conversationId, otherUserName, get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get())
     }
     viewModel { params ->
         CallViewModel(
@@ -151,6 +151,7 @@ val utilsModule = module {
     single { com.ajrpachon.chatapp.data.local.ChatThemeRepository(androidContext()) }
     single { com.ajrpachon.chatapp.utils.ContactSyncManager(androidContext().contentResolver) }
     single { com.ajrpachon.chatapp.utils.BackupManager(androidContext(), get()) }
+    single { com.ajrpachon.chatapp.data.local.WallpaperRepository(androidContext()) }
 }
 
 val aiModule = module {
