@@ -9,6 +9,7 @@ import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.ui.auth.AuthViewModel
 import com.ajrpachon.chatapp.ui.call.CallViewModel
 import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
+import com.ajrpachon.chatapp.ui.chat.ChatMediaGalleryViewModel
 import com.ajrpachon.chatapp.ui.chat.ChatViewModel
 import com.ajrpachon.chatapp.ui.chat.StickerPackViewModel
 import com.ajrpachon.chatapp.ui.conversations.ConversationListViewModel
@@ -133,6 +134,9 @@ val viewModelModule = module {
     }
     viewModel { (userId: String) ->
         UserInfoViewModel(userId, get(), get(), get())
+    }
+    viewModel { (conversationId: String) ->
+        ChatMediaGalleryViewModel(conversationId, get())
     }
     viewModel { com.ajrpachon.chatapp.ui.pdf.PdfViewerViewModel(androidContext(), com.ajrpachon.chatapp.utils.OkHttpProvider.client) }
 }

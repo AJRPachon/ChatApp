@@ -108,6 +108,7 @@ import org.koin.androidx.compose.koinViewModel
 @Serializable data object AppLockRoute : NavKey
 @Serializable data object BackupRoute : NavKey
 @Serializable data class PdfViewerRoute(val url: String, val filename: String) : NavKey
+@Serializable data class ChatMediaGalleryRoute(val conversationId: String, val conversationName: String) : NavKey
 
 // ── Activity ───────────────────────────────────────────────────────────────
 
@@ -313,6 +314,14 @@ class MainActivity : ComponentActivity() {
                                     onOpenPdf = { url, filename ->
                                         backStack.add(PdfViewerRoute(url, filename))
                                     },
+                                    onOpenMediaGallery = dropUnlessResumed {
+                                        backStack.add(
+                                            ChatMediaGalleryRoute(
+                                                conversationId = key.conversationId,
+                                                conversationName = key.otherUserName,
+                                            )
+                                        )
+                                    },
                                 )
                             }
 
@@ -428,6 +437,14 @@ class MainActivity : ComponentActivity() {
 
                             is UsageStatsRoute -> NavEntry(key) {
                                 com.ajrpachon.chatapp.ui.usagestats.UsageStatsScreen(
+                                    onBack = dropUnlessResumed { backStack.removeLastOrNull() },
+                                )
+                            }
+
+                            is ChatMediaGalleryRoute -> NavEntry(key) {
+                                com.ajrpachon.chatapp.ui.chat.ChatMediaGalleryScreen(
+                                    conversationId = key.conversationId,
+                                    conversationName = key.conversationName,
                                     onBack = dropUnlessResumed { backStack.removeLastOrNull() },
                                 )
                             }
