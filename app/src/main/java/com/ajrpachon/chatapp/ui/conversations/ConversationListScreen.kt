@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material3.Badge
@@ -81,6 +82,7 @@ import com.github.skydoves.navgraph.annotations.NavEdge
 import com.ajrpachon.chatapp.ChatRoute
 import com.ajrpachon.chatapp.ConversationListRoute
 import com.ajrpachon.chatapp.CreateGroupRoute
+import com.ajrpachon.chatapp.GlobalSearchRoute
 import com.ajrpachon.chatapp.InvitationsRoute
 import com.ajrpachon.chatapp.NewChatRoute
 import com.ajrpachon.chatapp.ProfileRoute
@@ -91,6 +93,7 @@ import org.koin.androidx.compose.koinViewModel
 @NavEdge(to = InvitationsRoute::class, label = "Invitations")
 @NavEdge(to = ProfileRoute::class, label = "Profile")
 @NavEdge(to = CreateGroupRoute::class, label = "New Group")
+@NavEdge(to = GlobalSearchRoute::class, label = "Global Search")
 @NavDestination(route = ConversationListRoute::class)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,6 +104,7 @@ fun ConversationListScreen(
     onNewGroup: () -> Unit = {},
     onOpenProfile: () -> Unit,
     onOpenStatusViewer: (userId: String) -> Unit = {},
+    onGoToGlobalSearch: () -> Unit = {},
 ) {
     val vm: ConversationListViewModel = koinViewModel()
     val state by vm.state.collectAsStateWithLifecycle()
@@ -180,6 +184,9 @@ fun ConversationListScreen(
                     )
                 },
                 actions = {
+                    IconButton(onClick = dropUnlessResumed { onGoToGlobalSearch() }) {
+                        Icon(Icons.Default.Search, contentDescription = "Buscar")
+                    }
                     IconButton(onClick = { vm.onIntent(ConversationListIntent.ShowArchivedSheet) }) {
                         BadgedBox(badge = {
                             if (state.archivedConversations.isNotEmpty()) {

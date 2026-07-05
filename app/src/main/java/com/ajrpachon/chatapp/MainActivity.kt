@@ -35,6 +35,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import com.ajrpachon.chatapp.ui.auth.AuthScreen
+import com.ajrpachon.chatapp.ui.search.GlobalSearchScreen
 import com.ajrpachon.chatapp.ui.auth.IntegrityBlockedScreen
 import com.ajrpachon.chatapp.ui.broadcast.BroadcastListScreen
 import com.ajrpachon.chatapp.data.local.AppLockRepository
@@ -108,6 +109,7 @@ import org.koin.androidx.compose.koinViewModel
 @Serializable data object AppLockRoute : NavKey
 @Serializable data object BackupRoute : NavKey
 @Serializable data class PdfViewerRoute(val url: String, val filename: String) : NavKey
+@Serializable data object GlobalSearchRoute : NavKey
 
 // ── Activity ───────────────────────────────────────────────────────────────
 
@@ -278,6 +280,9 @@ class MainActivity : ComponentActivity() {
                                     onOpenProfile = dropUnlessResumed {
                                         backStack.add(ProfileRoute)
                                     },
+                                    onGoToGlobalSearch = dropUnlessResumed {
+                                        backStack.add(GlobalSearchRoute)
+                                    },
                                 )
                             }
 
@@ -429,6 +434,16 @@ class MainActivity : ComponentActivity() {
                             is UsageStatsRoute -> NavEntry(key) {
                                 com.ajrpachon.chatapp.ui.usagestats.UsageStatsScreen(
                                     onBack = dropUnlessResumed { backStack.removeLastOrNull() },
+                                )
+                            }
+
+                            is GlobalSearchRoute -> NavEntry(key) {
+                                GlobalSearchScreen(
+                                    onBack = dropUnlessResumed { backStack.removeLastOrNull() },
+                                    onOpenConversation = { id, name, isGroup ->
+                                        backStack.removeAll { it is GlobalSearchRoute }
+                                        backStack.add(ChatRoute(id, name, isGroup))
+                                    },
                                 )
                             }
 

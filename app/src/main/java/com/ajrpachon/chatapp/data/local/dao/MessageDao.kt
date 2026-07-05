@@ -51,6 +51,9 @@ interface MessageDao {
     @Query("SELECT * FROM messages WHERE conversationId = :conversationId AND content LIKE '%' || :query || '%' ORDER BY createdAt DESC")
     suspend fun searchMessages(conversationId: String, query: String): List<MessageDBO>
 
+    @Query("SELECT * FROM messages WHERE content LIKE '%' || :query || '%' AND isDeleted = 0 ORDER BY createdAt DESC LIMIT 50")
+    suspend fun searchAllMessages(query: String): List<MessageDBO>
+
     @Query("""
         SELECT COUNT(*) FROM messages
         WHERE conversationId = :conversationId
