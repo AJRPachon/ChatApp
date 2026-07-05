@@ -475,6 +475,18 @@ fun ChatScreen(
         )
     }
 
+    if (state.showCreatePollSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { vm.onIntent(ChatIntent.DismissCreatePollSheet) },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        ) {
+            CreatePollSheetContent(
+                onDismiss = { vm.onIntent(ChatIntent.DismissCreatePollSheet) },
+                onCreate = { question, options -> vm.onIntent(ChatIntent.CreatePoll(question, options)) },
+            )
+        }
+    }
+
     val scaffoldContainerColor = if (chatTheme.backgroundTint == androidx.compose.ui.graphics.Color.Transparent) {
         MaterialTheme.colorScheme.background
     } else {
@@ -892,6 +904,7 @@ fun ChatScreen(
                         },
                         onSchedule = { vm.onIntent(ChatIntent.OpenScheduleDialog) },
                         onAi = { vm.onIntent(ChatIntent.OpenAiSheet) },
+                        onCreatePoll = { vm.onIntent(ChatIntent.OpenCreatePollSheet) },
                     )
                 }
                 } // Column
@@ -1178,6 +1191,7 @@ private fun NormalInputBar(
     onLocation: () -> Unit = {},
     onSchedule: () -> Unit = {},
     onAi: () -> Unit = {},
+    onCreatePoll: () -> Unit = {},
 ) {
     val busy = isUploadingImage || isSending
     var showAttachSheet by rememberSaveable { mutableStateOf(false) }
@@ -1284,6 +1298,12 @@ private fun NormalInputBar(
                         onLocation()
                     }
                 },
+                onCreatePoll = {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        showAttachSheet = false
+                        onCreatePoll()
+                    }
+                },
             )
         }
     }
@@ -1297,6 +1317,7 @@ private fun AttachmentBottomSheet(
     onVideo: () -> Unit,
     onSticker: () -> Unit,
     onLocation: () -> Unit = {},
+    onCreatePoll: () -> Unit = {},
 ) {
     val options = listOf(
         Triple(Icons.Default.AddPhotoAlternate, "Galería", onGallery),
@@ -1305,6 +1326,7 @@ private fun AttachmentBottomSheet(
         Triple(Icons.Default.Videocam, "Video", onVideo),
         Triple(Icons.Default.EmojiEmotions, "Stickers", onSticker),
         Triple(Icons.Default.LocationOn, "Ubicación", onLocation),
+        Triple(Icons.Default.CheckCircle, "Encuesta", onCreatePoll),
     )
 
     Column(
@@ -3277,6 +3299,96 @@ private fun AiAssistantSheet(
                     Text("Insertar en mensaje")
                 }
             }
+        }
+    }
+}
+
+// ── CreatePollSheetContent ────────────────────────────────────────────────────
+
+@Composable
+private fun CreatePollSheetContent(
+    onDismiss: () -> Unit,
+    onCreate: (question: String, options: List<String>) -> Unit,
+) {
+    var question by remember { mutableStateOf("") }
+    var options by remember { mutableStateOf(listOf("", "")) }
+
+    val isValid = question.isNotBlank() && options.count { it.isNotBlank() } >= 2
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .padding(top = 8.dp, bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = "Crear encuesta",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+
+        OutlinedTextField(
+            value = question,
+            onValueChange = { question = it },
+            label = { Text("Pregunta") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+
+        options.forEachIndexed { index, option ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedTextField(
+                    value = option,
+                    onValueChange = { newValue ->
+                        options = options.toMutableList().also { it[index] = newValue }
+                    },
+                    label = { Text("Opción ${index + 1}") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                )
+                if (options.size > 2) {
+                    IconButton(
+                        onClick = {
+                            options = options.toMutableList().also { it.removeAt(index) }
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Eliminar opción",
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+            }
+        }
+
+        if (options.size < 10) {
+            TextButton(
+                onClick = { options = options + "" },
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.width(4.dp))
+                Text("Añadir opción")
+            }
+        }
+
+        androidx.compose.material3.Button(
+            onClick = {
+                onCreate(question, options.filter { it.isNotBlank() })
+                onDismiss()
+            },
+            enabled = isValid,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Crear encuesta")
         }
     }
 }
