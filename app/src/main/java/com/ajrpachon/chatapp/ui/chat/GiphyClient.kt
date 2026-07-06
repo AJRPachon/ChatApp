@@ -48,10 +48,21 @@ data class GiphyImageData(
     @SerialName("url") val url: String = "",
 )
 
-internal val giphyClient = HttpClient(OkHttp) {
-    engine { preconfigured = OkHttpProvider.client }
-    install(ContentNegotiation) {
-        json(Json { ignoreUnknownKeys = true })
+/**
+ * Singleton wrapper around the Ktor [HttpClient] used for Giphy API calls.
+ * Call [close] when the client is no longer needed (e.g. during app teardown)
+ * to release the underlying OkHttp connection pool.
+ */
+internal object GiphyClientHolder : java.io.Closeable {
+    val client: HttpClient = HttpClient(OkHttp) {
+        engine { preconfigured = OkHttpProvider.client }
+        install(ContentNegotiation) {
+            json(Json { ignoreUnknownKeys = true })
+        }
+    }
+
+    override fun close() {
+        client.close()
     }
 }
 
@@ -65,7 +76,7 @@ internal suspend fun searchGiphy(query: String): GiphyResult {
         "https://api.giphy.com/v1/gifs/search"
     }
     return runCatching {
-        val response = giphyClient.get(endpoint) {
+        val response = GiphyClientHolder.client.get(endpoint) {
             parameter("api_key", apiKey)
             parameter("limit", 24)
             if (query.isNotBlank()) parameter("q", query)
