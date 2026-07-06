@@ -77,6 +77,7 @@ turbine = "1.2.1"
 robolectric = "4.16.1"
 workManager = "2.11.2"
 biometric = "1.2.0-alpha05"
+security-crypto = "1.1.0-alpha06"
 
 [libraries]
 # DataStore
@@ -84,6 +85,9 @@ datastore-preferences = { group = "androidx.datastore", name = "datastore-prefer
 
 # Biometric
 androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
+
+# Security
+security-crypto = { module = "androidx.security:security-crypto", version.ref = "security-crypto" }
 
 # AndroidX
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workManager" }

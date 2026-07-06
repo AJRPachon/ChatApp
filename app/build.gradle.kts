@@ -127,6 +127,7 @@ dependencies {
     implementation(libs.datastore.preferences)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.biometric)
+    implementation(libs.security.crypto)
 
     // Compose BOM
     val composeBom = platform(libs.compose.bom)

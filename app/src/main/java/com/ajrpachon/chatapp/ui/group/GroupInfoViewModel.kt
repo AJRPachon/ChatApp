@@ -8,6 +8,7 @@ import com.ajrpachon.chatapp.domain.model.GroupRole
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
+import com.ajrpachon.chatapp.utils.AppConstants
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.domain.usecase.GetGroupMembersUseCase
 import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
@@ -103,7 +104,7 @@ class GroupInfoViewModel(
             GroupInfoIntent.DismissError -> _state.update { it.copy(error = null) }
             GroupInfoIntent.GenerateInviteLink -> {
                 val code = java.util.UUID.randomUUID().toString().take(8).uppercase()
-                val link = "https://chatapp.page.link/join?g=$conversationId&c=$code"
+                val link = "${AppConstants.GROUP_INVITE_BASE_URL}?g=$conversationId&c=$code"
                 _state.update { it.copy(inviteLink = link, showInviteLinkSheet = true) }
             }
             GroupInfoIntent.DismissInviteLinkSheet -> _state.update { it.copy(showInviteLinkSheet = false) }

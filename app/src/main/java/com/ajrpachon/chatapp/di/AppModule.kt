@@ -57,6 +57,7 @@ val databaseModule = module {
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().groupMemberDao() }
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().reactionDao() }
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().pollDao() }
+    single { com.ajrpachon.chatapp.data.local.PollRepository(get()) }
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().stickerPackDao() }
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().messageReadReceiptDao() }
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().folderDao() }
@@ -134,6 +135,7 @@ val viewModelModule = module {
 
 val utilsModule = module {
     single { SessionGuard(androidContext()) }
+    // TODO: Call presenceManager.close() on Koin scope teardown when Koin 4.x onClose DSL is stable
     single { PresenceManager(get()) }
     single { LinkPreviewFetcher() }
     single { com.ajrpachon.chatapp.data.local.AppLockRepository(androidContext()) }

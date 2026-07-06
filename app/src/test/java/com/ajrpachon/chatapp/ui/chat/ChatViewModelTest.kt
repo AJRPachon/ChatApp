@@ -12,7 +12,7 @@ import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import com.ajrpachon.chatapp.data.local.ChatThemeRepository
 import com.ajrpachon.chatapp.data.local.DraftRepository
 import com.ajrpachon.chatapp.data.local.IncognitoRepository
-import com.ajrpachon.chatapp.data.local.dao.PollDao
+import com.ajrpachon.chatapp.data.local.PollRepository
 import com.ajrpachon.chatapp.data.local.dao.ScheduledMessageDao
 import com.ajrpachon.chatapp.data.repository.AiAssistantRepository
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
@@ -65,7 +65,7 @@ class ChatViewModelTest {
     private val draftRepository = mockk<DraftRepository>(relaxed = true)
     private val translationManager = mockk<TranslationManager>(relaxed = true)
     private val audioTranscriber = mockk<AudioTranscriber>(relaxed = true)
-    private val pollDao = mockk<PollDao>(relaxed = true)
+    private val pollRepository = mockk<PollRepository>(relaxed = true)
     private val chatThemeRepository = mockk<ChatThemeRepository>(relaxed = true)
     private val scheduledMessageDao = mockk<ScheduledMessageDao>(relaxed = true)
     private val workManager = mockk<WorkManager>(relaxed = true)
@@ -135,7 +135,7 @@ class ChatViewModelTest {
             draftRepository = draftRepository,
             translationManager = translationManager,
             audioTranscriber = audioTranscriber,
-            pollDao = pollDao,
+            pollRepository = pollRepository,
             chatThemeRepository = chatThemeRepository,
             scheduledMessageDao = scheduledMessageDao,
             workManager = workManager,

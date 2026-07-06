@@ -158,7 +158,7 @@ private fun ImagesTab(
             horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            items(urls) { url ->
+            items(urls, key = { it }) { url ->
                 AsyncImage(
                     model = url,
                     contentDescription = null,
@@ -199,7 +199,7 @@ private fun VideosTab(urls: List<String>) {
             horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            items(urls) { url ->
+            items(urls, key = { it }) { url ->
                 Box(
                     modifier = Modifier
                         .aspectRatio(1f)
