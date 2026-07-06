@@ -56,6 +56,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.Forward
+import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.AttachFile
@@ -84,7 +85,6 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.DoneAll
-import androidx.compose.material.icons.filled.Reply
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
@@ -1928,7 +1928,7 @@ private fun StickerBubble(message: MessageBO, onReply: () -> Unit) {
             },
     ) {
         Icon(
-            imageVector = Icons.Default.Reply,
+            imageVector = Icons.AutoMirrored.Filled.Reply,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier
@@ -2106,7 +2106,7 @@ private fun MessageBubble(
     ) {
         val iconAlpha = (swipeOffset.value / swipeThreshold).coerceIn(0f, 1f)
         Icon(
-            imageVector = Icons.Default.Reply,
+            imageVector = Icons.AutoMirrored.Filled.Reply,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier
@@ -2459,7 +2459,7 @@ private fun ImageGroupBubble(
             },
     ) {
         Icon(
-            imageVector = Icons.Default.Reply,
+            imageVector = Icons.AutoMirrored.Filled.Reply,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier
@@ -2657,7 +2657,7 @@ private fun ReplyPreviewBar(message: MessageBO, onCancel: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
-            imageVector = Icons.Default.Reply,
+            imageVector = Icons.AutoMirrored.Filled.Reply,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(20.dp),
@@ -3581,12 +3581,12 @@ private fun WallpaperPickerSheet(
 ) {
     val colors = listOf(
         null to "Por defecto",
-        0xFFE3F2FD.toLong() to "Azul claro",
-        0xFFF3E5F5.toLong() to "Púrpura",
-        0xFFE8F5E9.toLong() to "Verde",
-        0xFFFFF8E1.toLong() to "Amarillo",
-        0xFFFCE4EC.toLong() to "Rosa",
-        0xFF212121.toLong() to "Oscuro",
+        0xFFE3F2FDL to "Azul claro",
+        0xFFF3E5F5L to "Púrpura",
+        0xFFE8F5E9L to "Verde",
+        0xFFFFF8E1L to "Amarillo",
+        0xFFFCE4ECL to "Rosa",
+        0xFF212121L to "Oscuro",
     )
     ModalBottomSheet(
         onDismissRequest = onDismiss,
