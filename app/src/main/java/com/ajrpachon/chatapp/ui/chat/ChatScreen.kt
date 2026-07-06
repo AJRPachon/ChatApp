@@ -224,6 +224,7 @@ fun ChatScreen(
 
     val scope = rememberCoroutineScope()
     var highlightedMessageId by remember { mutableStateOf<String?>(null) }
+    var reactionDetailMessageId by remember { mutableStateOf<String?>(null) }
     val showScrollToBottom by remember { derivedStateOf { listState.firstVisibleItemIndex > 2 } }
 
     val onScrollToMessage: (String) -> Unit = { messageId ->
@@ -581,6 +582,21 @@ fun ChatScreen(
                 onDismiss = { vm.onIntent(ChatIntent.DismissCreatePollSheet) },
                 onCreate = { question, options -> vm.onIntent(ChatIntent.CreatePoll(question, options)) },
             )
+        }
+    }
+
+    reactionDetailMessageId?.let { msgId ->
+        val msgReactions = reactions[msgId] ?: emptyList()
+        if (msgReactions.isNotEmpty()) {
+            ModalBottomSheet(
+                onDismissRequest = { reactionDetailMessageId = null },
+                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            ) {
+                ReactionDetailsSheet(
+                    reactions = msgReactions,
+                    onDismiss = { reactionDetailMessageId = null },
+                )
+            }
         }
     }
 
@@ -1144,6 +1160,7 @@ fun ChatScreen(
                                 outgoingBubbleColor = chatTheme.bubbleColor,
                                 onOpenPdf = onOpenPdf,
                                 onVote = { optionId -> vm.onIntent(ChatIntent.VotePoll(message.content.removePrefix("poll:"), optionId)) },
+                                onShowReactionDetails = { reactionDetailMessageId = message.id },
                             )
                         }
                     }
@@ -2215,6 +2232,7 @@ private fun MessageBubble(
     outgoingBubbleColor: Color = Color.Unspecified,
     onOpenPdf: (url: String, filename: String) -> Unit = { _, _ -> },
     onVote: ((optionId: String) -> Unit)? = null,
+    onShowReactionDetails: () -> Unit = {},
 ) {
     if (message.isDeleted) {
         DeletedMessageBubble(message)
@@ -2510,7 +2528,10 @@ private fun MessageBubble(
                         shape = RoundedCornerShape(50),
                         color = if (isMine) MaterialTheme.colorScheme.primaryContainer
                                 else MaterialTheme.colorScheme.surfaceVariant,
-                        modifier = Modifier.clickable { onToggleReaction(emoji) },
+                        modifier = Modifier.combinedClickable(
+                            onClick = { onToggleReaction(emoji) },
+                            onLongClick = { onShowReactionDetails() },
+                        ),
                     ) {
                         Text(
                             text = "$emoji ${reactors.size}",
@@ -3728,6 +3749,41 @@ private fun PollBubble(
                             )
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+// ── ReactionDetailsSheet ──────────────────────────────────────────────────────
+
+@Composable
+private fun ReactionDetailsSheet(
+    reactions: List<com.ajrpachon.chatapp.domain.model.ReactionBO>,
+    onDismiss: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .navigationBarsPadding(),
+    ) {
+        Text(
+            text = "Reacciones (${reactions.size})",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 12.dp),
+        )
+        val grouped = reactions.groupBy { it.emoji }
+        LazyColumn {
+            grouped.forEach { (emoji, reactors) ->
+                items(reactors) { reaction ->
+                    ListItem(
+                        headlineContent = { Text(reaction.userId) },
+                        trailingContent = {
+                            Text(emoji, style = MaterialTheme.typography.titleLarge)
+                        },
+                    )
+                    HorizontalDivider()
                 }
             }
         }
