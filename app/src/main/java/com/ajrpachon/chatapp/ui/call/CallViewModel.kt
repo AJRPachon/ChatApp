@@ -117,7 +117,7 @@ class CallViewModel(
     }
 
     private suspend fun joinCall() {
-        try {
+        catchResult {
             AppLogger.d(TAG, "joinCall: fetching user")
             // withTimeout prevents the Flow from hanging indefinitely if the Room DB
             // hasn't cached the user yet (observed as infinite CONNECTING on caller side).
@@ -191,7 +191,7 @@ class CallViewModel(
                 callRepository.acceptCall(callId)
             }
 
-        } catch (e: Exception) {
+        }.onFailure { e ->
             AppLogger.e(TAG, "joinCall: FAILED", e)
             _state.update { it.copy(phase = CallPhase.ERROR, error = e.message ?: "Error al conectar") }
         }
@@ -383,7 +383,7 @@ class CallViewModel(
     }
 
     private fun startRecording() {
-        try {
+        catchResult {
             val dir = context.getExternalFilesDir("recordings")
             dir?.mkdirs()
             val file = java.io.File(dir, "$callId.m4a")
@@ -402,20 +402,19 @@ class CallViewModel(
             mediaRecorder = recorder
             _state.update { it.copy(isRecording = true, recordingFilePath = file.absolutePath) }
             AppLogger.d(TAG, "startRecording: OK path=${file.absolutePath}")
-        } catch (e: Exception) {
+        }.onFailure { e ->
             AppLogger.e(TAG, "startRecording: FAILED", e)
         }
     }
 
     private fun stopRecording() {
-        try {
+        catchResult {
             mediaRecorder?.stop()
             mediaRecorder?.release()
-        } catch (e: Exception) {
+        }.onFailure { e ->
             AppLogger.e(TAG, "stopRecording: error during stop/release", e)
-        } finally {
-            mediaRecorder = null
         }
+        mediaRecorder = null
         val path = _state.value.recordingFilePath
         _state.update { it.copy(isRecording = false) }
         if (path != null) {

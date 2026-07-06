@@ -122,7 +122,7 @@ fun AppLockScreen(onUnlocked: () -> Unit) {
         if (errorMessage != null) {
             Spacer(Modifier.height(16.dp))
             Text(
-                text = errorMessage!!,
+                text = errorMessage ?: "",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
                 textAlign = TextAlign.Center,

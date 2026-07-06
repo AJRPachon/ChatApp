@@ -111,6 +111,9 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.StrokeCap
 import com.ajrpachon.chatapp.data.local.dao.PollDao
+import com.ajrpachon.chatapp.service.ActiveChatTracker
+import com.ajrpachon.chatapp.ui.components.ChatMessagesSkeleton
+import com.ajrpachon.chatapp.ui.components.EmojiPickerBottomSheet
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.TimePicker
@@ -223,9 +226,9 @@ fun ChatScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     DisposableEffect(conversationId) {
-        com.ajrpachon.chatapp.service.ActiveChatTracker.activeConversationId = conversationId
+        ActiveChatTracker.activeConversationId = conversationId
         onDispose {
-            com.ajrpachon.chatapp.service.ActiveChatTracker.activeConversationId = null
+            ActiveChatTracker.activeConversationId = null
         }
     }
 
@@ -1083,7 +1086,7 @@ fun ChatScreen(
             val isInitialLoad = lazyPagingItems.loadState.refresh is LoadState.Loading
                 && lazyPagingItems.itemCount == 0
             if (isInitialLoad) {
-                com.ajrpachon.chatapp.ui.components.ChatMessagesSkeleton(
+                ChatMessagesSkeleton(
                     contentPadding = PaddingValues(
                         top = innerPadding.calculateTopPadding() + 8.dp,
                         bottom = innerPadding.calculateBottomPadding() + 8.dp,
@@ -1911,7 +1914,7 @@ private fun MessageBubble(
                             }
                         }
                         if (showEmojiPicker) {
-                            com.ajrpachon.chatapp.ui.components.EmojiPickerBottomSheet(
+                            EmojiPickerBottomSheet(
                                 sheetState = emojiSheetState,
                                 onDismiss = { showEmojiPicker = false },
                                 onEmojiSelected = { emoji -> onToggleReaction(emoji) },
@@ -1934,7 +1937,7 @@ private fun MessageBubble(
                             }
                             if (previewData != null) {
                                 Spacer(Modifier.height(6.dp))
-                                LinkPreviewCard(data = previewData!!)
+                                LinkPreviewCard(data = previewData ?: return@Column)
                             }
                         }
                     }
@@ -3114,8 +3117,9 @@ private fun PollBubble(
                     )
                 } else {
                     // Question
+                    val safePoll = poll ?: return@Column
                     Text(
-                        text = poll!!.question,
+                        text = safePoll.question,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 8.dp),

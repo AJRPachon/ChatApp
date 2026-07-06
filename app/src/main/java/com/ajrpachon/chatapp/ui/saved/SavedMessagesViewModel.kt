@@ -1,13 +1,10 @@
 package com.ajrpachon.chatapp.ui.saved
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.data.local.dao.ConversationDao
 import com.ajrpachon.chatapp.data.local.dao.MessageDao
 import com.ajrpachon.chatapp.data.local.dao.UserDao
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import kotlinx.coroutines.launch
 
 data class SavedMessageItem(
@@ -25,10 +22,7 @@ class SavedMessagesViewModel(
     private val messageDao: MessageDao,
     private val conversationDao: ConversationDao,
     private val userDao: UserDao,
-) : ViewModel() {
-
-    private val _state = MutableStateFlow(SavedMessagesState())
-    val state = _state.asStateFlow()
+) : BaseViewModel<SavedMessagesState, Nothing>(SavedMessagesState()) {
 
     init {
         viewModelScope.launch {
@@ -47,7 +41,7 @@ class SavedMessagesViewModel(
                         content = dbo.content.ifBlank { "[Archivo adjunto]" },
                     )
                 }
-                _state.update { it.copy(messages = items) }
+                updateState { it.copy(messages = items) }
             }
         }
     }

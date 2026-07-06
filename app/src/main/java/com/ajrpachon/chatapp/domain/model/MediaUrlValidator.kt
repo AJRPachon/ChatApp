@@ -1,5 +1,7 @@
 package com.ajrpachon.chatapp.domain.model
 
+import com.ajrpachon.chatapp.utils.catchResult
+
 object MediaUrlValidator {
     private val ALLOWED_HOSTS = setOf(
         "supabase.co",          // Supabase Storage (*.supabase.co)
@@ -13,15 +15,13 @@ object MediaUrlValidator {
 
     fun isValid(url: String?): Boolean {
         if (url.isNullOrBlank()) return false
-        return try {
+        return catchResult {
             val host = extractHost(url) ?: return false
             val scheme = extractScheme(url) ?: return false
             scheme == "https" && ALLOWED_HOSTS.any { allowed ->
                 host == allowed || host.endsWith(".$allowed")
             }
-        } catch (_: Exception) {
-            false
-        }
+        }.getOrElse { false }
     }
 
     fun sanitize(url: String?): String? = url?.takeIf { isValid(it) }

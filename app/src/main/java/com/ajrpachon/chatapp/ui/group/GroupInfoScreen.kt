@@ -183,7 +183,7 @@ fun GroupInfoScreen(
                 Spacer(Modifier.height(12.dp))
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        state.inviteLink!!,
+                        state.inviteLink.orEmpty(),
                         modifier = Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodyMedium,
                     )
@@ -192,7 +192,8 @@ fun GroupInfoScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(
                         onClick = {
-                            clipboardManager.setText(AnnotatedString(state.inviteLink!!))
+                            val link = state.inviteLink ?: return@OutlinedButton
+                            clipboardManager.setText(AnnotatedString(link))
                             vm.onIntent(GroupInfoIntent.DismissInviteLinkSheet)
                         },
                         modifier = Modifier.weight(1f),

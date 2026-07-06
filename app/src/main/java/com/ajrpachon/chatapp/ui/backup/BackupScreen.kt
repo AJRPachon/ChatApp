@@ -55,7 +55,7 @@ fun BackupScreen(
         AlertDialog(
             onDismissRequest = { vm.onIntent(BackupIntent.DismissError) },
             title = { Text("Error") },
-            text = { Text(state.error!!) },
+            text = { Text(state.error.orEmpty()) },
             confirmButton = {
                 TextButton(onClick = { vm.onIntent(BackupIntent.DismissError) }) {
                     Text("Aceptar")
@@ -107,7 +107,7 @@ fun BackupScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Text(
-                                state.lastBackupDate!!,
+                                state.lastBackupDate.orEmpty(),
                                 style = MaterialTheme.typography.bodyMedium,
                             )
                         }

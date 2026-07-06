@@ -1,17 +1,15 @@
 package com.ajrpachon.chatapp.ui.search
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.data.local.dao.ConversationDao
 import com.ajrpachon.chatapp.data.local.dao.MessageDao
+import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class GlobalSearchResultItem(
@@ -36,11 +34,9 @@ sealed class GlobalSearchIntent {
 class GlobalSearchViewModel(
     private val messageDao: MessageDao,
     private val conversationDao: ConversationDao,
-) : ViewModel() {
+) : BaseViewModel<GlobalSearchState, Nothing>(GlobalSearchState()) {
 
     private val _query = MutableStateFlow("")
-    private val _state = MutableStateFlow(GlobalSearchState())
-    val state: StateFlow<GlobalSearchState> = _state
 
     init {
         viewModelScope.launch {
@@ -67,7 +63,7 @@ class GlobalSearchViewModel(
                         emit(GlobalSearchState(query = query, results = results, isLoading = false))
                     }
                 }
-                .collect { _state.value = it }
+                .collect { newState -> updateState { newState } }
         }
     }
 
@@ -75,7 +71,7 @@ class GlobalSearchViewModel(
         when (intent) {
             is GlobalSearchIntent.QueryChanged -> {
                 _query.value = intent.query
-                _state.update { it.copy(query = intent.query) }
+                updateState { it.copy(query = intent.query) }
             }
         }
     }
