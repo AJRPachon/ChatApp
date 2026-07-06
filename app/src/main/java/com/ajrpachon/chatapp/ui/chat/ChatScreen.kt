@@ -104,6 +104,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
@@ -1968,7 +1969,24 @@ private fun MessageBubble(
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                         )
                         if (message.isFromMe) {
-                            ReadReceiptIcon(isRead = message.isRead)
+                            when (message.sendStatus) {
+                                com.ajrpachon.chatapp.domain.model.SendStatus.PENDING ->
+                                    Icon(
+                                        imageVector = androidx.compose.material.icons.Icons.Default.Schedule,
+                                        contentDescription = "Pendiente de envío",
+                                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                                        modifier = Modifier.size(12.dp),
+                                    )
+                                com.ajrpachon.chatapp.domain.model.SendStatus.FAILED ->
+                                    Icon(
+                                        imageVector = androidx.compose.material.icons.Icons.Default.Warning,
+                                        contentDescription = "Error al enviar",
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(12.dp),
+                                    )
+                                com.ajrpachon.chatapp.domain.model.SendStatus.SENT ->
+                                    ReadReceiptIcon(isRead = message.isRead)
+                            }
                         }
                     }
                 }
