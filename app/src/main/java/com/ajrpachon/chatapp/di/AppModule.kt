@@ -9,6 +9,7 @@ import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.ui.auth.AuthViewModel
 import com.ajrpachon.chatapp.ui.call.CallViewModel
 import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
+import com.ajrpachon.chatapp.ui.chat.ChatArgs
 import com.ajrpachon.chatapp.ui.chat.ChatMediaGalleryViewModel
 import com.ajrpachon.chatapp.ui.chat.ChatViewModel
 import com.ajrpachon.chatapp.ui.chat.StickerPackViewModel
@@ -24,6 +25,7 @@ import com.ajrpachon.chatapp.ui.broadcast.BroadcastListViewModel
 import com.ajrpachon.chatapp.ui.usagestats.UsageStatsViewModel
 import com.ajrpachon.chatapp.ui.profile.SessionAuditViewModel
 import com.ajrpachon.chatapp.ui.backup.BackupViewModel
+import com.ajrpachon.chatapp.ui.pdf.PdfViewerViewModel
 import com.ajrpachon.chatapp.ui.search.GlobalSearchViewModel
 import com.ajrpachon.chatapp.service.PresenceManager
 import com.ajrpachon.chatapp.utils.LinkPreviewFetcher
@@ -36,10 +38,10 @@ import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.realtime.Realtime
 import io.github.jan.supabase.storage.Storage
-import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import android.app.NotificationManager
 import android.content.Context
+import okhttp3.OkHttpClient
 import org.koin.android.ext.koin.androidApplication
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -86,23 +88,18 @@ val networkModule = module {
             install(Functions)
         }
     }
+    single<OkHttpClient> { OkHttpProvider.client }
 }
 
 val viewModelModule = module {
-    // Needs BuildConfig value — cannot use viewModelOf
+    // BuildConfig values not injectable — kept as lambda
     viewModel { AuthViewModel(androidApplication(), get(), get(), BuildConfig.GOOGLE_WEB_CLIENT_ID, get(), get(), get()) }
 
     viewModelOf(::ConversationListViewModel)
     viewModelOf(::InvitationsViewModel)
     viewModelOf(::NewChatViewModel)
     viewModelOf(::ProfileViewModel)
-    viewModel {
-        IncomingCallViewModel(
-            notificationManager = androidContext().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager,
-            callRepository = get(),
-            getCurrentUserUseCase = get(),
-        )
-    }
+    viewModelOf(::IncomingCallViewModel)
     viewModelOf(::CreateGroupViewModel)
     viewModelOf(::SavedMessagesViewModel)
     viewModelOf(::StickerPackViewModel)
@@ -110,12 +107,14 @@ val viewModelModule = module {
     viewModelOf(::UsageStatsViewModel)
     viewModelOf(::SessionAuditViewModel)
     viewModelOf(::BackupViewModel)
-    viewModel { GlobalSearchViewModel(get(), get()) }
+    viewModelOf(::GlobalSearchViewModel)
+    viewModelOf(::ChatViewModel)
+    viewModelOf(::GroupInfoViewModel)
+    viewModelOf(::UserInfoViewModel)
+    viewModelOf(::ChatMediaGalleryViewModel)
+    viewModelOf(::PdfViewerViewModel)
 
-    // Needs runtime parameters — cannot use viewModelOf
-    viewModel { (conversationId: String, otherUserName: String) ->
-        ChatViewModel(conversationId, otherUserName, get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get())
-    }
+    // CallViewModel: BuildConfig.LIVEKIT_URL + androidApplication() not injectable — kept as lambda
     viewModel { params ->
         CallViewModel(
             context = androidApplication(),
@@ -131,16 +130,6 @@ val viewModelModule = module {
             livekitUrl = BuildConfig.LIVEKIT_URL,
         )
     }
-    viewModel { (conversationId: String) ->
-        GroupInfoViewModel(conversationId, get(), get(), get(), get(), get(), get(), get())
-    }
-    viewModel { (userId: String) ->
-        UserInfoViewModel(userId, get(), get(), get())
-    }
-    viewModel { (conversationId: String) ->
-        ChatMediaGalleryViewModel(conversationId, get())
-    }
-    viewModel { com.ajrpachon.chatapp.ui.pdf.PdfViewerViewModel(androidContext(), com.ajrpachon.chatapp.utils.OkHttpProvider.client) }
 }
 
 val utilsModule = module {
@@ -158,6 +147,7 @@ val utilsModule = module {
     single { com.ajrpachon.chatapp.utils.ContactSyncManager(androidContext().contentResolver) }
     single { com.ajrpachon.chatapp.utils.BackupManager(androidContext(), get()) }
     single { com.ajrpachon.chatapp.data.local.WallpaperRepository(androidContext()) }
+    single { androidContext().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager }
 }
 
 val aiModule = module {

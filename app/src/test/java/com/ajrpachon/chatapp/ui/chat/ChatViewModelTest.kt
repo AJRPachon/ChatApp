@@ -120,8 +120,7 @@ class ChatViewModelTest {
 
     private fun buildViewModel(conversationId: String = "conv1"): ChatViewModel =
         ChatViewModel(
-            conversationId = conversationId,
-            otherUserName = "Test Group",
+            args = ChatArgs(conversationId = conversationId, otherUserName = "Test Group"),
             sendMessageUseCase = sendMessageUseCase,
             messageRepository = messageRepository,
             conversationDao = conversationDao,
