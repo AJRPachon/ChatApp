@@ -13,8 +13,10 @@ import com.ajrpachon.chatapp.data.local.ChatThemeRepository
 import com.ajrpachon.chatapp.data.local.DraftRepository
 import com.ajrpachon.chatapp.data.local.IncognitoRepository
 import com.ajrpachon.chatapp.data.local.PollRepository
+import com.ajrpachon.chatapp.data.local.dao.MessageDao
 import com.ajrpachon.chatapp.data.local.dao.ScheduledMessageDao
 import com.ajrpachon.chatapp.data.repository.AiAssistantRepository
+import com.ajrpachon.chatapp.utils.NetworkMonitor
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.ReactionRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
@@ -72,6 +74,8 @@ class ChatViewModelTest {
     private val incognitoRepository = mockk<IncognitoRepository>(relaxed = true)
     private val aiAssistantRepository = mockk<AiAssistantRepository>(relaxed = true)
     private val wallpaperRepository = mockk<com.ajrpachon.chatapp.data.local.WallpaperRepository>(relaxed = true)
+    private val messageDao = mockk<MessageDao>(relaxed = true)
+    private val networkMonitor = mockk<NetworkMonitor>(relaxed = true)
 
     // Start with current user as member — mirrors what the repository emits after initial fetch
     private val membersFlow = MutableStateFlow<List<GroupMemberBO>>(emptyList())
@@ -142,6 +146,8 @@ class ChatViewModelTest {
             incognitoRepository = incognitoRepository,
             aiAssistantRepository = aiAssistantRepository,
             wallpaperRepository = wallpaperRepository,
+            messageDao = messageDao,
+            networkMonitor = networkMonitor,
         )
 
     // ── isCurrentUserMember ───────────────────────────────────────────────────

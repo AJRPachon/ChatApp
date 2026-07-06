@@ -41,9 +41,12 @@ fun InlineVideoPlayer(url: String, modifier: Modifier = Modifier) {
     // since Coil's coil-video fetcher is not available as an ImageBitmap here).
     val thumbnail: Bitmap? = remember(url) {
         runCatching {
-            MediaMetadataRetriever().use { retriever ->
+            val retriever = MediaMetadataRetriever()
+            try {
                 retriever.setDataSource(url, HashMap())
                 retriever.getFrameAtTime(0)
+            } finally {
+                retriever.release()
             }
         }.getOrNull()
     }

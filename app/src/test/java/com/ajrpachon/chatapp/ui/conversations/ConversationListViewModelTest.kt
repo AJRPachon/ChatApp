@@ -14,6 +14,7 @@ import com.ajrpachon.chatapp.data.local.DraftRepository
 import com.ajrpachon.chatapp.data.local.NotificationSoundRepository
 import com.ajrpachon.chatapp.service.PresenceManager
 import com.ajrpachon.chatapp.util.MainDispatcherRule
+import com.ajrpachon.chatapp.utils.NetworkMonitor
 import com.ajrpachon.chatapp.util.sharedScheduler
 import io.mockk.coEvery
 import io.mockk.every
@@ -41,6 +42,7 @@ class ConversationListViewModelTest {
     private val presenceManager = mockk<PresenceManager>(relaxed = true)
     private val draftRepository = mockk<DraftRepository>(relaxed = true)
     private val notificationSoundRepository = mockk<NotificationSoundRepository>(relaxed = true)
+    private val networkMonitor = mockk<NetworkMonitor>(relaxed = true)
 
     private val testUser = UserBO(
         id = "user1",
@@ -72,6 +74,7 @@ class ConversationListViewModelTest {
         presenceManager = presenceManager,
         draftRepository = draftRepository,
         notificationSoundRepository = notificationSoundRepository,
+        networkMonitor = networkMonitor,
     )
 
     @Test
