@@ -114,6 +114,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import com.ajrpachon.chatapp.data.local.PollRepository
 import com.ajrpachon.chatapp.service.ActiveChatTracker
 import com.ajrpachon.chatapp.ui.components.ChatMessagesSkeleton
+import com.ajrpachon.chatapp.ui.components.OfflineBanner
 import com.ajrpachon.chatapp.ui.components.EmojiPickerBottomSheet
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -406,7 +407,7 @@ fun ChatScreen(
                 val url = "https://maps.google.com/?q=${location.latitude},${location.longitude}"
                 vm.onIntent(ChatIntent.SendLocation(url))
             } else {
-                scope.launch { snackbarHostState.showSnackbar("No se pudo obtener la ubicación") }
+                scope.launch { snackbarHostState.showSnackbar("Activa el GPS y vuelve a intentarlo") }
             }
         }
     }
@@ -420,7 +421,18 @@ fun ChatScreen(
                 if (c.moveToFirst()) {
                     val nameIdx = c.getColumnIndex(android.provider.ContactsContract.Contacts.DISPLAY_NAME)
                     val name = if (nameIdx >= 0) c.getString(nameIdx) else ""
-                    vm.onIntent(ChatIntent.SendContact(name = name, phone = ""))
+                    val idIdx = c.getColumnIndex(android.provider.ContactsContract.Contacts._ID)
+                    val contactId = if (idIdx >= 0) c.getString(idIdx) else null
+                    val phone = if (contactId != null) {
+                        context.contentResolver.query(
+                            android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                            arrayOf(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER),
+                            "${android.provider.ContactsContract.CommonDataKinds.Phone.CONTACT_ID} = ?",
+                            arrayOf(contactId),
+                            null
+                        )?.use { pc -> if (pc.moveToFirst()) pc.getString(0) else "" } ?: ""
+                    } else ""
+                    vm.onIntent(ChatIntent.SendContact(name = name, phone = phone))
                 }
             }
         }
@@ -448,6 +460,30 @@ fun ChatScreen(
             onSelect = { targetConversationId ->
                 val msgId = state.forwardingMessage?.id ?: return@ForwardConversationDialog
                 vm.onIntent(ChatIntent.ForwardMessage(msgId, targetConversationId))
+            },
+        )
+    }
+
+    if (state.showIncognitoInfoDialog) {
+        AlertDialog(
+            onDismissRequest = { vm.onIntent(ChatIntent.DismissIncognitoDialog) },
+            title = { Text("Modo incógnito") },
+            text = {
+                Text(
+                    "En modo incógnito, los mensajes nuevos no se guardarán en este dispositivo. " +
+                    "Los mensajes ya existentes permanecen. El servidor sigue procesando los mensajes normalmente. " +
+                    "Este modo no es equivalente al cifrado de extremo a extremo."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { vm.onIntent(ChatIntent.ConfirmIncognito) }) {
+                    Text("Entendido, activar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { vm.onIntent(ChatIntent.DismissIncognitoDialog) }) {
+                    Text("Cancelar")
+                }
             },
         )
     }
@@ -682,7 +718,7 @@ fun ChatScreen(
                         if (avatarUrl != null) {
                             AsyncImage(
                                 model = avatarUrl,
-                                contentDescription = null,
+                                contentDescription = "Foto de ${state.conversationTitle}",
                                 modifier = Modifier.size(36.dp).clip(CircleShape),
                                 contentScale = ContentScale.Crop,
                             )
@@ -940,6 +976,9 @@ fun ChatScreen(
         bottomBar = {
             if (state.isCurrentUserMember) Surface(shadowElevation = 4.dp) {
                 Column(modifier = Modifier.windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars))) {
+                if (!state.isOnline) {
+                    OfflineBanner()
+                }
                 val editingMessage = state.editingMessage
                 if (editingMessage != null) {
                     Row(
@@ -1060,7 +1099,7 @@ fun ChatScreen(
                                         val url = "https://maps.google.com/?q=${location.latitude},${location.longitude}"
                                         vm.onIntent(ChatIntent.SendLocation(url))
                                     } else {
-                                        scope.launch { snackbarHostState.showSnackbar("No se pudo obtener la ubicación") }
+                                        scope.launch { snackbarHostState.showSnackbar("Activa el GPS y vuelve a intentarlo") }
                                     }
                                 }
                                 else -> locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
@@ -1170,6 +1209,7 @@ fun ChatScreen(
                                     outgoingBubbleColor = chatTheme.bubbleColor,
                                     onOpenPdf = onOpenPdf,
                                     onVote = { optionId -> vm.onIntent(ChatIntent.VotePoll(message.content.removePrefix("poll:"), optionId)) },
+                                    onRetryMessage = { vm.onIntent(ChatIntent.RetryMessage(it)) },
                                 )
                             }
                         } else {
@@ -1198,6 +1238,7 @@ fun ChatScreen(
                                 onOpenPdf = onOpenPdf,
                                 onVote = { optionId -> vm.onIntent(ChatIntent.VotePoll(message.content.removePrefix("poll:"), optionId)) },
                                 onShowReactionDetails = { reactionDetailMessageId = message.id },
+                                onRetryMessage = { vm.onIntent(ChatIntent.RetryMessage(it)) },
                             )
                         }
                     }
