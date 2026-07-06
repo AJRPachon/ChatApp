@@ -420,7 +420,18 @@ fun ChatScreen(
                 if (c.moveToFirst()) {
                     val nameIdx = c.getColumnIndex(android.provider.ContactsContract.Contacts.DISPLAY_NAME)
                     val name = if (nameIdx >= 0) c.getString(nameIdx) else ""
-                    vm.onIntent(ChatIntent.SendContact(name = name, phone = ""))
+                    val idIdx = c.getColumnIndex(android.provider.ContactsContract.Contacts._ID)
+                    val contactId = if (idIdx >= 0) c.getString(idIdx) else null
+                    val phone = if (contactId != null) {
+                        context.contentResolver.query(
+                            android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                            arrayOf(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER),
+                            "${android.provider.ContactsContract.CommonDataKinds.Phone.CONTACT_ID} = ?",
+                            arrayOf(contactId),
+                            null
+                        )?.use { pc -> if (pc.moveToFirst()) pc.getString(0) else "" } ?: ""
+                    } else ""
+                    vm.onIntent(ChatIntent.SendContact(name = name, phone = phone))
                 }
             }
         }
