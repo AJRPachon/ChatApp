@@ -503,6 +503,16 @@ fun ChatScreen(
         )
     }
 
+    if (state.showForwardSelectionDialog) {
+        ForwardConversationDialog(
+            conversations = state.forwardableConversations,
+            onDismiss = { vm.onIntent(ChatIntent.DismissForwardSelectionDialog) },
+            onSelect = { targetConversationId ->
+                vm.onIntent(ChatIntent.ForwardSelectedMessages(targetConversationId))
+            },
+        )
+    }
+
     if (state.showMuteDialog) {
         MuteDurationDialog(
             onDismiss = { vm.onIntent(ChatIntent.DismissMuteDialog) },
@@ -2078,7 +2088,7 @@ private fun MessageBubble(
                                     )
                                 com.ajrpachon.chatapp.domain.model.SendStatus.FAILED ->
                                     Icon(
-                                        imageVector = androidx.compose.material.icons.Icons.Default.Warning,
+                                        imageVector = androidx.compose.material.icons.Icons.Default.ErrorOutline,
                                         contentDescription = "Error al enviar",
                                         tint = MaterialTheme.colorScheme.error,
                                         modifier = Modifier.size(12.dp),
