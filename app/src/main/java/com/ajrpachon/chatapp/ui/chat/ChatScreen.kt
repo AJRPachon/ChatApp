@@ -838,25 +838,6 @@ fun ChatScreen(
                                     )
                                 }
                             }
-                            } else {
-                                val memberTotal = state.groupMemberCount
-                                val onlineCount = state.onlineMemberCount
-                                val groupSubtitle = if (onlineCount > 0) {
-                                    "$onlineCount miembro${if (onlineCount == 1) "" else "s"} en línea"
-                                } else if (memberTotal > 0) {
-                                    "$memberTotal miembro${if (memberTotal == 1) "" else "s"}"
-                                } else null
-                                if (groupSubtitle != null) {
-                                    Text(
-                                        text = groupSubtitle,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = if (onlineCount > 0)
-                                            androidx.compose.ui.graphics.Color(0xFF4CAF50)
-                                        else
-                                            MaterialTheme.colorScheme.outline,
-                                    )
-                                }
-                            }
                         }
                     }
                 },
@@ -2088,7 +2069,7 @@ private fun MessageBubble(
                                     )
                                 com.ajrpachon.chatapp.domain.model.SendStatus.FAILED ->
                                     Icon(
-                                        imageVector = androidx.compose.material.icons.Icons.Default.ErrorOutline,
+                                        imageVector = Icons.Default.Warning,
                                         contentDescription = "Error al enviar",
                                         tint = MaterialTheme.colorScheme.error,
                                         modifier = Modifier.size(12.dp),

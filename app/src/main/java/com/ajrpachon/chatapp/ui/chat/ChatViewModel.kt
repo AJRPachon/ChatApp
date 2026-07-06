@@ -46,6 +46,7 @@ import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.AudioTranscriber
+import com.ajrpachon.chatapp.utils.NetworkMonitor
 import com.ajrpachon.chatapp.utils.TranslationManager
 import com.ajrpachon.chatapp.utils.catchResult
 import com.ajrpachon.chatapp.worker.MessageRetryWorker
@@ -461,7 +462,6 @@ class ChatViewModel(
             is ChatIntent.ClearSelection -> _state.update { it.copy(selectedMessageIds = emptySet()) }
             is ChatIntent.DeleteSelectedMessages -> deleteSelectedMessages()
             is ChatIntent.ShowForwardDialog -> showForwardDialog(intent.message)
-            is ChatIntent.ShowMultiForwardDialog -> showMultiForwardDialog()
             is ChatIntent.DismissForwardDialog -> _state.update {
                 it.copy(showForwardDialog = false, forwardingMessage = null, forwardableConversations = emptyList())
             }

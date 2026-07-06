@@ -133,7 +133,6 @@ sealed interface ChatIntent {
     data object ClearSelection : ChatIntent
     data object DeleteSelectedMessages : ChatIntent
     data class ShowForwardDialog(val message: MessageBO) : ChatIntent
-    data object ShowMultiForwardDialog : ChatIntent
     data object DismissForwardDialog : ChatIntent
     data class ForwardMessage(val messageId: String, val targetConversationId: String) : ChatIntent
     data class ForwardSelectedMessages(val targetConversationId: String) : ChatIntent
@@ -184,7 +183,6 @@ sealed interface ChatIntent {
     // Multi-forward
     data object ShowForwardSelectionDialog : ChatIntent
     data object DismissForwardSelectionDialog : ChatIntent
-    data class ForwardSelectedMessages(val targetConversationId: String) : ChatIntent
 }
 
 sealed interface ChatEffect {

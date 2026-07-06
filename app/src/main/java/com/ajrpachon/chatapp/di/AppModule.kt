@@ -135,7 +135,7 @@ val viewModelModule = module {
             incognitoRepository = get(),
             aiAssistantRepository = get(),
             wallpaperRepository = get(),
-            networkMonitor = get(),
+            networkMonitor = get<com.ajrpachon.chatapp.utils.NetworkMonitor>(),
         )
     }
     viewModelOf(::GroupInfoViewModel)
