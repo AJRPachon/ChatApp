@@ -100,7 +100,7 @@ fun EmojiPickerBottomSheet(
                             .fillMaxWidth()
                             .height(280.dp),
                     ) {
-                        items(current.emojis) { emoji ->
+                        items(current.emojis, key = { it }) { emoji ->
                             Box(
                                 contentAlignment = Alignment.Center,
                                 modifier = Modifier

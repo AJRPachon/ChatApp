@@ -190,7 +190,7 @@ fun MediaGalleryTab(mediaUrls: List<String>) {
             horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            items(mediaUrls) { url ->
+            items(mediaUrls, key = { it }) { url ->
                 AsyncImage(
                     model = url,
                     contentDescription = null,

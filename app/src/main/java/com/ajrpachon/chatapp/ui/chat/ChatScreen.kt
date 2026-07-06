@@ -41,6 +41,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -257,8 +258,8 @@ fun ChatScreen(
     }
 
     var viewerUrls by remember { mutableStateOf<List<String>>(emptyList()) }
-    var viewerInitialIndex by remember { mutableStateOf(0) }
-    var showViewer by remember { mutableStateOf(false) }
+    var viewerInitialIndex by rememberSaveable { mutableStateOf(0) }
+    var showViewer by rememberSaveable { mutableStateOf(false) }
 
     // Tracks whether a send-triggered scroll is pending (waits for Paging to deliver the new item).
     val pendingSendScroll = remember { mutableStateOf(false) }
@@ -287,7 +288,7 @@ fun ChatScreen(
     val initialScrollDone = remember { mutableStateOf(false) }
 
     // Initial scroll: wait for the refresh to fully complete before scrolling to bottom.
-    LaunchedEffect(Unit) {
+    LaunchedEffect(conversationId) {
         snapshotFlow { lazyPagingItems.loadState.refresh }
             .first { it is LoadState.NotLoading }
         snapshotFlow { listState.layoutInfo.totalItemsCount }
@@ -2350,13 +2351,14 @@ private fun ImageViewerDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(vertical = 56.dp),
             ) {
-                itemsIndexed(imageUrls) { _, url ->
+                itemsIndexed(imageUrls, key = { _, url -> url }) { _, url ->
                     AsyncImage(
                         model = url,
                         contentDescription = null,
                         contentScale = ContentScale.FillWidth,
                         modifier = Modifier
                             .fillMaxWidth()
+                            .heightIn(max = 800.dp)
                             .clickable { fullscreenUrl = url },
                     )
                 }
@@ -2646,7 +2648,7 @@ private fun ChatThemePickerSheet(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(horizontal = 4.dp),
             ) {
-                items(ChatTheme.entries.size) { index ->
+                items(ChatTheme.entries.size, key = { it }) { index ->
                     val theme = ChatTheme.entries[index]
                     val isSelected = theme == currentTheme
                     val label = when (theme) {
@@ -3238,7 +3240,7 @@ private fun WallpaperPickerSheet(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            items(colors) { (colorValue, label) ->
+            items(colors, key = { it.first?.toString() ?: "default" }) { (colorValue, label) ->
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.clickable { onSelect(colorValue) },
