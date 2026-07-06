@@ -94,7 +94,16 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.SmartToy
+import androidx.compose.material.icons.filled.HowToVote
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material3.Card
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.RadioButton
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.graphics.StrokeCap
+import com.ajrpachon.chatapp.data.local.dao.PollDao
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.TimePicker
@@ -196,6 +205,7 @@ fun ChatScreen(
     onGroupInfo: () -> Unit = {},
     onUserInfo: (userId: String) -> Unit = {},
     onOpenPdf: (url: String, filename: String) -> Unit = { _, _ -> },
+    onOpenMediaGallery: () -> Unit = {},
 ) {
     val vm: ChatViewModel = koinViewModel(key = conversationId, parameters = { parametersOf(conversationId, otherUserName) })
     val state by vm.state.collectAsStateWithLifecycle()
@@ -559,6 +569,9 @@ fun ChatScreen(
         }
     }
 
+    val latestPinned = state.latestPinnedMessage
+    var pinnedBannerVisible by rememberSaveable(latestPinned?.id) { mutableStateOf(true) }
+
     val scaffoldContainerColor = if (chatTheme.backgroundTint == androidx.compose.ui.graphics.Color.Transparent) {
         MaterialTheme.colorScheme.background
     } else {
@@ -813,6 +826,14 @@ fun ChatScreen(
                                     vm.onIntent(ChatIntent.ToggleIncognito)
                                 },
                             )
+                            DropdownMenuItem(
+                                text = { Text("Multimedia compartida") },
+                                leadingIcon = { Icon(Icons.Default.PhotoLibrary, contentDescription = null) },
+                                onClick = {
+                                    menuExpanded = false
+                                    onOpenMediaGallery()
+                                },
+                            )
                             if (state.isGroup) {
                                 DropdownMenuItem(
                                     text = { Text("Info del grupo") },
@@ -843,6 +864,16 @@ fun ChatScreen(
                     }
                 },
             )
+            if (latestPinned != null && pinnedBannerVisible) {
+                PinnedMessageBanner(
+                    message = latestPinned,
+                    pinnedCount = state.pinnedMessages.size,
+                    onTap = {
+                        scope.launch { snackbarHostState.showSnackbar("Ir al mensaje fijado") }
+                    },
+                    onDismiss = { vm.onIntent(ChatIntent.UnpinMessage(latestPinned.id)) },
+                )
+            }
             } // Column wrapper for topBar (incognito banner + app bar)
         },
         bottomBar = {
@@ -1069,6 +1100,7 @@ fun ChatScreen(
                                     onForward = { vm.onIntent(ChatIntent.ShowForwardDialog(message)) },
                                     outgoingBubbleColor = chatTheme.bubbleColor,
                                     onOpenPdf = onOpenPdf,
+                                    onVote = { optionId -> vm.onIntent(ChatIntent.VotePoll(message.content.removePrefix("poll:"), optionId)) },
                                 )
                             }
                         } else {
@@ -1095,6 +1127,7 @@ fun ChatScreen(
                                 onToggleSelect = { vm.onIntent(ChatIntent.ToggleMessageSelection(message.id)) },
                                 outgoingBubbleColor = chatTheme.bubbleColor,
                                 onOpenPdf = onOpenPdf,
+                                onVote = { optionId -> vm.onIntent(ChatIntent.VotePoll(message.content.removePrefix("poll:"), optionId)) },
                             )
                         }
                     }
@@ -2165,6 +2198,7 @@ private fun MessageBubble(
     onToggleSelect: () -> Unit = {},
     outgoingBubbleColor: Color = Color.Unspecified,
     onOpenPdf: (url: String, filename: String) -> Unit = { _, _ -> },
+    onVote: ((optionId: String) -> Unit)? = null,
 ) {
     if (message.isDeleted) {
         DeletedMessageBubble(message)
@@ -2184,6 +2218,18 @@ private fun MessageBubble(
     }
     if (message.videoUrl != null) {
         VideoBubble(message, onReply)
+        return
+    }
+    if (message.content.startsWith("poll:")) {
+        val pollId = remember(message.content) { message.content.removePrefix("poll:") }
+        val pollDao: PollDao = koinInject()
+        PollBubble(
+            pollId = pollId,
+            isFromMe = message.isFromMe,
+            pollDao = pollDao,
+            currentUserId = currentUserId,
+            onVote = { optionId -> onVote?.invoke(optionId) },
+        )
         return
     }
     val timeText = remember(message.createdAt) {
@@ -3439,28 +3485,169 @@ private fun CreatePollSheetContent(
         }
 
         if (options.size < 10) {
-            TextButton(
-                onClick = { options = options + "" },
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                )
+            TextButton(onClick = { options = options + "" }) {
+                Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))
                 Text("Añadir opción")
             }
         }
 
         androidx.compose.material3.Button(
-            onClick = {
-                onCreate(question, options.filter { it.isNotBlank() })
-                onDismiss()
-            },
+            onClick = { onCreate(question, options.filter { it.isNotBlank() }); onDismiss() },
             enabled = isValid,
             modifier = Modifier.fillMaxWidth(),
+        ) { Text("Crear encuesta") }
+    }
+}
+
+@Composable
+private fun PinnedMessageBanner(
+    message: MessageBO,
+    pinnedCount: Int,
+    onTap: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onTap),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        tonalElevation = 2.dp,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("Crear encuesta")
+            Icon(
+                Icons.Default.PushPin,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(16.dp),
+            )
+            Spacer(Modifier.width(8.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = if (pinnedCount > 1) "Mensaje fijado ($pinnedCount)" else "Mensaje fijado",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = message.content.ifBlank { "[Adjunto]" },
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            }
+            IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
+                Icon(Icons.Default.Close, contentDescription = "Desfijar", modifier = Modifier.size(16.dp))
+            }
+        }
+    }
+}
+
+// ── PollBubble ────────────────────────────────────────────────────────────────
+
+@Composable
+private fun PollBubble(
+    pollId: String,
+    isFromMe: Boolean,
+    pollDao: PollDao,
+    currentUserId: String?,
+    onVote: (optionId: String) -> Unit,
+) {
+    val poll by pollDao.observePollById(pollId).collectAsState(initial = null)
+    val options by pollDao.observeOptionsByPollId(pollId).collectAsState(initial = emptyList())
+    val userVote by pollDao.observeVote(pollId, currentUserId ?: "").collectAsState(initial = null)
+
+    val alignment = if (isFromMe) Alignment.End else Alignment.Start
+
+    Column(
+        horizontalAlignment = alignment,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+    ) {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.widthIn(min = 220.dp, max = 300.dp),
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                // Header
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 6.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.HowToVote,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = "Encuesta",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+
+                if (poll == null) {
+                    Text(
+                        text = "Cargando encuesta…",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                } else {
+                    // Question
+                    Text(
+                        text = poll!!.question,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+
+                    val totalVotes = options.sumOf { it.voteCount }.coerceAtLeast(1)
+
+                    // Options
+                    options.forEach { option ->
+                        val isSelected = userVote?.optionId == option.id
+                        val fraction = option.voteCount.toFloat() / totalVotes.toFloat()
+                        Column(modifier = Modifier.padding(bottom = 6.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                RadioButton(
+                                    selected = isSelected,
+                                    onClick = { if (userVote == null) onVote(option.id) },
+                                    modifier = Modifier.size(20.dp),
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    text = option.text,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = "${option.voteCount}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.outline,
+                                )
+                            }
+                            LinearProgressIndicator(
+                                progress = { fraction },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(4.dp)
+                                    .padding(start = 26.dp),
+                                strokeCap = StrokeCap.Round,
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
