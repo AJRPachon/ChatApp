@@ -3,6 +3,7 @@ package com.ajrpachon.chatapp.ui.conversations
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,8 +32,10 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.BottomSheetDefaults
@@ -46,11 +49,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberSwipeToDismissBoxState
@@ -70,6 +75,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import com.ajrpachon.chatapp.domain.model.ConversationBO
+import com.ajrpachon.chatapp.domain.model.NotificationSound
 import com.ajrpachon.chatapp.ui.components.ChatAppAvatar
 import com.ajrpachon.chatapp.ui.components.ConversationListSkeleton
 import com.ajrpachon.chatapp.ui.status.StatusBar
@@ -81,6 +87,7 @@ import com.github.skydoves.navgraph.annotations.NavEdge
 import com.ajrpachon.chatapp.ChatRoute
 import com.ajrpachon.chatapp.ConversationListRoute
 import com.ajrpachon.chatapp.CreateGroupRoute
+import com.ajrpachon.chatapp.GlobalSearchRoute
 import com.ajrpachon.chatapp.InvitationsRoute
 import com.ajrpachon.chatapp.NewChatRoute
 import com.ajrpachon.chatapp.ProfileRoute
@@ -91,6 +98,7 @@ import org.koin.androidx.compose.koinViewModel
 @NavEdge(to = InvitationsRoute::class, label = "Invitations")
 @NavEdge(to = ProfileRoute::class, label = "Profile")
 @NavEdge(to = CreateGroupRoute::class, label = "New Group")
+@NavEdge(to = GlobalSearchRoute::class, label = "Global Search")
 @NavDestination(route = ConversationListRoute::class)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,6 +109,7 @@ fun ConversationListScreen(
     onNewGroup: () -> Unit = {},
     onOpenProfile: () -> Unit,
     onOpenStatusViewer: (userId: String) -> Unit = {},
+    onGoToGlobalSearch: () -> Unit = {},
 ) {
     val vm: ConversationListViewModel = koinViewModel()
     val state by vm.state.collectAsStateWithLifecycle()
@@ -114,6 +123,43 @@ fun ConversationListScreen(
                     onOpenConversation(effect.conversationId, effect.conversationName, effect.isGroup)
             }
         }
+    }
+
+    state.soundPickerConversationId?.let { convId ->
+        AlertDialog(
+            onDismissRequest = { vm.onIntent(ConversationListIntent.DismissSoundPicker) },
+            title = { Text("Sonido de notificación") },
+            text = {
+                Column {
+                    NotificationSound.entries.forEach { sound ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    vm.onIntent(ConversationListIntent.SetNotificationSound(convId, sound))
+                                },
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(
+                                selected = false,
+                                onClick = {
+                                    vm.onIntent(ConversationListIntent.SetNotificationSound(convId, sound))
+                                },
+                            )
+                            Text(
+                                text = sound.displayName,
+                                modifier = Modifier.padding(start = 8.dp),
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { vm.onIntent(ConversationListIntent.DismissSoundPicker) }) {
+                    Text("Cancelar")
+                }
+            },
+        )
     }
 
     if (state.showArchivedSheet) {
@@ -180,6 +226,9 @@ fun ConversationListScreen(
                     )
                 },
                 actions = {
+                    IconButton(onClick = dropUnlessResumed { onGoToGlobalSearch() }) {
+                        Icon(Icons.Default.Search, contentDescription = "Buscar")
+                    }
                     IconButton(onClick = { vm.onIntent(ConversationListIntent.ShowArchivedSheet) }) {
                         BadgedBox(badge = {
                             if (state.archivedConversations.isNotEmpty()) {
@@ -338,6 +387,10 @@ fun ConversationListScreen(
                         onArchive = {
                             vm.onIntent(ConversationListIntent.ArchiveConversation(conv.id, true))
                         },
+                        onSoundPicker = {
+                            menuConvId = null
+                            vm.onIntent(ConversationListIntent.ShowSoundPicker(conv.id))
+                        },
                     )
                 }
             }
@@ -360,6 +413,7 @@ private fun SwipeableConversationItem(
     onLeaveGroup: (() -> Unit)?,
     onDelete: () -> Unit,
     onArchive: () -> Unit,
+    onSoundPicker: () -> Unit,
 ) {
     val dismissState = rememberSwipeToDismissBoxState(
         positionalThreshold = { totalDistance -> totalDistance * 0.4f },
@@ -415,6 +469,7 @@ private fun SwipeableConversationItem(
             onClearChat = onClearChat,
             onLeaveGroup = onLeaveGroup,
             onDelete = onDelete,
+            onSoundPicker = onSoundPicker,
         )
     }
 }
@@ -481,6 +536,7 @@ private fun ConversationItem(
     onClearChat: () -> Unit,
     onLeaveGroup: (() -> Unit)?,
     onDelete: () -> Unit,
+    onSoundPicker: () -> Unit,
 ) {
     val lastMsg = conversation.lastMessage
     val fromMe = lastMsg?.isFromMe == true
@@ -651,6 +707,11 @@ private fun ConversationItem(
                 text = { Text("Vaciar chat") },
                 leadingIcon = { Icon(Icons.Default.DeleteSweep, contentDescription = null) },
                 onClick = onClearChat,
+            )
+            DropdownMenuItem(
+                text = { Text("Sonido de notificación") },
+                leadingIcon = { Icon(Icons.Default.NotificationsActive, contentDescription = null) },
+                onClick = onSoundPicker,
             )
             if (onLeaveGroup != null) {
                 DropdownMenuItem(

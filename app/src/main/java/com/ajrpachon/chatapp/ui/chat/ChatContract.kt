@@ -3,6 +3,7 @@ package com.ajrpachon.chatapp.ui.chat
 import android.content.Context
 import android.net.Uri
 import com.ajrpachon.chatapp.data.local.ChatTheme
+import com.ajrpachon.chatapp.data.local.entity.ScheduledMessageDBO
 import com.ajrpachon.chatapp.domain.model.CallBO
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.GroupMemberBO
@@ -70,10 +71,15 @@ data class ChatState(
     val showScheduleDialog: Boolean = false,
     val scheduledAtMs: Long? = null,
     val scheduledMessageCount: Int = 0,
+    val showScheduledSheet: Boolean = false,
+    val scheduledMessages: List<ScheduledMessageDBO> = emptyList(),
     // AI Assistant
     val showAiSheet: Boolean = false,
     val aiSuggestion: String? = null,
     val isAiLoading: Boolean = false,
+    // Wallpaper
+    val wallpaperColor: Long? = null,
+    val showWallpaperPicker: Boolean = false,
 ) {
     val isMultiSelectActive: Boolean get() = selectedMessageIds.isNotEmpty()
     val latestPinnedMessage: MessageBO? get() = pinnedMessages.firstOrNull()
@@ -149,6 +155,9 @@ sealed interface ChatIntent {
     data object DismissScheduleDialog : ChatIntent
     // scheduledAt: epoch millis when the message should be sent
     data class ScheduleMessage(val scheduledAt: Long) : ChatIntent
+    data object ShowScheduledSheet : ChatIntent
+    data object DismissScheduledSheet : ChatIntent
+    data class CancelScheduledMessage(val id: String) : ChatIntent
     // AI Assistant
     data object OpenAiSheet : ChatIntent
     data object DismissAiSheet : ChatIntent
@@ -156,6 +165,10 @@ sealed interface ChatIntent {
     data object AiSuggestReply : ChatIntent
     data class AiFreeform(val prompt: String) : ChatIntent
     data object InsertAiSuggestion : ChatIntent
+    data object OpenWallpaperPicker : ChatIntent
+    data object DismissWallpaperPicker : ChatIntent
+    data class SetWallpaperColor(val color: Long?) : ChatIntent
+    data class SendContact(val name: String, val phone: String) : ChatIntent
 }
 
 sealed interface ChatEffect {

@@ -51,6 +51,9 @@ interface MessageDao {
     @Query("SELECT * FROM messages WHERE conversationId = :conversationId AND content LIKE '%' || :query || '%' ORDER BY createdAt DESC")
     suspend fun searchMessages(conversationId: String, query: String): List<MessageDBO>
 
+    @Query("SELECT * FROM messages WHERE content LIKE '%' || :query || '%' AND isDeleted = 0 ORDER BY createdAt DESC LIMIT 50")
+    suspend fun searchAllMessages(query: String): List<MessageDBO>
+
     @Query("""
         SELECT COUNT(*) FROM messages
         WHERE conversationId = :conversationId
@@ -79,6 +82,12 @@ interface MessageDao {
 
     @Query("SELECT * FROM messages ORDER BY createdAt ASC")
     suspend fun getAllMessages(): List<MessageDBO>
+
+    @Query("SELECT imageUrl FROM messages WHERE conversationId = :conversationId AND imageUrl IS NOT NULL AND isDeleted = 0 ORDER BY createdAt DESC")
+    fun getImagesForConversation(conversationId: String): Flow<List<String>>
+
+    @Query("SELECT videoUrl FROM messages WHERE conversationId = :conversationId AND videoUrl IS NOT NULL AND isDeleted = 0 ORDER BY createdAt DESC")
+    fun getVideosForConversation(conversationId: String): Flow<List<String>>
 
     // ── Usage stats ──────────────────────────────────────────────────────────
 

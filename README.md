@@ -52,10 +52,16 @@ Proyecto personal para poner en práctica lo aprendido en desarrollo Android nat
 | 📝 | **Borradores** — el texto sin enviar se guarda al salir y se restaura al volver |
 | 📌 | **Mensajes fijados** con banner y acceso directo al mensaje |
 | 🔖 | **Mensajes guardados** — marca mensajes como favoritos y accede desde tu perfil |
-| 😀 | **Reacciones con emoji** — pulsación larga para reaccionar; agrupadas bajo cada burbuja |
+| 😀 | **Reacciones con emoji** — pulsación larga para reaccionar; agrupadas bajo cada burbuja con hoja de detalle de quién reaccionó |
 | 🌐 | **Traducción de mensajes** — traduce al español con un toque (ML Kit, sin internet) |
 | 🎙️ | **Transcripción de audios** — convierte un mensaje de voz en texto |
 | 🔍 | **Búsqueda de mensajes** dentro de una conversación con resaltado del resultado |
+| 🔎 | **Búsqueda global** — busca texto en todas las conversaciones desde la pantalla principal |
+| 📊 | **Encuestas** — crea encuestas de opción múltiple directamente en el chat |
+| 📌 | **Banner de mensaje fijado** — acceso rápido al mensaje fijado activo desde el chat |
+| 🖼️ | **Galería de medios del chat** — navega imágenes y vídeos de una conversación en cuadrícula |
+| 📇 | **Compartir contactos** — envía una tarjeta de contacto desde la agenda del dispositivo |
+| 🎨 | **Fondo de pantalla del chat** — elige un color de fondo diferente por conversación |
 | 🔗 | **Vista previa de enlaces** — previsualización automática de URLs en los mensajes |
 | 📅 | **Eventos de chat** — crea eventos con fecha, hora y RSVP dentro de una conversación |
 | 📄 | **Visor de PDF** — visualiza archivos PDF adjuntos con zoom y navegación |
@@ -90,7 +96,7 @@ Proyecto personal para poner en práctica lo aprendido en desarrollo Android nat
 |---|---|
 | 🔔 | **Notificaciones push** con deep links directos a la conversación |
 | ↩️ | **Respuesta desde la notificación** sin abrir la app |
-| 🎵 | **Sonidos de notificación personalizados** por conversación |
+| 🎵 | **Sonidos de notificación personalizados** por conversación (selector integrado en ajustes del chat) |
 | 🔇 | **Silenciar conversaciones** con opciones de duración (1h, 8h, 24h, siempre) |
 
 ### 🗂️ Organización
@@ -98,6 +104,7 @@ Proyecto personal para poner en práctica lo aprendido en desarrollo Android nat
 | | Funcionalidad |
 |---|---|
 | ⚡ | Lista de conversaciones **en tiempo real** |
+| 📡 | **Banner sin conexión** — avisa visualmente cuando el dispositivo pierde la red |
 | 🗄️ | **Archivar conversaciones** con búsqueda y orden por no leídos |
 | 📁 | **Carpetas de conversaciones** — organiza chats en carpetas accesibles desde la barra lateral |
 | ✅ | **Confirmación de lectura** con doble check y badge de mensajes no leídos |
@@ -109,6 +116,7 @@ Proyecto personal para poner en práctica lo aprendido en desarrollo Android nat
 | | Funcionalidad |
 |---|---|
 | 🤝 | Sistema de **invitaciones de amistad** con bloqueo de usuarios |
+| 🔗 | **Enlace de invitación a grupo** — genera un link único para unirse al grupo sin que el admin tenga que añadir a cada miembro manualmente |
 | 📷 | **Código QR de contacto** — comparte tu perfil o añade contactos escaneando un QR |
 | 👥 | **Sugerencias de la agenda** — descubre qué contactos ya usan la app |
 | 🖼️ | **Galería de medios compartidos** en el perfil del contacto con zoom |
@@ -128,6 +136,7 @@ Proyecto personal para poner en práctica lo aprendido en desarrollo Android nat
 | | Funcionalidad |
 |---|---|
 | 🤖 | **Asistente IA** — resume la conversación, sugiere una respuesta o lanza consultas libres vía Supabase Edge Function |
+| 🚀 | **Perfil de inicio optimizado** — Baseline Profile pre-compila rutas críticas de Compose, Room y Coil para un arranque más rápido |
 
 ---
 
@@ -179,7 +188,8 @@ com.ajrpachon.chatapp/
 │   ├── pdf/                          Visor de PDF con PdfRenderer
 │   ├── saved/                        Mensajes guardados
 │   ├── usagestats/                   Estadísticas de uso con gráfico de barras
-│   ├── components/                   Avatar, Button, TextField, Shimmer, EmojiPickerBottomSheet
+│   ├── search/                       Búsqueda global de mensajes (GlobalSearchScreen + ViewModel)
+│   ├── components/                   Avatar, Button, TextField, Shimmer, EmojiPickerBottomSheet, OfflineBanner
 │   └── theme/                        Color, Shape, Theme (Material3 pastel)
 │
 ├── 🔴 service/                    ← Servicios en background
@@ -198,7 +208,7 @@ com.ajrpachon.chatapp/
 │                                     TranslationManager, AudioTranscriber,
 │                                     ContactSyncManager, BackupManager,
 │                                     GiphyKeyManager, LinkPreviewFetcher,
-│                                     SecureStorage, UploadLimits
+│                                     SecureStorage, UploadLimits, NetworkMonitor
 ├── MainActivity.kt                ← NavDisplay + todas las rutas (Navigation 3)
 └── ChatApplication.kt             ← Inicialización de Koin y Supabase
 

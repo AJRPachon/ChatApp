@@ -21,6 +21,8 @@ data class GroupInfoState(
     val addMemberResults: List<UserBO> = emptyList(),
     val pendingAddUser: UserBO? = null,
     val showHistoryDialog: Boolean = false,
+    val inviteLink: String? = null,
+    val showInviteLinkSheet: Boolean = false,
 )
 
 sealed interface GroupInfoIntent {
@@ -41,9 +43,12 @@ sealed interface GroupInfoIntent {
     data class ConfirmAddMember(val canSeeHistory: Boolean) : GroupInfoIntent
     data object DismissHistoryDialog : GroupInfoIntent
     data object DismissError : GroupInfoIntent
+    data object GenerateInviteLink : GroupInfoIntent
+    data object DismissInviteLinkSheet : GroupInfoIntent
 }
 
 sealed interface GroupInfoEffect {
     data object NavigateBack : GroupInfoEffect
     data class ShowMessage(val message: String) : GroupInfoEffect
+    data class CopyToClipboard(val text: String) : GroupInfoEffect
 }

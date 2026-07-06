@@ -71,6 +71,7 @@ class ChatViewModelTest {
     private val workManager = mockk<WorkManager>(relaxed = true)
     private val incognitoRepository = mockk<IncognitoRepository>(relaxed = true)
     private val aiAssistantRepository = mockk<AiAssistantRepository>(relaxed = true)
+    private val wallpaperRepository = mockk<com.ajrpachon.chatapp.data.local.WallpaperRepository>(relaxed = true)
 
     // Start with current user as member — mirrors what the repository emits after initial fetch
     private val membersFlow = MutableStateFlow<List<GroupMemberBO>>(emptyList())
@@ -141,6 +142,7 @@ class ChatViewModelTest {
             workManager = workManager,
             incognitoRepository = incognitoRepository,
             aiAssistantRepository = aiAssistantRepository,
+            wallpaperRepository = wallpaperRepository,
         )
 
     // ── isCurrentUserMember ───────────────────────────────────────────────────

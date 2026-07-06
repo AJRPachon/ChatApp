@@ -33,8 +33,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.padding
@@ -43,6 +45,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.paging.LoadState
@@ -92,7 +95,23 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.SmartToy
+import androidx.compose.material.icons.filled.HowToVote
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Wallpaper
+import androidx.compose.foundation.border
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material.icons.filled.Contacts
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.RadioButton
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.graphics.StrokeCap
+import com.ajrpachon.chatapp.data.local.dao.PollDao
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.TimePicker
@@ -194,6 +213,7 @@ fun ChatScreen(
     onGroupInfo: () -> Unit = {},
     onUserInfo: (userId: String) -> Unit = {},
     onOpenPdf: (url: String, filename: String) -> Unit = { _, _ -> },
+    onOpenMediaGallery: () -> Unit = {},
 ) {
     val vm: ChatViewModel = koinViewModel(key = conversationId, parameters = { parametersOf(conversationId, otherUserName) })
     val state by vm.state.collectAsStateWithLifecycle()
@@ -212,6 +232,7 @@ fun ChatScreen(
 
     val scope = rememberCoroutineScope()
     var highlightedMessageId by remember { mutableStateOf<String?>(null) }
+    var reactionDetailMessageId by remember { mutableStateOf<String?>(null) }
     val showScrollToBottom by remember { derivedStateOf { listState.firstVisibleItemIndex > 2 } }
 
     val onScrollToMessage: (String) -> Unit = { messageId ->
@@ -387,6 +408,21 @@ fun ChatScreen(
         }
     }
 
+    val contactPickerLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickContact()
+    ) { uri ->
+        if (uri != null) {
+            val cursor = context.contentResolver.query(uri, null, null, null, null)
+            cursor?.use { c ->
+                if (c.moveToFirst()) {
+                    val nameIdx = c.getColumnIndex(android.provider.ContactsContract.Contacts.DISPLAY_NAME)
+                    val name = if (nameIdx >= 0) c.getString(nameIdx) else ""
+                    vm.onIntent(ChatIntent.SendContact(name = name, phone = ""))
+                }
+            }
+        }
+    }
+
     if (showViewer && viewerUrls.isNotEmpty()) {
         ImageViewerDialog(
             imageUrls = viewerUrls,
@@ -463,6 +499,76 @@ fun ChatScreen(
         )
     }
 
+    if (state.showScheduledSheet) {
+        val scheduledSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ModalBottomSheet(
+            onDismissRequest = { vm.onIntent(ChatIntent.DismissScheduledSheet) },
+            sheetState = scheduledSheetState,
+        ) {
+            Text(
+                text = "Mensajes programados",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+            if (state.scheduledMessages.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            Icons.Default.Schedule,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.outlineVariant,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "No hay mensajes programados",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            } else {
+                LazyColumn {
+                    items(state.scheduledMessages, key = { it.id }) { msg ->
+                        val formatter = remember { java.text.SimpleDateFormat("dd MMM HH:mm", java.util.Locale.getDefault()) }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = msg.text,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                Text(
+                                    text = formatter.format(java.util.Date(msg.scheduledAtMs)),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            IconButton(onClick = { vm.onIntent(ChatIntent.CancelScheduledMessage(msg.id)) }) {
+                                Icon(Icons.Default.Delete, contentDescription = "Cancelar mensaje programado")
+                            }
+                        }
+                    }
+                }
+            }
+            Spacer(
+                Modifier.padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
+            )
+        }
+    }
+
     if (state.showAiSheet) {
         AiAssistantSheet(
             aiSuggestion = state.aiSuggestion,
@@ -474,6 +580,47 @@ fun ChatScreen(
             onInsert = { vm.onIntent(ChatIntent.InsertAiSuggestion) },
         )
     }
+
+    if (state.showCreatePollSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { vm.onIntent(ChatIntent.DismissCreatePollSheet) },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        ) {
+            CreatePollSheetContent(
+                onDismiss = { vm.onIntent(ChatIntent.DismissCreatePollSheet) },
+                onCreate = { question, options -> vm.onIntent(ChatIntent.CreatePoll(question, options)) },
+            )
+        }
+    }
+
+    reactionDetailMessageId?.let { msgId ->
+        val msgReactions = reactions[msgId] ?: emptyList()
+        if (msgReactions.isNotEmpty()) {
+            ModalBottomSheet(
+                onDismissRequest = { reactionDetailMessageId = null },
+                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            ) {
+                ReactionDetailsSheet(
+                    reactions = msgReactions,
+                    onDismiss = { reactionDetailMessageId = null },
+                )
+            }
+        }
+    }
+
+    if (state.showWallpaperPicker) {
+        WallpaperPickerSheet(
+            currentColor = state.wallpaperColor,
+            onSelect = { colorValue: Long? ->
+                vm.onIntent(ChatIntent.SetWallpaperColor(colorValue))
+                vm.onIntent(ChatIntent.DismissWallpaperPicker)
+            },
+            onDismiss = { vm.onIntent(ChatIntent.DismissWallpaperPicker) },
+        )
+    }
+
+    val latestPinned = state.latestPinnedMessage
+    var pinnedBannerVisible by rememberSaveable(latestPinned?.id) { mutableStateOf(true) }
 
     val scaffoldContainerColor = if (chatTheme.backgroundTint == androidx.compose.ui.graphics.Color.Transparent) {
         MaterialTheme.colorScheme.background
@@ -634,7 +781,7 @@ fun ChatScreen(
                     }
                     if (state.scheduledMessageCount > 0) {
                         Box {
-                            IconButton(onClick = { /* TODO: show scheduled list */ }) {
+                            IconButton(onClick = { vm.onIntent(ChatIntent.ShowScheduledSheet) }) {
                                 Icon(Icons.Default.Schedule, contentDescription = "Mensajes programados")
                             }
                             Box(
@@ -693,6 +840,14 @@ fun ChatScreen(
                                 },
                             )
                             DropdownMenuItem(
+                                text = { Text("Fondo del chat") },
+                                leadingIcon = { Icon(Icons.Default.Wallpaper, contentDescription = null) },
+                                onClick = {
+                                    menuExpanded = false
+                                    vm.onIntent(ChatIntent.OpenWallpaperPicker)
+                                },
+                            )
+                            DropdownMenuItem(
                                 text = { Text("Exportar conversación") },
                                 leadingIcon = {
                                     if (state.isExporting) {
@@ -729,6 +884,14 @@ fun ChatScreen(
                                     vm.onIntent(ChatIntent.ToggleIncognito)
                                 },
                             )
+                            DropdownMenuItem(
+                                text = { Text("Multimedia compartida") },
+                                leadingIcon = { Icon(Icons.Default.PhotoLibrary, contentDescription = null) },
+                                onClick = {
+                                    menuExpanded = false
+                                    onOpenMediaGallery()
+                                },
+                            )
                             if (state.isGroup) {
                                 DropdownMenuItem(
                                     text = { Text("Info del grupo") },
@@ -759,6 +922,16 @@ fun ChatScreen(
                     }
                 },
             )
+            if (latestPinned != null && pinnedBannerVisible) {
+                PinnedMessageBanner(
+                    message = latestPinned,
+                    pinnedCount = state.pinnedMessages.size,
+                    onTap = {
+                        scope.launch { snackbarHostState.showSnackbar("Ir al mensaje fijado") }
+                    },
+                    onDismiss = { vm.onIntent(ChatIntent.UnpinMessage(latestPinned.id)) },
+                )
+            }
             } // Column wrapper for topBar (incognito banner + app bar)
         },
         bottomBar = {
@@ -890,15 +1063,24 @@ fun ChatScreen(
                                 else -> locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                             }
                         },
+                        onContact = { contactPickerLauncher.launch(null) },
                         onSchedule = { vm.onIntent(ChatIntent.OpenScheduleDialog) },
                         onAi = { vm.onIntent(ChatIntent.OpenAiSheet) },
+                        onCreatePoll = { vm.onIntent(ChatIntent.OpenCreatePollSheet) },
                     )
                 }
                 } // Column
             }
         },
     ) { innerPadding ->
-        Box(Modifier.fillMaxSize()) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(
+                    state.wallpaperColor?.let { androidx.compose.ui.graphics.Color(it) }
+                        ?: MaterialTheme.colorScheme.background
+                )
+        ) {
             val isInitialLoad = lazyPagingItems.loadState.refresh is LoadState.Loading
                 && lazyPagingItems.itemCount == 0
             if (isInitialLoad) {
@@ -984,6 +1166,7 @@ fun ChatScreen(
                                     onForward = { vm.onIntent(ChatIntent.ShowForwardDialog(message)) },
                                     outgoingBubbleColor = chatTheme.bubbleColor,
                                     onOpenPdf = onOpenPdf,
+                                    onVote = { optionId -> vm.onIntent(ChatIntent.VotePoll(message.content.removePrefix("poll:"), optionId)) },
                                 )
                             }
                         } else {
@@ -1010,6 +1193,8 @@ fun ChatScreen(
                                 onToggleSelect = { vm.onIntent(ChatIntent.ToggleMessageSelection(message.id)) },
                                 outgoingBubbleColor = chatTheme.bubbleColor,
                                 onOpenPdf = onOpenPdf,
+                                onVote = { optionId -> vm.onIntent(ChatIntent.VotePoll(message.content.removePrefix("poll:"), optionId)) },
+                                onShowReactionDetails = { reactionDetailMessageId = message.id },
                             )
                         }
                     }
@@ -1176,8 +1361,10 @@ private fun NormalInputBar(
     onAttachFile: () -> Unit = {},
     onAttachVideo: () -> Unit = {},
     onLocation: () -> Unit = {},
+    onContact: () -> Unit = {},
     onSchedule: () -> Unit = {},
     onAi: () -> Unit = {},
+    onCreatePoll: () -> Unit = {},
 ) {
     val busy = isUploadingImage || isSending
     var showAttachSheet by rememberSaveable { mutableStateOf(false) }
@@ -1284,6 +1471,30 @@ private fun NormalInputBar(
                         onLocation()
                     }
                 },
+                onCreatePoll = {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        showAttachSheet = false
+                        onCreatePoll()
+                    }
+                },
+                onContact = {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        showAttachSheet = false
+                        onContact()
+                    }
+                },
+                onSchedule = {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        showAttachSheet = false
+                        onSchedule()
+                    }
+                },
+                onAi = {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        showAttachSheet = false
+                        onAi()
+                    }
+                },
             )
         }
     }
@@ -1297,6 +1508,10 @@ private fun AttachmentBottomSheet(
     onVideo: () -> Unit,
     onSticker: () -> Unit,
     onLocation: () -> Unit = {},
+    onCreatePoll: () -> Unit = {},
+    onContact: () -> Unit = {},
+    onSchedule: () -> Unit = {},
+    onAi: () -> Unit = {},
 ) {
     val options = listOf(
         Triple(Icons.Default.AddPhotoAlternate, "Galería", onGallery),
@@ -1305,6 +1520,10 @@ private fun AttachmentBottomSheet(
         Triple(Icons.Default.Videocam, "Video", onVideo),
         Triple(Icons.Default.EmojiEmotions, "Stickers", onSticker),
         Triple(Icons.Default.LocationOn, "Ubicación", onLocation),
+        Triple(Icons.Default.CheckCircle, "Encuesta", onCreatePoll),
+        Triple(Icons.Default.Contacts, "Contacto", onContact),
+        Triple(Icons.Default.Schedule, "Programar", onSchedule),
+        Triple(Icons.Default.SmartToy, "IA", onAi),
     )
 
     Column(
@@ -2071,6 +2290,8 @@ private fun MessageBubble(
     onToggleSelect: () -> Unit = {},
     outgoingBubbleColor: Color = Color.Unspecified,
     onOpenPdf: (url: String, filename: String) -> Unit = { _, _ -> },
+    onVote: ((optionId: String) -> Unit)? = null,
+    onShowReactionDetails: () -> Unit = {},
 ) {
     if (message.isDeleted) {
         DeletedMessageBubble(message)
@@ -2084,12 +2305,37 @@ private fun MessageBubble(
         StickerBubble(message, onReply)
         return
     }
+    if (message.content.startsWith("contact:{")) {
+        val json = message.content.removePrefix("contact:")
+        val contactName = runCatching { org.json.JSONObject(json).getString("name") }.getOrNull()
+        val contactPhone = runCatching { org.json.JSONObject(json).optString("phone", "") }.getOrNull()
+        if (contactName != null) {
+            ContactBubble(
+                name = contactName,
+                phone = contactPhone ?: "",
+                isFromMe = message.isFromMe,
+            )
+        }
+        return
+    }
     if (message.fileUrl != null) {
         FileBubble(message, onReply, onOpenPdf)
         return
     }
     if (message.videoUrl != null) {
         VideoBubble(message, onReply)
+        return
+    }
+    if (message.content.startsWith("poll:")) {
+        val pollId = remember(message.content) { message.content.removePrefix("poll:") }
+        val pollDao: PollDao = koinInject()
+        PollBubble(
+            pollId = pollId,
+            isFromMe = message.isFromMe,
+            pollDao = pollDao,
+            currentUserId = currentUserId,
+            onVote = { optionId -> onVote?.invoke(optionId) },
+        )
         return
     }
     val timeText = remember(message.createdAt) {
@@ -2342,7 +2588,10 @@ private fun MessageBubble(
                         shape = RoundedCornerShape(50),
                         color = if (isMine) MaterialTheme.colorScheme.primaryContainer
                                 else MaterialTheme.colorScheme.surfaceVariant,
-                        modifier = Modifier.clickable { onToggleReaction(emoji) },
+                        modifier = Modifier.combinedClickable(
+                            onClick = { onToggleReaction(emoji) },
+                            onLongClick = { onShowReactionDetails() },
+                        ),
                     ) {
                         Text(
                             text = "$emoji ${reactors.size}",
@@ -2793,6 +3042,60 @@ private fun ImageViewerDialog(
                     Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ContactBubble(name: String, phone: String, isFromMe: Boolean) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    Card(
+        modifier = Modifier.widthIn(max = 280.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isFromMe) MaterialTheme.colorScheme.primaryContainer
+            else MaterialTheme.colorScheme.surfaceVariant,
+        ),
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(40.dp),
+            ) {
+                Icon(
+                    Icons.Default.Person,
+                    contentDescription = null,
+                    modifier = Modifier.padding(8.dp),
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                if (phone.isNotBlank()) {
+                    Text(
+                        phone,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+        HorizontalDivider()
+        TextButton(
+            onClick = {
+                val dialIntent = android.content.Intent(
+                    android.content.Intent.ACTION_DIAL,
+                    android.net.Uri.parse("tel:$phone"),
+                )
+                context.startActivity(dialIntent)
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Llamar", style = MaterialTheme.typography.labelMedium)
         }
     }
 }
@@ -3278,5 +3581,337 @@ private fun AiAssistantSheet(
                 }
             }
         }
+    }
+}
+
+// ── CreatePollSheetContent ────────────────────────────────────────────────────
+
+@Composable
+private fun CreatePollSheetContent(
+    onDismiss: () -> Unit,
+    onCreate: (question: String, options: List<String>) -> Unit,
+) {
+    var question by remember { mutableStateOf("") }
+    var options by remember { mutableStateOf(listOf("", "")) }
+
+    val isValid = question.isNotBlank() && options.count { it.isNotBlank() } >= 2
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .padding(top = 8.dp, bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = "Crear encuesta",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+
+        OutlinedTextField(
+            value = question,
+            onValueChange = { question = it },
+            label = { Text("Pregunta") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+
+        options.forEachIndexed { index, option ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedTextField(
+                    value = option,
+                    onValueChange = { newValue ->
+                        options = options.toMutableList().also { it[index] = newValue }
+                    },
+                    label = { Text("Opción ${index + 1}") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                )
+                if (options.size > 2) {
+                    IconButton(
+                        onClick = {
+                            options = options.toMutableList().also { it.removeAt(index) }
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Eliminar opción",
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+            }
+        }
+
+        if (options.size < 10) {
+            TextButton(onClick = { options = options + "" }) {
+                Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(4.dp))
+                Text("Añadir opción")
+            }
+        }
+
+        androidx.compose.material3.Button(
+            onClick = { onCreate(question, options.filter { it.isNotBlank() }); onDismiss() },
+            enabled = isValid,
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text("Crear encuesta") }
+    }
+}
+
+@Composable
+private fun PinnedMessageBanner(
+    message: MessageBO,
+    pinnedCount: Int,
+    onTap: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onTap),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        tonalElevation = 2.dp,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                Icons.Default.PushPin,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(16.dp),
+            )
+            Spacer(Modifier.width(8.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = if (pinnedCount > 1) "Mensaje fijado ($pinnedCount)" else "Mensaje fijado",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = message.content.ifBlank { "[Adjunto]" },
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            }
+            IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
+                Icon(Icons.Default.Close, contentDescription = "Desfijar", modifier = Modifier.size(16.dp))
+            }
+        }
+    }
+}
+
+// ── PollBubble ────────────────────────────────────────────────────────────────
+
+@Composable
+private fun PollBubble(
+    pollId: String,
+    isFromMe: Boolean,
+    pollDao: PollDao,
+    currentUserId: String?,
+    onVote: (optionId: String) -> Unit,
+) {
+    val poll by pollDao.observePollById(pollId).collectAsState(initial = null)
+    val options by pollDao.observeOptionsByPollId(pollId).collectAsState(initial = emptyList())
+    val userVote by pollDao.observeVote(pollId, currentUserId ?: "").collectAsState(initial = null)
+
+    val alignment = if (isFromMe) Alignment.End else Alignment.Start
+
+    Column(
+        horizontalAlignment = alignment,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+    ) {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.widthIn(min = 220.dp, max = 300.dp),
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                // Header
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 6.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.HowToVote,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = "Encuesta",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+
+                if (poll == null) {
+                    Text(
+                        text = "Cargando encuesta…",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                } else {
+                    // Question
+                    Text(
+                        text = poll!!.question,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+
+                    val totalVotes = options.sumOf { it.voteCount }.coerceAtLeast(1)
+
+                    // Options
+                    options.forEach { option ->
+                        val isSelected = userVote?.optionId == option.id
+                        val fraction = option.voteCount.toFloat() / totalVotes.toFloat()
+                        Column(modifier = Modifier.padding(bottom = 6.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                RadioButton(
+                                    selected = isSelected,
+                                    onClick = { if (userVote == null) onVote(option.id) },
+                                    modifier = Modifier.size(20.dp),
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    text = option.text,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = "${option.voteCount}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.outline,
+                                )
+                            }
+                            LinearProgressIndicator(
+                                progress = { fraction },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(4.dp)
+                                    .padding(start = 26.dp),
+                                strokeCap = StrokeCap.Round,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ── ReactionDetailsSheet ──────────────────────────────────────────────────────
+
+@Composable
+private fun ReactionDetailsSheet(
+    reactions: List<com.ajrpachon.chatapp.domain.model.ReactionBO>,
+    onDismiss: () -> Unit,
+) {
+    val grouped = reactions.groupBy { it.emoji }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .navigationBarsPadding(),
+    ) {
+        Text(
+            text = "Reacciones (${reactions.size})",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 12.dp),
+        )
+        grouped.forEach { (emoji, reactors) ->
+            reactors.forEach { reaction ->
+                ListItem(
+                    headlineContent = { Text(reaction.userId) },
+                    trailingContent = { Text(emoji, style = MaterialTheme.typography.titleLarge) },
+                )
+                HorizontalDivider()
+            }
+        }
+    }
+}
+
+// ── WallpaperPickerSheet ─────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WallpaperPickerSheet(
+    currentColor: Long?,
+    onSelect: (Long?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = listOf(
+        null to "Por defecto",
+        0xFFE3F2FD.toLong() to "Azul claro",
+        0xFFF3E5F5.toLong() to "Púrpura",
+        0xFFE8F5E9.toLong() to "Verde",
+        0xFFFFF8E1.toLong() to "Amarillo",
+        0xFFFCE4EC.toLong() to "Rosa",
+        0xFF212121.toLong() to "Oscuro",
+    )
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    ) {
+        Text(
+            "Fondo del chat",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(16.dp),
+        )
+        androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
+            columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(4),
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .navigationBarsPadding(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(colors) { (colorValue, label) ->
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.clickable { onSelect(colorValue) },
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(CircleShape)
+                            .background(
+                                colorValue?.let { androidx.compose.ui.graphics.Color(it) }
+                                    ?: MaterialTheme.colorScheme.background
+                            )
+                            .border(
+                                width = if (currentColor == colorValue) 3.dp else 1.dp,
+                                color = if (currentColor == colorValue) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.outline,
+                                shape = CircleShape,
+                            )
+                    )
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(16.dp))
     }
 }

@@ -35,6 +35,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import com.ajrpachon.chatapp.ui.auth.AuthScreen
+import com.ajrpachon.chatapp.ui.search.GlobalSearchScreen
 import com.ajrpachon.chatapp.ui.auth.IntegrityBlockedScreen
 import com.ajrpachon.chatapp.ui.broadcast.BroadcastListScreen
 import com.ajrpachon.chatapp.data.local.AppLockRepository
@@ -108,6 +109,8 @@ import org.koin.androidx.compose.koinViewModel
 @Serializable data object AppLockRoute : NavKey
 @Serializable data object BackupRoute : NavKey
 @Serializable data class PdfViewerRoute(val url: String, val filename: String) : NavKey
+@Serializable data object GlobalSearchRoute : NavKey
+@Serializable data class ChatMediaGalleryRoute(val conversationId: String, val conversationName: String) : NavKey
 
 // ── Activity ───────────────────────────────────────────────────────────────
 
@@ -278,6 +281,9 @@ class MainActivity : ComponentActivity() {
                                     onOpenProfile = dropUnlessResumed {
                                         backStack.add(ProfileRoute)
                                     },
+                                    onGoToGlobalSearch = dropUnlessResumed {
+                                        backStack.add(GlobalSearchRoute)
+                                    },
                                 )
                             }
 
@@ -312,6 +318,14 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onOpenPdf = { url, filename ->
                                         backStack.add(PdfViewerRoute(url, filename))
+                                    },
+                                    onOpenMediaGallery = dropUnlessResumed {
+                                        backStack.add(
+                                            ChatMediaGalleryRoute(
+                                                conversationId = key.conversationId,
+                                                conversationName = key.otherUserName,
+                                            )
+                                        )
                                     },
                                 )
                             }
@@ -428,6 +442,24 @@ class MainActivity : ComponentActivity() {
 
                             is UsageStatsRoute -> NavEntry(key) {
                                 com.ajrpachon.chatapp.ui.usagestats.UsageStatsScreen(
+                                    onBack = dropUnlessResumed { backStack.removeLastOrNull() },
+                                )
+                            }
+
+                            is GlobalSearchRoute -> NavEntry(key) {
+                                GlobalSearchScreen(
+                                    onBack = dropUnlessResumed { backStack.removeLastOrNull() },
+                                    onOpenConversation = { id, name, isGroup ->
+                                        backStack.removeAll { it is GlobalSearchRoute }
+                                        backStack.add(ChatRoute(id, name, isGroup))
+                                    },
+                                )
+                            }
+
+                            is ChatMediaGalleryRoute -> NavEntry(key) {
+                                com.ajrpachon.chatapp.ui.chat.ChatMediaGalleryScreen(
+                                    conversationId = key.conversationId,
+                                    conversationName = key.conversationName,
                                     onBack = dropUnlessResumed { backStack.removeLastOrNull() },
                                 )
                             }

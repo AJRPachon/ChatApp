@@ -9,6 +9,7 @@ import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.ui.auth.AuthViewModel
 import com.ajrpachon.chatapp.ui.call.CallViewModel
 import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
+import com.ajrpachon.chatapp.ui.chat.ChatMediaGalleryViewModel
 import com.ajrpachon.chatapp.ui.chat.ChatViewModel
 import com.ajrpachon.chatapp.ui.chat.StickerPackViewModel
 import com.ajrpachon.chatapp.ui.conversations.ConversationListViewModel
@@ -23,6 +24,7 @@ import com.ajrpachon.chatapp.ui.broadcast.BroadcastListViewModel
 import com.ajrpachon.chatapp.ui.usagestats.UsageStatsViewModel
 import com.ajrpachon.chatapp.ui.profile.SessionAuditViewModel
 import com.ajrpachon.chatapp.ui.backup.BackupViewModel
+import com.ajrpachon.chatapp.ui.search.GlobalSearchViewModel
 import com.ajrpachon.chatapp.service.PresenceManager
 import com.ajrpachon.chatapp.utils.LinkPreviewFetcher
 import com.ajrpachon.chatapp.utils.OkHttpProvider
@@ -108,10 +110,11 @@ val viewModelModule = module {
     viewModelOf(::UsageStatsViewModel)
     viewModelOf(::SessionAuditViewModel)
     viewModelOf(::BackupViewModel)
+    viewModel { GlobalSearchViewModel(get(), get()) }
 
     // Needs runtime parameters — cannot use viewModelOf
     viewModel { (conversationId: String, otherUserName: String) ->
-        ChatViewModel(conversationId, otherUserName, get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get())
+        ChatViewModel(conversationId, otherUserName, get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get())
     }
     viewModel { params ->
         CallViewModel(
@@ -134,6 +137,9 @@ val viewModelModule = module {
     viewModel { (userId: String) ->
         UserInfoViewModel(userId, get(), get(), get())
     }
+    viewModel { (conversationId: String) ->
+        ChatMediaGalleryViewModel(conversationId, get())
+    }
     viewModel { com.ajrpachon.chatapp.ui.pdf.PdfViewerViewModel(androidContext(), com.ajrpachon.chatapp.utils.OkHttpProvider.client) }
 }
 
@@ -151,6 +157,7 @@ val utilsModule = module {
     single { com.ajrpachon.chatapp.data.local.ChatThemeRepository(androidContext()) }
     single { com.ajrpachon.chatapp.utils.ContactSyncManager(androidContext().contentResolver) }
     single { com.ajrpachon.chatapp.utils.BackupManager(androidContext(), get()) }
+    single { com.ajrpachon.chatapp.data.local.WallpaperRepository(androidContext()) }
 }
 
 val aiModule = module {
