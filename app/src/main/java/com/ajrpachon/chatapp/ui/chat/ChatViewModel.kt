@@ -10,6 +10,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import androidx.work.BackoffPolicy
+import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.ajrpachon.chatapp.data.local.AppLockRepository
@@ -19,8 +23,10 @@ import com.ajrpachon.chatapp.data.local.DraftRepository
 import com.ajrpachon.chatapp.data.local.IncognitoRepository
 import com.ajrpachon.chatapp.data.local.WallpaperRepository
 import com.ajrpachon.chatapp.data.local.dao.ConversationDao
+import com.ajrpachon.chatapp.data.local.dao.MessageDao
 import com.ajrpachon.chatapp.data.local.PollRepository
 import com.ajrpachon.chatapp.data.local.dao.ScheduledMessageDao
+import com.ajrpachon.chatapp.data.local.entity.MessageDBO
 import com.ajrpachon.chatapp.data.local.entity.PollDBO
 import com.ajrpachon.chatapp.data.local.entity.PollOptionDBO
 import com.ajrpachon.chatapp.data.local.entity.ScheduledMessageDBO
@@ -42,6 +48,7 @@ import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.AudioTranscriber
 import com.ajrpachon.chatapp.utils.TranslationManager
 import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.worker.MessageRetryWorker
 import com.ajrpachon.chatapp.worker.ScheduledMessageWorker
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.realtime.RealtimeChannel
@@ -89,6 +96,7 @@ class ChatViewModel(
     private val sendMessageUseCase: SendMessageUseCase,
     private val messageRepository: MessageRepository,
     private val conversationDao: ConversationDao,
+    private val messageDao: MessageDao,
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
     private val getGroupMembersUseCase: GetGroupMembersUseCase,
@@ -108,6 +116,7 @@ class ChatViewModel(
     private val incognitoRepository: IncognitoRepository,
     private val aiAssistantRepository: AiAssistantRepository,
     private val wallpaperRepository: WallpaperRepository,
+    private val networkMonitor: com.ajrpachon.chatapp.utils.NetworkMonitor,
 ) : ViewModel() {
 
     private val conversationId = args.conversationId
@@ -154,8 +163,24 @@ class ChatViewModel(
     private var typingResetJob: Job? = null
     private var typingPresenceJob: Job? = null
     private var draftSaveJob: Job? = null
+    // Group presence: tracks online status per member userId
+    private val memberOnlineStatuses = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+    private var memberObserveJob: Job? = null
 
     init {
+        viewModelScope.launch {
+            networkMonitor.isOnline.collect { online ->
+                _state.update { it.copy(isOnline = online) }
+            }
+        }
+
+        // Propagate group member online count to state
+        viewModelScope.launch {
+            memberOnlineStatuses.collect { map ->
+                _state.update { it.copy(onlineMemberCount = map.values.count { v -> v }) }
+            }
+        }
+
         // Delete expired self-destruct messages when the screen opens
         viewModelScope.launch { catchResult { messageRepository.deleteExpiredMessages() } }
 
@@ -275,7 +300,23 @@ class ChatViewModel(
                         groupMembers = members
                         val isMember = members.any { it.userId == uid }
                         AppLogger.d(TAG, "members emission: size=${members.size} isMember=$isMember prev=$previousIsMember")
-                        _state.update { it.copy(isCurrentUserMember = isMember) }
+                        _state.update { it.copy(isCurrentUserMember = isMember, groupMemberCount = members.size) }
+                        // Restart per-member online status observation whenever the member list changes
+                        memberObserveJob?.cancel()
+                        memberObserveJob = launch {
+                            memberOnlineStatuses.value = emptyMap()
+                            for (member in members) {
+                                launch {
+                                    catchResult {
+                                        userRepository.observeUserById(member.userId).collect { user ->
+                                            memberOnlineStatuses.update { map ->
+                                                map + (member.userId to (user?.isOnline() == true))
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         when {
                             isMember && !previousIsMember -> {
                                 launch {
@@ -424,6 +465,11 @@ class ChatViewModel(
                 it.copy(showForwardDialog = false, forwardingMessage = null, forwardableConversations = emptyList())
             }
             is ChatIntent.ForwardMessage -> forwardMessage(intent.messageId, intent.targetConversationId)
+            is ChatIntent.ShowForwardSelectionDialog -> showForwardSelectionDialog()
+            is ChatIntent.DismissForwardSelectionDialog -> _state.update {
+                it.copy(showForwardSelectionDialog = false, forwardableConversations = emptyList())
+            }
+            is ChatIntent.ForwardSelectedMessages -> forwardSelectedMessages(intent.targetConversationId)
             is ChatIntent.SendLocation -> sendLocationMessage(intent.mapsUrl)
             is ChatIntent.TranslateMessage -> translateMessage(intent.messageId, intent.text)
             is ChatIntent.DismissTranslation -> _state.update {
@@ -617,19 +663,54 @@ class ChatViewModel(
             _state.update { it.copy(isSending = true, inputText = "", replyingTo = null) }
             draftSaveJob?.cancel()
             draftRepository.saveDraft(conversationId, "")
-            sendMessageUseCase(
+            val result = sendMessageUseCase(
                 conversationId, userId, text,
                 replyToId = reply?.id,
                 replyToContent = reply?.replySnippet(),
                 replyToSenderName = reply?.senderName,
-            ).onSuccess { msg ->
+            )
+            result.onSuccess { msg ->
                 if (disappearingSecs > 0L) {
                     val expiresAt = System.currentTimeMillis() + disappearingSecs * 1_000L
                     catchResult { messageRepository.setMessageExpiry(msg.id, expiresAt) }
                 }
-            }.onFailure { e ->
-                AppLogger.e(TAG, "Send message failed", e)
-                _state.update { it.copy(error = e.message, inputText = text) }
+            }
+            if (result.isFailure) {
+                val e = result.exceptionOrNull()
+                AppLogger.e(TAG, "Send message failed — queueing for offline retry", e)
+                val pendingId = UUID.randomUUID().toString()
+                val pendingDbo = MessageDBO(
+                    id = pendingId,
+                    conversationId = conversationId,
+                    senderId = userId,
+                    content = text,
+                    isRead = true,
+                    createdAt = System.currentTimeMillis(),
+                    replyToId = reply?.id,
+                    replyToContent = reply?.replySnippet(),
+                    replyToSenderName = reply?.senderName,
+                    sendStatus = "pending",
+                )
+                catchResult { messageDao.upsert(pendingDbo) }
+                    .onFailure { dbErr -> AppLogger.e(TAG, "Failed to save pending message locally", dbErr) }
+                workManager.enqueueUniqueWork(
+                    MessageRetryWorker.WORK_NAME,
+                    ExistingWorkPolicy.KEEP,
+                    OneTimeWorkRequestBuilder<MessageRetryWorker>()
+                        .setConstraints(
+                            Constraints.Builder()
+                                .setRequiredNetworkType(NetworkType.CONNECTED)
+                                .build()
+                        )
+                        .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+                        .build()
+                )
+                _state.update {
+                    it.copy(
+                        error = "Sin conexión. El mensaje se enviará cuando vuelva la red.",
+                        inputText = text,
+                    )
+                }
             }
             _state.update { it.copy(isSending = false) }
         }
@@ -993,6 +1074,65 @@ class ChatViewModel(
             }.onFailure { e ->
                 AppLogger.e(TAG, "forwardMessage failed", e)
                 _state.update { it.copy(error = "No se pudo reenviar el mensaje") }
+            }
+        }
+    }
+
+    private fun showForwardSelectionDialog() {
+        val uid = currentUserId ?: return
+        viewModelScope.launch {
+            catchResult {
+                val conversations = conversationRepository.observeConversations(uid).first()
+                    .filter { it.id != conversationId }
+                _state.update {
+                    it.copy(
+                        showForwardSelectionDialog = true,
+                        forwardableConversations = conversations,
+                    )
+                }
+            }.onFailure { e ->
+                AppLogger.e(TAG, "showForwardSelectionDialog failed", e)
+                _state.update { it.copy(error = "No se pudo cargar las conversaciones") }
+            }
+        }
+    }
+
+    private fun forwardSelectedMessages(targetConversationId: String) {
+        val uid = currentUserId ?: return
+        val ids = _state.value.selectedMessageIds.toSet()
+        _state.update {
+            it.copy(
+                showForwardSelectionDialog = false,
+                forwardableConversations = emptyList(),
+                selectedMessageIds = emptySet(),
+            )
+        }
+        viewModelScope.launch {
+            val allMessages = catchResult {
+                withContext(Dispatchers.IO) { messageRepository.getAllMessages(conversationId, uid) }
+            }.getOrDefault(emptyList())
+            val toForward = allMessages.filter { it.id in ids }
+            var forwarded = 0
+            for (message in toForward) {
+                catchResult {
+                    messageRepository.sendMessage(
+                        conversationId = targetConversationId,
+                        senderId = uid,
+                        content = message.content,
+                        imageUrl = message.imageUrl,
+                        audioUrl = message.audioUrl,
+                        gifUrl = message.gifUrl,
+                        stickerUrl = message.stickerUrl,
+                    )
+                    forwarded++
+                }.onFailure { e ->
+                    AppLogger.e(TAG, "forwardSelectedMessages: failed for ${message.id}", e)
+                }
+            }
+            if (forwarded > 0) {
+                _effect.send(ChatEffect.ShowSnackbar("$forwarded mensaje(s) reenviado(s)"))
+            } else {
+                _state.update { it.copy(error = "No se pudieron reenviar los mensajes") }
             }
         }
     }
