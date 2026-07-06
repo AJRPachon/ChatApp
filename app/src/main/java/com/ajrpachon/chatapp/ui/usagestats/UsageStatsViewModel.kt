@@ -1,16 +1,14 @@
 package com.ajrpachon.chatapp.ui.usagestats
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.data.local.dao.ConversationDao
 import com.ajrpachon.chatapp.data.local.dao.MessageDao
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
+import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import com.ajrpachon.chatapp.utils.AppLogger
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import com.ajrpachon.chatapp.utils.catchResult
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
@@ -22,10 +20,7 @@ class UsageStatsViewModel(
     private val messageDao: MessageDao,
     private val conversationDao: ConversationDao,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
-) : ViewModel() {
-
-    private val _state = MutableStateFlow(UsageStatsState())
-    val state = _state.asStateFlow()
+) : BaseViewModel<UsageStatsState, Nothing>(UsageStatsState()) {
 
     init {
         loadStats()
@@ -39,8 +34,8 @@ class UsageStatsViewModel(
 
     private fun loadStats() {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
-            runCatching {
+            updateState { it.copy(isLoading = true, error = null) }
+            catchResult {
                 val userId = getCurrentUserUseCase().filterNotNull().first().id
 
                 val sent = messageDao.countSent(userId)
@@ -74,7 +69,7 @@ class UsageStatsViewModel(
                     label to count
                 }
 
-                _state.update {
+                updateState {
                     it.copy(
                         isLoading = false,
                         totalMessagesSent = sent,
@@ -90,7 +85,7 @@ class UsageStatsViewModel(
                 }
             }.onFailure { e ->
                 AppLogger.e(TAG, "loadStats failed", e)
-                _state.update { it.copy(isLoading = false, error = e.message ?: "Error al cargar estadísticas") }
+                updateState { it.copy(isLoading = false, error = e.message ?: "Error al cargar estadísticas") }
             }
         }
     }
