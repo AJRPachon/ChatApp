@@ -102,8 +102,12 @@ import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Wallpaper
 import androidx.compose.foundation.border
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material.icons.filled.Contacts
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.RadioButton
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.StrokeCap
@@ -1357,6 +1361,7 @@ private fun NormalInputBar(
     onAttachFile: () -> Unit = {},
     onAttachVideo: () -> Unit = {},
     onLocation: () -> Unit = {},
+    onContact: () -> Unit = {},
     onSchedule: () -> Unit = {},
     onAi: () -> Unit = {},
     onCreatePoll: () -> Unit = {},
@@ -1472,6 +1477,24 @@ private fun NormalInputBar(
                         onCreatePoll()
                     }
                 },
+                onContact = {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        showAttachSheet = false
+                        onContact()
+                    }
+                },
+                onSchedule = {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        showAttachSheet = false
+                        onSchedule()
+                    }
+                },
+                onAi = {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        showAttachSheet = false
+                        onAi()
+                    }
+                },
             )
         }
     }
@@ -1486,6 +1509,9 @@ private fun AttachmentBottomSheet(
     onSticker: () -> Unit,
     onLocation: () -> Unit = {},
     onCreatePoll: () -> Unit = {},
+    onContact: () -> Unit = {},
+    onSchedule: () -> Unit = {},
+    onAi: () -> Unit = {},
 ) {
     val options = listOf(
         Triple(Icons.Default.AddPhotoAlternate, "Galería", onGallery),
@@ -1495,6 +1521,9 @@ private fun AttachmentBottomSheet(
         Triple(Icons.Default.EmojiEmotions, "Stickers", onSticker),
         Triple(Icons.Default.LocationOn, "Ubicación", onLocation),
         Triple(Icons.Default.CheckCircle, "Encuesta", onCreatePoll),
+        Triple(Icons.Default.Contacts, "Contacto", onContact),
+        Triple(Icons.Default.Schedule, "Programar", onSchedule),
+        Triple(Icons.Default.SmartToy, "IA", onAi),
     )
 
     Column(
@@ -2277,12 +2306,13 @@ private fun MessageBubble(
         return
     }
     if (message.content.startsWith("contact:{")) {
-        runCatching {
-            val json = message.content.removePrefix("contact:")
-            val obj = org.json.JSONObject(json)
+        val json = message.content.removePrefix("contact:")
+        val contactName = runCatching { org.json.JSONObject(json).getString("name") }.getOrNull()
+        val contactPhone = runCatching { org.json.JSONObject(json).optString("phone", "") }.getOrNull()
+        if (contactName != null) {
             ContactBubble(
-                name = obj.getString("name"),
-                phone = obj.optString("phone", ""),
+                name = contactName,
+                phone = contactPhone ?: "",
                 isFromMe = message.isFromMe,
             )
         }
@@ -3792,8 +3822,10 @@ private fun ReactionDetailsSheet(
     reactions: List<com.ajrpachon.chatapp.domain.model.ReactionBO>,
     onDismiss: () -> Unit,
 ) {
+    val grouped = reactions.groupBy { it.emoji }
     Column(
         modifier = Modifier
+            .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .navigationBarsPadding(),
     ) {
@@ -3803,20 +3835,16 @@ private fun ReactionDetailsSheet(
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 12.dp),
         )
-        val grouped = reactions.groupBy { it.emoji }
-        LazyColumn {
-            grouped.forEach { (emoji, reactors) ->
-                items(reactors) { reaction ->
-                    ListItem(
-                        headlineContent = { Text(reaction.userId) },
-                        trailingContent = {
-                            Text(emoji, style = MaterialTheme.typography.titleLarge)
-                        },
-                    )
-                    HorizontalDivider()
-                }
+        grouped.forEach { (emoji, reactors) ->
+            reactors.forEach { reaction ->
+                ListItem(
+                    headlineContent = { Text(reaction.userId) },
+                    trailingContent = { Text(emoji, style = MaterialTheme.typography.titleLarge) },
+                )
+                HorizontalDivider()
             }
         }
+    }
 }
 
 // ── WallpaperPickerSheet ─────────────────────────────────────────────────────
