@@ -1,20 +1,77 @@
-# MainActivity and main Compose entry points
-Lcom/ajrpachon/chatapp/MainActivity;
+# ── App entry points ──────────────────────────────────────────────────────────
+HSPLcom/ajrpachon/chatapp/MainActivity;->onCreate(Landroid/os/Bundle;)V
+HSPLcom/ajrpachon/chatapp/MainActivity;->onResume()V
 
-# Compose runtime internals
+# ── Koin DI — initialised once on startup ─────────────────────────────────────
+HSPLorg/koin/android/ext/android/KoinExtensionsKt;->getKoin(Landroid/content/Context;)Lorg/koin/core/Koin;
+HSPLorg/koin/core/KoinApplication;->modules(Ljava/util/List;)Lorg/koin/core/KoinApplication;
+HSPLorg/koin/core/context/GlobalContext;->startKoin(Lkotlin/jvm/functions/Function1;)Lorg/koin/core/KoinApplication;
+Lorg/koin/core/Koin;
+Lorg/koin/core/KoinApplication;
+Lorg/koin/android/ext/android/KoinExtensionsKt;
+
+# ── Compose runtime ────────────────────────────────────────────────────────────
+HSPLandroidx/compose/runtime/ComposerImpl;->startRestartGroup(I)Landroidx/compose/runtime/Composer;
+HSPLandroidx/compose/runtime/ComposerImpl;->endRestartGroup()Landroidx/compose/runtime/ScopeUpdateScope;
+HSPLandroidx/compose/runtime/RecomposerKt;->createRecomposer(Lkotlin/coroutines/CoroutineContext;)Landroidx/compose/runtime/Recomposer;
+HSPLandroidx/compose/ui/platform/AndroidComposeView;->onMeasure(II)V
+HSPLandroidx/compose/ui/platform/AndroidComposeView;->onDraw(Landroid/graphics/Canvas;)V
 Landroidx/compose/runtime/ComposerImpl;
 Landroidx/compose/runtime/RecomposerKt;
 Landroidx/compose/ui/platform/AndroidComposeView;
+Landroidx/compose/runtime/SnapshotStateKt;
+Landroidx/compose/runtime/MutableState;
 
-# Key screens on startup path
+# ── Compose Material3 ──────────────────────────────────────────────────────────
+Landroidx/compose/material3/ScaffoldKt;
+Landroidx/compose/material3/TopAppBarKt;
+Landroidx/compose/material3/TextKt;
+Landroidx/compose/material3/SurfaceKt;
+Landroidx/compose/material3/MaterialTheme;
+Landroidx/compose/foundation/lazy/LazyListKt;
+
+# ── Navigation 3 ──────────────────────────────────────────────────────────────
+Landroidx/navigation3/ui/NavDisplayKt;
+Landroidx/navigation3/runtime/NavBackStackKt;
+
+# ── Auth screen (first screen shown) ──────────────────────────────────────────
+HSPLcom/ajrpachon/chatapp/ui/auth/AuthScreen;->invoke(Landroidx/compose/runtime/Composer;I)V
 Lcom/ajrpachon/chatapp/ui/auth/AuthScreen;
-Lcom/ajrpachon/chatapp/ui/conversations/ConversationListScreen;
-Lcom/ajrpachon/chatapp/ui/chat/ChatScreen;
+Lcom/ajrpachon/chatapp/ui/auth/AuthViewModel;
 
-# Coil image loading
+# ── Conversation list (main screen after login) ───────────────────────────────
+HSPLcom/ajrpachon/chatapp/ui/conversations/ConversationListScreen;->invoke(Landroidx/compose/runtime/Composer;I)V
+Lcom/ajrpachon/chatapp/ui/conversations/ConversationListScreen;
+Lcom/ajrpachon/chatapp/ui/conversations/ConversationListViewModel;
+
+# ── Chat screen (hot path — opened frequently) ────────────────────────────────
+HSPLcom/ajrpachon/chatapp/ui/chat/ChatScreen;->invoke(Landroidx/compose/runtime/Composer;I)V
+Lcom/ajrpachon/chatapp/ui/chat/ChatScreen;
+Lcom/ajrpachon/chatapp/ui/chat/ChatViewModel;
+
+# ── Room database ─────────────────────────────────────────────────────────────
+HSPLcom/ajrpachon/chatapp/data/local/AppDatabase;->getInstance(Landroid/content/Context;)Lcom/ajrpachon/chatapp/data/local/AppDatabase;
+Lcom/ajrpachon/chatapp/data/local/AppDatabase;
+Landroidx/room/RoomDatabase;
+Landroidx/room/RoomDatabase$Builder;
+
+# ── Coil image loading ────────────────────────────────────────────────────────
+HSPLcoil3/ImageLoader;->enqueue(Lcoil3/request/ImageRequest;)Lcoil3/request/Disposable;
 Lcoil3/ImageLoader;
 Lcoil3/compose/AsyncImageKt;
+Lcoil3/compose/AsyncImagePainter;
 
-# Koin DI initialization
-Lorg/koin/core/KoinApplication;
-Lorg/koin/android/ext/android/KoinExtensionsKt;
+# ── Supabase client ───────────────────────────────────────────────────────────
+Lio/github/jan/supabase/SupabaseClient;
+Lio/github/jan/supabase/auth/Auth;
+Lio/github/jan/supabase/realtime/Realtime;
+
+# ── Coroutines ────────────────────────────────────────────────────────────────
+Lkotlinx/coroutines/flow/StateFlowKt;
+Lkotlinx/coroutines/flow/SharedFlowKt;
+Lkotlinx/coroutines/CoroutineScopeKt;
+
+# ── UI components (used across multiple screens) ──────────────────────────────
+Lcom/ajrpachon/chatapp/ui/components/ChatAppAvatar;
+Lcom/ajrpachon/chatapp/ui/components/ChatAppTextField;
+Lcom/ajrpachon/chatapp/ui/theme/ChatAppTheme;
