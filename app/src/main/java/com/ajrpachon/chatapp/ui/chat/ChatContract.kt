@@ -80,6 +80,12 @@ data class ChatState(
     // Wallpaper
     val wallpaperColor: Long? = null,
     val showWallpaperPicker: Boolean = false,
+    // Multi-forward
+    val showForwardSelectionDialog: Boolean = false,
+    // Group presence
+    val onlineMemberCount: Int = 0,
+    val groupMemberCount: Int = 0,
+    val isOnline: Boolean = true,
 ) {
     val isMultiSelectActive: Boolean get() = selectedMessageIds.isNotEmpty()
     val latestPinnedMessage: MessageBO? get() = pinnedMessages.firstOrNull()
@@ -169,6 +175,10 @@ sealed interface ChatIntent {
     data object DismissWallpaperPicker : ChatIntent
     data class SetWallpaperColor(val color: Long?) : ChatIntent
     data class SendContact(val name: String, val phone: String) : ChatIntent
+    // Multi-forward
+    data object ShowForwardSelectionDialog : ChatIntent
+    data object DismissForwardSelectionDialog : ChatIntent
+    data class ForwardSelectedMessages(val targetConversationId: String) : ChatIntent
 }
 
 sealed interface ChatEffect {

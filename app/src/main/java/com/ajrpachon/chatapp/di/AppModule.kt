@@ -109,7 +109,35 @@ val viewModelModule = module {
     viewModelOf(::SessionAuditViewModel)
     viewModelOf(::BackupViewModel)
     viewModelOf(::GlobalSearchViewModel)
-    viewModelOf(::ChatViewModel)
+    // ChatViewModel: exceeds viewModelOf 22-param limit — kept as lambda
+    viewModel { params ->
+        ChatViewModel(
+            args = params[0],
+            sendMessageUseCase = get(),
+            messageRepository = get(),
+            conversationDao = get(),
+            messageDao = get(),
+            callRepository = get(),
+            userRepository = get(),
+            getGroupMembersUseCase = get(),
+            leaveGroupUseCase = get(),
+            groupRepository = get(),
+            reactionRepository = get(),
+            conversationRepository = get(),
+            supabaseClient = get(),
+            draftRepository = get(),
+            translationManager = get(),
+            audioTranscriber = get(),
+            pollRepository = get(),
+            chatThemeRepository = get(),
+            scheduledMessageDao = get(),
+            workManager = get(),
+            incognitoRepository = get(),
+            aiAssistantRepository = get(),
+            wallpaperRepository = get(),
+            networkMonitor = get(),
+        )
+    }
     viewModelOf(::GroupInfoViewModel)
     viewModelOf(::UserInfoViewModel)
     viewModelOf(::ChatMediaGalleryViewModel)
@@ -146,6 +174,7 @@ val utilsModule = module {
     single { com.ajrpachon.chatapp.data.local.NotificationSoundRepository(androidContext()) }
     single { com.ajrpachon.chatapp.utils.AudioTranscriber() }
     single { com.ajrpachon.chatapp.data.local.ChatThemeRepository(androidContext()) }
+    single { com.ajrpachon.chatapp.utils.NetworkMonitor(androidContext()) }
     single { com.ajrpachon.chatapp.utils.ContactSyncManager(androidContext().contentResolver) }
     single { com.ajrpachon.chatapp.utils.BackupManager(androidContext(), get()) }
     single { com.ajrpachon.chatapp.data.local.WallpaperRepository(androidContext()) }

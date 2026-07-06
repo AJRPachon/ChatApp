@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.conversations
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -22,12 +23,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.BrightnessAuto
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.NotificationsOff
@@ -65,6 +69,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -74,12 +79,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
+import com.ajrpachon.chatapp.data.local.ThemePreference
+import com.ajrpachon.chatapp.data.local.ThemeRepository
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.NotificationSound
 import com.ajrpachon.chatapp.ui.components.ChatAppAvatar
 import com.ajrpachon.chatapp.ui.components.ConversationListSkeleton
+import com.ajrpachon.chatapp.ui.components.OfflineBanner
 import com.ajrpachon.chatapp.ui.status.StatusBar
 import kotlin.time.Instant
+import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import com.github.skydoves.navgraph.annotations.NavDestination
@@ -92,6 +101,7 @@ import com.ajrpachon.chatapp.InvitationsRoute
 import com.ajrpachon.chatapp.NewChatRoute
 import com.ajrpachon.chatapp.ProfileRoute
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 
 @NavEdge(to = ChatRoute::class, label = "Open Chat")
 @NavEdge(to = NewChatRoute::class, label = "New Chat")
@@ -115,6 +125,11 @@ fun ConversationListScreen(
     val state by vm.state.collectAsStateWithLifecycle()
     var menuConvId by remember { mutableStateOf<String?>(null) }
     val archivedSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    val themeRepo: ThemeRepository = koinInject()
+    val themePreference by themeRepo.observe().collectAsStateWithLifecycle(ThemePreference.SYSTEM)
+    val scope = rememberCoroutineScope()
+    var showThemeMenu by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         vm.effect.collect { effect ->
@@ -218,6 +233,10 @@ fun ConversationListScreen(
 
     Scaffold(
         topBar = {
+            Column {
+                AnimatedVisibility(visible = !state.isOnline) {
+                    OfflineBanner()
+                }
             TopAppBar(
                 title = {
                     Text(
@@ -226,6 +245,48 @@ fun ConversationListScreen(
                     )
                 },
                 actions = {
+                    // Dark mode toggle
+                    Box {
+                        IconButton(onClick = { showThemeMenu = true }) {
+                            Icon(
+                                imageVector = when (themePreference) {
+                                    ThemePreference.DARK -> Icons.Default.DarkMode
+                                    ThemePreference.LIGHT -> Icons.Default.LightMode
+                                    ThemePreference.SYSTEM -> Icons.Default.BrightnessAuto
+                                },
+                                contentDescription = "Tema",
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showThemeMenu,
+                            onDismissRequest = { showThemeMenu = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Sistema") },
+                                leadingIcon = { Icon(Icons.Default.BrightnessAuto, contentDescription = null) },
+                                onClick = {
+                                    scope.launch { themeRepo.set(ThemePreference.SYSTEM) }
+                                    showThemeMenu = false
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Claro") },
+                                leadingIcon = { Icon(Icons.Default.LightMode, contentDescription = null) },
+                                onClick = {
+                                    scope.launch { themeRepo.set(ThemePreference.LIGHT) }
+                                    showThemeMenu = false
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Oscuro") },
+                                leadingIcon = { Icon(Icons.Default.DarkMode, contentDescription = null) },
+                                onClick = {
+                                    scope.launch { themeRepo.set(ThemePreference.DARK) }
+                                    showThemeMenu = false
+                                },
+                            )
+                        }
+                    }
                     IconButton(onClick = dropUnlessResumed { onGoToGlobalSearch() }) {
                         Icon(Icons.Default.Search, contentDescription = "Buscar")
                     }
@@ -266,6 +327,7 @@ fun ConversationListScreen(
                     containerColor = MaterialTheme.colorScheme.surface,
                 ),
             )
+            } // end Column (topBar)
         },
         floatingActionButton = {
             Column(
@@ -304,10 +366,17 @@ fun ConversationListScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
+                        val chipColors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        )
                         FilterChip(
-                            selected = state.sortByUnread,
-                            onClick = { vm.onIntent(ConversationListIntent.ToggleSortByUnread) },
+                            selected = state.selectedFilter == ConversationFilter.UNREAD,
+                            onClick = { vm.onIntent(ConversationListIntent.SetFilter(ConversationFilter.UNREAD)) },
                             label = { Text("No leídos") },
                             leadingIcon = {
                                 Icon(
@@ -316,12 +385,33 @@ fun ConversationListScreen(
                                     modifier = Modifier.size(FilterChipDefaults.IconSize),
                                 )
                             },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            ),
+                            colors = chipColors,
+                        )
+                        FilterChip(
+                            selected = state.selectedFilter == ConversationFilter.GROUPS,
+                            onClick = { vm.onIntent(ConversationListIntent.SetFilter(ConversationFilter.GROUPS)) },
+                            label = { Text("Grupos") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Group,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(FilterChipDefaults.IconSize),
+                                )
+                            },
+                            colors = chipColors,
+                        )
+                        FilterChip(
+                            selected = state.selectedFilter == ConversationFilter.DIRECT,
+                            onClick = { vm.onIntent(ConversationListIntent.SetFilter(ConversationFilter.DIRECT)) },
+                            label = { Text("1:1") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(FilterChipDefaults.IconSize),
+                                )
+                            },
+                            colors = chipColors,
                         )
                     }
                 }

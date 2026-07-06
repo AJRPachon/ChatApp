@@ -11,6 +11,7 @@ import com.ajrpachon.chatapp.domain.usecase.ObserveInvitationsUseCase
 import com.ajrpachon.chatapp.service.FcmTokenManager
 import com.ajrpachon.chatapp.service.PresenceManager
 import com.ajrpachon.chatapp.utils.AppLogger
+import com.ajrpachon.chatapp.utils.NetworkMonitor
 import com.ajrpachon.chatapp.utils.catchResult
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,6 +34,7 @@ class ConversationListViewModel(
     private val presenceManager: PresenceManager,
     private val draftRepository: DraftRepository,
     private val notificationSoundRepository: com.ajrpachon.chatapp.data.local.NotificationSoundRepository,
+    private val networkMonitor: NetworkMonitor,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ConversationListState())
@@ -44,6 +46,11 @@ class ConversationListViewModel(
     init {
         presenceManager.start()
         viewModelScope.launch { fcmTokenManager.syncToken() }
+        viewModelScope.launch {
+            networkMonitor.isOnline.collect { online ->
+                _state.update { it.copy(isOnline = online) }
+            }
+        }
         viewModelScope.launch {
             draftRepository.getAllDrafts().collect { drafts ->
                 _state.update { it.copy(drafts = drafts) }
@@ -113,6 +120,11 @@ class ConversationListViewModel(
                     )
                 }
             }
+            is ConversationListIntent.SetFilter ->
+                _state.update { current ->
+                    val newFilter = if (current.selectedFilter == intent.filter) ConversationFilter.ALL else intent.filter
+                    current.copy(selectedFilter = newFilter)
+                }
             is ConversationListIntent.SearchQueryChanged ->
                 _state.update { it.copy(searchQuery = intent.query) }
             is ConversationListIntent.ToggleSearch ->
