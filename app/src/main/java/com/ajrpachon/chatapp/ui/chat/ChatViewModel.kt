@@ -119,6 +119,10 @@ class ChatViewModel(
     val effect = _effect.receiveAsFlow()
 
     // Resolved synchronously — Supabase Auth is in-memory, never blocks.
+    // TODO: conversationDao is still injected directly because ConversationBO does not expose
+    //  otherUserId, historyVisibleFrom, or disappearingModeSeconds. A follow-up ticket should
+    //  add those fields to ConversationBO, expose getConversationById / observeConversationById /
+    //  resetUnreadCount on ConversationRepository, and remove the DAO dependency from this VM.
     private val currentUserId: String? = userRepository.getCurrentUserId()
 
     private val _historyVisibleFrom = MutableStateFlow(0L)
@@ -898,7 +902,7 @@ class ChatViewModel(
         val newMuted = !_state.value.isMuted
         _state.update { it.copy(isMuted = newMuted) }
         viewModelScope.launch {
-            catchResult { conversationDao.updateMuted(conversationId, newMuted) }
+            catchResult { conversationRepository.toggleMute(conversationId, newMuted) }
                 .onFailure { e ->
                     _state.update { it.copy(isMuted = !newMuted) }
                     AppLogger.e(TAG, "Toggle mute failed", e)
@@ -909,7 +913,7 @@ class ChatViewModel(
     private fun muteFor(mutedUntil: Long) {
         _state.update { it.copy(showMuteDialog = false, isMuted = mutedUntil != 0L, mutedUntil = mutedUntil) }
         viewModelScope.launch {
-            catchResult { conversationDao.updateMutedUntil(conversationId, mutedUntil) }
+            catchResult { conversationRepository.muteFor(conversationId, mutedUntil) }
                 .onFailure { e -> AppLogger.e(TAG, "MuteFor failed", e) }
         }
     }

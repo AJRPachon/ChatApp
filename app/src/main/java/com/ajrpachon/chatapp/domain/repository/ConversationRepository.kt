@@ -14,4 +14,5 @@ interface ConversationRepository {
     suspend fun archiveConversation(conversationId: String, archived: Boolean)
     fun observeArchivedConversations(userId: String): Flow<List<ConversationBO>>
     suspend fun setDisappearingMode(conversationId: String, seconds: Long)
+
 }
