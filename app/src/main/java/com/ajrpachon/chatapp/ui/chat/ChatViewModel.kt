@@ -59,10 +59,11 @@ private data class TypingPresence(
     val userName: String = "",
 )
 
+data class ChatArgs(val conversationId: String, val otherUserName: String)
+
 @Suppress("LongParameterList", "TooManyFunctions")
 class ChatViewModel(
-    private val conversationId: String,
-    private val otherUserName: String,
+    args: ChatArgs,
     private val sendMessageUseCase: SendMessageUseCase,
     private val messageRepository: MessageRepository,
     private val conversationDao: ConversationDao,
@@ -85,6 +86,9 @@ class ChatViewModel(
     private val aiAssistantRepository: com.ajrpachon.chatapp.data.repository.AiAssistantRepository,
     private val wallpaperRepository: com.ajrpachon.chatapp.data.local.WallpaperRepository,
 ) : ViewModel() {
+
+    private val conversationId = args.conversationId
+    private val otherUserName = args.otherUserName
 
     private val _state = MutableStateFlow(ChatState())
     val state = _state.asStateFlow()

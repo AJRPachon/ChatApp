@@ -215,7 +215,7 @@ fun ChatScreen(
     onOpenPdf: (url: String, filename: String) -> Unit = { _, _ -> },
     onOpenMediaGallery: () -> Unit = {},
 ) {
-    val vm: ChatViewModel = koinViewModel(key = conversationId, parameters = { parametersOf(conversationId, otherUserName) })
+    val vm: ChatViewModel = koinViewModel(key = conversationId, parameters = { parametersOf(ChatArgs(conversationId, otherUserName)) })
     val state by vm.state.collectAsStateWithLifecycle()
     val lazyPagingItems = vm.messages.collectAsLazyPagingItems()
     val reactions by vm.reactions.collectAsStateWithLifecycle(initialValue = emptyMap())
