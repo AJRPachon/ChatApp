@@ -10,6 +10,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import androidx.work.BackoffPolicy
+import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.ajrpachon.chatapp.data.local.AppLockRepository
@@ -42,6 +46,7 @@ import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.AudioTranscriber
 import com.ajrpachon.chatapp.utils.TranslationManager
 import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.worker.MessageRetryWorker
 import com.ajrpachon.chatapp.worker.ScheduledMessageWorker
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.realtime.RealtimeChannel
@@ -108,6 +113,7 @@ class ChatViewModel(
     private val incognitoRepository: IncognitoRepository,
     private val aiAssistantRepository: AiAssistantRepository,
     private val wallpaperRepository: WallpaperRepository,
+    private val networkMonitor: NetworkMonitor,
 ) : ViewModel() {
 
     private val conversationId = args.conversationId
@@ -275,7 +281,18 @@ class ChatViewModel(
                         groupMembers = members
                         val isMember = members.any { it.userId == uid }
                         AppLogger.d(TAG, "members emission: size=${members.size} isMember=$isMember prev=$previousIsMember")
-                        _state.update { it.copy(isCurrentUserMember = isMember) }
+                        // Count online members by checking last_seen freshness
+                        val onlineCount = members.count { member ->
+                            val user = runCatching { userRepository.getUserById(member.userId) }.getOrNull()
+                            user?.isOnline() == true
+                        }
+                        _state.update {
+                            it.copy(
+                                isCurrentUserMember = isMember,
+                                onlineMemberCount = onlineCount,
+                                groupMemberCount = members.size,
+                            )
+                        }
                         when {
                             isMember && !previousIsMember -> {
                                 launch {
@@ -420,10 +437,12 @@ class ChatViewModel(
             is ChatIntent.ClearSelection -> _state.update { it.copy(selectedMessageIds = emptySet()) }
             is ChatIntent.DeleteSelectedMessages -> deleteSelectedMessages()
             is ChatIntent.ShowForwardDialog -> showForwardDialog(intent.message)
+            is ChatIntent.ShowMultiForwardDialog -> showMultiForwardDialog()
             is ChatIntent.DismissForwardDialog -> _state.update {
                 it.copy(showForwardDialog = false, forwardingMessage = null, forwardableConversations = emptyList())
             }
             is ChatIntent.ForwardMessage -> forwardMessage(intent.messageId, intent.targetConversationId)
+            is ChatIntent.ForwardSelectedMessages -> forwardSelectedMessages(intent.targetConversationId)
             is ChatIntent.SendLocation -> sendLocationMessage(intent.mapsUrl)
             is ChatIntent.TranslateMessage -> translateMessage(intent.messageId, intent.text)
             is ChatIntent.DismissTranslation -> _state.update {
@@ -452,7 +471,9 @@ class ChatViewModel(
             is ChatIntent.DismissDisappearingModeSheet -> _state.update { it.copy(showDisappearingModeSheet = false) }
             is ChatIntent.SetDisappearingMode -> setDisappearingMode(intent.conversationId, intent.seconds)
             is ChatIntent.SelectMention -> selectMention(intent.member)
-            is ChatIntent.ToggleIncognito -> toggleIncognito()
+                        is ChatIntent.ToggleIncognito -> toggleIncognito()
+            is ChatIntent.DismissIncognitoDialog -> _state.update { it.copy(showIncognitoInfoDialog = false) }
+            is ChatIntent.ConfirmIncognito -> confirmIncognito()
             is ChatIntent.OpenScheduleDialog -> _state.update { it.copy(showScheduleDialog = true) }
             is ChatIntent.DismissScheduleDialog -> _state.update { it.copy(showScheduleDialog = false) }
             is ChatIntent.ScheduleMessage -> scheduleMessage(intent.scheduledAt)
@@ -474,7 +495,20 @@ class ChatViewModel(
                 wallpaperRepository.setWallpaperColor(conversationId, intent.color)
             }
             is ChatIntent.SendContact -> sendContact(intent.name, intent.phone)
+            is ChatIntent.RetryMessage -> enqueueMessageRetry()
         }
+    }
+
+    private fun enqueueMessageRetry() {
+        val request = OneTimeWorkRequestBuilder<MessageRetryWorker>()
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build(),
+            )
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, java.util.concurrent.TimeUnit.SECONDS)
+            .build()
+        workManager.enqueueUniqueWork(MessageRetryWorker.WORK_NAME, ExistingWorkPolicy.KEEP, request)
     }
 
     private fun sendContact(name: String, phone: String) {
@@ -630,6 +664,7 @@ class ChatViewModel(
             }.onFailure { e ->
                 AppLogger.e(TAG, "Send message failed", e)
                 _state.update { it.copy(error = e.message, inputText = text) }
+                enqueueMessageRetry()
             }
             _state.update { it.copy(isSending = false) }
         }
@@ -997,6 +1032,61 @@ class ChatViewModel(
         }
     }
 
+    private fun showMultiForwardDialog() {
+        val uid = currentUserId ?: return
+        viewModelScope.launch {
+            catchResult {
+                val conversations = conversationRepository.observeConversations(uid).first()
+                    .filter { it.id != conversationId }
+                _state.update {
+                    it.copy(
+                        showForwardDialog = true,
+                        forwardingMessage = null,
+                        forwardableConversations = conversations,
+                    )
+                }
+            }.onFailure { e ->
+                AppLogger.e(TAG, "showMultiForwardDialog failed", e)
+            }
+        }
+    }
+
+    private fun forwardSelectedMessages(targetConversationId: String) {
+        val uid = currentUserId ?: return
+        val selectedIds = _state.value.selectedMessageIds
+        if (selectedIds.isEmpty()) return
+        _state.update {
+            it.copy(
+                showForwardDialog = false,
+                forwardingMessage = null,
+                forwardableConversations = emptyList(),
+                selectedMessageIds = emptySet(),
+            )
+        }
+        viewModelScope.launch {
+            catchResult {
+                val allMessages = messageRepository.getAllMessages(conversationId, uid)
+                val toForward = allMessages.filter { it.id in selectedIds }
+                toForward.forEach { message ->
+                    messageRepository.sendMessage(
+                        conversationId = targetConversationId,
+                        senderId = uid,
+                        content = message.content,
+                        imageUrl = message.imageUrl,
+                        audioUrl = message.audioUrl,
+                        gifUrl = message.gifUrl,
+                        stickerUrl = message.stickerUrl,
+                    )
+                }
+                val count = toForward.size
+                _effect.send(ChatEffect.ShowSnackbar(if (count == 1) "Mensaje reenviado" else "$count mensajes reenviados"))
+            }.onFailure { e ->
+                AppLogger.e(TAG, "forwardSelectedMessages failed", e)
+                _state.update { it.copy(error = "No se pudieron reenviar los mensajes") }
+            }
+        }
+    }
+
     private fun createPoll(question: String, options: List<String>) {
         val userId = _state.value.currentUserId ?: return
         _state.update { it.copy(showCreatePollSheet = false) }
@@ -1145,9 +1235,18 @@ class ChatViewModel(
     }
 
     private fun toggleIncognito() {
+        val current = _state.value.isIncognito
+        if (current) {
+            viewModelScope.launch { incognitoRepository.setIncognito(conversationId, false) }
+        } else {
+            _state.update { it.copy(showIncognitoInfoDialog = true) }
+        }
+    }
+
+    private fun confirmIncognito() {
+        _state.update { it.copy(showIncognitoInfoDialog = false) }
         viewModelScope.launch {
-            val current = _state.value.isIncognito
-            incognitoRepository.setIncognito(conversationId, !current)
+            incognitoRepository.setIncognito(conversationId, true)
         }
     }
 
