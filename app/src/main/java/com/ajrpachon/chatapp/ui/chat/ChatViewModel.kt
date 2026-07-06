@@ -1,28 +1,48 @@
 ﻿package com.ajrpachon.chatapp.ui.chat
-import com.ajrpachon.chatapp.utils.catchResult
 
 import android.content.Context
 import android.media.MediaRecorder
-import androidx.core.content.FileProvider
 import android.net.Uri
 import android.os.Build
+import android.provider.OpenableColumns
+import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import com.ajrpachon.chatapp.data.local.AppLockRepository
+import com.ajrpachon.chatapp.data.local.ChatTheme
+import com.ajrpachon.chatapp.data.local.ChatThemeRepository
+import com.ajrpachon.chatapp.data.local.DraftRepository
+import com.ajrpachon.chatapp.data.local.IncognitoRepository
+import com.ajrpachon.chatapp.data.local.WallpaperRepository
 import com.ajrpachon.chatapp.data.local.dao.ConversationDao
+import com.ajrpachon.chatapp.data.local.dao.PollDao
+import com.ajrpachon.chatapp.data.local.dao.ScheduledMessageDao
+import com.ajrpachon.chatapp.data.local.entity.PollDBO
+import com.ajrpachon.chatapp.data.local.entity.PollOptionDBO
+import com.ajrpachon.chatapp.data.local.entity.ScheduledMessageDBO
+import com.ajrpachon.chatapp.data.repository.AiAssistantRepository
 import com.ajrpachon.chatapp.domain.model.CallBO
 import com.ajrpachon.chatapp.domain.model.CallType
+import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
+import com.ajrpachon.chatapp.domain.repository.ReactionRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.GetGroupMembersUseCase
 import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
 import com.ajrpachon.chatapp.utils.AppLogger
+import com.ajrpachon.chatapp.utils.AudioTranscriber
+import com.ajrpachon.chatapp.utils.TranslationManager
+import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.worker.ScheduledMessageWorker
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.realtime.RealtimeChannel
 import io.github.jan.supabase.realtime.channel
@@ -49,6 +69,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.io.File
+import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 
 
@@ -72,19 +94,19 @@ class ChatViewModel(
     private val getGroupMembersUseCase: GetGroupMembersUseCase,
     private val leaveGroupUseCase: LeaveGroupUseCase,
     private val groupRepository: GroupRepository,
-    private val reactionRepository: com.ajrpachon.chatapp.domain.repository.ReactionRepository,
+    private val reactionRepository: ReactionRepository,
     private val conversationRepository: ConversationRepository,
     private val supabaseClient: SupabaseClient,
-    private val draftRepository: com.ajrpachon.chatapp.data.local.DraftRepository,
-    private val translationManager: com.ajrpachon.chatapp.utils.TranslationManager,
-    private val audioTranscriber: com.ajrpachon.chatapp.utils.AudioTranscriber,
-    private val pollDao: com.ajrpachon.chatapp.data.local.dao.PollDao,
-    private val chatThemeRepository: com.ajrpachon.chatapp.data.local.ChatThemeRepository,
-    private val scheduledMessageDao: com.ajrpachon.chatapp.data.local.dao.ScheduledMessageDao,
-    private val workManager: androidx.work.WorkManager,
-    private val incognitoRepository: com.ajrpachon.chatapp.data.local.IncognitoRepository,
-    private val aiAssistantRepository: com.ajrpachon.chatapp.data.repository.AiAssistantRepository,
-    private val wallpaperRepository: com.ajrpachon.chatapp.data.local.WallpaperRepository,
+    private val draftRepository: DraftRepository,
+    private val translationManager: TranslationManager,
+    private val audioTranscriber: AudioTranscriber,
+    private val pollDao: PollDao,
+    private val chatThemeRepository: ChatThemeRepository,
+    private val scheduledMessageDao: ScheduledMessageDao,
+    private val workManager: WorkManager,
+    private val incognitoRepository: IncognitoRepository,
+    private val aiAssistantRepository: AiAssistantRepository,
+    private val wallpaperRepository: WallpaperRepository,
 ) : ViewModel() {
 
     private val conversationId = args.conversationId
@@ -97,6 +119,10 @@ class ChatViewModel(
     val effect = _effect.receiveAsFlow()
 
     // Resolved synchronously — Supabase Auth is in-memory, never blocks.
+    // TODO: conversationDao is still injected directly because ConversationBO does not expose
+    //  otherUserId, historyVisibleFrom, or disappearingModeSeconds. A follow-up ticket should
+    //  add those fields to ConversationBO, expose getConversationById / observeConversationById /
+    //  resetUnreadCount on ConversationRepository, and remove the DAO dependency from this VM.
     private val currentUserId: String? = userRepository.getCurrentUserId()
 
     private val _historyVisibleFrom = MutableStateFlow(0L)
@@ -118,7 +144,7 @@ class ChatViewModel(
         messageRepository.getPinnedMessages(conversationId, currentUserId ?: "")
 
     // Cached group members used for @mention autocomplete
-    private var groupMembers: List<com.ajrpachon.chatapp.domain.model.GroupMemberBO> = emptyList()
+    private var groupMembers: List<GroupMemberBO> = emptyList()
 
     private var recorder: MediaRecorder? = null
     private var recordingTimerJob: Job? = null
@@ -473,7 +499,7 @@ class ChatViewModel(
         }
     }
 
-    private fun selectMention(member: com.ajrpachon.chatapp.domain.model.GroupMemberBO) {
+    private fun selectMention(member: GroupMemberBO) {
         val currentText = _state.value.inputText
         val lastAtIndex = currentText.lastIndexOf('@')
         val newText = if (lastAtIndex >= 0) {
@@ -522,7 +548,7 @@ class ChatViewModel(
             _state.update { it.copy(isSearching = true) }
             delay(300L)
             val uid = currentUserId ?: return@launch
-            val results = runCatching {
+            val results = catchResult {
                 messageRepository.searchMessages(conversationId, uid, query)
             }.getOrDefault(emptyList())
             _state.update { it.copy(searchResults = results, isSearching = false) }
@@ -578,7 +604,7 @@ class ChatViewModel(
     private fun toggleReaction(messageId: String, emoji: String) {
         val uid = currentUserId ?: return
         viewModelScope.launch {
-            runCatching { reactionRepository.toggleReaction(messageId, uid, emoji) }
+            catchResult { reactionRepository.toggleReaction(messageId, uid, emoji) }
         }
     }
 
@@ -751,7 +777,7 @@ class ChatViewModel(
         }
     }
 
-    private fun sendFile(context: Context, uri: android.net.Uri) {
+    private fun sendFile(context: Context, uri: Uri) {
         val userId = _state.value.currentUserId ?: return
         val reply = _state.value.replyingTo
         viewModelScope.launch {
@@ -760,12 +786,12 @@ class ChatViewModel(
             catchResult {
                 val mimeType = context.contentResolver.getType(uri) ?: "application/octet-stream"
                 val displayName = context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                    val idx = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                    val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                     cursor.moveToFirst()
                     if (idx >= 0) cursor.getString(idx) else null
                 } ?: "archivo"
                 val fileSize = context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                    val idx = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE)
+                    val idx = cursor.getColumnIndex(OpenableColumns.SIZE)
                     cursor.moveToFirst()
                     if (idx >= 0) cursor.getLong(idx) else null
                 }
@@ -789,7 +815,7 @@ class ChatViewModel(
         }
     }
 
-    private fun sendVideo(context: Context, uri: android.net.Uri) {
+    private fun sendVideo(context: Context, uri: Uri) {
         val userId = _state.value.currentUserId ?: return
         val reply = _state.value.replyingTo
         viewModelScope.launch {
@@ -876,7 +902,7 @@ class ChatViewModel(
         val newMuted = !_state.value.isMuted
         _state.update { it.copy(isMuted = newMuted) }
         viewModelScope.launch {
-            catchResult { conversationDao.updateMuted(conversationId, newMuted) }
+            catchResult { conversationRepository.toggleMute(conversationId, newMuted) }
                 .onFailure { e ->
                     _state.update { it.copy(isMuted = !newMuted) }
                     AppLogger.e(TAG, "Toggle mute failed", e)
@@ -887,7 +913,7 @@ class ChatViewModel(
     private fun muteFor(mutedUntil: Long) {
         _state.update { it.copy(showMuteDialog = false, isMuted = mutedUntil != 0L, mutedUntil = mutedUntil) }
         viewModelScope.launch {
-            catchResult { conversationDao.updateMutedUntil(conversationId, mutedUntil) }
+            catchResult { conversationRepository.muteFor(conversationId, mutedUntil) }
                 .onFailure { e -> AppLogger.e(TAG, "MuteFor failed", e) }
         }
     }
@@ -979,9 +1005,9 @@ class ChatViewModel(
         _state.update { it.copy(showCreatePollSheet = false) }
         viewModelScope.launch {
             catchResult {
-                val pollId = java.util.UUID.randomUUID().toString()
+                val pollId = UUID.randomUUID().toString()
                 pollDao.insertPoll(
-                    com.ajrpachon.chatapp.data.local.entity.PollDBO(
+                    PollDBO(
                         id = pollId,
                         conversationId = conversationId,
                         question = question,
@@ -991,7 +1017,7 @@ class ChatViewModel(
                 )
                 pollDao.insertOptions(
                     options.mapIndexed { index, text ->
-                        com.ajrpachon.chatapp.data.local.entity.PollOptionDBO(
+                        PollOptionDBO(
                             id = "$pollId-$index",
                             pollId = pollId,
                             text = text,
@@ -1063,7 +1089,7 @@ class ChatViewModel(
         }
     }
 
-    private fun setChatTheme(theme: com.ajrpachon.chatapp.data.local.ChatTheme) {
+    private fun setChatTheme(theme: ChatTheme) {
         viewModelScope.launch {
             catchResult { chatThemeRepository.set(conversationId, theme) }
                 .onFailure { e -> AppLogger.e(TAG, "setChatTheme failed", e) }
@@ -1086,7 +1112,7 @@ class ChatViewModel(
 
     private fun transcribeAudio(context: Context, messageId: String) {
         viewModelScope.launch {
-            val result = runCatching { audioTranscriber.transcribeFromMic(context) }
+            val result = catchResult { audioTranscriber.transcribeFromMic(context) }
                 .getOrDefault("Transcripción no disponible")
             _state.update { state ->
                 state.copy(
@@ -1100,7 +1126,7 @@ class ChatViewModel(
         if (messageId in _state.value.translatingMessageIds) return
         _state.update { it.copy(translatingMessageIds = it.translatingMessageIds + messageId) }
         viewModelScope.launch {
-            runCatching { translationManager.translate(text) }
+            catchResult { translationManager.translate(text) }
                 .onSuccess { translated ->
                     _state.update {
                         it.copy(
@@ -1136,8 +1162,8 @@ class ChatViewModel(
         draftSaveJob?.cancel()
         viewModelScope.launch {
             draftRepository.saveDraft(conversationId, "")
-            val id = java.util.UUID.randomUUID().toString()
-            val dbo = com.ajrpachon.chatapp.data.local.entity.ScheduledMessageDBO(
+            val id = UUID.randomUUID().toString()
+            val dbo = ScheduledMessageDBO(
                 id = id,
                 conversationId = conversationId,
                 senderId = userId,
@@ -1148,9 +1174,9 @@ class ChatViewModel(
             catchResult { scheduledMessageDao.insert(dbo) }
                 .onSuccess {
                     val delayMs = (scheduledAt - System.currentTimeMillis()).coerceAtLeast(0L)
-                    val request = androidx.work.OneTimeWorkRequestBuilder<com.ajrpachon.chatapp.worker.ScheduledMessageWorker>()
-                        .setInitialDelay(delayMs, java.util.concurrent.TimeUnit.MILLISECONDS)
-                        .addTag(com.ajrpachon.chatapp.worker.ScheduledMessageWorker.WORK_TAG)
+                    val request = OneTimeWorkRequestBuilder<ScheduledMessageWorker>()
+                        .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
+                        .addTag(ScheduledMessageWorker.WORK_TAG)
                         .build()
                     workManager.enqueue(request)
                     _effect.send(ChatEffect.ShowSnackbar("Mensaje programado"))

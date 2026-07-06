@@ -3,7 +3,6 @@
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.media.MediaPlayer
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -57,6 +56,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.Forward
+import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.AttachFile
@@ -85,7 +85,6 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.DoneAll
-import androidx.compose.material.icons.filled.Reply
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
@@ -1240,617 +1239,13 @@ fun ChatScreen(
     }
 }
 
-@Composable
-private fun MessageSearchOverlay(
-    query: String,
-    results: List<MessageBO>,
-    isSearching: Boolean,
-    topPadding: androidx.compose.ui.unit.Dp,
-    onQueryChange: (String) -> Unit,
-    onClose: () -> Unit,
-    onJump: (String) -> Unit = {},
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = topPadding),
-        color = MaterialTheme.colorScheme.surface,
-    ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = onQueryChange,
-                    modifier = Modifier.weight(1f),
-                    placeholder = { Text("Buscar mensajes...") },
-                    singleLine = true,
-                    leadingIcon = {
-                        if (isSearching) {
-                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                        } else {
-                            Icon(Icons.Default.Search, contentDescription = null)
-                        }
-                    },
-                    trailingIcon = if (query.isNotEmpty()) {
-                        { IconButton(onClick = { onQueryChange("") }) { Icon(Icons.Default.Close, contentDescription = "Limpiar") } }
-                    } else null,
-                )
-                IconButton(onClick = onClose) {
-                    Icon(Icons.Default.Close, contentDescription = "Cerrar búsqueda")
-                }
-            }
-            HorizontalDivider()
-            if (query.isNotBlank() && results.isEmpty() && !isSearching) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Sin resultados", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(vertical = 8.dp, horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    itemsIndexed(results, key = { _, m -> m.id }) { _, message ->
-                        SearchResultItem(message = message, onClick = { onJump(message.id) })
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SearchResultItem(message: MessageBO, onClick: () -> Unit = {}) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = message.senderName,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            val timeText = remember(message.createdAt) {
-                val local = message.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
-                "%02d:%02d".format(local.hour, local.minute)
-            }
-            Text(
-                text = timeText,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.outline,
-            )
-        }
-        Spacer(Modifier.height(2.dp))
-        Text(
-            text = message.content.ifBlank { message.replySnippet() },
-            style = MaterialTheme.typography.bodySmall,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
+// MessageSearchOverlay, SearchResultItem → see ChatSearchOverlay.kt
 
 // ── Bottom bar composables ────────────────────────────────────────────────────
 
-@Suppress("LongParameterList")
-@Composable
-@OptIn(ExperimentalMaterial3Api::class)
-private fun NormalInputBar(
-    inputText: String,
-    isSending: Boolean,
-    isUploadingImage: Boolean,
-    onTextChange: (String) -> Unit,
-    onSend: () -> Unit,
-    onGallery: () -> Unit,
-    onCamera: () -> Unit,
-    onMic: () -> Unit,
-    onSticker: () -> Unit,
-    onAttachFile: () -> Unit = {},
-    onAttachVideo: () -> Unit = {},
-    onLocation: () -> Unit = {},
-    onContact: () -> Unit = {},
-    onSchedule: () -> Unit = {},
-    onAi: () -> Unit = {},
-    onCreatePoll: () -> Unit = {},
-) {
-    val busy = isUploadingImage || isSending
-    var showAttachSheet by rememberSaveable { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val scope = rememberCoroutineScope()
+// NormalInputBar, AttachmentBottomSheet, ReplyPreviewBar → see ChatInputBar.kt
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        IconButton(
-            onClick = { showAttachSheet = true },
-            enabled = !busy,
-        ) {
-            Icon(
-                Icons.Default.Add,
-                contentDescription = "Adjuntar",
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        }
-        ChatAppTextField(
-            value = inputText,
-            onValueChange = { if (it.length <= MessageLimits.MAX_CONTENT_LENGTH) onTextChange(it) },
-            modifier = Modifier.weight(1f),
-            placeholder = "Mensaje…",
-            singleLine = false,
-            maxLines = 4,
-            isError = inputText.length >= MessageLimits.MAX_CONTENT_LENGTH,
-            supportingText = if (inputText.length >= MessageLimits.MAX_CONTENT_LENGTH - 100)
-                "${inputText.length}/${MessageLimits.MAX_CONTENT_LENGTH}" else null,
-        )
-        if (isUploadingImage) {
-            CircularProgressIndicator(modifier = Modifier.size(40.dp).padding(8.dp))
-        } else if (inputText.isNotBlank()) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(androidx.compose.foundation.shape.CircleShape)
-                    .combinedClickable(
-                        enabled = !isSending,
-                        onClick = onSend,
-                        onLongClick = onSchedule,
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    Icons.AutoMirrored.Filled.Send,
-                    contentDescription = "Enviar (mantén para programar)",
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            }
-        } else {
-            IconButton(onClick = onAi, enabled = !busy) {
-                Icon(Icons.Default.SmartToy, contentDescription = "Asistente IA")
-            }
-            IconButton(onClick = onMic, enabled = !busy) {
-                Icon(Icons.Default.Mic, contentDescription = "Grabar audio")
-            }
-        }
-    }
-
-    if (showAttachSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showAttachSheet = false },
-            sheetState = sheetState,
-        ) {
-            AttachmentBottomSheet(
-                onGallery = {
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        showAttachSheet = false
-                        onGallery()
-                    }
-                },
-                onCamera = {
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        showAttachSheet = false
-                        onCamera()
-                    }
-                },
-                onFile = {
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        showAttachSheet = false
-                        onAttachFile()
-                    }
-                },
-                onVideo = {
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        showAttachSheet = false
-                        onAttachVideo()
-                    }
-                },
-                onSticker = {
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        showAttachSheet = false
-                        onSticker()
-                    }
-                },
-                onLocation = {
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        showAttachSheet = false
-                        onLocation()
-                    }
-                },
-                onCreatePoll = {
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        showAttachSheet = false
-                        onCreatePoll()
-                    }
-                },
-                onContact = {
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        showAttachSheet = false
-                        onContact()
-                    }
-                },
-                onSchedule = {
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        showAttachSheet = false
-                        onSchedule()
-                    }
-                },
-                onAi = {
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        showAttachSheet = false
-                        onAi()
-                    }
-                },
-            )
-        }
-    }
-}
-
-@Composable
-private fun AttachmentBottomSheet(
-    onGallery: () -> Unit,
-    onCamera: () -> Unit,
-    onFile: () -> Unit,
-    onVideo: () -> Unit,
-    onSticker: () -> Unit,
-    onLocation: () -> Unit = {},
-    onCreatePoll: () -> Unit = {},
-    onContact: () -> Unit = {},
-    onSchedule: () -> Unit = {},
-    onAi: () -> Unit = {},
-) {
-    val options = listOf(
-        Triple(Icons.Default.AddPhotoAlternate, "Galería", onGallery),
-        Triple(Icons.Default.CameraAlt, "Cámara", onCamera),
-        Triple(Icons.Default.AttachFile, "Archivo", onFile),
-        Triple(Icons.Default.Videocam, "Video", onVideo),
-        Triple(Icons.Default.EmojiEmotions, "Stickers", onSticker),
-        Triple(Icons.Default.LocationOn, "Ubicación", onLocation),
-        Triple(Icons.Default.CheckCircle, "Encuesta", onCreatePoll),
-        Triple(Icons.Default.Contacts, "Contacto", onContact),
-        Triple(Icons.Default.Schedule, "Programar", onSchedule),
-        Triple(Icons.Default.SmartToy, "IA", onAi),
-    )
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp, bottom = 32.dp),
-    ) {
-        Text(
-            text = "Adjuntar",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-        )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-        ) {
-            options.forEach { (icon, label, action) ->
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable(onClick = action)
-                        .padding(vertical = 12.dp),
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = label,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(28.dp),
-                        )
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun RecordingBar(
-    durationMs: Long,
-    amplitudeHistory: List<Float>,
-    onStop: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            Icons.Default.Mic,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.error,
-            modifier = Modifier.size(20.dp),
-        )
-        Spacer(Modifier.width(6.dp))
-        val barColor = MaterialTheme.colorScheme.error
-        Canvas(
-            modifier = Modifier
-                .weight(1f)
-                .height(36.dp),
-        ) {
-            val barW = 4.dp.toPx()
-            val gap = 3.dp.toPx()
-            val step = barW + gap
-            val minH = 4.dp.toPx()
-            val maxH = size.height
-            amplitudeHistory.forEachIndexed { i, amp ->
-                val h = (minH + amp * (maxH - minH)).coerceIn(minH, maxH)
-                val top = (maxH - h) / 2f
-                drawRoundRect(
-                    color = barColor,
-                    topLeft = androidx.compose.ui.geometry.Offset(i * step, top),
-                    size = androidx.compose.ui.geometry.Size(barW, h),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.dp.toPx()),
-                )
-            }
-        }
-        Spacer(Modifier.width(6.dp))
-        Text(
-            text = formatAudioDuration(durationMs.toInt()),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error,
-        )
-        IconButton(onClick = onStop) {
-            Icon(
-                Icons.Default.Stop,
-                contentDescription = "Detener grabación",
-                tint = MaterialTheme.colorScheme.error,
-            )
-        }
-    }
-}
-
-@Composable
-private fun AudioPreviewBar(
-    filePath: String,
-    isUploading: Boolean,
-    onDiscard: () -> Unit,
-    onSend: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        LocalAudioPlayer(
-            filePath = filePath,
-            modifier = Modifier.weight(1f),
-        )
-        IconButton(onClick = onDiscard, enabled = !isUploading) {
-            Icon(Icons.Default.Delete, contentDescription = "Descartar audio")
-        }
-        if (isUploading) {
-            CircularProgressIndicator(modifier = Modifier.size(40.dp).padding(8.dp))
-        } else {
-            IconButton(onClick = onSend) {
-                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar audio")
-            }
-        }
-    }
-}
-
-// ── Audio player composables ─────────────────────────────────────────────────
-
-@Composable
-private fun LocalAudioPlayer(filePath: String, modifier: Modifier = Modifier) {
-    var isPrepared by remember { mutableStateOf(false) }
-    var isPlaying by remember { mutableStateOf(false) }
-    var currentMs by remember { mutableStateOf(0) }
-    var durationMs by remember { mutableStateOf(0) }
-    var playbackSpeed by remember { mutableStateOf(1f) }
-    val playerRef = remember { mutableStateOf<MediaPlayer?>(null) }
-
-    DisposableEffect(filePath) {
-        val mp = MediaPlayer()
-        playerRef.value = mp
-        runCatching {
-            mp.setDataSource(filePath)
-            mp.prepare()
-            isPrepared = true
-            durationMs = mp.duration
-            mp.setOnCompletionListener { p -> p.seekTo(0); isPlaying = false; currentMs = 0 }
-        }
-        onDispose { mp.release(); playerRef.value = null }
-    }
-
-    LaunchedEffect(isPlaying) {
-        while (isPlaying) {
-            currentMs = playerRef.value?.currentPosition ?: 0
-            delay(100)
-        }
-    }
-
-    AudioPlayerRow(
-        modifier = modifier,
-        isPrepared = isPrepared,
-        isPlaying = isPlaying,
-        currentMs = currentMs,
-        durationMs = durationMs,
-        onToggle = {
-            val mp = playerRef.value ?: return@AudioPlayerRow
-            if (!isPrepared) return@AudioPlayerRow
-            if (mp.isPlaying) { mp.pause(); isPlaying = false }
-            else { mp.start(); isPlaying = true }
-        },
-        waveformSeed = filePath.hashCode(),
-        playbackSpeed = playbackSpeed,
-        onSpeedChange = { speed ->
-            playbackSpeed = speed
-            playerRef.value?.let { mp ->
-                mp.playbackParams = mp.playbackParams.setSpeed(speed)
-            }
-        },
-    )
-}
-
-@Composable
-private fun RemoteAudioPlayer(url: String, modifier: Modifier = Modifier) {
-    var isPrepared by remember { mutableStateOf(false) }
-    var isPlaying by remember { mutableStateOf(false) }
-    var currentMs by remember { mutableStateOf(0) }
-    var durationMs by remember { mutableStateOf(0) }
-    var playbackSpeed by remember { mutableStateOf(1f) }
-    val playerRef = remember { mutableStateOf<MediaPlayer?>(null) }
-
-    DisposableEffect(url) {
-        val mp = MediaPlayer()
-        playerRef.value = mp
-        runCatching {
-            mp.setDataSource(url)
-            mp.setOnPreparedListener { p -> isPrepared = true; durationMs = p.duration }
-            mp.setOnCompletionListener { p -> p.seekTo(0); isPlaying = false; currentMs = 0 }
-            mp.prepareAsync()
-        }
-        onDispose { mp.release(); playerRef.value = null }
-    }
-
-    LaunchedEffect(isPlaying) {
-        while (isPlaying) {
-            currentMs = playerRef.value?.currentPosition ?: 0
-            delay(100)
-        }
-    }
-
-    AudioPlayerRow(
-        modifier = modifier,
-        isPrepared = isPrepared,
-        isPlaying = isPlaying,
-        currentMs = currentMs,
-        durationMs = durationMs,
-        onToggle = {
-            val mp = playerRef.value ?: return@AudioPlayerRow
-            if (!isPrepared) return@AudioPlayerRow
-            if (mp.isPlaying) { mp.pause(); isPlaying = false }
-            else { mp.start(); isPlaying = true }
-        },
-        waveformSeed = url.hashCode(),
-        playbackSpeed = playbackSpeed,
-        onSpeedChange = { speed ->
-            playbackSpeed = speed
-            playerRef.value?.let { mp ->
-                mp.playbackParams = mp.playbackParams.setSpeed(speed)
-            }
-        },
-    )
-}
-
-@Suppress("LongParameterList")
-@Composable
-private fun AudioPlayerRow(
-    isPrepared: Boolean,
-    isPlaying: Boolean,
-    currentMs: Int,
-    durationMs: Int,
-    onToggle: () -> Unit,
-    modifier: Modifier = Modifier,
-    waveformSeed: Int = 0,
-    playbackSpeed: Float = 1f,
-    onSpeedChange: (Float) -> Unit = {},
-) {
-    val activeColor = MaterialTheme.colorScheme.primary
-    val inactiveColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
-    val progress = if (durationMs > 0) currentMs.toFloat() / durationMs else 0f
-
-    // Generate deterministic bar heights from seed (32 bars)
-    val bars = remember(waveformSeed) {
-        val rng = java.util.Random(waveformSeed.toLong())
-        List(32) { 0.2f + rng.nextFloat() * 0.8f }
-    }
-
-    val speedSteps = listOf(1f, 1.5f, 2f)
-
-    Row(
-        modifier = modifier.widthIn(min = 160.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        IconButton(onClick = onToggle, enabled = isPrepared) {
-            Icon(
-                imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                contentDescription = if (isPlaying) "Pausar" else "Reproducir",
-            )
-        }
-        Column(modifier = Modifier.weight(1f).padding(end = 4.dp)) {
-            Canvas(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(28.dp),
-            ) {
-                val barCount = bars.size
-                val gap = size.width * 0.015f
-                val barW = (size.width - gap * (barCount - 1)) / barCount
-                bars.forEachIndexed { i, h ->
-                    val barH = h * size.height
-                    val x = i * (barW + gap)
-                    val y = (size.height - barH) / 2f
-                    val fraction = (i + 1f) / barCount
-                    drawRoundRect(
-                        color = if (fraction <= progress) activeColor else inactiveColor,
-                        topLeft = androidx.compose.ui.geometry.Offset(x, y),
-                        size = androidx.compose.ui.geometry.Size(barW, barH),
-                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(barW / 2),
-                    )
-                }
-            }
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = formatAudioDuration(if (currentMs > 0) currentMs else durationMs),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            )
-        }
-        // Speed chip: cycles ×1 → ×1.5 → ×2 → ×1
-        Surface(
-            onClick = {
-                val nextIndex = (speedSteps.indexOf(playbackSpeed) + 1) % speedSteps.size
-                onSpeedChange(speedSteps[nextIndex])
-            },
-            shape = RoundedCornerShape(50),
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            modifier = Modifier.padding(start = 4.dp),
-        ) {
-            Text(
-                text = "×${if (playbackSpeed % 1f == 0f) playbackSpeed.toInt().toString() else playbackSpeed.toString()}",
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-            )
-        }
-    }
-}
+// Audio components extracted to ChatAudioComponents.kt
 
 // ── MessageBubble ─────────────────────────────────────────────────────────────
 
@@ -2202,7 +1597,7 @@ private fun StickerBubble(message: MessageBO, onReply: () -> Unit) {
             },
     ) {
         Icon(
-            imageVector = Icons.Default.Reply,
+            imageVector = Icons.AutoMirrored.Filled.Reply,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier
@@ -2380,7 +1775,7 @@ private fun MessageBubble(
     ) {
         val iconAlpha = (swipeOffset.value / swipeThreshold).coerceIn(0f, 1f)
         Icon(
-            imageVector = Icons.Default.Reply,
+            imageVector = Icons.AutoMirrored.Filled.Reply,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier
@@ -2733,7 +2128,7 @@ private fun ImageGroupBubble(
             },
     ) {
         Icon(
-            imageVector = Icons.Default.Reply,
+            imageVector = Icons.AutoMirrored.Filled.Reply,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier
@@ -2920,48 +2315,7 @@ private fun LinkPreviewCard(data: LinkPreviewData) {
     }
 }
 
-// ── ReplyPreviewBar ───────────────────────────────────────────────────────────
-
-@Composable
-private fun ReplyPreviewBar(message: MessageBO, onCancel: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            imageVector = Icons.Default.Reply,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(20.dp),
-        )
-        Spacer(Modifier.width(8.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = message.senderName,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
-            )
-            Text(
-                text = message.replySnippet(),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        IconButton(onClick = onCancel, modifier = Modifier.size(32.dp)) {
-            Icon(
-                Icons.Default.Close,
-                contentDescription = "Cancelar respuesta",
-                modifier = Modifier.size(18.dp),
-            )
-        }
-    }
-}
+// ReplyPreviewBar → see ChatInputBar.kt
 
 // ── ImageViewerDialog ─────────────────────────────────────────────────────────
 
@@ -3112,10 +2466,7 @@ private fun createVideoUri(context: Context): Uri {
     return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
 }
 
-private fun formatAudioDuration(ms: Int): String {
-    val total = (ms / 1000).coerceAtLeast(0)
-    return "%d:%02d".format(total / 60, total % 60)
-}
+// formatAudioDuration extracted to ChatAudioComponents.kt
 
 private fun formatCallDuration(seconds: Int): String =
     "%d:%02d".format(seconds / 60, seconds % 60)
@@ -3858,12 +3209,12 @@ private fun WallpaperPickerSheet(
 ) {
     val colors = listOf(
         null to "Por defecto",
-        0xFFE3F2FD.toLong() to "Azul claro",
-        0xFFF3E5F5.toLong() to "Púrpura",
-        0xFFE8F5E9.toLong() to "Verde",
-        0xFFFFF8E1.toLong() to "Amarillo",
-        0xFFFCE4EC.toLong() to "Rosa",
-        0xFF212121.toLong() to "Oscuro",
+        0xFFE3F2FDL to "Azul claro",
+        0xFFF3E5F5L to "Púrpura",
+        0xFFE8F5E9L to "Verde",
+        0xFFFFF8E1L to "Amarillo",
+        0xFFFCE4ECL to "Rosa",
+        0xFF212121L to "Oscuro",
     )
     ModalBottomSheet(
         onDismissRequest = onDismiss,
