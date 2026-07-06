@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.padding
@@ -43,6 +44,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.paging.LoadState
@@ -92,7 +94,11 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.SmartToy
+import androidx.compose.material.icons.filled.Wallpaper
+import androidx.compose.foundation.border
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.TimePicker
@@ -105,6 +111,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
@@ -212,6 +219,7 @@ fun ChatScreen(
 
     val scope = rememberCoroutineScope()
     var highlightedMessageId by remember { mutableStateOf<String?>(null) }
+    var reactionDetailMessageId by remember { mutableStateOf<String?>(null) }
     val showScrollToBottom by remember { derivedStateOf { listState.firstVisibleItemIndex > 2 } }
 
     val onScrollToMessage: (String) -> Unit = { messageId ->
@@ -387,6 +395,26 @@ fun ChatScreen(
         }
     }
 
+    val contactPickerLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickContact()
+    ) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        val cursor = context.contentResolver.query(
+            uri,
+            arrayOf(
+                android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER,
+            ), null, null, null,
+        )
+        cursor?.use {
+            if (it.moveToFirst()) {
+                val contactName = it.getString(0) ?: return@use
+                val contactPhone = it.getString(1) ?: ""
+                vm.onIntent(ChatIntent.SendContact(contactName, contactPhone))
+            }
+        }
+    }
+
     if (showViewer && viewerUrls.isNotEmpty()) {
         ImageViewerDialog(
             imageUrls = viewerUrls,
@@ -473,6 +501,32 @@ fun ChatScreen(
             onFreeform = { prompt -> vm.onIntent(ChatIntent.AiFreeform(prompt)) },
             onInsert = { vm.onIntent(ChatIntent.InsertAiSuggestion) },
         )
+    }
+
+    if (state.showWallpaperPicker) {
+        WallpaperPickerSheet(
+            currentColor = state.wallpaperColor,
+            onSelect = { colorValue ->
+                vm.onIntent(ChatIntent.SetWallpaperColor(colorValue))
+                vm.onIntent(ChatIntent.DismissWallpaperPicker)
+            },
+            onDismiss = { vm.onIntent(ChatIntent.DismissWallpaperPicker) },
+        )
+    }
+
+    reactionDetailMessageId?.let { msgId ->
+        val msgReactions = reactions[msgId] ?: emptyList()
+        if (msgReactions.isNotEmpty()) {
+            ModalBottomSheet(
+                onDismissRequest = { reactionDetailMessageId = null },
+                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            ) {
+                ReactionDetailsSheet(
+                    reactions = msgReactions,
+                    onDismiss = { reactionDetailMessageId = null },
+                )
+            }
+        }
     }
 
     val scaffoldContainerColor = if (chatTheme.backgroundTint == androidx.compose.ui.graphics.Color.Transparent) {
@@ -693,6 +747,14 @@ fun ChatScreen(
                                 },
                             )
                             DropdownMenuItem(
+                                text = { Text("Fondo del chat") },
+                                leadingIcon = { Icon(Icons.Default.Wallpaper, contentDescription = null) },
+                                onClick = {
+                                    menuExpanded = false
+                                    vm.onIntent(ChatIntent.OpenWallpaperPicker)
+                                },
+                            )
+                            DropdownMenuItem(
                                 text = { Text("Exportar conversación") },
                                 leadingIcon = {
                                     if (state.isExporting) {
@@ -892,13 +954,21 @@ fun ChatScreen(
                         },
                         onSchedule = { vm.onIntent(ChatIntent.OpenScheduleDialog) },
                         onAi = { vm.onIntent(ChatIntent.OpenAiSheet) },
+                        onContact = { contactPickerLauncher.launch(null) },
                     )
                 }
                 } // Column
             }
         },
     ) { innerPadding ->
-        Box(Modifier.fillMaxSize()) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(
+                    state.wallpaperColor?.let { androidx.compose.ui.graphics.Color(it) }
+                        ?: MaterialTheme.colorScheme.background
+                )
+        ) {
             val isInitialLoad = lazyPagingItems.loadState.refresh is LoadState.Loading
                 && lazyPagingItems.itemCount == 0
             if (isInitialLoad) {
@@ -1005,6 +1075,7 @@ fun ChatScreen(
                                 messageReactions = reactions[message.id] ?: emptyList(),
                                 currentUserId = state.currentUserId,
                                 onToggleReaction = { emoji -> vm.onIntent(ChatIntent.ToggleReaction(message.id, emoji)) },
+                                onShowReactionDetails = { reactionDetailMessageId = message.id },
                                 isSelected = message.id in state.selectedMessageIds,
                                 isMultiSelectActive = state.isMultiSelectActive,
                                 onToggleSelect = { vm.onIntent(ChatIntent.ToggleMessageSelection(message.id)) },
@@ -1178,6 +1249,7 @@ private fun NormalInputBar(
     onLocation: () -> Unit = {},
     onSchedule: () -> Unit = {},
     onAi: () -> Unit = {},
+    onContact: () -> Unit = {},
 ) {
     val busy = isUploadingImage || isSending
     var showAttachSheet by rememberSaveable { mutableStateOf(false) }
@@ -1284,6 +1356,12 @@ private fun NormalInputBar(
                         onLocation()
                     }
                 },
+                onContact = {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        showAttachSheet = false
+                        onContact()
+                    }
+                },
             )
         }
     }
@@ -1297,6 +1375,7 @@ private fun AttachmentBottomSheet(
     onVideo: () -> Unit,
     onSticker: () -> Unit,
     onLocation: () -> Unit = {},
+    onContact: () -> Unit = {},
 ) {
     val options = listOf(
         Triple(Icons.Default.AddPhotoAlternate, "Galería", onGallery),
@@ -1305,6 +1384,7 @@ private fun AttachmentBottomSheet(
         Triple(Icons.Default.Videocam, "Video", onVideo),
         Triple(Icons.Default.EmojiEmotions, "Stickers", onSticker),
         Triple(Icons.Default.LocationOn, "Ubicación", onLocation),
+        Triple(Icons.Default.Person, "Contacto", onContact),
     )
 
     Column(
@@ -2066,6 +2146,7 @@ private fun MessageBubble(
     messageReactions: List<com.ajrpachon.chatapp.domain.model.ReactionBO> = emptyList(),
     currentUserId: String? = null,
     onToggleReaction: (String) -> Unit = {},
+    onShowReactionDetails: () -> Unit = {},
     isSelected: Boolean = false,
     isMultiSelectActive: Boolean = false,
     onToggleSelect: () -> Unit = {},
@@ -2204,7 +2285,23 @@ private fun MessageBubble(
                     if (message.audioUrl != null && MediaUrlValidator.isValid(message.audioUrl)) {
                         RemoteAudioPlayer(url = message.audioUrl)
                     }
-                    if (message.content.isNotBlank()) {
+                    if (message.content.startsWith("contact:")) {
+                        val contactPair = remember(message.content) {
+                            runCatching {
+                                val json = message.content.removePrefix("contact:")
+                                val obj = org.json.JSONObject(json)
+                                Pair(obj.optString("name", "Contacto"), obj.optString("phone", ""))
+                            }.getOrNull()
+                        }
+                        if (contactPair != null) {
+                            ContactBubble(
+                                name = contactPair.first,
+                                phone = contactPair.second,
+                                isFromMe = message.isFromMe,
+                            )
+                        }
+                    }
+                    if (message.content.isNotBlank() && !message.content.startsWith("contact:")) {
                         var showMsgMenu by remember { mutableStateOf(false) }
                         var showEmojiPicker by remember { mutableStateOf(false) }
                         val emojiSheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -2342,7 +2439,10 @@ private fun MessageBubble(
                         shape = RoundedCornerShape(50),
                         color = if (isMine) MaterialTheme.colorScheme.primaryContainer
                                 else MaterialTheme.colorScheme.surfaceVariant,
-                        modifier = Modifier.clickable { onToggleReaction(emoji) },
+                        modifier = Modifier.combinedClickable(
+                            onClick = { onToggleReaction(emoji) },
+                            onLongClick = { onShowReactionDetails() },
+                        ),
                     ) {
                         Text(
                             text = "$emoji ${reactors.size}",
@@ -2794,6 +2894,60 @@ private fun ImageViewerDialog(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ContactBubble(name: String, phone: String, isFromMe: Boolean) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    androidx.compose.material3.Card(
+        modifier = Modifier.widthIn(max = 280.dp),
+        colors = androidx.compose.material3.CardDefaults.cardColors(
+            containerColor = if (isFromMe) MaterialTheme.colorScheme.primaryContainer
+            else MaterialTheme.colorScheme.surfaceVariant,
+        ),
+    ) {
+        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(40.dp),
+            ) {
+                Icon(
+                    Icons.Default.Person, null,
+                    Modifier.padding(8.dp),
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    name,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                )
+                if (phone.isNotBlank()) {
+                    Text(
+                        phone,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+        HorizontalDivider()
+        TextButton(
+            onClick = {
+                runCatching {
+                    val dialIntent = android.content.Intent(
+                        android.content.Intent.ACTION_DIAL,
+                        android.net.Uri.parse("tel:$phone"),
+                    )
+                    context.startActivity(dialIntent)
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text("Llamar") }
     }
 }
 
@@ -3278,5 +3432,129 @@ private fun AiAssistantSheet(
                 }
             }
         }
+    }
+}
+
+// ── ReactionDetailsSheet ──────────────────────────────────────────────────────
+
+@Composable
+private fun ReactionDetailsSheet(
+    reactions: List<com.ajrpachon.chatapp.domain.model.ReactionBO>,
+    onDismiss: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .navigationBarsPadding(),
+    ) {
+        Text(
+            text = "Reacciones (${reactions.size})",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 12.dp),
+        )
+        if (reactions.isEmpty()) {
+            Text(
+                text = "Sin reacciones",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.padding(bottom = 16.dp),
+            )
+        } else {
+            val grouped = reactions.groupBy { it.emoji }
+            LazyColumn {
+                grouped.forEach { (emoji, reactors) ->
+                    item(key = "header_$emoji") {
+                        Text(
+                            text = emoji,
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                        )
+                    }
+                    items(reactors, key = { "${it.emoji}_${it.userId}" }) { reaction ->
+                        ListItem(
+                            headlineContent = { Text(reaction.userId) },
+                            trailingContent = {
+                                Text(
+                                    text = reaction.emoji,
+                                    style = MaterialTheme.typography.titleLarge,
+                                )
+                            },
+                        )
+                        HorizontalDivider()
+                    }
+                }
+                item { Spacer(modifier = Modifier.height(8.dp)) }
+            }
+        }
+    }
+}
+
+// ── WallpaperPickerSheet ─────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WallpaperPickerSheet(
+    currentColor: Long?,
+    onSelect: (Long?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = listOf(
+        null to "Por defecto",
+        0xFFE3F2FD.toLong() to "Azul claro",
+        0xFFF3E5F5.toLong() to "Púrpura",
+        0xFFE8F5E9.toLong() to "Verde",
+        0xFFFFF8E1.toLong() to "Amarillo",
+        0xFFFCE4EC.toLong() to "Rosa",
+        0xFF212121.toLong() to "Oscuro",
+    )
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    ) {
+        Text(
+            "Fondo del chat",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(16.dp),
+        )
+        androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
+            columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(4),
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .navigationBarsPadding(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(colors) { (colorValue, label) ->
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.clickable { onSelect(colorValue) },
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(CircleShape)
+                            .background(
+                                colorValue?.let { androidx.compose.ui.graphics.Color(it) }
+                                    ?: MaterialTheme.colorScheme.background
+                            )
+                            .border(
+                                width = if (currentColor == colorValue) 3.dp else 1.dp,
+                                color = if (currentColor == colorValue) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.outline,
+                                shape = CircleShape,
+                            )
+                    )
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(16.dp))
     }
 }
