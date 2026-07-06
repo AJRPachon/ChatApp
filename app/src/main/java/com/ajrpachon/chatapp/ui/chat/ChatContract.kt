@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.ui.chat
+﻿package com.ajrpachon.chatapp.ui.chat
 
 import android.content.Context
 import android.net.Uri
@@ -67,6 +67,7 @@ data class ChatState(
     val showMentionSuggestions: Boolean = false,
     // Incognito mode: when true, messages are NOT persisted to local Room DB
     val isIncognito: Boolean = false,
+    val showIncognitoInfoDialog: Boolean = false,
     // Scheduled messages
     val showScheduleDialog: Boolean = false,
     val scheduledAtMs: Long? = null,
@@ -80,6 +81,9 @@ data class ChatState(
     // Wallpaper
     val wallpaperColor: Long? = null,
     val showWallpaperPicker: Boolean = false,
+    // Group presence
+    val onlineMemberCount: Int = 0,
+    val groupMemberCount: Int = 0,
 ) {
     val isMultiSelectActive: Boolean get() = selectedMessageIds.isNotEmpty()
     val latestPinnedMessage: MessageBO? get() = pinnedMessages.firstOrNull()
@@ -126,8 +130,10 @@ sealed interface ChatIntent {
     data object ClearSelection : ChatIntent
     data object DeleteSelectedMessages : ChatIntent
     data class ShowForwardDialog(val message: MessageBO) : ChatIntent
+    data object ShowMultiForwardDialog : ChatIntent
     data object DismissForwardDialog : ChatIntent
     data class ForwardMessage(val messageId: String, val targetConversationId: String) : ChatIntent
+    data class ForwardSelectedMessages(val targetConversationId: String) : ChatIntent
     data class SendLocation(val mapsUrl: String) : ChatIntent
     data class TranslateMessage(val messageId: String, val text: String) : ChatIntent
     data class DismissTranslation(val messageId: String) : ChatIntent
@@ -150,6 +156,8 @@ sealed interface ChatIntent {
     data class SetDisappearingMode(val conversationId: String, val seconds: Long) : ChatIntent
     data class SelectMention(val member: GroupMemberBO) : ChatIntent
     data object ToggleIncognito : ChatIntent
+    data object DismissIncognitoDialog : ChatIntent
+    data object ConfirmIncognito : ChatIntent
     // Scheduled messages
     data object OpenScheduleDialog : ChatIntent
     data object DismissScheduleDialog : ChatIntent
@@ -169,6 +177,7 @@ sealed interface ChatIntent {
     data object DismissWallpaperPicker : ChatIntent
     data class SetWallpaperColor(val color: Long?) : ChatIntent
     data class SendContact(val name: String, val phone: String) : ChatIntent
+    data class RetryMessage(val messageId: String) : ChatIntent
 }
 
 sealed interface ChatEffect {

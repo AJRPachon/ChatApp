@@ -201,7 +201,7 @@ import org.koin.core.parameter.parametersOf
 import java.io.File
 
 
-// ── Screen ───────────────────────────────────────────────────────────────────
+// â”€â”€ Screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @NavEdge(to = CallRoute::class, label = "Start Call")
 @NavEdge(to = GroupInfoRoute::class, label = "Group Info")
@@ -280,7 +280,7 @@ fun ChatScreen(
                         putExtra(android.content.Intent.EXTRA_STREAM, effect.uri)
                         addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     }
-                    context.startActivity(android.content.Intent.createChooser(shareIntent, "Exportar conversación"))
+                    context.startActivity(android.content.Intent.createChooser(shareIntent, "Exportar conversaciÃ³n"))
                 }
             }
         }
@@ -306,14 +306,14 @@ fun ChatScreen(
         if (count == 0) return@LaunchedEffect
 
         if (pendingSendScroll.value) {
-            // New message sent — item just arrived in PagingData, scroll to it now.
+            // New message sent â€” item just arrived in PagingData, scroll to it now.
             snapshotFlow { listState.layoutInfo.totalItemsCount }
                 .first { it > 0 }
             withFrameNanos { }
             listState.animateScrollToItem(0)
             pendingSendScroll.value = false
         } else if (listState.firstVisibleItemIndex <= 3) {
-            // Someone else sent while we're near the bottom — follow the conversation.
+            // Someone else sent while we're near the bottom â€” follow the conversation.
             listState.scrollToItem(0)
         }
     }
@@ -332,7 +332,7 @@ fun ChatScreen(
         AlertDialog(
             onDismissRequest = { showDeleteSelectionConfirm = false },
             title = { Text("Eliminar mensajes") },
-            text = { Text("¿Borrar $count ${if (count == 1) "mensaje" else "mensajes"}?") },
+            text = { Text("Â¿Borrar $count ${if (count == 1) "mensaje" else "mensajes"}?") },
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteSelectionConfirm = false
@@ -458,8 +458,12 @@ fun ChatScreen(
             conversations = state.forwardableConversations,
             onDismiss = { vm.onIntent(ChatIntent.DismissForwardDialog) },
             onSelect = { targetConversationId ->
-                val msgId = state.forwardingMessage?.id ?: return@ForwardConversationDialog
-                vm.onIntent(ChatIntent.ForwardMessage(msgId, targetConversationId))
+                val forwardingMsg = state.forwardingMessage
+                if (forwardingMsg != null) {
+                    vm.onIntent(ChatIntent.ForwardMessage(forwardingMsg.id, targetConversationId))
+                } else {
+                    vm.onIntent(ChatIntent.ForwardSelectedMessages(targetConversationId))
+                }
             },
         )
     }
@@ -682,7 +686,7 @@ fun ChatScreen(
                     horizontalArrangement = Arrangement.Center,
                 ) {
                     Text(
-                        text = "Modo incógnito — los mensajes no se guardan",
+                        text = "Modo incÃ³gnito â€” los mensajes no se guardan",
                         style = MaterialTheme.typography.labelSmall,
                         color = androidx.compose.ui.graphics.Color.White,
                     )
@@ -692,11 +696,14 @@ fun ChatScreen(
                 TopAppBar(
                     navigationIcon = {
                         IconButton(onClick = { vm.onIntent(ChatIntent.ClearSelection) }) {
-                            Icon(Icons.Default.Close, contentDescription = "Cancelar selección")
+                            Icon(Icons.Default.Close, contentDescription = "Cancelar selecciÃ³n")
                         }
                     },
                     title = { Text("${state.selectedMessageIds.size} seleccionados") },
                     actions = {
+                        IconButton(onClick = { vm.onIntent(ChatIntent.ShowMultiForwardDialog) }) {
+                            Icon(Icons.AutoMirrored.Filled.Forward, contentDescription = "Reenviar seleccionados")
+                        }
                         IconButton(onClick = { showDeleteSelectionConfirm = true }) {
                             Icon(Icons.Default.Delete, contentDescription = "Eliminar seleccionados")
                         }
@@ -762,7 +769,7 @@ fun ChatScreen(
                                     Spacer(Modifier.width(4.dp))
                                     Icon(
                                         imageVector = Icons.Default.Timer,
-                                        contentDescription = "Modo desaparición activo",
+                                        contentDescription = "Modo desapariciÃ³n activo",
                                         tint = MaterialTheme.colorScheme.tertiary,
                                         modifier = Modifier.size(12.dp),
                                     )
@@ -776,7 +783,7 @@ fun ChatScreen(
                             }
                             if (!state.isGroup) {
                                 val presenceText = when {
-                                    state.isOtherUserOnline -> "En línea"
+                                    state.isOtherUserOnline -> "En lÃ­nea"
                                     state.otherUserLastSeenMs != null -> {
                                         val lastSeenMs = state.otherUserLastSeenMs ?: 0L
                                         formatLastSeen(System.currentTimeMillis() - lastSeenMs)
@@ -794,12 +801,31 @@ fun ChatScreen(
                                     )
                                 }
                             }
+                            } else {
+                                val memberTotal = state.groupMemberCount
+                                val onlineCount = state.onlineMemberCount
+                                val groupSubtitle = if (onlineCount > 0) {
+                                    "$onlineCount miembro${if (onlineCount == 1) "" else "s"} en línea"
+                                } else if (memberTotal > 0) {
+                                    "$memberTotal miembro${if (memberTotal == 1) "" else "s"}"
+                                } else null
+                                if (groupSubtitle != null) {
+                                    Text(
+                                        text = groupSubtitle,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (onlineCount > 0)
+                                            androidx.compose.ui.graphics.Color(0xFF4CAF50)
+                                        else
+                                            MaterialTheme.colorScheme.outline,
+                                    )
+                                }
+                            }
                         }
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = dropUnlessResumed { onBack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "AtrÃ¡s")
                     }
                 },
                 actions = {
@@ -845,7 +871,7 @@ fun ChatScreen(
                     var menuExpanded by remember { mutableStateOf(false) }
                     Box {
                         IconButton(onClick = { menuExpanded = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "Más opciones")
+                            Icon(Icons.Default.MoreVert, contentDescription = "MÃ¡s opciones")
                         }
                         DropdownMenu(
                             expanded = menuExpanded,
@@ -887,7 +913,7 @@ fun ChatScreen(
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text("Exportar conversación") },
+                                text = { Text("Exportar conversaciÃ³n") },
                                 leadingIcon = {
                                     if (state.isExporting) {
                                         CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -902,7 +928,7 @@ fun ChatScreen(
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text("Modo desaparición") },
+                                text = { Text("Modo desapariciÃ³n") },
                                 leadingIcon = { Icon(Icons.Default.Timer, contentDescription = null) },
                                 onClick = {
                                     menuExpanded = false
@@ -910,7 +936,7 @@ fun ChatScreen(
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text(if (state.isIncognito) "Desactivar incógnito" else "Modo incógnito") },
+                                text = { Text(if (state.isIncognito) "Desactivar incÃ³gnito" else "Modo incÃ³gnito") },
                                 leadingIcon = {
                                     Icon(
                                         Icons.Default.Lock,
@@ -994,7 +1020,7 @@ fun ChatScreen(
                             }
                         }
                         IconButton(onClick = { vm.onIntent(ChatIntent.CancelEdit) }) {
-                            Icon(Icons.Default.Close, contentDescription = "Cancelar edición")
+                            Icon(Icons.Default.Close, contentDescription = "Cancelar ediciÃ³n")
                         }
                     }
                     HorizontalDivider()
@@ -1015,8 +1041,8 @@ fun ChatScreen(
                     exit = fadeOut(),
                 ) {
                     val typingText = when (typingUserNames.size) {
-                        1 -> "${typingUserNames[0]} está escribiendo…"
-                        else -> "${typingUserNames.take(2).joinToString(" y ")} están escribiendo…"
+                        1 -> "${typingUserNames[0]} estÃ¡ escribiendoâ€¦"
+                        else -> "${typingUserNames.take(2).joinToString(" y ")} estÃ¡n escribiendoâ€¦"
                     }
                     Text(
                         text = typingText,
@@ -1167,7 +1193,7 @@ fun ChatScreen(
                         if (isImageGroupStart) {
                             // Collect consecutive images from the same sender starting at this index.
                             // Accessing lazyPagingItems[j] triggers loading of the next page if j is
-                            // near the page boundary — ensuring the group is always complete.
+                            // near the page boundary â€” ensuring the group is always complete.
                             val group = mutableListOf(message)
                             var j = index + 1
                             while (j < lazyPagingItems.itemCount) {
@@ -1242,9 +1268,9 @@ fun ChatScreen(
                             )
                         }
                     }
-                    // isInsideGroup → render nothing; slot still exists for key stability + paging trigger
+                    // isInsideGroup â†’ render nothing; slot still exists for key stability + paging trigger
                 }
-                // With reverseLayout=true, this item appears at the visual TOP — shown while
+                // With reverseLayout=true, this item appears at the visual TOP â€” shown while
                 // loading older pages as the user scrolls up through history.
                 item(key = "paging-load-more") {
                     if (lazyPagingItems.loadState.append is LoadState.Loading) {
@@ -1284,17 +1310,17 @@ fun ChatScreen(
     }
 }
 
-// MessageSearchOverlay, SearchResultItem → see ChatSearchOverlay.kt
+// MessageSearchOverlay, SearchResultItem â†’ see ChatSearchOverlay.kt
 
-// ── Bottom bar composables ────────────────────────────────────────────────────
+// â”€â”€ Bottom bar composables â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-// NormalInputBar, AttachmentBottomSheet, ReplyPreviewBar → see ChatInputBar.kt
+// NormalInputBar, AttachmentBottomSheet, ReplyPreviewBar â†’ see ChatInputBar.kt
 
 // Audio components extracted to ChatAudioComponents.kt
 
-// ── MessageBubble ─────────────────────────────────────────────────────────────
+// â”€â”€ MessageBubble â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-// ── CallMessageBubble ─────────────────────────────────────────────────────────
+// â”€â”€ CallMessageBubble â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Composable
 private fun CallMessageBubble(message: MessageBO) {
@@ -1312,7 +1338,7 @@ private fun CallMessageBubble(message: MessageBO) {
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
     }
     val statusText = when {
-        status == "ended" -> "Finalizada · ${formatCallDuration(message.callDuration ?: 0)}"
+        status == "ended" -> "Finalizada Â· ${formatCallDuration(message.callDuration ?: 0)}"
         status == "missed" && !message.isFromMe -> "Perdida"
         status == "rejected" && !message.isFromMe -> "Rechazada"
         else -> "Sin respuesta"
@@ -1366,7 +1392,7 @@ private fun CallMessageBubble(message: MessageBO) {
     }
 }
 
-// ── FileBubble ────────────────────────────────────────────────────────────────
+// â”€â”€ FileBubble â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Composable
 private fun FileBubble(
@@ -1538,7 +1564,7 @@ private fun formatFileSize(bytes: Long): String {
     }
 }
 
-// ── VideoBubble ───────────────────────────────────────────────────────────────
+// â”€â”€ VideoBubble â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Composable
 private fun VideoBubble(message: MessageBO, onReply: () -> Unit) {
@@ -1608,7 +1634,7 @@ private fun VideoBubble(message: MessageBO, onReply: () -> Unit) {
     }
 }
 
-// ── StickerBubble ──────────────────────────────────────────────────────────────
+// â”€â”€ StickerBubble â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Composable
 private fun StickerBubble(message: MessageBO, onReply: () -> Unit) {
@@ -1670,7 +1696,7 @@ private fun StickerBubble(message: MessageBO, onReply: () -> Unit) {
     }
 }
 
-// ── DeletedMessageBubble ──────────────────────────────────────────────────────
+// â”€â”€ DeletedMessageBubble â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Composable
 private fun DeletedMessageBubble(message: MessageBO) {
@@ -1706,7 +1732,7 @@ private fun DeletedMessageBubble(message: MessageBO) {
     }
 }
 
-// ── MessageBubble ─────────────────────────────────────────────────────────────
+// â”€â”€ MessageBubble â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList")
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
@@ -1732,6 +1758,7 @@ private fun MessageBubble(
     onOpenPdf: (url: String, filename: String) -> Unit = { _, _ -> },
     onVote: ((optionId: String) -> Unit)? = null,
     onShowReactionDetails: () -> Unit = {},
+    onRetryMessage: (String) -> Unit = {},
 ) {
     if (message.isDeleted) {
         DeletedMessageBubble(message)
@@ -1895,8 +1922,8 @@ private fun MessageBubble(
                         var showEmojiPicker by remember { mutableStateOf(false) }
                         val emojiSheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
                         val locationUrl = remember(message.content) {
-                            if (message.content.startsWith("📍 Mi ubicación: https://maps.google.com/?q=")) {
-                                message.content.substringAfter("📍 Mi ubicación: ")
+                            if (message.content.startsWith("ðŸ“ Mi ubicaciÃ³n: https://maps.google.com/?q=")) {
+                                message.content.substringAfter("ðŸ“ Mi ubicaciÃ³n: ")
                             } else null
                         }
                         if (locationUrl != null) {
@@ -1915,7 +1942,7 @@ private fun MessageBubble(
                             DropdownMenu(expanded = showMsgMenu, onDismissRequest = { showMsgMenu = false }) {
                                 DropdownMenuItem(
                                     text = { Text("Reaccionar") },
-                                    leadingIcon = { Text("😊") },
+                                    leadingIcon = { Text("ðŸ˜Š") },
                                     onClick = { showMsgMenu = false; showEmojiPicker = true },
                                 )
                                 if (onEdit != null) {
@@ -1928,9 +1955,9 @@ private fun MessageBubble(
                                 if (onSelfDestruct != null) {
                                     DropdownMenuItem(
                                         text = {
-                                            Text(if (message.expiresAt != null) "Quitar autodestrucción" else "Mensaje efímero")
+                                            Text(if (message.expiresAt != null) "Quitar autodestrucciÃ³n" else "Mensaje efÃ­mero")
                                         },
-                                        leadingIcon = { Text(if (message.expiresAt != null) "♾️" else "⏱️") },
+                                        leadingIcon = { Text(if (message.expiresAt != null) "â™¾ï¸" else "â±ï¸") },
                                         onClick = { showMsgMenu = false; onSelfDestruct() },
                                     )
                                 }
@@ -1963,7 +1990,7 @@ private fun MessageBubble(
                             )
                         }
                     }
-                    // Link preview — shown only for plain text messages (no image/audio/gif)
+                    // Link preview â€” shown only for plain text messages (no image/audio/gif)
                     val hasAttachment = message.imageUrl != null || message.audioUrl != null ||
                         message.gifUrl != null
                     if (!hasAttachment && message.content.isNotBlank()) {
@@ -1991,7 +2018,7 @@ private fun MessageBubble(
                         message.expiresAt?.let { exp ->
                             val secsLeft = ((exp - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
                             Text(
-                                "⏱️ ${if (secsLeft < 60) "${secsLeft}s" else "${secsLeft / 60}m"}",
+                                "â±ï¸ ${if (secsLeft < 60) "${secsLeft}s" else "${secsLeft / 60}m"}",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
                             )
@@ -2067,7 +2094,7 @@ private fun MessageBubble(
     }
 }
 
-private val LOCATION_MESSAGE_PREFIX = "📍 Mi ubicación: https://maps.google.com/?q="
+private val LOCATION_MESSAGE_PREFIX = "ðŸ“ Mi ubicaciÃ³n: https://maps.google.com/?q="
 
 @Composable
 private fun LocationMessageCard(content: String, mapsUrl: String) {
@@ -2098,7 +2125,7 @@ private fun LocationMessageCard(content: String, mapsUrl: String) {
             )
             Column {
                 Text(
-                    text = "Ubicación compartida",
+                    text = "UbicaciÃ³n compartida",
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -2117,7 +2144,7 @@ private fun LocationMessageCard(content: String, mapsUrl: String) {
 private fun ReadReceiptIcon(isRead: Boolean) {
     Icon(
         imageVector = if (isRead) Icons.Default.DoneAll else Icons.Default.Done,
-        contentDescription = if (isRead) "Leído" else "Enviado",
+        contentDescription = if (isRead) "LeÃ­do" else "Enviado",
         modifier = Modifier.size(14.dp),
         tint = if (isRead)
             androidx.compose.ui.graphics.Color(0xFF4FC3F7)
@@ -2127,13 +2154,13 @@ private fun ReadReceiptIcon(isRead: Boolean) {
 }
 
 private fun formatLastSeen(diffMs: Long): String = when {
-    diffMs < 60_000L -> "última vez hace un momento"
-    diffMs < 3_600_000L -> "última vez hace ${diffMs / 60_000} min"
-    diffMs < 86_400_000L -> "última vez hace ${diffMs / 3_600_000} h"
-    else -> "última vez hace ${diffMs / 86_400_000} d"
+    diffMs < 60_000L -> "Ãºltima vez hace un momento"
+    diffMs < 3_600_000L -> "Ãºltima vez hace ${diffMs / 60_000} min"
+    diffMs < 86_400_000L -> "Ãºltima vez hace ${diffMs / 3_600_000} h"
+    else -> "Ãºltima vez hace ${diffMs / 86_400_000} d"
 }
 
-// ── ImageGroupBubble ──────────────────────────────────────────────────────────
+// â”€â”€ ImageGroupBubble â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Composable
 private fun ImageGroupBubble(
@@ -2251,7 +2278,7 @@ private fun ImageGroupBubble(
     } // Box
 }
 
-// ── ReplyQuote ────────────────────────────────────────────────────────────────
+// â”€â”€ ReplyQuote â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Composable
 private fun ReplyQuote(
@@ -2300,7 +2327,7 @@ private fun ReplyQuote(
     }
 }
 
-// ── LinkPreviewCard ───────────────────────────────────────────────────────────
+// â”€â”€ LinkPreviewCard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Composable
 private fun LinkPreviewCard(data: LinkPreviewData) {
@@ -2360,9 +2387,9 @@ private fun LinkPreviewCard(data: LinkPreviewData) {
     }
 }
 
-// ReplyPreviewBar → see ChatInputBar.kt
+// ReplyPreviewBar â†’ see ChatInputBar.kt
 
-// ── ImageViewerDialog ─────────────────────────────────────────────────────────
+// â”€â”€ ImageViewerDialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Composable
 private fun ImageViewerDialog(
@@ -2500,7 +2527,7 @@ private fun ContactBubble(name: String, phone: String, isFromMe: Boolean) {
     }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 private fun createCameraUri(context: Context): Uri {
     val file = File.createTempFile("img_", ".jpg", context.cacheDir)
@@ -2523,16 +2550,16 @@ private fun ExpiryDurationDialog(onDismiss: () -> Unit, onSelect: (Long?) -> Uni
         "1 minuto" to (System.currentTimeMillis() + 60_000L),
         "1 hora" to (System.currentTimeMillis() + 3_600_000L),
         "24 horas" to (System.currentTimeMillis() + 86_400_000L),
-        "7 días" to (System.currentTimeMillis() + 604_800_000L),
-        "Quitar autodestrucción" to null,
+        "7 dÃ­as" to (System.currentTimeMillis() + 604_800_000L),
+        "Quitar autodestrucciÃ³n" to null,
     )
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Mensaje efímero") },
+        title = { Text("Mensaje efÃ­mero") },
         text = {
             androidx.compose.foundation.layout.Column {
                 Text(
-                    "El mensaje se borrará localmente después de:",
+                    "El mensaje se borrarÃ¡ localmente despuÃ©s de:",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -2660,7 +2687,7 @@ private fun ForwardConversationDialog(
     )
 }
 
-// ── ChatThemePickerSheet ───────────────────────────────────────────────────────
+// â”€â”€ ChatThemePickerSheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -2746,7 +2773,7 @@ private fun ChatThemePickerSheet(
     }
 }
 
-// ── DisappearingModeSheet ──────────────────────────────────────────────────────
+// â”€â”€ DisappearingModeSheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -2759,8 +2786,8 @@ private fun DisappearingModeSheet(
     val options = listOf(
         "Desactivado" to 0L,
         "24 horas" to 86_400L,
-        "7 días" to 604_800L,
-        "30 días" to 2_592_000L,
+        "7 dÃ­as" to 604_800L,
+        "30 dÃ­as" to 2_592_000L,
     )
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -2768,13 +2795,13 @@ private fun DisappearingModeSheet(
     ) {
         Column(modifier = Modifier.padding(bottom = 32.dp)) {
             Text(
-                "Modo desaparición",
+                "Modo desapariciÃ³n",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             )
             Text(
-                "Los nuevos mensajes desaparecerán automáticamente.",
+                "Los nuevos mensajes desaparecerÃ¡n automÃ¡ticamente.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp),
@@ -2871,7 +2898,7 @@ private fun ScheduleMessageDialog(
     }
 }
 
-// ── AI Assistant bottom sheet ─────────────────────────────────────────────────
+// â”€â”€ AI Assistant bottom sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -2981,7 +3008,7 @@ private fun AiAssistantSheet(
     }
 }
 
-// ── CreatePollSheetContent ────────────────────────────────────────────────────
+// â”€â”€ CreatePollSheetContent â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Composable
 private fun CreatePollSheetContent(
@@ -3024,7 +3051,7 @@ private fun CreatePollSheetContent(
                     onValueChange = { newValue ->
                         options = options.toMutableList().also { it[index] = newValue }
                     },
-                    label = { Text("Opción ${index + 1}") },
+                    label = { Text("OpciÃ³n ${index + 1}") },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                 )
@@ -3036,7 +3063,7 @@ private fun CreatePollSheetContent(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Eliminar opción",
+                            contentDescription = "Eliminar opciÃ³n",
                             tint = MaterialTheme.colorScheme.error,
                         )
                     }
@@ -3048,7 +3075,7 @@ private fun CreatePollSheetContent(
             TextButton(onClick = { options = options + "" }) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))
-                Text("Añadir opción")
+                Text("AÃ±adir opciÃ³n")
             }
         }
 
@@ -3106,7 +3133,7 @@ private fun PinnedMessageBanner(
     }
 }
 
-// ── PollBubble ────────────────────────────────────────────────────────────────
+// â”€â”€ PollBubble â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Composable
 private fun PollBubble(
@@ -3154,7 +3181,7 @@ private fun PollBubble(
 
                 if (poll == null) {
                     Text(
-                        text = "Cargando encuesta…",
+                        text = "Cargando encuestaâ€¦",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline,
                     )
@@ -3213,7 +3240,7 @@ private fun PollBubble(
     }
 }
 
-// ── ReactionDetailsSheet ──────────────────────────────────────────────────────
+// â”€â”€ ReactionDetailsSheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Composable
 private fun ReactionDetailsSheet(
@@ -3245,7 +3272,7 @@ private fun ReactionDetailsSheet(
     }
 }
 
-// ── WallpaperPickerSheet ─────────────────────────────────────────────────────
+// â”€â”€ WallpaperPickerSheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -3257,7 +3284,7 @@ private fun WallpaperPickerSheet(
     val colors = listOf(
         null to "Por defecto",
         0xFFE3F2FDL to "Azul claro",
-        0xFFF3E5F5L to "Púrpura",
+        0xFFF3E5F5L to "PÃºrpura",
         0xFFE8F5E9L to "Verde",
         0xFFFFF8E1L to "Amarillo",
         0xFFFCE4ECL to "Rosa",
