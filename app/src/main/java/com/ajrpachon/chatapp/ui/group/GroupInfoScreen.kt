@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -31,7 +32,12 @@ import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PersonRemove
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -60,7 +66,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -107,6 +115,7 @@ fun GroupInfoScreen(
             when (effect) {
                 GroupInfoEffect.NavigateBack -> onBack()
                 is GroupInfoEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message)
+                is GroupInfoEffect.CopyToClipboard -> { /* handled inline via LocalClipboardManager */ }
             }
         }
     }
@@ -153,6 +162,55 @@ fun GroupInfoScreen(
             onBlankHistory = { vm.onIntent(GroupInfoIntent.ConfirmAddMember(canSeeHistory = false)) },
             onDismiss = { vm.onIntent(GroupInfoIntent.DismissHistoryDialog) },
         )
+    }
+
+    if (state.showInviteLinkSheet && state.inviteLink != null) {
+        val clipboardManager = LocalClipboardManager.current
+        ModalBottomSheet(
+            onDismissRequest = { vm.onIntent(GroupInfoIntent.DismissInviteLinkSheet) },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .navigationBarsPadding(),
+            ) {
+                Text(
+                    "Enlace de invitación",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.height(12.dp))
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        state.inviteLink!!,
+                        modifier = Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+                Spacer(Modifier.height(16.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = {
+                            clipboardManager.setText(AnnotatedString(state.inviteLink!!))
+                            vm.onIntent(GroupInfoIntent.DismissInviteLinkSheet)
+                        },
+                        modifier = Modifier.weight(1f),
+                    ) { Text("Copiar") }
+                    Button(
+                        onClick = {
+                            val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(android.content.Intent.EXTRA_TEXT, state.inviteLink)
+                            }
+                            context.startActivity(android.content.Intent.createChooser(shareIntent, "Compartir enlace"))
+                            vm.onIntent(GroupInfoIntent.DismissInviteLinkSheet)
+                        },
+                        modifier = Modifier.weight(1f),
+                    ) { Text("Compartir") }
+                }
+            }
+        }
     }
 
     if (state.showEditDialog) {
@@ -260,6 +318,17 @@ fun GroupInfoScreen(
                 )
             }
 
+            if (state.isCurrentUserAdmin) {
+                item {
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    ListItem(
+                        headlineContent = { Text("Enlace de invitación") },
+                        supportingContent = { Text("Generar enlace para unirse al grupo") },
+                        leadingContent = { Icon(Icons.Default.Link, contentDescription = null) },
+                        modifier = Modifier.clickable { vm.onIntent(GroupInfoIntent.GenerateInviteLink) },
+                    )
+                }
+            }
         }
     }
 }

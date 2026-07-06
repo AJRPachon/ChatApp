@@ -101,6 +101,12 @@ class GroupInfoViewModel(
             is GroupInfoIntent.ConfirmAddMember -> confirmAddMember(intent.canSeeHistory)
             GroupInfoIntent.DismissHistoryDialog -> _state.update { it.copy(showHistoryDialog = false, pendingAddUser = null, showAddMemberSheet = true) }
             GroupInfoIntent.DismissError -> _state.update { it.copy(error = null) }
+            GroupInfoIntent.GenerateInviteLink -> {
+                val code = java.util.UUID.randomUUID().toString().take(8).uppercase()
+                val link = "https://chatapp.page.link/join?g=$conversationId&c=$code"
+                _state.update { it.copy(inviteLink = link, showInviteLinkSheet = true) }
+            }
+            GroupInfoIntent.DismissInviteLinkSheet -> _state.update { it.copy(showInviteLinkSheet = false) }
         }
     }
 

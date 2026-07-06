@@ -77,6 +77,9 @@ data class ChatState(
     val showAiSheet: Boolean = false,
     val aiSuggestion: String? = null,
     val isAiLoading: Boolean = false,
+    // Wallpaper
+    val wallpaperColor: Long? = null,
+    val showWallpaperPicker: Boolean = false,
 ) {
     val isMultiSelectActive: Boolean get() = selectedMessageIds.isNotEmpty()
     val latestPinnedMessage: MessageBO? get() = pinnedMessages.firstOrNull()
@@ -162,6 +165,10 @@ sealed interface ChatIntent {
     data object AiSuggestReply : ChatIntent
     data class AiFreeform(val prompt: String) : ChatIntent
     data object InsertAiSuggestion : ChatIntent
+    data object OpenWallpaperPicker : ChatIntent
+    data object DismissWallpaperPicker : ChatIntent
+    data class SetWallpaperColor(val color: Long?) : ChatIntent
+    data class SendContact(val name: String, val phone: String) : ChatIntent
 }
 
 sealed interface ChatEffect {

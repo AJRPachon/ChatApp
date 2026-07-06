@@ -36,6 +36,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.padding
@@ -98,6 +99,9 @@ import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.HowToVote
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Wallpaper
+import androidx.compose.foundation.border
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.RadioButton
@@ -600,6 +604,17 @@ fun ChatScreen(
         }
     }
 
+    if (state.showWallpaperPicker) {
+        WallpaperPickerSheet(
+            currentColor = state.wallpaperColor,
+            onSelect = { colorValue: Long? ->
+                vm.onIntent(ChatIntent.SetWallpaperColor(colorValue))
+                vm.onIntent(ChatIntent.DismissWallpaperPicker)
+            },
+            onDismiss = { vm.onIntent(ChatIntent.DismissWallpaperPicker) },
+        )
+    }
+
     val latestPinned = state.latestPinnedMessage
     var pinnedBannerVisible by rememberSaveable(latestPinned?.id) { mutableStateOf(true) }
 
@@ -818,6 +833,14 @@ fun ChatScreen(
                                 onClick = {
                                     menuExpanded = false
                                     vm.onIntent(ChatIntent.OpenThemePicker)
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Fondo del chat") },
+                                leadingIcon = { Icon(Icons.Default.Wallpaper, contentDescription = null) },
+                                onClick = {
+                                    menuExpanded = false
+                                    vm.onIntent(ChatIntent.OpenWallpaperPicker)
                                 },
                             )
                             DropdownMenuItem(
@@ -1046,7 +1069,14 @@ fun ChatScreen(
             }
         },
     ) { innerPadding ->
-        Box(Modifier.fillMaxSize()) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(
+                    state.wallpaperColor?.let { androidx.compose.ui.graphics.Color(it) }
+                        ?: MaterialTheme.colorScheme.background
+                )
+        ) {
             val isInitialLoad = lazyPagingItems.loadState.refresh is LoadState.Loading
                 && lazyPagingItems.itemCount == 0
             if (isInitialLoad) {
@@ -3787,5 +3817,73 @@ private fun ReactionDetailsSheet(
                 }
             }
         }
+}
+
+// ── WallpaperPickerSheet ─────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WallpaperPickerSheet(
+    currentColor: Long?,
+    onSelect: (Long?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = listOf(
+        null to "Por defecto",
+        0xFFE3F2FD.toLong() to "Azul claro",
+        0xFFF3E5F5.toLong() to "Púrpura",
+        0xFFE8F5E9.toLong() to "Verde",
+        0xFFFFF8E1.toLong() to "Amarillo",
+        0xFFFCE4EC.toLong() to "Rosa",
+        0xFF212121.toLong() to "Oscuro",
+    )
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    ) {
+        Text(
+            "Fondo del chat",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(16.dp),
+        )
+        androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
+            columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(4),
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .navigationBarsPadding(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(colors) { (colorValue, label) ->
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.clickable { onSelect(colorValue) },
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(CircleShape)
+                            .background(
+                                colorValue?.let { androidx.compose.ui.graphics.Color(it) }
+                                    ?: MaterialTheme.colorScheme.background
+                            )
+                            .border(
+                                width = if (currentColor == colorValue) 3.dp else 1.dp,
+                                color = if (currentColor == colorValue) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.outline,
+                                shape = CircleShape,
+                            )
+                    )
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(16.dp))
     }
 }
