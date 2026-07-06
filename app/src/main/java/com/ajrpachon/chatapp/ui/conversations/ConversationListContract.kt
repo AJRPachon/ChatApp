@@ -3,6 +3,8 @@ package com.ajrpachon.chatapp.ui.conversations
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.NotificationSound
 
+enum class ConversationFilter { ALL, UNREAD, GROUPS, DIRECT }
+
 data class ConversationListState(
     val conversations: List<ConversationBO> = emptyList(),
     val archivedConversations: List<ConversationBO> = emptyList(),
@@ -11,15 +13,25 @@ data class ConversationListState(
     val pendingInvitationsCount: Int = 0,
     val error: String? = null,
     val sortByUnread: Boolean = false,
+    val selectedFilter: ConversationFilter = ConversationFilter.ALL,
     val searchQuery: String = "",
     val isSearchActive: Boolean = false,
     val showArchivedSheet: Boolean = false,
     val drafts: Map<String, String> = emptyMap(),
     val soundPickerConversationId: String? = null,
+    val isOnline: Boolean = true,
 ) {
     val filteredConversations: List<ConversationBO>
-        get() = if (searchQuery.isBlank()) conversations
-        else conversations.filter { it.name.contains(searchQuery, ignoreCase = true) }
+        get() {
+            val bySearch = if (searchQuery.isBlank()) conversations
+            else conversations.filter { it.name.contains(searchQuery, ignoreCase = true) }
+            return when (selectedFilter) {
+                ConversationFilter.ALL -> bySearch
+                ConversationFilter.UNREAD -> bySearch.filter { it.unreadCount > 0 }
+                ConversationFilter.GROUPS -> bySearch.filter { it.isGroup }
+                ConversationFilter.DIRECT -> bySearch.filter { !it.isGroup }
+            }
+        }
 }
 
 sealed interface ConversationListIntent {
@@ -30,6 +42,7 @@ sealed interface ConversationListIntent {
     data class ClearChat(val conversationId: String) : ConversationListIntent
     data class LeaveGroup(val conversationId: String) : ConversationListIntent
     data object ToggleSortByUnread : ConversationListIntent
+    data class SetFilter(val filter: ConversationFilter) : ConversationListIntent
     data class SearchQueryChanged(val query: String) : ConversationListIntent
     data object ToggleSearch : ConversationListIntent
     data class ArchiveConversation(val conversationId: String, val archived: Boolean) : ConversationListIntent

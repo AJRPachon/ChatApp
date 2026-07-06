@@ -492,6 +492,16 @@ fun ChatScreen(
         )
     }
 
+    if (state.showForwardSelectionDialog) {
+        ForwardConversationDialog(
+            conversations = state.forwardableConversations,
+            onDismiss = { vm.onIntent(ChatIntent.DismissForwardSelectionDialog) },
+            onSelect = { targetConversationId ->
+                vm.onIntent(ChatIntent.ForwardSelectedMessages(targetConversationId))
+            },
+        )
+    }
+
     if (state.showMuteDialog) {
         MuteDurationDialog(
             onDismiss = { vm.onIntent(ChatIntent.DismissMuteDialog) },
@@ -701,7 +711,7 @@ fun ChatScreen(
                     },
                     title = { Text("${state.selectedMessageIds.size} seleccionados") },
                     actions = {
-                        IconButton(onClick = { vm.onIntent(ChatIntent.ShowMultiForwardDialog) }) {
+                        IconButton(onClick = { vm.onIntent(ChatIntent.ShowForwardSelectionDialog) }) {
                             Icon(Icons.AutoMirrored.Filled.Forward, contentDescription = "Reenviar seleccionados")
                         }
                         IconButton(onClick = { showDeleteSelectionConfirm = true }) {
@@ -795,6 +805,22 @@ fun ChatScreen(
                                         text = presenceText,
                                         style = MaterialTheme.typography.labelSmall,
                                         color = if (state.isOtherUserOnline)
+                                            androidx.compose.ui.graphics.Color(0xFF4CAF50)
+                                        else
+                                            MaterialTheme.colorScheme.outline,
+                                    )
+                                }
+                            } else {
+                                val groupSubtitle = if (state.onlineMemberCount > 0) {
+                                    "${state.onlineMemberCount} en línea"
+                                } else if (state.groupMemberCount > 0) {
+                                    "${state.groupMemberCount} miembros"
+                                } else null
+                                if (groupSubtitle != null) {
+                                    Text(
+                                        text = groupSubtitle,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (state.onlineMemberCount > 0)
                                             androidx.compose.ui.graphics.Color(0xFF4CAF50)
                                         else
                                             MaterialTheme.colorScheme.outline,
@@ -1000,6 +1026,10 @@ fun ChatScreen(
             } // Column wrapper for topBar (incognito banner + app bar)
         },
         bottomBar = {
+            Column {
+                androidx.compose.animation.AnimatedVisibility(visible = !state.isOnline) {
+                    com.ajrpachon.chatapp.ui.components.OfflineBanner()
+                }
             if (state.isCurrentUserMember) Surface(shadowElevation = 4.dp) {
                 Column(modifier = Modifier.windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars))) {
                 if (!state.isOnline) {
@@ -1139,6 +1169,7 @@ fun ChatScreen(
                 }
                 } // Column
             }
+            } // end outer Column (bottomBar)
         },
     ) { innerPadding ->
         Box(

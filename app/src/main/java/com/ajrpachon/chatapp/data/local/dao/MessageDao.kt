@@ -117,4 +117,10 @@ interface MessageDao {
 
     @Query("SELECT (createdAt / 86400000) as dayEpoch, COUNT(*) as count FROM messages WHERE createdAt >= :since AND isDeleted = 0 GROUP BY dayEpoch ORDER BY dayEpoch ASC")
     suspend fun countMessagesByDay(since: Long): List<DayMessageCount>
+
+    @Query("UPDATE messages SET sendStatus = :status WHERE id = :id")
+    suspend fun updateSendStatus(id: String, status: String)
+
+    @Query("SELECT * FROM messages WHERE sendStatus IN ('pending', 'failed') ORDER BY createdAt ASC")
+    suspend fun getPendingMessages(): List<MessageDBO>
 }
