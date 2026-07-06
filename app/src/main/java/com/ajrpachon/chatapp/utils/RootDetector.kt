@@ -31,7 +31,7 @@ object RootDetector {
             "io.github.lsposed.manager",
         )
         return rootPackages.any { pkg ->
-            try { pm.getPackageInfo(pkg, 0); true } catch (_: Exception) { false }
+            catchResult { pm.getPackageInfo(pkg, 0); true }.getOrElse { false }
         }
     }
 }

@@ -269,7 +269,7 @@ class ChatViewModel(
                     }
                 }
                 var previousIsMember = true
-                try {
+                catchResult {
                     getGroupMembersUseCase(conversationId).collect { members ->
                         groupMembers = members
                         val isMember = members.any { it.userId == uid }
@@ -294,9 +294,7 @@ class ChatViewModel(
                         }
                         previousIsMember = isMember
                     }
-                } catch (e: kotlinx.coroutines.CancellationException) {
-                    throw e
-                } catch (e: Exception) {
+                }.onFailure { e ->
                     AppLogger.e(TAG, "getGroupMembers collect FAILED conv=$conversationId", e)
                 }
                 AppLogger.w(TAG, "getGroupMembers collect ENDED conv=$conversationId")
@@ -310,7 +308,7 @@ class ChatViewModel(
     private fun startTypingPresence() {
         typingPresenceJob?.cancel()
         typingPresenceJob = viewModelScope.launch {
-            try {
+            catchResult {
                 val channel = supabaseClient.channel("typing-$conversationId")
                 typingChannel = channel
                 channel.presenceDataFlow<TypingPresence>()
@@ -323,7 +321,7 @@ class ChatViewModel(
                     }
                     .launchIn(this)
                 channel.subscribe()
-            } catch (e: Exception) {
+            }.onFailure { e ->
                 AppLogger.d(TAG, "typing presence failed (optional feature): ${e.message}")
             }
         }
@@ -332,15 +330,13 @@ class ChatViewModel(
     private fun sendTypingPresence(isTyping: Boolean) {
         val uid = currentUserId ?: return
         viewModelScope.launch {
-            try {
+            catchResult {
                 typingChannel?.track(buildJsonObject {
                     put("isTyping", isTyping)
                     put("userId", uid)
                     put("userName", if (isTyping) otherUserName.ifBlank { "Usuario" } else "")
                 })
-            } catch (e: Exception) {
-                // Typing presence is optional — silently ignore failures
-            }
+            } // Typing presence is optional — silently ignore failures
         }
     }
 
@@ -653,11 +649,11 @@ class ChatViewModel(
             _effect.send(ChatEffect.ScrollToBottom)
             _state.update { it.copy(isUploadingImage = true, replyingTo = null) }
             for ((index, uri) in uris.withIndex()) {
-                val bytes = try {
+                val bytes = catchResult {
                     withContext(Dispatchers.IO) {
                         context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
                     }
-                } catch (e: Exception) { null }
+                }.getOrNull()
                 if (bytes == null) continue
                 catchResult {
                     val mimeType = context.contentResolver.getType(uri) ?: "image/jpeg"
@@ -1238,12 +1234,12 @@ class ChatViewModel(
         draftSaveJob?.cancel()
         viewModelScope.launch {
             withContext(NonCancellable) {
-                try {
+                catchResult {
                     typingChannel?.let { ch ->
                         ch.unsubscribe()
                         supabaseClient.realtime.removeChannel(ch)
                     }
-                } catch (e: Exception) { /* optional feature */ }
+                } // optional feature — ignore failures
             }
         }
         typingChannel = null
