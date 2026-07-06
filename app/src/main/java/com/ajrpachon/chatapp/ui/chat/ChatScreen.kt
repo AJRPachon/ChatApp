@@ -1934,7 +1934,7 @@ private fun MessageBubble(
                             }
                             if (previewData != null) {
                                 Spacer(Modifier.height(6.dp))
-                                LinkPreviewCard(data = previewData!!)
+                                LinkPreviewCard(data = previewData ?: return@Column)
                             }
                         }
                     }
@@ -3114,8 +3114,9 @@ private fun PollBubble(
                     )
                 } else {
                     // Question
+                    val safePoll = poll ?: return@Column
                     Text(
-                        text = poll!!.question,
+                        text = safePoll.question,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 8.dp),

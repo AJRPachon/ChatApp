@@ -105,7 +105,8 @@ private fun StickerTab(
         derivedStateOf { packs.getOrNull(safeIndex)?.id }
     }
     val stickers by remember(currentPackId) {
-        if (currentPackId != null) vm.stickersForPack(currentPackId!!)
+        val packId = currentPackId
+        if (packId != null) vm.stickersForPack(packId)
         else kotlinx.coroutines.flow.flowOf(emptyList())
     }.collectAsState(initial = emptyList())
 
