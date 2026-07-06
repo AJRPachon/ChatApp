@@ -109,7 +109,34 @@ val viewModelModule = module {
     viewModelOf(::SessionAuditViewModel)
     viewModelOf(::BackupViewModel)
     viewModelOf(::GlobalSearchViewModel)
-    viewModelOf(::ChatViewModel)
+    // ChatViewModel: exceeds viewModelOf 22-param limit after messageDao injection — use explicit lambda
+    viewModel { params ->
+        ChatViewModel(
+            args = params[0],
+            sendMessageUseCase = get(),
+            messageRepository = get(),
+            conversationDao = get(),
+            messageDao = get(),
+            callRepository = get(),
+            userRepository = get(),
+            getGroupMembersUseCase = get(),
+            leaveGroupUseCase = get(),
+            groupRepository = get(),
+            reactionRepository = get(),
+            conversationRepository = get(),
+            supabaseClient = get(),
+            draftRepository = get(),
+            translationManager = get(),
+            audioTranscriber = get(),
+            pollRepository = get(),
+            chatThemeRepository = get(),
+            scheduledMessageDao = get(),
+            workManager = get(),
+            incognitoRepository = get(),
+            aiAssistantRepository = get(),
+            wallpaperRepository = get(),
+        )
+    }
     viewModelOf(::GroupInfoViewModel)
     viewModelOf(::UserInfoViewModel)
     viewModelOf(::ChatMediaGalleryViewModel)

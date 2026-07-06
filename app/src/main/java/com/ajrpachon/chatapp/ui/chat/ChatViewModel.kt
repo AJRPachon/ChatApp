@@ -10,6 +10,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import androidx.work.BackoffPolicy
+import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.ajrpachon.chatapp.data.local.AppLockRepository
@@ -19,8 +23,10 @@ import com.ajrpachon.chatapp.data.local.DraftRepository
 import com.ajrpachon.chatapp.data.local.IncognitoRepository
 import com.ajrpachon.chatapp.data.local.WallpaperRepository
 import com.ajrpachon.chatapp.data.local.dao.ConversationDao
+import com.ajrpachon.chatapp.data.local.dao.MessageDao
 import com.ajrpachon.chatapp.data.local.PollRepository
 import com.ajrpachon.chatapp.data.local.dao.ScheduledMessageDao
+import com.ajrpachon.chatapp.data.local.entity.MessageDBO
 import com.ajrpachon.chatapp.data.local.entity.PollDBO
 import com.ajrpachon.chatapp.data.local.entity.PollOptionDBO
 import com.ajrpachon.chatapp.data.local.entity.ScheduledMessageDBO
@@ -42,6 +48,7 @@ import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.AudioTranscriber
 import com.ajrpachon.chatapp.utils.TranslationManager
 import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.worker.MessageRetryWorker
 import com.ajrpachon.chatapp.worker.ScheduledMessageWorker
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.realtime.RealtimeChannel
@@ -89,6 +96,7 @@ class ChatViewModel(
     private val sendMessageUseCase: SendMessageUseCase,
     private val messageRepository: MessageRepository,
     private val conversationDao: ConversationDao,
+    private val messageDao: MessageDao,
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
     private val getGroupMembersUseCase: GetGroupMembersUseCase,
@@ -617,19 +625,54 @@ class ChatViewModel(
             _state.update { it.copy(isSending = true, inputText = "", replyingTo = null) }
             draftSaveJob?.cancel()
             draftRepository.saveDraft(conversationId, "")
-            sendMessageUseCase(
+            val result = sendMessageUseCase(
                 conversationId, userId, text,
                 replyToId = reply?.id,
                 replyToContent = reply?.replySnippet(),
                 replyToSenderName = reply?.senderName,
-            ).onSuccess { msg ->
+            )
+            result.onSuccess { msg ->
                 if (disappearingSecs > 0L) {
                     val expiresAt = System.currentTimeMillis() + disappearingSecs * 1_000L
                     catchResult { messageRepository.setMessageExpiry(msg.id, expiresAt) }
                 }
-            }.onFailure { e ->
-                AppLogger.e(TAG, "Send message failed", e)
-                _state.update { it.copy(error = e.message, inputText = text) }
+            }
+            if (result.isFailure) {
+                val e = result.exceptionOrNull()
+                AppLogger.e(TAG, "Send message failed — queueing for offline retry", e)
+                val pendingId = UUID.randomUUID().toString()
+                val pendingDbo = MessageDBO(
+                    id = pendingId,
+                    conversationId = conversationId,
+                    senderId = userId,
+                    content = text,
+                    isRead = true,
+                    createdAt = System.currentTimeMillis(),
+                    replyToId = reply?.id,
+                    replyToContent = reply?.replySnippet(),
+                    replyToSenderName = reply?.senderName,
+                    sendStatus = "pending",
+                )
+                catchResult { messageDao.upsert(pendingDbo) }
+                    .onFailure { dbErr -> AppLogger.e(TAG, "Failed to save pending message locally", dbErr) }
+                workManager.enqueueUniqueWork(
+                    MessageRetryWorker.WORK_NAME,
+                    ExistingWorkPolicy.KEEP,
+                    OneTimeWorkRequestBuilder<MessageRetryWorker>()
+                        .setConstraints(
+                            Constraints.Builder()
+                                .setRequiredNetworkType(NetworkType.CONNECTED)
+                                .build()
+                        )
+                        .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+                        .build()
+                )
+                _state.update {
+                    it.copy(
+                        error = "Sin conexión. El mensaje se enviará cuando vuelva la red.",
+                        inputText = text,
+                    )
+                }
             }
             _state.update { it.copy(isSending = false) }
         }
