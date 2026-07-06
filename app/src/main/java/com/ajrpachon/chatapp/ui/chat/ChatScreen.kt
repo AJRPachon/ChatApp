@@ -2002,7 +2002,24 @@ private fun MessageBubble(
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                         )
                         if (message.isFromMe) {
-                            ReadReceiptIcon(isRead = message.isRead)
+                            when (message.sendStatus) {
+                                com.ajrpachon.chatapp.domain.model.SendStatus.PENDING ->
+                                    Icon(
+                                        imageVector = androidx.compose.material.icons.Icons.Default.Schedule,
+                                        contentDescription = "Pendiente de envío",
+                                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                                        modifier = Modifier.size(12.dp),
+                                    )
+                                com.ajrpachon.chatapp.domain.model.SendStatus.FAILED ->
+                                    Icon(
+                                        imageVector = androidx.compose.material.icons.Icons.Default.ErrorOutline,
+                                        contentDescription = "Error al enviar",
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(12.dp),
+                                    )
+                                com.ajrpachon.chatapp.domain.model.SendStatus.SENT ->
+                                    ReadReceiptIcon(isRead = message.isRead)
+                            }
                         }
                     }
                 }
