@@ -192,6 +192,10 @@ dependencies {
     // LiveKit
     implementation(libs.livekit.android)
 
+    // Media3 / ExoPlayer (inline video player)
+    implementation("androidx.media3:media3-exoplayer:1.5.1")
+    implementation("androidx.media3:media3-ui:1.5.1")
+
     // Coil (image loading)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
