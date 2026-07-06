@@ -930,7 +930,7 @@ fun ChatScreen(
                     message = latestPinned,
                     pinnedCount = state.pinnedMessages.size,
                     onTap = {
-                        scope.launch { snackbarHostState.showSnackbar("Ir al mensaje fijado") }
+                        onScrollToMessage(latestPinned.id)
                     },
                     onDismiss = { vm.onIntent(ChatIntent.UnpinMessage(latestPinned.id)) },
                 )
