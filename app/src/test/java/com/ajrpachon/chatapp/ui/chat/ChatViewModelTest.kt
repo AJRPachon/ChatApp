@@ -35,7 +35,6 @@ import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import com.ajrpachon.chatapp.util.sharedScheduler
@@ -118,6 +117,7 @@ class ChatViewModelTest {
         every { conversationDao.observeById(any()) } returns flowOf(groupConvDBO)
         every { draftRepository.getDraft(any()) } returns flowOf("")
         every { conversationRepository.observeConversations(any()) } returns flowOf(emptyList())
+        every { networkMonitor.isOnline } returns flowOf(true)
         coEvery { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns
                 Result.success(mockk<MessageBO>(relaxed = true))
     }
@@ -244,7 +244,7 @@ class ChatViewModelTest {
         advanceUntilIdle()
 
         assertEquals("", vm.state.value.inputText)
-        coVerify { sendMessageUseCase("conv1", "user1", "Hi!", any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        coVerify { sendMessageUseCase("conv1", "user1", "Hi!", any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -255,12 +255,12 @@ class ChatViewModelTest {
         vm.onIntent(ChatIntent.Send)
         advanceUntilIdle()
 
-        coVerify(exactly = 0) { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
     fun `Send sets error when sendMessageUseCase fails`() = runTest(sharedScheduler) {
-        coEvery { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns
+        coEvery { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns
                 Result.failure(RuntimeException("network error"))
 
         val vm = buildViewModel()
@@ -269,12 +269,12 @@ class ChatViewModelTest {
         vm.onIntent(ChatIntent.Send)
         advanceUntilIdle()
 
-        assertEquals("network error", vm.state.value.error)
+        assertEquals("Sin conexión. El mensaje se enviará cuando vuelva la red.", vm.state.value.error)
     }
 
     @Test
     fun `DismissError clears error state`() = runTest(sharedScheduler) {
-        coEvery { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns
+        coEvery { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns
                 Result.failure(RuntimeException("oops"))
 
         val vm = buildViewModel()
@@ -282,7 +282,7 @@ class ChatViewModelTest {
         vm.onIntent(ChatIntent.InputChanged("msg"))
         vm.onIntent(ChatIntent.Send)
         advanceUntilIdle()
-        assertEquals("oops", vm.state.value.error)
+        assertEquals("Sin conexión. El mensaje se enviará cuando vuelva la red.", vm.state.value.error)
 
         vm.onIntent(ChatIntent.DismissError)
         assertNull(vm.state.value.error)

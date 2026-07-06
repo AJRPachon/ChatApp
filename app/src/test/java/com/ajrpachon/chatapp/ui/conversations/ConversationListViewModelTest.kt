@@ -62,6 +62,7 @@ class ConversationListViewModelTest {
         every { getCurrentUserUseCase() } returns userFlow
         every { observeConversationsUseCase(any()) } returns conversationsFlow
         every { observeInvitationsUseCase(any()) } returns invitationsFlow
+        every { networkMonitor.isOnline } returns kotlinx.coroutines.flow.flowOf(true)
     }
 
     private fun buildViewModel() = ConversationListViewModel(
