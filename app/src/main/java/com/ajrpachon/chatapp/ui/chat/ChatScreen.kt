@@ -406,7 +406,7 @@ fun ChatScreen(
                 val url = "https://maps.google.com/?q=${location.latitude},${location.longitude}"
                 vm.onIntent(ChatIntent.SendLocation(url))
             } else {
-                scope.launch { snackbarHostState.showSnackbar("No se pudo obtener la ubicación") }
+                scope.launch { snackbarHostState.showSnackbar("Activa el GPS y vuelve a intentarlo") }
             }
         }
     }
@@ -1071,7 +1071,7 @@ fun ChatScreen(
                                         val url = "https://maps.google.com/?q=${location.latitude},${location.longitude}"
                                         vm.onIntent(ChatIntent.SendLocation(url))
                                     } else {
-                                        scope.launch { snackbarHostState.showSnackbar("No se pudo obtener la ubicación") }
+                                        scope.launch { snackbarHostState.showSnackbar("Activa el GPS y vuelve a intentarlo") }
                                     }
                                 }
                                 else -> locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
