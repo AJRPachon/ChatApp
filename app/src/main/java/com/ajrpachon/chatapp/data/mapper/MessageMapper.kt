@@ -4,6 +4,7 @@ import com.ajrpachon.chatapp.data.local.entity.MessageDBO
 import com.ajrpachon.chatapp.data.remote.dto.MessageDTO
 import com.ajrpachon.chatapp.domain.model.MediaUrlValidator
 import com.ajrpachon.chatapp.domain.model.MessageBO
+import com.ajrpachon.chatapp.domain.model.SendStatus
 import kotlinx.datetime.Instant
 
 fun MessageDTO.toDBO() = MessageDBO(
@@ -33,6 +34,8 @@ fun MessageDTO.toDBO() = MessageDBO(
     fileSize = fileSize,
     fileMimeType = fileMimeType,
     videoUrl = MediaUrlValidator.sanitize(videoUrl),
+    // Messages arriving from the server are always "sent"
+    sendStatus = "sent",
 )
 
 fun MessageDBO.toBO(currentUserId: String, senderName: String) = MessageBO(
@@ -65,4 +68,9 @@ fun MessageDBO.toBO(currentUserId: String, senderName: String) = MessageBO(
     videoUrl = videoUrl,
     isPinned = isPinned,
     isSaved = isSaved,
+    sendStatus = when (sendStatus) {
+        "pending" -> SendStatus.PENDING
+        "failed" -> SendStatus.FAILED
+        else -> SendStatus.SENT
+    },
 )
