@@ -19,7 +19,7 @@ import com.ajrpachon.chatapp.data.local.DraftRepository
 import com.ajrpachon.chatapp.data.local.IncognitoRepository
 import com.ajrpachon.chatapp.data.local.WallpaperRepository
 import com.ajrpachon.chatapp.data.local.dao.ConversationDao
-import com.ajrpachon.chatapp.data.local.dao.PollDao
+import com.ajrpachon.chatapp.data.local.PollRepository
 import com.ajrpachon.chatapp.data.local.dao.ScheduledMessageDao
 import com.ajrpachon.chatapp.data.local.entity.PollDBO
 import com.ajrpachon.chatapp.data.local.entity.PollOptionDBO
@@ -100,8 +100,9 @@ class ChatViewModel(
     private val draftRepository: DraftRepository,
     private val translationManager: TranslationManager,
     private val audioTranscriber: AudioTranscriber,
-    private val pollDao: PollDao,
+    private val pollRepository: PollRepository,
     private val chatThemeRepository: ChatThemeRepository,
+    // TODO: Extract ScheduledMessageDao and ConversationDao to repositories (out of scope for this PR)
     private val scheduledMessageDao: ScheduledMessageDao,
     private val workManager: WorkManager,
     private val incognitoRepository: IncognitoRepository,
@@ -1002,7 +1003,7 @@ class ChatViewModel(
         viewModelScope.launch {
             catchResult {
                 val pollId = UUID.randomUUID().toString()
-                pollDao.insertPoll(
+                pollRepository.insertPoll(
                     PollDBO(
                         id = pollId,
                         conversationId = conversationId,
@@ -1011,7 +1012,7 @@ class ChatViewModel(
                         createdAt = System.currentTimeMillis(),
                     )
                 )
-                pollDao.insertOptions(
+                pollRepository.insertOptions(
                     options.mapIndexed { index, text ->
                         PollOptionDBO(
                             id = "$pollId-$index",
@@ -1032,7 +1033,7 @@ class ChatViewModel(
         val userId = _state.value.currentUserId ?: return
         viewModelScope.launch {
             catchResult {
-                pollDao.vote(pollId, userId, optionId)
+                pollRepository.vote(pollId, userId, optionId)
             }.onFailure { e ->
                 AppLogger.e(TAG, "VotePoll failed", e)
                 _state.update { it.copy(error = "No se pudo registrar el voto") }

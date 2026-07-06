@@ -111,7 +111,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.RadioButton
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.StrokeCap
-import com.ajrpachon.chatapp.data.local.dao.PollDao
+import com.ajrpachon.chatapp.data.local.PollRepository
 import com.ajrpachon.chatapp.service.ActiveChatTracker
 import com.ajrpachon.chatapp.ui.components.ChatMessagesSkeleton
 import com.ajrpachon.chatapp.ui.components.EmojiPickerBottomSheet
@@ -1727,11 +1727,11 @@ private fun MessageBubble(
     }
     if (message.content.startsWith("poll:")) {
         val pollId = remember(message.content) { message.content.removePrefix("poll:") }
-        val pollDao: PollDao = koinInject()
+        val pollRepository: PollRepository = koinInject()
         PollBubble(
             pollId = pollId,
             isFromMe = message.isFromMe,
-            pollDao = pollDao,
+            pollRepository = pollRepository,
             currentUserId = currentUserId,
             onVote = { optionId -> onVote?.invoke(optionId) },
         )
@@ -3071,13 +3071,13 @@ private fun PinnedMessageBanner(
 private fun PollBubble(
     pollId: String,
     isFromMe: Boolean,
-    pollDao: PollDao,
+    pollRepository: PollRepository,
     currentUserId: String?,
     onVote: (optionId: String) -> Unit,
 ) {
-    val poll by pollDao.observePollById(pollId).collectAsState(initial = null)
-    val options by pollDao.observeOptionsByPollId(pollId).collectAsState(initial = emptyList())
-    val userVote by pollDao.observeVote(pollId, currentUserId ?: "").collectAsState(initial = null)
+    val poll by pollRepository.observePollById(pollId).collectAsState(initial = null)
+    val options by pollRepository.observeOptionsByPollId(pollId).collectAsState(initial = emptyList())
+    val userVote by pollRepository.observeVote(pollId, currentUserId ?: "").collectAsState(initial = null)
 
     val alignment = if (isFromMe) Alignment.End else Alignment.Start
 
