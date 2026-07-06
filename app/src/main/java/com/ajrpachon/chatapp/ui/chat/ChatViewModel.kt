@@ -83,6 +83,7 @@ class ChatViewModel(
     private val workManager: androidx.work.WorkManager,
     private val incognitoRepository: com.ajrpachon.chatapp.data.local.IncognitoRepository,
     private val aiAssistantRepository: com.ajrpachon.chatapp.data.repository.AiAssistantRepository,
+    private val wallpaperRepository: com.ajrpachon.chatapp.data.local.WallpaperRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ChatState())
@@ -154,6 +155,13 @@ class ChatViewModel(
         viewModelScope.launch {
             chatThemeRepository.observe(conversationId).collect { theme ->
                 _state.update { it.copy(chatTheme = theme) }
+            }
+        }
+
+        // Observe per-conversation wallpaper color
+        viewModelScope.launch {
+            wallpaperRepository.getWallpaperColor(conversationId).collect { color ->
+                _state.update { it.copy(wallpaperColor = color) }
             }
         }
 
@@ -424,6 +432,11 @@ class ChatViewModel(
             is ChatIntent.InsertAiSuggestion -> {
                 val suggestion = _state.value.aiSuggestion ?: return
                 _state.update { it.copy(inputText = suggestion, showAiSheet = false, aiSuggestion = null) }
+            }
+            is ChatIntent.OpenWallpaperPicker -> _state.update { it.copy(showWallpaperPicker = true) }
+            is ChatIntent.DismissWallpaperPicker -> _state.update { it.copy(showWallpaperPicker = false) }
+            is ChatIntent.SetWallpaperColor -> viewModelScope.launch {
+                wallpaperRepository.setWallpaperColor(conversationId, intent.color)
             }
         }
     }
