@@ -326,12 +326,12 @@ class MessageRepositoryImpl(
         return runCatching {
             val sharedKey = getOrDeriveSharedKey(senderId, otherUserId)
             if (sharedKey == null) {
-                android.util.Log.d("E2EE", "No public key for $otherUserId — sending unencrypted")
+                AppLogger.d("E2EE", "No public key for $otherUserId — sending unencrypted")
                 return Pair(content, false)
             }
             Pair(E2EEKeyManager.encrypt(sharedKey, content), true)
         }.getOrElse { e ->
-            android.util.Log.w("E2EE", "Encryption failed, sending unencrypted: ${e.message}")
+            AppLogger.w("E2EE", "Encryption failed, sending unencrypted: ${e.message}")
             Pair(content, false)
         }
     }
@@ -344,12 +344,12 @@ class MessageRepositoryImpl(
         return runCatching {
             val sharedKey = getOrDeriveSharedKey(currentUserId, senderId)
             if (sharedKey == null) {
-                android.util.Log.d("E2EE", "No public key for sender $senderId — cannot decrypt")
+                AppLogger.d("E2EE", "No public key for sender $senderId — cannot decrypt")
                 return bo
             }
             bo.copy(content = E2EEKeyManager.decrypt(sharedKey, bo.content))
         }.getOrElse { e ->
-            android.util.Log.w("E2EE", "Decryption failed for msg ${bo.id}: ${e.message}")
+            AppLogger.w("E2EE", "Decryption failed for msg ${bo.id}: ${e.message}")
             bo
         }
     }
