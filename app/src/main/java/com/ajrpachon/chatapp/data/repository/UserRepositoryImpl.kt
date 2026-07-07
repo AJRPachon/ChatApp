@@ -40,7 +40,7 @@ class UserRepositoryImpl(
         }
 
     override suspend fun isUsernameAvailable(username: String): Boolean =
-        catchResult { remoteSource.isUsernameAvailable(username) }.getOrElse { throw it }
+        remoteSource.isUsernameAvailable(username)
 
     override suspend fun upsertProfile(user: UserBO) {
         userDao.upsert(user.toDBO())
