@@ -5,11 +5,10 @@ import android.content.Context
 import android.content.Intent
 import android.media.MediaRecorder
 import android.os.Build
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
+import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import com.ajrpachon.chatapp.utils.AppLogger
 import io.livekit.android.LiveKit
 import io.livekit.android.events.DisconnectReason
@@ -21,17 +20,14 @@ import io.livekit.android.room.track.LocalVideoTrack
 import io.livekit.android.room.track.Track
 import io.livekit.android.room.track.VideoTrack
 import io.livekit.android.room.track.screencapture.ScreenCaptureParams
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -51,16 +47,10 @@ class CallViewModel(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val sendMessageUseCase: SendMessageUseCase,
     private val livekitUrl: String,
-) : ViewModel() {
-
-    private val _state = MutableStateFlow(CallState())
-    val state = _state.asStateFlow()
+) : BaseViewModel<CallState, CallEffect>(CallState()) {
 
     private val _roomFlow = MutableStateFlow<Room?>(null)
     val roomFlow = _roomFlow.asStateFlow()
-
-    private val _effects = MutableSharedFlow<CallEffect>(extraBufferCapacity = 1)
-    val effects: SharedFlow<CallEffect> = _effects.asSharedFlow()
 
     private var room: Room? = null
     private var durationJob: Job? = null
@@ -83,10 +73,10 @@ class CallViewModel(
     private suspend fun observeHangupSignal() {
         AppLogger.d(TAG, "observeHangupSignal: start listening callId=$callId")
         callRepository.observeHangupSignal(callId).collect {
-            AppLogger.d(TAG, "observeHangupSignal: RECEIVED hangup signal, phase=${_state.value.phase}")
-            if (_state.value.phase != CallPhase.ENDED) {
+            AppLogger.d(TAG, "observeHangupSignal: RECEIVED hangup signal, phase=${state.value.phase}")
+            if (state.value.phase != CallPhase.ENDED) {
                 durationJob?.cancel()
-                _state.update { it.copy(phase = CallPhase.ENDED) }
+                updateState { it.copy(phase = CallPhase.ENDED) }
                 viewModelScope.launch(Dispatchers.IO) {
                     sendCallSummaryMessage("ended")
                 }
@@ -100,12 +90,12 @@ class CallViewModel(
     private suspend fun observeRemoteStatus() {
         AppLogger.d(TAG, "observeRemoteStatus: start listening callId=$callId")
         callRepository.observeCallStatus(callId).collect { status ->
-            AppLogger.d(TAG, "observeRemoteStatus: status=$status phase=${_state.value.phase}")
+            AppLogger.d(TAG, "observeRemoteStatus: status=$status phase=${state.value.phase}")
             when (status) {
                 "rejected", "ended" -> {
-                    if (_state.value.phase != CallPhase.ENDED) {
+                    if (state.value.phase != CallPhase.ENDED) {
                         durationJob?.cancel()
-                        _state.update { it.copy(phase = CallPhase.ENDED) }
+                        updateState { it.copy(phase = CallPhase.ENDED) }
                         catchResult { room?.disconnect() }
                         viewModelScope.launch(Dispatchers.IO) {
                             sendCallSummaryMessage(status)
@@ -119,8 +109,6 @@ class CallViewModel(
     private suspend fun joinCall() {
         catchResult {
             AppLogger.d(TAG, "joinCall: fetching user")
-            // withTimeout prevents the Flow from hanging indefinitely if the Room DB
-            // hasn't cached the user yet (observed as infinite CONNECTING on caller side).
             val user = withTimeout(5_000L) {
                 getCurrentUserUseCase().filterNotNull().first()
             }
@@ -140,7 +128,7 @@ class CallViewModel(
                     if (event is ParticipantEvent.LocalTrackPublished) {
                         val track = event.publication.track
                         if (track is LocalVideoTrack) {
-                            _state.update { it.copy(localVideoTrack = track) }
+                            updateState { it.copy(localVideoTrack = track) }
                         }
                     }
                 }
@@ -151,13 +139,13 @@ class CallViewModel(
             AppLogger.d(TAG, "joinCall: connected, remoteParticipants=${livekitRoom.remoteParticipants.size}")
 
             val newPhase = if (isOutgoing) CallPhase.RINGING else CallPhase.ACTIVE
-            _state.update { it.copy(phase = newPhase) }
+            updateState { it.copy(phase = newPhase) }
             if (!isOutgoing) startDurationTimer()
 
             if (isOutgoing) {
                 missedCallJob = viewModelScope.launch {
                     delay(MISSED_CALL_TIMEOUT_MS)
-                    if (_state.value.phase == CallPhase.RINGING) {
+                    if (state.value.phase == CallPhase.RINGING) {
                         AppLogger.d(TAG, "joinCall: missed call timeout reached")
                         hangUp()
                     }
@@ -170,16 +158,16 @@ class CallViewModel(
                 livekitRoom.localParticipant.setCameraEnabled(true)
             }
 
-            if (livekitRoom.remoteParticipants.isNotEmpty() && _state.value.phase != CallPhase.ACTIVE) {
+            if (livekitRoom.remoteParticipants.isNotEmpty() && state.value.phase != CallPhase.ACTIVE) {
                 AppLogger.d(TAG, "joinCall: remote participants already present, switching to ACTIVE")
                 missedCallJob?.cancel()
-                _state.update { it.copy(phase = CallPhase.ACTIVE) }
+                updateState { it.copy(phase = CallPhase.ACTIVE) }
                 startDurationTimer()
                 livekitRoom.remoteParticipants.values.forEach { p ->
                     p.videoTrackPublications
                         .mapNotNull { (_, track) -> track as? VideoTrack }
                         .firstOrNull()
-                        ?.let { track -> _state.update { s -> s.copy(remoteVideoTrack = track) } }
+                        ?.let { track -> updateState { s -> s.copy(remoteVideoTrack = track) } }
                 }
             }
 
@@ -193,7 +181,7 @@ class CallViewModel(
 
         }.onFailure { e ->
             AppLogger.e(TAG, "joinCall: FAILED", e)
-            _state.update { it.copy(phase = CallPhase.ERROR, error = e.message ?: "Error al conectar") }
+            updateState { it.copy(phase = CallPhase.ERROR, error = e.message ?: "Error al conectar") }
         }
     }
 
@@ -204,24 +192,24 @@ class CallViewModel(
                 AppLogger.d(TAG, "ParticipantConnected: identity=${event.participant.identity}")
                 missedCallJob?.cancel()
                 missedCallJob = null
-                if (_state.value.phase == CallPhase.RINGING || _state.value.phase == CallPhase.CONNECTING) {
-                    _state.update { it.copy(phase = CallPhase.ACTIVE) }
+                if (state.value.phase == CallPhase.RINGING || state.value.phase == CallPhase.CONNECTING) {
+                    updateState { it.copy(phase = CallPhase.ACTIVE) }
                     startDurationTimer()
                 }
             }
             is RoomEvent.ParticipantDisconnected -> {
-                AppLogger.d(TAG, "ParticipantDisconnected: identity=${event.participant.identity} phase=${_state.value.phase}")
-                val phase = _state.value.phase
+                AppLogger.d(TAG, "ParticipantDisconnected: identity=${event.participant.identity} phase=${state.value.phase}")
+                val phase = state.value.phase
                 if (!isGroup && phase != CallPhase.ENDED) {
                     durationJob?.cancel()
                     viewModelScope.launch { sendCallSummaryMessage(if (phase == CallPhase.ACTIVE) "ended" else "missed") }
-                    _state.update { it.copy(phase = CallPhase.ENDED) }
+                    updateState { it.copy(phase = CallPhase.ENDED) }
                 }
             }
             is RoomEvent.TrackSubscribed -> {
                 val subscribedTrack = event.track
                 if (subscribedTrack is VideoTrack) {
-                    _state.update { callState ->
+                    updateState { callState ->
                         callState.copy(
                             remoteVideoTrack = subscribedTrack,
                             remoteVideoTracks = (callState.remoteVideoTracks + subscribedTrack).distinct(),
@@ -232,19 +220,19 @@ class CallViewModel(
             is RoomEvent.TrackMuted -> {
                 if (event.publication.track is VideoTrack && event.participant !is io.livekit.android.room.participant.LocalParticipant) {
                     AppLogger.d(TAG, "TrackMuted: remote video muted")
-                    _state.update { it.copy(isRemoteVideoMuted = true) }
+                    updateState { it.copy(isRemoteVideoMuted = true) }
                 }
             }
             is RoomEvent.TrackUnmuted -> {
                 if (event.publication.track is VideoTrack && event.participant !is io.livekit.android.room.participant.LocalParticipant) {
                     AppLogger.d(TAG, "TrackUnmuted: remote video unmuted")
-                    _state.update { it.copy(isRemoteVideoMuted = false) }
+                    updateState { it.copy(isRemoteVideoMuted = false) }
                 }
             }
             is RoomEvent.TrackUnsubscribed -> {
                 val removedTrack = event.track as? VideoTrack
                 if (removedTrack != null) {
-                    _state.update { callState ->
+                    updateState { callState ->
                         val updated = callState.remoteVideoTracks.filter { it !== removedTrack }
                         callState.copy(
                             remoteVideoTrack = updated.lastOrNull(),
@@ -257,9 +245,9 @@ class CallViewModel(
                 durationJob?.cancel()
                 AppLogger.e(TAG, "RoomEvent.Disconnected: reason=${event.reason} error=${event.error?.message}")
                 if (event.reason == DisconnectReason.CLIENT_INITIATED) {
-                    _state.update { it.copy(phase = CallPhase.ENDED) }
+                    updateState { it.copy(phase = CallPhase.ENDED) }
                 } else {
-                    _state.update { it.copy(
+                    updateState { it.copy(
                         phase = CallPhase.ERROR,
                         error = "${event.reason.name}: ${event.error?.message ?: "desconexión inesperada"}"
                     ) }
@@ -267,7 +255,7 @@ class CallViewModel(
             }
             is RoomEvent.FailedToConnect -> {
                 AppLogger.e(TAG, "RoomEvent.FailedToConnect: ${event.error.message}")
-                _state.update { it.copy(phase = CallPhase.ERROR, error = "Error al conectar: ${event.error.message}") }
+                updateState { it.copy(phase = CallPhase.ERROR, error = "Error al conectar: ${event.error.message}") }
             }
             else -> {}
         }
@@ -279,7 +267,7 @@ class CallViewModel(
         if (isGroup && status != "missed") return@withLock
         callMessageSent = true
         val userId = currentUserId ?: return@withLock
-        val duration = if (status == "ended") _state.value.durationSeconds else null
+        val duration = if (status == "ended") state.value.durationSeconds else null
         sendMessageUseCase(
             conversationId = conversationId,
             senderId = userId,
@@ -291,10 +279,6 @@ class CallViewModel(
          .onSuccess { AppLogger.d(TAG, "sendCallSummaryMessage: OK status=$status") }
     }
 
-    /**
-     * Rebuilds [CallState.participants] from the current [room] remote participants snapshot.
-     * Called after any event that changes participant presence, tracks, or speaking state.
-     */
     private fun rebuildParticipants() {
         val remotes = room?.remoteParticipants?.values ?: return
         val list = remotes.map { p ->
@@ -308,7 +292,7 @@ class CallViewModel(
                 isSpeaking = p.isSpeaking,
             )
         }
-        _state.update { it.copy(participants = list) }
+        updateState { it.copy(participants = list) }
     }
 
     private fun startDurationTimer() {
@@ -316,64 +300,64 @@ class CallViewModel(
         durationJob = viewModelScope.launch {
             while (true) {
                 delay(1000)
-                _state.update { it.copy(durationSeconds = it.durationSeconds + 1) }
+                updateState { it.copy(durationSeconds = it.durationSeconds + 1) }
             }
         }
     }
 
     fun toggleMic() {
-        val muted = _state.value.isMicMuted
+        val muted = state.value.isMicMuted
         viewModelScope.launch {
             catchResult { room?.localParticipant?.setMicrophoneEnabled(muted) }
-            _state.update { it.copy(isMicMuted = !muted) }
+            updateState { it.copy(isMicMuted = !muted) }
         }
     }
 
     fun toggleCamera() {
-        val off = _state.value.isCameraOff
+        val off = state.value.isCameraOff
         viewModelScope.launch {
             catchResult { room?.localParticipant?.setCameraEnabled(off) }
             if (!off) {
-                _state.update { it.copy(isCameraOff = true, localVideoTrack = null) }
+                updateState { it.copy(isCameraOff = true, localVideoTrack = null) }
             } else {
                 val cameraTrack = room?.localParticipant
                     ?.getTrackPublication(Track.Source.CAMERA)?.track as? LocalVideoTrack
-                _state.update { it.copy(isCameraOff = false, localVideoTrack = cameraTrack) }
+                updateState { it.copy(isCameraOff = false, localVideoTrack = cameraTrack) }
             }
         }
     }
 
     fun switchCamera() {
-        val front = _state.value.isFrontCamera
+        val front = state.value.isFrontCamera
         val newPosition = if (front) CameraPosition.BACK else CameraPosition.FRONT
         viewModelScope.launch {
             val cameraTrack = room?.localParticipant
                 ?.getTrackPublication(Track.Source.CAMERA)?.track as? LocalVideoTrack
             catchResult { cameraTrack?.switchCamera(position = newPosition) }
-            _state.update { it.copy(isFrontCamera = !front, localVideoTrack = cameraTrack) }
+            updateState { it.copy(isFrontCamera = !front, localVideoTrack = cameraTrack) }
         }
     }
 
     fun toggleBackgroundBlur() {
-        _state.update { it.copy(isBackgroundBlurred = !it.isBackgroundBlurred) }
+        updateState { it.copy(isBackgroundBlurred = !it.isBackgroundBlurred) }
     }
 
     fun processIntent(intent: CallIntent) {
         when (intent) {
             is CallIntent.ToggleScreenShare -> {
-                if (_state.value.isScreenSharing) {
+                if (state.value.isScreenSharing) {
                     stopScreenShare()
                 } else {
-                    _effects.tryEmit(CallEffect.RequestScreenShare)
+                    sendEffect(CallEffect.RequestScreenShare)
                 }
             }
-            is CallIntent.OpenFilterSheet -> _state.update { it.copy(showFilterSheet = true) }
-            is CallIntent.DismissFilterSheet -> _state.update { it.copy(showFilterSheet = false) }
-            is CallIntent.SetCameraFilter -> _state.update {
+            is CallIntent.OpenFilterSheet -> updateState { it.copy(showFilterSheet = true) }
+            is CallIntent.DismissFilterSheet -> updateState { it.copy(showFilterSheet = false) }
+            is CallIntent.SetCameraFilter -> updateState {
                 it.copy(selectedFilter = intent.filter, showFilterSheet = false)
             }
             is CallIntent.ToggleRecording -> {
-                if (_state.value.isRecording) {
+                if (state.value.isRecording) {
                     stopRecording()
                 } else {
                     startRecording()
@@ -400,7 +384,7 @@ class CallViewModel(
             recorder.prepare()
             recorder.start()
             mediaRecorder = recorder
-            _state.update { it.copy(isRecording = true, recordingFilePath = file.absolutePath) }
+            updateState { it.copy(isRecording = true, recordingFilePath = file.absolutePath) }
             AppLogger.d(TAG, "startRecording: OK path=${file.absolutePath}")
         }.onFailure { e ->
             AppLogger.e(TAG, "startRecording: FAILED", e)
@@ -415,11 +399,11 @@ class CallViewModel(
             AppLogger.e(TAG, "stopRecording: error during stop/release", e)
         }
         mediaRecorder = null
-        val path = _state.value.recordingFilePath
-        _state.update { it.copy(isRecording = false) }
+        val path = state.value.recordingFilePath
+        updateState { it.copy(isRecording = false) }
         if (path != null) {
             AppLogger.d(TAG, "stopRecording: saved to $path")
-            _effects.tryEmit(CallEffect.ShowRecordingSaved(path))
+            sendEffect(CallEffect.ShowRecordingSaved(path))
         }
     }
 
@@ -430,7 +414,7 @@ class CallViewModel(
                 room?.localParticipant?.setScreenShareEnabled(true, ScreenCaptureParams(mediaProjectionData))
             }.onSuccess {
                 AppLogger.d(TAG, "startScreenShare: OK")
-                _state.update { it.copy(isScreenSharing = true) }
+                updateState { it.copy(isScreenSharing = true) }
             }.onFailure { e ->
                 AppLogger.e(TAG, "startScreenShare: FAILED", e)
             }
@@ -444,7 +428,7 @@ class CallViewModel(
                 room?.localParticipant?.setScreenShareEnabled(false)
             }.onSuccess {
                 AppLogger.d(TAG, "stopScreenShare: OK")
-                _state.update { it.copy(isScreenSharing = false) }
+                updateState { it.copy(isScreenSharing = false) }
             }.onFailure { e ->
                 AppLogger.e(TAG, "stopScreenShare: FAILED", e)
             }
@@ -452,14 +436,14 @@ class CallViewModel(
     }
 
     fun toggleInCallChat() {
-        _state.update { it.copy(showInCallChat = !it.showInCallChat) }
+        updateState { it.copy(showInCallChat = !it.showInCallChat) }
     }
 
     fun sendInCallMessage(text: String) {
         val trimmed = text.trim()
         if (trimmed.isBlank()) return
         val userId = currentUserId ?: return
-        _state.update {
+        updateState {
             it.copy(inCallMessages = it.inCallMessages + InCallMessage(sender = userId, text = trimmed))
         }
         viewModelScope.launch(Dispatchers.IO) {
@@ -473,7 +457,7 @@ class CallViewModel(
     }
 
     fun hangUp() {
-        val phaseBefore = _state.value.phase
+        val phaseBefore = state.value.phase
         AppLogger.d(TAG, "hangUp: called phaseBefore=$phaseBefore callId=$callId")
         if (phaseBefore == CallPhase.ENDED) {
             AppLogger.d(TAG, "hangUp: already ENDED, ignoring")
@@ -481,7 +465,7 @@ class CallViewModel(
         }
         missedCallJob?.cancel()
         durationJob?.cancel()
-        _state.update { it.copy(phase = CallPhase.ENDED) }
+        updateState { it.copy(phase = CallPhase.ENDED) }
         viewModelScope.launch {
             AppLogger.d(TAG, "hangUp: disconnecting room")
             catchResult { room?.disconnect() }
@@ -506,7 +490,7 @@ class CallViewModel(
         missedCallJob?.cancel()
         durationJob?.cancel()
         // Screen share is stopped automatically when the room disconnects below
-        if (_state.value.isRecording) {
+        if (state.value.isRecording) {
             catchResult { mediaRecorder?.stop() }
             catchResult { mediaRecorder?.release() }
             mediaRecorder = null

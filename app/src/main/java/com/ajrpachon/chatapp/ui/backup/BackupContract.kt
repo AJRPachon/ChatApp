@@ -1,5 +1,7 @@
 package com.ajrpachon.chatapp.ui.backup
 
+sealed interface BackupEffect
+
 sealed interface BackupIntent {
     data object StartBackup : BackupIntent
     data object StartRestore : BackupIntent

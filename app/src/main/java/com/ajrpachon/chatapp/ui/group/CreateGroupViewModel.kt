@@ -1,32 +1,21 @@
 package com.ajrpachon.chatapp.ui.group
 import com.ajrpachon.chatapp.utils.catchResult
 
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.usecase.CreateGroupUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.SearchUsersUseCase
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class CreateGroupViewModel(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val searchUsersUseCase: SearchUsersUseCase,
     private val createGroupUseCase: CreateGroupUseCase,
-) : ViewModel() {
-
-    private val _state = MutableStateFlow(CreateGroupState())
-    val state = _state.asStateFlow()
-
-    private val _effect = Channel<CreateGroupEffect>(Channel.BUFFERED)
-    val effect = _effect.receiveAsFlow()
+) : BaseViewModel<CreateGroupState, CreateGroupEffect>(CreateGroupState()) {
 
     private var currentUserId: String? = null
 
@@ -41,44 +30,44 @@ class CreateGroupViewModel(
     fun onIntent(intent: CreateGroupIntent) {
         when (intent) {
             is CreateGroupIntent.QueryChanged -> {
-                _state.update { it.copy(query = intent.query) }
+                updateState { it.copy(query = intent.query) }
                 search(intent.query)
             }
             is CreateGroupIntent.ToggleUser -> toggleUser(intent.user)
             is CreateGroupIntent.Next -> {
-                if (_state.value.selectedUsers.isNotEmpty()) {
-                    _state.update { it.copy(step = CreateGroupStep.SET_INFO) }
+                if (state.value.selectedUsers.isNotEmpty()) {
+                    updateState { it.copy(step = CreateGroupStep.SET_INFO) }
                 }
             }
             is CreateGroupIntent.Back -> {
-                if (_state.value.step == CreateGroupStep.SET_INFO) {
-                    _state.update { it.copy(step = CreateGroupStep.SELECT_MEMBERS) }
+                if (state.value.step == CreateGroupStep.SET_INFO) {
+                    updateState { it.copy(step = CreateGroupStep.SELECT_MEMBERS) }
                 } else {
-                    viewModelScope.launch { _effect.send(CreateGroupEffect.GoBack) }
+                    viewModelScope.launch { sendEffect(CreateGroupEffect.GoBack) }
                 }
             }
-            is CreateGroupIntent.NameChanged -> _state.update { it.copy(groupName = intent.name) }
-            is CreateGroupIntent.DescriptionChanged -> _state.update { it.copy(groupDescription = intent.description) }
+            is CreateGroupIntent.NameChanged -> updateState { it.copy(groupName = intent.name) }
+            is CreateGroupIntent.DescriptionChanged -> updateState { it.copy(groupDescription = intent.description) }
             is CreateGroupIntent.Create -> createGroup()
-            is CreateGroupIntent.DismissError -> _state.update { it.copy(error = null) }
+            is CreateGroupIntent.DismissError -> updateState { it.copy(error = null) }
         }
     }
 
     private fun search(query: String) {
         if (query.isBlank()) {
-            _state.update { it.copy(searchResults = emptyList()) }
+            updateState { it.copy(searchResults = emptyList()) }
             return
         }
         viewModelScope.launch {
             val results = catchResult { searchUsersUseCase(query) }.getOrDefault(emptyList())
-            _state.update { currentState ->
+            updateState { currentState ->
                 currentState.copy(searchResults = results.filter { it.id != currentUserId })
             }
         }
     }
 
     private fun toggleUser(user: UserBO) {
-        _state.update { currentState ->
+        updateState { currentState ->
             val selected = currentState.selectedUsers.toMutableList()
             if (selected.any { it.id == user.id }) selected.removeAll { it.id == user.id }
             else selected.add(user)
@@ -88,20 +77,20 @@ class CreateGroupViewModel(
 
     private fun createGroup() {
         val userId = currentUserId ?: return
-        val currentState = _state.value
+        val currentState = state.value
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
+            updateState { it.copy(isLoading = true) }
             createGroupUseCase(
                 name = currentState.groupName,
                 description = currentState.groupDescription.takeIf { it.isNotBlank() },
                 createdBy = userId,
                 participantIds = currentState.selectedUsers.map { it.id },
             ).onSuccess { conv ->
-                _effect.send(CreateGroupEffect.NavigateToChat(conv.id, conv.name))
+                sendEffect(CreateGroupEffect.NavigateToChat(conv.id, conv.name))
             }.onFailure { e ->
-                _state.update { it.copy(error = e.message ?: "Error al crear el grupo") }
+                updateState { it.copy(error = e.message ?: "Error al crear el grupo") }
             }
-            _state.update { it.copy(isLoading = false) }
+            updateState { it.copy(isLoading = false) }
         }
     }
 }
