@@ -15,11 +15,11 @@ import com.ajrpachon.chatapp.data.mapper.toDBO
 import com.ajrpachon.chatapp.data.mapper.toBO
 import com.ajrpachon.chatapp.data.remote.dto.MessageDTO
 import com.ajrpachon.chatapp.data.remote.source.MessageRemoteSource
+import com.ajrpachon.chatapp.data.remote.source.UserRemoteSource
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import com.ajrpachon.chatapp.utils.E2EEKeyManager
 import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
@@ -35,8 +35,6 @@ import com.ajrpachon.chatapp.utils.UploadLimits.checkImageSize
 import com.ajrpachon.chatapp.utils.UploadLimits.checkFileSize
 import com.ajrpachon.chatapp.utils.UploadLimits.checkVideoSize
 import kotlinx.datetime.Instant
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 private const val TAG = "MsgRepo"
 
 private const val BUCKET = "chat-images"
@@ -44,18 +42,12 @@ private const val AUDIO_BUCKET = "chat-audio"
 private const val FILE_BUCKET = "chat-files"
 private const val VIDEO_BUCKET = "chat-videos"
 
-/** Minimal DTO for fetching only the public_key field from profiles. */
-@Serializable
-private data class PublicKeyDTO(
-    @SerialName("id") val id: String,
-    @SerialName("public_key") val publicKey: String? = null,
-)
-
 class MessageRepositoryImpl(
     private val messageDao: MessageDao,
     private val userDao: UserDao,
     private val reactionDao: ReactionDao,
     private val remoteSource: MessageRemoteSource,
+    private val userRemoteSource: UserRemoteSource,
     private val supabase: SupabaseClient,
 ) : MessageRepository {
 
@@ -319,9 +311,7 @@ class MessageRepositoryImpl(
         // Mutex prevents duplicate derivations when multiple messages arrive concurrently.
         return keyDerivationMutex.withLock {
             sharedKeyCache[cacheKey]?.let { return it }
-            val row = supabase.postgrest["profiles"]
-                .select { filter { eq("id", peerId) } }
-                .decodeSingleOrNull<PublicKeyDTO>()
+            val row = userRemoteSource.getPublicKey(peerId)
             val peerPublicKey = row?.publicKey
             if (peerPublicKey.isNullOrBlank()) return null
             E2EEKeyManager.getOrCreateKeyPair(localUserId)
@@ -336,12 +326,12 @@ class MessageRepositoryImpl(
         return runCatching {
             val sharedKey = getOrDeriveSharedKey(senderId, otherUserId)
             if (sharedKey == null) {
-                android.util.Log.d("E2EE", "No public key for $otherUserId — sending unencrypted")
+                AppLogger.d("E2EE", "No public key for $otherUserId — sending unencrypted")
                 return Pair(content, false)
             }
             Pair(E2EEKeyManager.encrypt(sharedKey, content), true)
         }.getOrElse { e ->
-            android.util.Log.w("E2EE", "Encryption failed, sending unencrypted: ${e.message}")
+            AppLogger.w("E2EE", "Encryption failed, sending unencrypted: ${e.message}")
             Pair(content, false)
         }
     }
@@ -354,12 +344,12 @@ class MessageRepositoryImpl(
         return runCatching {
             val sharedKey = getOrDeriveSharedKey(currentUserId, senderId)
             if (sharedKey == null) {
-                android.util.Log.d("E2EE", "No public key for sender $senderId — cannot decrypt")
+                AppLogger.d("E2EE", "No public key for sender $senderId — cannot decrypt")
                 return bo
             }
             bo.copy(content = E2EEKeyManager.decrypt(sharedKey, bo.content))
         }.getOrElse { e ->
-            android.util.Log.w("E2EE", "Decryption failed for msg ${bo.id}: ${e.message}")
+            AppLogger.w("E2EE", "Decryption failed for msg ${bo.id}: ${e.message}")
             bo
         }
     }

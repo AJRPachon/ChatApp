@@ -94,4 +94,16 @@ class UserRemoteSource(private val supabase: SupabaseClient) {
                 .decodeList<UserDTO>()
         }.getOrDefault(emptyList())
     }
+
+    suspend fun getPublicKey(userId: String): PublicKeyDTO? = runCatching {
+        supabase.postgrest["profiles"]
+            .select { filter { eq("id", userId) } }
+            .decodeSingleOrNull<PublicKeyDTO>()
+    }.getOrNull()
 }
+
+@Serializable
+data class PublicKeyDTO(
+    @SerialName("id") val id: String,
+    @SerialName("public_key") val publicKey: String? = null,
+)

@@ -63,11 +63,6 @@ class GroupInfoViewModel(
         }
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        AppLogger.d("GroupInfoVM", "onCleared conv=$conversationId")
-    }
-
     fun setGroupHeader(name: String, description: String?, avatarUrl: String?) {
         updateState { it.copy(groupName = name, groupDescription = description ?: "", groupAvatarUrl = avatarUrl) }
     }
