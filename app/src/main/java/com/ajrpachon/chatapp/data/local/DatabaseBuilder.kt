@@ -274,7 +274,7 @@ fun buildChatDatabase(context: Context): ChatDatabase {
             MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
             MIGRATION_9_10, MIGRATION_10_11, migration11To12,
             migration12To13, migration13To14, migration14To15, migration15To16, migration16To17,
-            migration17To18, migration18To19, migration19To20, migration20To21, migration21To22, migration22To23, migration23To24, migration24To25, migration25To26, migration26To27, migration27To28, migration28To29, migration29To30, migration30To31, migration31To32,
+            migration17To18, migration18To19, migration19To20, migration20To21, migration21To22, migration22To23, migration23To24, migration24To25, migration25To26, migration26To27, migration27To28, migration28To29, migration29To30, migration30To31, migration31To32, migration32To33,
         )
         .build()
 }
@@ -329,6 +329,12 @@ private val migration28To29 = object : Migration(28, 29) {
             )"""
         )
         connection.execSQL("CREATE INDEX IF NOT EXISTS index_broadcast_list_members_listId ON broadcast_list_members(listId)")
+    }
+}
+
+private val migration32To33 = object : Migration(32, 33) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE messages ADD COLUMN sendStatus TEXT NOT NULL DEFAULT 'sent'")
     }
 }
 

@@ -2,10 +2,22 @@ package com.ajrpachon.chatapp.utils
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 
 class SessionGuard(context: Context) {
-    private val prefs: SharedPreferences =
-        context.getSharedPreferences("session_guard", Context.MODE_PRIVATE)
+    private val prefs: SharedPreferences = run {
+        val masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+        EncryptedSharedPreferences.create(
+            context,
+            "session_guard",
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+        )
+    }
 
     fun recordActivity() {
         prefs.edit().putLong("last_active", System.currentTimeMillis()).apply()

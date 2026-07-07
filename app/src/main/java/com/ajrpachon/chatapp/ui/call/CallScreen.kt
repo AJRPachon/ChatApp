@@ -549,7 +549,7 @@ private fun InCallChatPanel(
                 .height(200.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            items(messages) { msg ->
+            items(messages, key = { it.timestamp }) { msg ->
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
                         text = msg.sender,

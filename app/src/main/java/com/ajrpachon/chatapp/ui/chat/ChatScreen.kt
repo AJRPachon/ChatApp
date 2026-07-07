@@ -3,7 +3,6 @@
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.media.MediaPlayer
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -42,6 +41,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -57,6 +57,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.Forward
+import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.AttachFile
@@ -85,7 +86,6 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.DoneAll
-import androidx.compose.material.icons.filled.Reply
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
@@ -104,6 +104,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
@@ -111,7 +112,11 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.RadioButton
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.StrokeCap
-import com.ajrpachon.chatapp.data.local.dao.PollDao
+import com.ajrpachon.chatapp.data.local.PollRepository
+import com.ajrpachon.chatapp.service.ActiveChatTracker
+import com.ajrpachon.chatapp.ui.components.ChatMessagesSkeleton
+import com.ajrpachon.chatapp.ui.components.OfflineBanner
+import com.ajrpachon.chatapp.ui.components.EmojiPickerBottomSheet
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.TimePicker
@@ -197,7 +202,7 @@ import org.koin.core.parameter.parametersOf
 import java.io.File
 
 
-// ── Screen ───────────────────────────────────────────────────────────────────
+// â”€â”€ Screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @NavEdge(to = CallRoute::class, label = "Start Call")
 @NavEdge(to = GroupInfoRoute::class, label = "Group Info")
@@ -224,9 +229,9 @@ fun ChatScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     DisposableEffect(conversationId) {
-        com.ajrpachon.chatapp.service.ActiveChatTracker.activeConversationId = conversationId
+        ActiveChatTracker.activeConversationId = conversationId
         onDispose {
-            com.ajrpachon.chatapp.service.ActiveChatTracker.activeConversationId = null
+            ActiveChatTracker.activeConversationId = null
         }
     }
 
@@ -255,8 +260,8 @@ fun ChatScreen(
     }
 
     var viewerUrls by remember { mutableStateOf<List<String>>(emptyList()) }
-    var viewerInitialIndex by remember { mutableStateOf(0) }
-    var showViewer by remember { mutableStateOf(false) }
+    var viewerInitialIndex by rememberSaveable { mutableStateOf(0) }
+    var showViewer by rememberSaveable { mutableStateOf(false) }
 
     // Tracks whether a send-triggered scroll is pending (waits for Paging to deliver the new item).
     val pendingSendScroll = remember { mutableStateOf(false) }
@@ -276,7 +281,7 @@ fun ChatScreen(
                         putExtra(android.content.Intent.EXTRA_STREAM, effect.uri)
                         addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     }
-                    context.startActivity(android.content.Intent.createChooser(shareIntent, "Exportar conversación"))
+                    context.startActivity(android.content.Intent.createChooser(shareIntent, "Exportar conversaciÃ³n"))
                 }
             }
         }
@@ -285,7 +290,7 @@ fun ChatScreen(
     val initialScrollDone = remember { mutableStateOf(false) }
 
     // Initial scroll: wait for the refresh to fully complete before scrolling to bottom.
-    LaunchedEffect(Unit) {
+    LaunchedEffect(conversationId) {
         snapshotFlow { lazyPagingItems.loadState.refresh }
             .first { it is LoadState.NotLoading }
         snapshotFlow { listState.layoutInfo.totalItemsCount }
@@ -302,14 +307,14 @@ fun ChatScreen(
         if (count == 0) return@LaunchedEffect
 
         if (pendingSendScroll.value) {
-            // New message sent — item just arrived in PagingData, scroll to it now.
+            // New message sent â€” item just arrived in PagingData, scroll to it now.
             snapshotFlow { listState.layoutInfo.totalItemsCount }
                 .first { it > 0 }
             withFrameNanos { }
             listState.animateScrollToItem(0)
             pendingSendScroll.value = false
         } else if (listState.firstVisibleItemIndex <= 3) {
-            // Someone else sent while we're near the bottom — follow the conversation.
+            // Someone else sent while we're near the bottom â€” follow the conversation.
             listState.scrollToItem(0)
         }
     }
@@ -328,7 +333,7 @@ fun ChatScreen(
         AlertDialog(
             onDismissRequest = { showDeleteSelectionConfirm = false },
             title = { Text("Eliminar mensajes") },
-            text = { Text("¿Borrar $count ${if (count == 1) "mensaje" else "mensajes"}?") },
+            text = { Text("Â¿Borrar $count ${if (count == 1) "mensaje" else "mensajes"}?") },
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteSelectionConfirm = false
@@ -403,7 +408,7 @@ fun ChatScreen(
                 val url = "https://maps.google.com/?q=${location.latitude},${location.longitude}"
                 vm.onIntent(ChatIntent.SendLocation(url))
             } else {
-                scope.launch { snackbarHostState.showSnackbar("No se pudo obtener la ubicación") }
+                scope.launch { snackbarHostState.showSnackbar("Activa el GPS y vuelve a intentarlo") }
             }
         }
     }
@@ -417,7 +422,18 @@ fun ChatScreen(
                 if (c.moveToFirst()) {
                     val nameIdx = c.getColumnIndex(android.provider.ContactsContract.Contacts.DISPLAY_NAME)
                     val name = if (nameIdx >= 0) c.getString(nameIdx) else ""
-                    vm.onIntent(ChatIntent.SendContact(name = name, phone = ""))
+                    val idIdx = c.getColumnIndex(android.provider.ContactsContract.Contacts._ID)
+                    val contactId = if (idIdx >= 0) c.getString(idIdx) else null
+                    val phone = if (contactId != null) {
+                        context.contentResolver.query(
+                            android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                            arrayOf(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER),
+                            "${android.provider.ContactsContract.CommonDataKinds.Phone.CONTACT_ID} = ?",
+                            arrayOf(contactId),
+                            null
+                        )?.use { pc -> if (pc.moveToFirst()) pc.getString(0) else "" } ?: ""
+                    } else ""
+                    vm.onIntent(ChatIntent.SendContact(name = name, phone = phone))
                 }
             }
         }
@@ -443,8 +459,56 @@ fun ChatScreen(
             conversations = state.forwardableConversations,
             onDismiss = { vm.onIntent(ChatIntent.DismissForwardDialog) },
             onSelect = { targetConversationId ->
-                val msgId = state.forwardingMessage?.id ?: return@ForwardConversationDialog
-                vm.onIntent(ChatIntent.ForwardMessage(msgId, targetConversationId))
+                val forwardingMsg = state.forwardingMessage
+                if (forwardingMsg != null) {
+                    vm.onIntent(ChatIntent.ForwardMessage(forwardingMsg.id, targetConversationId))
+                } else {
+                    vm.onIntent(ChatIntent.ForwardSelectedMessages(targetConversationId))
+                }
+            },
+        )
+    }
+
+    if (state.showIncognitoInfoDialog) {
+        AlertDialog(
+            onDismissRequest = { vm.onIntent(ChatIntent.DismissIncognitoDialog) },
+            title = { Text("Modo incógnito") },
+            text = {
+                Text(
+                    "En modo incógnito, los mensajes nuevos no se guardarán en este dispositivo. " +
+                    "Los mensajes ya existentes permanecen. El servidor sigue procesando los mensajes normalmente. " +
+                    "Este modo no es equivalente al cifrado de extremo a extremo."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { vm.onIntent(ChatIntent.ConfirmIncognito) }) {
+                    Text("Entendido, activar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { vm.onIntent(ChatIntent.DismissIncognitoDialog) }) {
+                    Text("Cancelar")
+                }
+            },
+        )
+    }
+
+    if (state.showForwardSelectionDialog) {
+        ForwardConversationDialog(
+            conversations = state.forwardableConversations,
+            onDismiss = { vm.onIntent(ChatIntent.DismissForwardSelectionDialog) },
+            onSelect = { targetConversationId ->
+                vm.onIntent(ChatIntent.ForwardSelectedMessages(targetConversationId))
+            },
+        )
+    }
+
+    if (state.showForwardSelectionDialog) {
+        ForwardConversationDialog(
+            conversations = state.forwardableConversations,
+            onDismiss = { vm.onIntent(ChatIntent.DismissForwardSelectionDialog) },
+            onSelect = { targetConversationId ->
+                vm.onIntent(ChatIntent.ForwardSelectedMessages(targetConversationId))
             },
         )
     }
@@ -643,7 +707,7 @@ fun ChatScreen(
                     horizontalArrangement = Arrangement.Center,
                 ) {
                     Text(
-                        text = "Modo incógnito — los mensajes no se guardan",
+                        text = "Modo incÃ³gnito â€” los mensajes no se guardan",
                         style = MaterialTheme.typography.labelSmall,
                         color = androidx.compose.ui.graphics.Color.White,
                     )
@@ -653,11 +717,14 @@ fun ChatScreen(
                 TopAppBar(
                     navigationIcon = {
                         IconButton(onClick = { vm.onIntent(ChatIntent.ClearSelection) }) {
-                            Icon(Icons.Default.Close, contentDescription = "Cancelar selección")
+                            Icon(Icons.Default.Close, contentDescription = "Cancelar selecciÃ³n")
                         }
                     },
                     title = { Text("${state.selectedMessageIds.size} seleccionados") },
                     actions = {
+                        IconButton(onClick = { vm.onIntent(ChatIntent.ShowForwardSelectionDialog) }) {
+                            Icon(Icons.AutoMirrored.Filled.Forward, contentDescription = "Reenviar seleccionados")
+                        }
                         IconButton(onClick = { showDeleteSelectionConfirm = true }) {
                             Icon(Icons.Default.Delete, contentDescription = "Eliminar seleccionados")
                         }
@@ -679,7 +746,7 @@ fun ChatScreen(
                         if (avatarUrl != null) {
                             AsyncImage(
                                 model = avatarUrl,
-                                contentDescription = null,
+                                contentDescription = "Foto de ${state.conversationTitle}",
                                 modifier = Modifier.size(36.dp).clip(CircleShape),
                                 contentScale = ContentScale.Crop,
                             )
@@ -723,7 +790,7 @@ fun ChatScreen(
                                     Spacer(Modifier.width(4.dp))
                                     Icon(
                                         imageVector = Icons.Default.Timer,
-                                        contentDescription = "Modo desaparición activo",
+                                        contentDescription = "Modo desapariciÃ³n activo",
                                         tint = MaterialTheme.colorScheme.tertiary,
                                         modifier = Modifier.size(12.dp),
                                     )
@@ -737,7 +804,7 @@ fun ChatScreen(
                             }
                             if (!state.isGroup) {
                                 val presenceText = when {
-                                    state.isOtherUserOnline -> "En línea"
+                                    state.isOtherUserOnline -> "En lÃ­nea"
                                     state.otherUserLastSeenMs != null -> {
                                         val lastSeenMs = state.otherUserLastSeenMs ?: 0L
                                         formatLastSeen(System.currentTimeMillis() - lastSeenMs)
@@ -754,13 +821,29 @@ fun ChatScreen(
                                             MaterialTheme.colorScheme.outline,
                                     )
                                 }
+                            } else {
+                                val groupSubtitle = if (state.onlineMemberCount > 0) {
+                                    "${state.onlineMemberCount} en línea"
+                                } else if (state.groupMemberCount > 0) {
+                                    "${state.groupMemberCount} miembros"
+                                } else null
+                                if (groupSubtitle != null) {
+                                    Text(
+                                        text = groupSubtitle,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (state.onlineMemberCount > 0)
+                                            androidx.compose.ui.graphics.Color(0xFF4CAF50)
+                                        else
+                                            MaterialTheme.colorScheme.outline,
+                                    )
+                                }
                             }
                         }
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = dropUnlessResumed { onBack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "AtrÃ¡s")
                     }
                 },
                 actions = {
@@ -806,7 +889,7 @@ fun ChatScreen(
                     var menuExpanded by remember { mutableStateOf(false) }
                     Box {
                         IconButton(onClick = { menuExpanded = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "Más opciones")
+                            Icon(Icons.Default.MoreVert, contentDescription = "MÃ¡s opciones")
                         }
                         DropdownMenu(
                             expanded = menuExpanded,
@@ -848,7 +931,7 @@ fun ChatScreen(
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text("Exportar conversación") },
+                                text = { Text("Exportar conversaciÃ³n") },
                                 leadingIcon = {
                                     if (state.isExporting) {
                                         CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -863,7 +946,7 @@ fun ChatScreen(
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text("Modo desaparición") },
+                                text = { Text("Modo desapariciÃ³n") },
                                 leadingIcon = { Icon(Icons.Default.Timer, contentDescription = null) },
                                 onClick = {
                                     menuExpanded = false
@@ -871,7 +954,7 @@ fun ChatScreen(
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text(if (state.isIncognito) "Desactivar incógnito" else "Modo incógnito") },
+                                text = { Text(if (state.isIncognito) "Desactivar incÃ³gnito" else "Modo incÃ³gnito") },
                                 leadingIcon = {
                                     Icon(
                                         Icons.Default.Lock,
@@ -927,7 +1010,7 @@ fun ChatScreen(
                     message = latestPinned,
                     pinnedCount = state.pinnedMessages.size,
                     onTap = {
-                        scope.launch { snackbarHostState.showSnackbar("Ir al mensaje fijado") }
+                        onScrollToMessage(latestPinned.id)
                     },
                     onDismiss = { vm.onIntent(ChatIntent.UnpinMessage(latestPinned.id)) },
                 )
@@ -935,8 +1018,15 @@ fun ChatScreen(
             } // Column wrapper for topBar (incognito banner + app bar)
         },
         bottomBar = {
+            Column {
+                androidx.compose.animation.AnimatedVisibility(visible = !state.isOnline) {
+                    com.ajrpachon.chatapp.ui.components.OfflineBanner()
+                }
             if (state.isCurrentUserMember) Surface(shadowElevation = 4.dp) {
                 Column(modifier = Modifier.windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars))) {
+                if (!state.isOnline) {
+                    OfflineBanner()
+                }
                 val editingMessage = state.editingMessage
                 if (editingMessage != null) {
                     Row(
@@ -952,7 +1042,7 @@ fun ChatScreen(
                             }
                         }
                         IconButton(onClick = { vm.onIntent(ChatIntent.CancelEdit) }) {
-                            Icon(Icons.Default.Close, contentDescription = "Cancelar edición")
+                            Icon(Icons.Default.Close, contentDescription = "Cancelar ediciÃ³n")
                         }
                     }
                     HorizontalDivider()
@@ -973,8 +1063,8 @@ fun ChatScreen(
                     exit = fadeOut(),
                 ) {
                     val typingText = when (typingUserNames.size) {
-                        1 -> "${typingUserNames[0]} está escribiendo…"
-                        else -> "${typingUserNames.take(2).joinToString(" y ")} están escribiendo…"
+                        1 -> "${typingUserNames[0]} estÃ¡ escribiendoâ€¦"
+                        else -> "${typingUserNames.take(2).joinToString(" y ")} estÃ¡n escribiendoâ€¦"
                     }
                     Text(
                         text = typingText,
@@ -1057,7 +1147,7 @@ fun ChatScreen(
                                         val url = "https://maps.google.com/?q=${location.latitude},${location.longitude}"
                                         vm.onIntent(ChatIntent.SendLocation(url))
                                     } else {
-                                        scope.launch { snackbarHostState.showSnackbar("No se pudo obtener la ubicación") }
+                                        scope.launch { snackbarHostState.showSnackbar("Activa el GPS y vuelve a intentarlo") }
                                     }
                                 }
                                 else -> locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
@@ -1071,6 +1161,7 @@ fun ChatScreen(
                 }
                 } // Column
             }
+            } // end outer Column (bottomBar)
         },
     ) { innerPadding ->
         Box(
@@ -1084,7 +1175,7 @@ fun ChatScreen(
             val isInitialLoad = lazyPagingItems.loadState.refresh is LoadState.Loading
                 && lazyPagingItems.itemCount == 0
             if (isInitialLoad) {
-                com.ajrpachon.chatapp.ui.components.ChatMessagesSkeleton(
+                ChatMessagesSkeleton(
                     contentPadding = PaddingValues(
                         top = innerPadding.calculateTopPadding() + 8.dp,
                         bottom = innerPadding.calculateBottomPadding() + 8.dp,
@@ -1125,7 +1216,7 @@ fun ChatScreen(
                         if (isImageGroupStart) {
                             // Collect consecutive images from the same sender starting at this index.
                             // Accessing lazyPagingItems[j] triggers loading of the next page if j is
-                            // near the page boundary — ensuring the group is always complete.
+                            // near the page boundary â€” ensuring the group is always complete.
                             val group = mutableListOf(message)
                             var j = index + 1
                             while (j < lazyPagingItems.itemCount) {
@@ -1167,6 +1258,7 @@ fun ChatScreen(
                                     outgoingBubbleColor = chatTheme.bubbleColor,
                                     onOpenPdf = onOpenPdf,
                                     onVote = { optionId -> vm.onIntent(ChatIntent.VotePoll(message.content.removePrefix("poll:"), optionId)) },
+                                    onRetryMessage = { vm.onIntent(ChatIntent.RetryMessage(it)) },
                                 )
                             }
                         } else {
@@ -1195,12 +1287,13 @@ fun ChatScreen(
                                 onOpenPdf = onOpenPdf,
                                 onVote = { optionId -> vm.onIntent(ChatIntent.VotePoll(message.content.removePrefix("poll:"), optionId)) },
                                 onShowReactionDetails = { reactionDetailMessageId = message.id },
+                                onRetryMessage = { vm.onIntent(ChatIntent.RetryMessage(it)) },
                             )
                         }
                     }
-                    // isInsideGroup → render nothing; slot still exists for key stability + paging trigger
+                    // isInsideGroup â†’ render nothing; slot still exists for key stability + paging trigger
                 }
-                // With reverseLayout=true, this item appears at the visual TOP — shown while
+                // With reverseLayout=true, this item appears at the visual TOP â€” shown while
                 // loading older pages as the user scrolls up through history.
                 item(key = "paging-load-more") {
                     if (lazyPagingItems.loadState.append is LoadState.Loading) {
@@ -1240,621 +1333,17 @@ fun ChatScreen(
     }
 }
 
-@Composable
-private fun MessageSearchOverlay(
-    query: String,
-    results: List<MessageBO>,
-    isSearching: Boolean,
-    topPadding: androidx.compose.ui.unit.Dp,
-    onQueryChange: (String) -> Unit,
-    onClose: () -> Unit,
-    onJump: (String) -> Unit = {},
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = topPadding),
-        color = MaterialTheme.colorScheme.surface,
-    ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = onQueryChange,
-                    modifier = Modifier.weight(1f),
-                    placeholder = { Text("Buscar mensajes...") },
-                    singleLine = true,
-                    leadingIcon = {
-                        if (isSearching) {
-                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                        } else {
-                            Icon(Icons.Default.Search, contentDescription = null)
-                        }
-                    },
-                    trailingIcon = if (query.isNotEmpty()) {
-                        { IconButton(onClick = { onQueryChange("") }) { Icon(Icons.Default.Close, contentDescription = "Limpiar") } }
-                    } else null,
-                )
-                IconButton(onClick = onClose) {
-                    Icon(Icons.Default.Close, contentDescription = "Cerrar búsqueda")
-                }
-            }
-            HorizontalDivider()
-            if (query.isNotBlank() && results.isEmpty() && !isSearching) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Sin resultados", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(vertical = 8.dp, horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    itemsIndexed(results, key = { _, m -> m.id }) { _, message ->
-                        SearchResultItem(message = message, onClick = { onJump(message.id) })
-                    }
-                }
-            }
-        }
-    }
-}
+// MessageSearchOverlay, SearchResultItem â†’ see ChatSearchOverlay.kt
 
-@Composable
-private fun SearchResultItem(message: MessageBO, onClick: () -> Unit = {}) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = message.senderName,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            val timeText = remember(message.createdAt) {
-                val local = message.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
-                "%02d:%02d".format(local.hour, local.minute)
-            }
-            Text(
-                text = timeText,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.outline,
-            )
-        }
-        Spacer(Modifier.height(2.dp))
-        Text(
-            text = message.content.ifBlank { message.replySnippet() },
-            style = MaterialTheme.typography.bodySmall,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
+// â”€â”€ Bottom bar composables â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-// ── Bottom bar composables ────────────────────────────────────────────────────
+// NormalInputBar, AttachmentBottomSheet, ReplyPreviewBar â†’ see ChatInputBar.kt
 
-@Suppress("LongParameterList")
-@Composable
-@OptIn(ExperimentalMaterial3Api::class)
-private fun NormalInputBar(
-    inputText: String,
-    isSending: Boolean,
-    isUploadingImage: Boolean,
-    onTextChange: (String) -> Unit,
-    onSend: () -> Unit,
-    onGallery: () -> Unit,
-    onCamera: () -> Unit,
-    onMic: () -> Unit,
-    onSticker: () -> Unit,
-    onAttachFile: () -> Unit = {},
-    onAttachVideo: () -> Unit = {},
-    onLocation: () -> Unit = {},
-    onContact: () -> Unit = {},
-    onSchedule: () -> Unit = {},
-    onAi: () -> Unit = {},
-    onCreatePoll: () -> Unit = {},
-) {
-    val busy = isUploadingImage || isSending
-    var showAttachSheet by rememberSaveable { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val scope = rememberCoroutineScope()
+// Audio components extracted to ChatAudioComponents.kt
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        IconButton(
-            onClick = { showAttachSheet = true },
-            enabled = !busy,
-        ) {
-            Icon(
-                Icons.Default.Add,
-                contentDescription = "Adjuntar",
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        }
-        ChatAppTextField(
-            value = inputText,
-            onValueChange = { if (it.length <= MessageLimits.MAX_CONTENT_LENGTH) onTextChange(it) },
-            modifier = Modifier.weight(1f),
-            placeholder = "Mensaje…",
-            singleLine = false,
-            maxLines = 4,
-            isError = inputText.length >= MessageLimits.MAX_CONTENT_LENGTH,
-            supportingText = if (inputText.length >= MessageLimits.MAX_CONTENT_LENGTH - 100)
-                "${inputText.length}/${MessageLimits.MAX_CONTENT_LENGTH}" else null,
-        )
-        if (isUploadingImage) {
-            CircularProgressIndicator(modifier = Modifier.size(40.dp).padding(8.dp))
-        } else if (inputText.isNotBlank()) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(androidx.compose.foundation.shape.CircleShape)
-                    .combinedClickable(
-                        enabled = !isSending,
-                        onClick = onSend,
-                        onLongClick = onSchedule,
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    Icons.AutoMirrored.Filled.Send,
-                    contentDescription = "Enviar (mantén para programar)",
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            }
-        } else {
-            IconButton(onClick = onAi, enabled = !busy) {
-                Icon(Icons.Default.SmartToy, contentDescription = "Asistente IA")
-            }
-            IconButton(onClick = onMic, enabled = !busy) {
-                Icon(Icons.Default.Mic, contentDescription = "Grabar audio")
-            }
-        }
-    }
+// â”€â”€ MessageBubble â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-    if (showAttachSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showAttachSheet = false },
-            sheetState = sheetState,
-        ) {
-            AttachmentBottomSheet(
-                onGallery = {
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        showAttachSheet = false
-                        onGallery()
-                    }
-                },
-                onCamera = {
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        showAttachSheet = false
-                        onCamera()
-                    }
-                },
-                onFile = {
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        showAttachSheet = false
-                        onAttachFile()
-                    }
-                },
-                onVideo = {
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        showAttachSheet = false
-                        onAttachVideo()
-                    }
-                },
-                onSticker = {
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        showAttachSheet = false
-                        onSticker()
-                    }
-                },
-                onLocation = {
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        showAttachSheet = false
-                        onLocation()
-                    }
-                },
-                onCreatePoll = {
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        showAttachSheet = false
-                        onCreatePoll()
-                    }
-                },
-                onContact = {
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        showAttachSheet = false
-                        onContact()
-                    }
-                },
-                onSchedule = {
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        showAttachSheet = false
-                        onSchedule()
-                    }
-                },
-                onAi = {
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        showAttachSheet = false
-                        onAi()
-                    }
-                },
-            )
-        }
-    }
-}
-
-@Composable
-private fun AttachmentBottomSheet(
-    onGallery: () -> Unit,
-    onCamera: () -> Unit,
-    onFile: () -> Unit,
-    onVideo: () -> Unit,
-    onSticker: () -> Unit,
-    onLocation: () -> Unit = {},
-    onCreatePoll: () -> Unit = {},
-    onContact: () -> Unit = {},
-    onSchedule: () -> Unit = {},
-    onAi: () -> Unit = {},
-) {
-    val options = listOf(
-        Triple(Icons.Default.AddPhotoAlternate, "Galería", onGallery),
-        Triple(Icons.Default.CameraAlt, "Cámara", onCamera),
-        Triple(Icons.Default.AttachFile, "Archivo", onFile),
-        Triple(Icons.Default.Videocam, "Video", onVideo),
-        Triple(Icons.Default.EmojiEmotions, "Stickers", onSticker),
-        Triple(Icons.Default.LocationOn, "Ubicación", onLocation),
-        Triple(Icons.Default.CheckCircle, "Encuesta", onCreatePoll),
-        Triple(Icons.Default.Contacts, "Contacto", onContact),
-        Triple(Icons.Default.Schedule, "Programar", onSchedule),
-        Triple(Icons.Default.SmartToy, "IA", onAi),
-    )
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp, bottom = 32.dp),
-    ) {
-        Text(
-            text = "Adjuntar",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-        )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-        ) {
-            options.forEach { (icon, label, action) ->
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable(onClick = action)
-                        .padding(vertical = 12.dp),
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = label,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(28.dp),
-                        )
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun RecordingBar(
-    durationMs: Long,
-    amplitudeHistory: List<Float>,
-    onStop: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            Icons.Default.Mic,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.error,
-            modifier = Modifier.size(20.dp),
-        )
-        Spacer(Modifier.width(6.dp))
-        val barColor = MaterialTheme.colorScheme.error
-        Canvas(
-            modifier = Modifier
-                .weight(1f)
-                .height(36.dp),
-        ) {
-            val barW = 4.dp.toPx()
-            val gap = 3.dp.toPx()
-            val step = barW + gap
-            val minH = 4.dp.toPx()
-            val maxH = size.height
-            amplitudeHistory.forEachIndexed { i, amp ->
-                val h = (minH + amp * (maxH - minH)).coerceIn(minH, maxH)
-                val top = (maxH - h) / 2f
-                drawRoundRect(
-                    color = barColor,
-                    topLeft = androidx.compose.ui.geometry.Offset(i * step, top),
-                    size = androidx.compose.ui.geometry.Size(barW, h),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.dp.toPx()),
-                )
-            }
-        }
-        Spacer(Modifier.width(6.dp))
-        Text(
-            text = formatAudioDuration(durationMs.toInt()),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error,
-        )
-        IconButton(onClick = onStop) {
-            Icon(
-                Icons.Default.Stop,
-                contentDescription = "Detener grabación",
-                tint = MaterialTheme.colorScheme.error,
-            )
-        }
-    }
-}
-
-@Composable
-private fun AudioPreviewBar(
-    filePath: String,
-    isUploading: Boolean,
-    onDiscard: () -> Unit,
-    onSend: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        LocalAudioPlayer(
-            filePath = filePath,
-            modifier = Modifier.weight(1f),
-        )
-        IconButton(onClick = onDiscard, enabled = !isUploading) {
-            Icon(Icons.Default.Delete, contentDescription = "Descartar audio")
-        }
-        if (isUploading) {
-            CircularProgressIndicator(modifier = Modifier.size(40.dp).padding(8.dp))
-        } else {
-            IconButton(onClick = onSend) {
-                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar audio")
-            }
-        }
-    }
-}
-
-// ── Audio player composables ─────────────────────────────────────────────────
-
-@Composable
-private fun LocalAudioPlayer(filePath: String, modifier: Modifier = Modifier) {
-    var isPrepared by remember { mutableStateOf(false) }
-    var isPlaying by remember { mutableStateOf(false) }
-    var currentMs by remember { mutableStateOf(0) }
-    var durationMs by remember { mutableStateOf(0) }
-    var playbackSpeed by remember { mutableStateOf(1f) }
-    val playerRef = remember { mutableStateOf<MediaPlayer?>(null) }
-
-    DisposableEffect(filePath) {
-        val mp = MediaPlayer()
-        playerRef.value = mp
-        runCatching {
-            mp.setDataSource(filePath)
-            mp.prepare()
-            isPrepared = true
-            durationMs = mp.duration
-            mp.setOnCompletionListener { p -> p.seekTo(0); isPlaying = false; currentMs = 0 }
-        }
-        onDispose { mp.release(); playerRef.value = null }
-    }
-
-    LaunchedEffect(isPlaying) {
-        while (isPlaying) {
-            currentMs = playerRef.value?.currentPosition ?: 0
-            delay(100)
-        }
-    }
-
-    AudioPlayerRow(
-        modifier = modifier,
-        isPrepared = isPrepared,
-        isPlaying = isPlaying,
-        currentMs = currentMs,
-        durationMs = durationMs,
-        onToggle = {
-            val mp = playerRef.value ?: return@AudioPlayerRow
-            if (!isPrepared) return@AudioPlayerRow
-            if (mp.isPlaying) { mp.pause(); isPlaying = false }
-            else { mp.start(); isPlaying = true }
-        },
-        waveformSeed = filePath.hashCode(),
-        playbackSpeed = playbackSpeed,
-        onSpeedChange = { speed ->
-            playbackSpeed = speed
-            playerRef.value?.let { mp ->
-                mp.playbackParams = mp.playbackParams.setSpeed(speed)
-            }
-        },
-    )
-}
-
-@Composable
-private fun RemoteAudioPlayer(url: String, modifier: Modifier = Modifier) {
-    var isPrepared by remember { mutableStateOf(false) }
-    var isPlaying by remember { mutableStateOf(false) }
-    var currentMs by remember { mutableStateOf(0) }
-    var durationMs by remember { mutableStateOf(0) }
-    var playbackSpeed by remember { mutableStateOf(1f) }
-    val playerRef = remember { mutableStateOf<MediaPlayer?>(null) }
-
-    DisposableEffect(url) {
-        val mp = MediaPlayer()
-        playerRef.value = mp
-        runCatching {
-            mp.setDataSource(url)
-            mp.setOnPreparedListener { p -> isPrepared = true; durationMs = p.duration }
-            mp.setOnCompletionListener { p -> p.seekTo(0); isPlaying = false; currentMs = 0 }
-            mp.prepareAsync()
-        }
-        onDispose { mp.release(); playerRef.value = null }
-    }
-
-    LaunchedEffect(isPlaying) {
-        while (isPlaying) {
-            currentMs = playerRef.value?.currentPosition ?: 0
-            delay(100)
-        }
-    }
-
-    AudioPlayerRow(
-        modifier = modifier,
-        isPrepared = isPrepared,
-        isPlaying = isPlaying,
-        currentMs = currentMs,
-        durationMs = durationMs,
-        onToggle = {
-            val mp = playerRef.value ?: return@AudioPlayerRow
-            if (!isPrepared) return@AudioPlayerRow
-            if (mp.isPlaying) { mp.pause(); isPlaying = false }
-            else { mp.start(); isPlaying = true }
-        },
-        waveformSeed = url.hashCode(),
-        playbackSpeed = playbackSpeed,
-        onSpeedChange = { speed ->
-            playbackSpeed = speed
-            playerRef.value?.let { mp ->
-                mp.playbackParams = mp.playbackParams.setSpeed(speed)
-            }
-        },
-    )
-}
-
-@Suppress("LongParameterList")
-@Composable
-private fun AudioPlayerRow(
-    isPrepared: Boolean,
-    isPlaying: Boolean,
-    currentMs: Int,
-    durationMs: Int,
-    onToggle: () -> Unit,
-    modifier: Modifier = Modifier,
-    waveformSeed: Int = 0,
-    playbackSpeed: Float = 1f,
-    onSpeedChange: (Float) -> Unit = {},
-) {
-    val activeColor = MaterialTheme.colorScheme.primary
-    val inactiveColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
-    val progress = if (durationMs > 0) currentMs.toFloat() / durationMs else 0f
-
-    // Generate deterministic bar heights from seed (32 bars)
-    val bars = remember(waveformSeed) {
-        val rng = java.util.Random(waveformSeed.toLong())
-        List(32) { 0.2f + rng.nextFloat() * 0.8f }
-    }
-
-    val speedSteps = listOf(1f, 1.5f, 2f)
-
-    Row(
-        modifier = modifier.widthIn(min = 160.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        IconButton(onClick = onToggle, enabled = isPrepared) {
-            Icon(
-                imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                contentDescription = if (isPlaying) "Pausar" else "Reproducir",
-            )
-        }
-        Column(modifier = Modifier.weight(1f).padding(end = 4.dp)) {
-            Canvas(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(28.dp),
-            ) {
-                val barCount = bars.size
-                val gap = size.width * 0.015f
-                val barW = (size.width - gap * (barCount - 1)) / barCount
-                bars.forEachIndexed { i, h ->
-                    val barH = h * size.height
-                    val x = i * (barW + gap)
-                    val y = (size.height - barH) / 2f
-                    val fraction = (i + 1f) / barCount
-                    drawRoundRect(
-                        color = if (fraction <= progress) activeColor else inactiveColor,
-                        topLeft = androidx.compose.ui.geometry.Offset(x, y),
-                        size = androidx.compose.ui.geometry.Size(barW, barH),
-                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(barW / 2),
-                    )
-                }
-            }
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = formatAudioDuration(if (currentMs > 0) currentMs else durationMs),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            )
-        }
-        // Speed chip: cycles ×1 → ×1.5 → ×2 → ×1
-        Surface(
-            onClick = {
-                val nextIndex = (speedSteps.indexOf(playbackSpeed) + 1) % speedSteps.size
-                onSpeedChange(speedSteps[nextIndex])
-            },
-            shape = RoundedCornerShape(50),
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            modifier = Modifier.padding(start = 4.dp),
-        ) {
-            Text(
-                text = "×${if (playbackSpeed % 1f == 0f) playbackSpeed.toInt().toString() else playbackSpeed.toString()}",
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-            )
-        }
-    }
-}
-
-// ── MessageBubble ─────────────────────────────────────────────────────────────
-
-// ── CallMessageBubble ─────────────────────────────────────────────────────────
+// â”€â”€ CallMessageBubble â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Composable
 private fun CallMessageBubble(message: MessageBO) {
@@ -1872,7 +1361,7 @@ private fun CallMessageBubble(message: MessageBO) {
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
     }
     val statusText = when {
-        status == "ended" -> "Finalizada · ${formatCallDuration(message.callDuration ?: 0)}"
+        status == "ended" -> "Finalizada Â· ${formatCallDuration(message.callDuration ?: 0)}"
         status == "missed" && !message.isFromMe -> "Perdida"
         status == "rejected" && !message.isFromMe -> "Rechazada"
         else -> "Sin respuesta"
@@ -1926,7 +1415,7 @@ private fun CallMessageBubble(message: MessageBO) {
     }
 }
 
-// ── FileBubble ────────────────────────────────────────────────────────────────
+// â”€â”€ FileBubble â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Composable
 private fun FileBubble(
@@ -2098,7 +1587,7 @@ private fun formatFileSize(bytes: Long): String {
     }
 }
 
-// ── VideoBubble ───────────────────────────────────────────────────────────────
+// â”€â”€ VideoBubble â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Composable
 private fun VideoBubble(message: MessageBO, onReply: () -> Unit) {
@@ -2168,7 +1657,7 @@ private fun VideoBubble(message: MessageBO, onReply: () -> Unit) {
     }
 }
 
-// ── StickerBubble ──────────────────────────────────────────────────────────────
+// â”€â”€ StickerBubble â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Composable
 private fun StickerBubble(message: MessageBO, onReply: () -> Unit) {
@@ -2202,7 +1691,7 @@ private fun StickerBubble(message: MessageBO, onReply: () -> Unit) {
             },
     ) {
         Icon(
-            imageVector = Icons.Default.Reply,
+            imageVector = Icons.AutoMirrored.Filled.Reply,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier
@@ -2230,7 +1719,7 @@ private fun StickerBubble(message: MessageBO, onReply: () -> Unit) {
     }
 }
 
-// ── DeletedMessageBubble ──────────────────────────────────────────────────────
+// â”€â”€ DeletedMessageBubble â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Composable
 private fun DeletedMessageBubble(message: MessageBO) {
@@ -2266,7 +1755,7 @@ private fun DeletedMessageBubble(message: MessageBO) {
     }
 }
 
-// ── MessageBubble ─────────────────────────────────────────────────────────────
+// â”€â”€ MessageBubble â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList")
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
@@ -2292,6 +1781,7 @@ private fun MessageBubble(
     onOpenPdf: (url: String, filename: String) -> Unit = { _, _ -> },
     onVote: ((optionId: String) -> Unit)? = null,
     onShowReactionDetails: () -> Unit = {},
+    onRetryMessage: (String) -> Unit = {},
 ) {
     if (message.isDeleted) {
         DeletedMessageBubble(message)
@@ -2328,11 +1818,11 @@ private fun MessageBubble(
     }
     if (message.content.startsWith("poll:")) {
         val pollId = remember(message.content) { message.content.removePrefix("poll:") }
-        val pollDao: PollDao = koinInject()
+        val pollRepository: PollRepository = koinInject()
         PollBubble(
             pollId = pollId,
             isFromMe = message.isFromMe,
-            pollDao = pollDao,
+            pollRepository = pollRepository,
             currentUserId = currentUserId,
             onVote = { optionId -> onVote?.invoke(optionId) },
         )
@@ -2380,7 +1870,7 @@ private fun MessageBubble(
     ) {
         val iconAlpha = (swipeOffset.value / swipeThreshold).coerceIn(0f, 1f)
         Icon(
-            imageVector = Icons.Default.Reply,
+            imageVector = Icons.AutoMirrored.Filled.Reply,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier
@@ -2455,8 +1945,8 @@ private fun MessageBubble(
                         var showEmojiPicker by remember { mutableStateOf(false) }
                         val emojiSheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
                         val locationUrl = remember(message.content) {
-                            if (message.content.startsWith("📍 Mi ubicación: https://maps.google.com/?q=")) {
-                                message.content.substringAfter("📍 Mi ubicación: ")
+                            if (message.content.startsWith("ðŸ“ Mi ubicaciÃ³n: https://maps.google.com/?q=")) {
+                                message.content.substringAfter("ðŸ“ Mi ubicaciÃ³n: ")
                             } else null
                         }
                         if (locationUrl != null) {
@@ -2475,7 +1965,7 @@ private fun MessageBubble(
                             DropdownMenu(expanded = showMsgMenu, onDismissRequest = { showMsgMenu = false }) {
                                 DropdownMenuItem(
                                     text = { Text("Reaccionar") },
-                                    leadingIcon = { Text("😊") },
+                                    leadingIcon = { Text("ðŸ˜Š") },
                                     onClick = { showMsgMenu = false; showEmojiPicker = true },
                                 )
                                 if (onEdit != null) {
@@ -2488,9 +1978,9 @@ private fun MessageBubble(
                                 if (onSelfDestruct != null) {
                                     DropdownMenuItem(
                                         text = {
-                                            Text(if (message.expiresAt != null) "Quitar autodestrucción" else "Mensaje efímero")
+                                            Text(if (message.expiresAt != null) "Quitar autodestrucciÃ³n" else "Mensaje efÃ­mero")
                                         },
-                                        leadingIcon = { Text(if (message.expiresAt != null) "♾️" else "⏱️") },
+                                        leadingIcon = { Text(if (message.expiresAt != null) "â™¾ï¸" else "â±ï¸") },
                                         onClick = { showMsgMenu = false; onSelfDestruct() },
                                     )
                                 }
@@ -2516,14 +2006,14 @@ private fun MessageBubble(
                             }
                         }
                         if (showEmojiPicker) {
-                            com.ajrpachon.chatapp.ui.components.EmojiPickerBottomSheet(
+                            EmojiPickerBottomSheet(
                                 sheetState = emojiSheetState,
                                 onDismiss = { showEmojiPicker = false },
                                 onEmojiSelected = { emoji -> onToggleReaction(emoji) },
                             )
                         }
                     }
-                    // Link preview — shown only for plain text messages (no image/audio/gif)
+                    // Link preview â€” shown only for plain text messages (no image/audio/gif)
                     val hasAttachment = message.imageUrl != null || message.audioUrl != null ||
                         message.gifUrl != null
                     if (!hasAttachment && message.content.isNotBlank()) {
@@ -2539,7 +2029,7 @@ private fun MessageBubble(
                             }
                             if (previewData != null) {
                                 Spacer(Modifier.height(6.dp))
-                                LinkPreviewCard(data = previewData!!)
+                                LinkPreviewCard(data = previewData ?: return@Column)
                             }
                         }
                     }
@@ -2551,7 +2041,7 @@ private fun MessageBubble(
                         message.expiresAt?.let { exp ->
                             val secsLeft = ((exp - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
                             Text(
-                                "⏱️ ${if (secsLeft < 60) "${secsLeft}s" else "${secsLeft / 60}m"}",
+                                "â±ï¸ ${if (secsLeft < 60) "${secsLeft}s" else "${secsLeft / 60}m"}",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
                             )
@@ -2569,7 +2059,24 @@ private fun MessageBubble(
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                         )
                         if (message.isFromMe) {
-                            ReadReceiptIcon(isRead = message.isRead)
+                            when (message.sendStatus) {
+                                com.ajrpachon.chatapp.domain.model.SendStatus.PENDING ->
+                                    Icon(
+                                        imageVector = androidx.compose.material.icons.Icons.Default.Schedule,
+                                        contentDescription = "Pendiente de envío",
+                                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                                        modifier = Modifier.size(12.dp),
+                                    )
+                                com.ajrpachon.chatapp.domain.model.SendStatus.FAILED ->
+                                    Icon(
+                                        imageVector = Icons.Default.Warning,
+                                        contentDescription = "Error al enviar",
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(12.dp),
+                                    )
+                                com.ajrpachon.chatapp.domain.model.SendStatus.SENT ->
+                                    ReadReceiptIcon(isRead = message.isRead)
+                            }
                         }
                     }
                 }
@@ -2627,7 +2134,7 @@ private fun MessageBubble(
     }
 }
 
-private val LOCATION_MESSAGE_PREFIX = "📍 Mi ubicación: https://maps.google.com/?q="
+private val LOCATION_MESSAGE_PREFIX = "ðŸ“ Mi ubicaciÃ³n: https://maps.google.com/?q="
 
 @Composable
 private fun LocationMessageCard(content: String, mapsUrl: String) {
@@ -2658,7 +2165,7 @@ private fun LocationMessageCard(content: String, mapsUrl: String) {
             )
             Column {
                 Text(
-                    text = "Ubicación compartida",
+                    text = "UbicaciÃ³n compartida",
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -2677,7 +2184,7 @@ private fun LocationMessageCard(content: String, mapsUrl: String) {
 private fun ReadReceiptIcon(isRead: Boolean) {
     Icon(
         imageVector = if (isRead) Icons.Default.DoneAll else Icons.Default.Done,
-        contentDescription = if (isRead) "Leído" else "Enviado",
+        contentDescription = if (isRead) "LeÃ­do" else "Enviado",
         modifier = Modifier.size(14.dp),
         tint = if (isRead)
             androidx.compose.ui.graphics.Color(0xFF4FC3F7)
@@ -2687,13 +2194,13 @@ private fun ReadReceiptIcon(isRead: Boolean) {
 }
 
 private fun formatLastSeen(diffMs: Long): String = when {
-    diffMs < 60_000L -> "última vez hace un momento"
-    diffMs < 3_600_000L -> "última vez hace ${diffMs / 60_000} min"
-    diffMs < 86_400_000L -> "última vez hace ${diffMs / 3_600_000} h"
-    else -> "última vez hace ${diffMs / 86_400_000} d"
+    diffMs < 60_000L -> "Ãºltima vez hace un momento"
+    diffMs < 3_600_000L -> "Ãºltima vez hace ${diffMs / 60_000} min"
+    diffMs < 86_400_000L -> "Ãºltima vez hace ${diffMs / 3_600_000} h"
+    else -> "Ãºltima vez hace ${diffMs / 86_400_000} d"
 }
 
-// ── ImageGroupBubble ──────────────────────────────────────────────────────────
+// â”€â”€ ImageGroupBubble â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Composable
 private fun ImageGroupBubble(
@@ -2733,7 +2240,7 @@ private fun ImageGroupBubble(
             },
     ) {
         Icon(
-            imageVector = Icons.Default.Reply,
+            imageVector = Icons.AutoMirrored.Filled.Reply,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier
@@ -2811,7 +2318,7 @@ private fun ImageGroupBubble(
     } // Box
 }
 
-// ── ReplyQuote ────────────────────────────────────────────────────────────────
+// â”€â”€ ReplyQuote â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Composable
 private fun ReplyQuote(
@@ -2860,7 +2367,7 @@ private fun ReplyQuote(
     }
 }
 
-// ── LinkPreviewCard ───────────────────────────────────────────────────────────
+// â”€â”€ LinkPreviewCard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Composable
 private fun LinkPreviewCard(data: LinkPreviewData) {
@@ -2920,50 +2427,9 @@ private fun LinkPreviewCard(data: LinkPreviewData) {
     }
 }
 
-// ── ReplyPreviewBar ───────────────────────────────────────────────────────────
+// ReplyPreviewBar â†’ see ChatInputBar.kt
 
-@Composable
-private fun ReplyPreviewBar(message: MessageBO, onCancel: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            imageVector = Icons.Default.Reply,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(20.dp),
-        )
-        Spacer(Modifier.width(8.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = message.senderName,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
-            )
-            Text(
-                text = message.replySnippet(),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        IconButton(onClick = onCancel, modifier = Modifier.size(32.dp)) {
-            Icon(
-                Icons.Default.Close,
-                contentDescription = "Cancelar respuesta",
-                modifier = Modifier.size(18.dp),
-            )
-        }
-    }
-}
-
-// ── ImageViewerDialog ─────────────────────────────────────────────────────────
+// â”€â”€ ImageViewerDialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Composable
 private fun ImageViewerDialog(
@@ -2993,13 +2459,14 @@ private fun ImageViewerDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(vertical = 56.dp),
             ) {
-                itemsIndexed(imageUrls) { _, url ->
+                itemsIndexed(imageUrls, key = { _, url -> url }) { _, url ->
                     AsyncImage(
                         model = url,
                         contentDescription = null,
                         contentScale = ContentScale.FillWidth,
                         modifier = Modifier
                             .fillMaxWidth()
+                            .heightIn(max = 800.dp)
                             .clickable { fullscreenUrl = url },
                     )
                 }
@@ -3100,7 +2567,7 @@ private fun ContactBubble(name: String, phone: String, isFromMe: Boolean) {
     }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 private fun createCameraUri(context: Context): Uri {
     val file = File.createTempFile("img_", ".jpg", context.cacheDir)
@@ -3112,10 +2579,7 @@ private fun createVideoUri(context: Context): Uri {
     return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
 }
 
-private fun formatAudioDuration(ms: Int): String {
-    val total = (ms / 1000).coerceAtLeast(0)
-    return "%d:%02d".format(total / 60, total % 60)
-}
+// formatAudioDuration extracted to ChatAudioComponents.kt
 
 private fun formatCallDuration(seconds: Int): String =
     "%d:%02d".format(seconds / 60, seconds % 60)
@@ -3126,16 +2590,16 @@ private fun ExpiryDurationDialog(onDismiss: () -> Unit, onSelect: (Long?) -> Uni
         "1 minuto" to (System.currentTimeMillis() + 60_000L),
         "1 hora" to (System.currentTimeMillis() + 3_600_000L),
         "24 horas" to (System.currentTimeMillis() + 86_400_000L),
-        "7 días" to (System.currentTimeMillis() + 604_800_000L),
-        "Quitar autodestrucción" to null,
+        "7 dÃ­as" to (System.currentTimeMillis() + 604_800_000L),
+        "Quitar autodestrucciÃ³n" to null,
     )
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Mensaje efímero") },
+        title = { Text("Mensaje efÃ­mero") },
         text = {
             androidx.compose.foundation.layout.Column {
                 Text(
-                    "El mensaje se borrará localmente después de:",
+                    "El mensaje se borrarÃ¡ localmente despuÃ©s de:",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -3263,7 +2727,7 @@ private fun ForwardConversationDialog(
     )
 }
 
-// ── ChatThemePickerSheet ───────────────────────────────────────────────────────
+// â”€â”€ ChatThemePickerSheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -3292,7 +2756,7 @@ private fun ChatThemePickerSheet(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(horizontal = 4.dp),
             ) {
-                items(ChatTheme.entries.size) { index ->
+                items(ChatTheme.entries.size, key = { it }) { index ->
                     val theme = ChatTheme.entries[index]
                     val isSelected = theme == currentTheme
                     val label = when (theme) {
@@ -3349,7 +2813,7 @@ private fun ChatThemePickerSheet(
     }
 }
 
-// ── DisappearingModeSheet ──────────────────────────────────────────────────────
+// â”€â”€ DisappearingModeSheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -3362,8 +2826,8 @@ private fun DisappearingModeSheet(
     val options = listOf(
         "Desactivado" to 0L,
         "24 horas" to 86_400L,
-        "7 días" to 604_800L,
-        "30 días" to 2_592_000L,
+        "7 dÃ­as" to 604_800L,
+        "30 dÃ­as" to 2_592_000L,
     )
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -3371,13 +2835,13 @@ private fun DisappearingModeSheet(
     ) {
         Column(modifier = Modifier.padding(bottom = 32.dp)) {
             Text(
-                "Modo desaparición",
+                "Modo desapariciÃ³n",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             )
             Text(
-                "Los nuevos mensajes desaparecerán automáticamente.",
+                "Los nuevos mensajes desaparecerÃ¡n automÃ¡ticamente.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp),
@@ -3474,7 +2938,7 @@ private fun ScheduleMessageDialog(
     }
 }
 
-// ── AI Assistant bottom sheet ─────────────────────────────────────────────────
+// â”€â”€ AI Assistant bottom sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -3584,7 +3048,7 @@ private fun AiAssistantSheet(
     }
 }
 
-// ── CreatePollSheetContent ────────────────────────────────────────────────────
+// â”€â”€ CreatePollSheetContent â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Composable
 private fun CreatePollSheetContent(
@@ -3627,7 +3091,7 @@ private fun CreatePollSheetContent(
                     onValueChange = { newValue ->
                         options = options.toMutableList().also { it[index] = newValue }
                     },
-                    label = { Text("Opción ${index + 1}") },
+                    label = { Text("OpciÃ³n ${index + 1}") },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                 )
@@ -3639,7 +3103,7 @@ private fun CreatePollSheetContent(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Eliminar opción",
+                            contentDescription = "Eliminar opciÃ³n",
                             tint = MaterialTheme.colorScheme.error,
                         )
                     }
@@ -3651,7 +3115,7 @@ private fun CreatePollSheetContent(
             TextButton(onClick = { options = options + "" }) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))
-                Text("Añadir opción")
+                Text("AÃ±adir opciÃ³n")
             }
         }
 
@@ -3709,19 +3173,19 @@ private fun PinnedMessageBanner(
     }
 }
 
-// ── PollBubble ────────────────────────────────────────────────────────────────
+// â”€â”€ PollBubble â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Composable
 private fun PollBubble(
     pollId: String,
     isFromMe: Boolean,
-    pollDao: PollDao,
+    pollRepository: PollRepository,
     currentUserId: String?,
     onVote: (optionId: String) -> Unit,
 ) {
-    val poll by pollDao.observePollById(pollId).collectAsState(initial = null)
-    val options by pollDao.observeOptionsByPollId(pollId).collectAsState(initial = emptyList())
-    val userVote by pollDao.observeVote(pollId, currentUserId ?: "").collectAsState(initial = null)
+    val poll by pollRepository.observePollById(pollId).collectAsState(initial = null)
+    val options by pollRepository.observeOptionsByPollId(pollId).collectAsState(initial = emptyList())
+    val userVote by pollRepository.observeVote(pollId, currentUserId ?: "").collectAsState(initial = null)
 
     val alignment = if (isFromMe) Alignment.End else Alignment.Start
 
@@ -3757,14 +3221,15 @@ private fun PollBubble(
 
                 if (poll == null) {
                     Text(
-                        text = "Cargando encuesta…",
+                        text = "Cargando encuestaâ€¦",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline,
                     )
                 } else {
                     // Question
+                    val safePoll = poll ?: return@Column
                     Text(
-                        text = poll!!.question,
+                        text = safePoll.question,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 8.dp),
@@ -3815,7 +3280,7 @@ private fun PollBubble(
     }
 }
 
-// ── ReactionDetailsSheet ──────────────────────────────────────────────────────
+// â”€â”€ ReactionDetailsSheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Composable
 private fun ReactionDetailsSheet(
@@ -3847,7 +3312,7 @@ private fun ReactionDetailsSheet(
     }
 }
 
-// ── WallpaperPickerSheet ─────────────────────────────────────────────────────
+// â”€â”€ WallpaperPickerSheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -3858,12 +3323,12 @@ private fun WallpaperPickerSheet(
 ) {
     val colors = listOf(
         null to "Por defecto",
-        0xFFE3F2FD.toLong() to "Azul claro",
-        0xFFF3E5F5.toLong() to "Púrpura",
-        0xFFE8F5E9.toLong() to "Verde",
-        0xFFFFF8E1.toLong() to "Amarillo",
-        0xFFFCE4EC.toLong() to "Rosa",
-        0xFF212121.toLong() to "Oscuro",
+        0xFFE3F2FDL to "Azul claro",
+        0xFFF3E5F5L to "PÃºrpura",
+        0xFFE8F5E9L to "Verde",
+        0xFFFFF8E1L to "Amarillo",
+        0xFFFCE4ECL to "Rosa",
+        0xFF212121L to "Oscuro",
     )
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -3883,7 +3348,7 @@ private fun WallpaperPickerSheet(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            items(colors) { (colorValue, label) ->
+            items(colors, key = { it.first?.toString() ?: "default" }) { (colorValue, label) ->
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.clickable { onSelect(colorValue) },

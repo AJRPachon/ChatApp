@@ -12,9 +12,11 @@ import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import com.ajrpachon.chatapp.data.local.ChatThemeRepository
 import com.ajrpachon.chatapp.data.local.DraftRepository
 import com.ajrpachon.chatapp.data.local.IncognitoRepository
-import com.ajrpachon.chatapp.data.local.dao.PollDao
+import com.ajrpachon.chatapp.data.local.PollRepository
+import com.ajrpachon.chatapp.data.local.dao.MessageDao
 import com.ajrpachon.chatapp.data.local.dao.ScheduledMessageDao
 import com.ajrpachon.chatapp.data.repository.AiAssistantRepository
+import com.ajrpachon.chatapp.utils.NetworkMonitor
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.ReactionRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
@@ -33,7 +35,6 @@ import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import com.ajrpachon.chatapp.util.sharedScheduler
@@ -65,13 +66,15 @@ class ChatViewModelTest {
     private val draftRepository = mockk<DraftRepository>(relaxed = true)
     private val translationManager = mockk<TranslationManager>(relaxed = true)
     private val audioTranscriber = mockk<AudioTranscriber>(relaxed = true)
-    private val pollDao = mockk<PollDao>(relaxed = true)
+    private val pollRepository = mockk<PollRepository>(relaxed = true)
     private val chatThemeRepository = mockk<ChatThemeRepository>(relaxed = true)
     private val scheduledMessageDao = mockk<ScheduledMessageDao>(relaxed = true)
     private val workManager = mockk<WorkManager>(relaxed = true)
     private val incognitoRepository = mockk<IncognitoRepository>(relaxed = true)
     private val aiAssistantRepository = mockk<AiAssistantRepository>(relaxed = true)
     private val wallpaperRepository = mockk<com.ajrpachon.chatapp.data.local.WallpaperRepository>(relaxed = true)
+    private val messageDao = mockk<MessageDao>(relaxed = true)
+    private val networkMonitor = mockk<NetworkMonitor>(relaxed = true)
 
     // Start with current user as member — mirrors what the repository emits after initial fetch
     private val membersFlow = MutableStateFlow<List<GroupMemberBO>>(emptyList())
@@ -114,6 +117,7 @@ class ChatViewModelTest {
         every { conversationDao.observeById(any()) } returns flowOf(groupConvDBO)
         every { draftRepository.getDraft(any()) } returns flowOf("")
         every { conversationRepository.observeConversations(any()) } returns flowOf(emptyList())
+        every { networkMonitor.isOnline } returns flowOf(true)
         coEvery { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns
                 Result.success(mockk<MessageBO>(relaxed = true))
     }
@@ -135,13 +139,15 @@ class ChatViewModelTest {
             draftRepository = draftRepository,
             translationManager = translationManager,
             audioTranscriber = audioTranscriber,
-            pollDao = pollDao,
+            pollRepository = pollRepository,
             chatThemeRepository = chatThemeRepository,
             scheduledMessageDao = scheduledMessageDao,
             workManager = workManager,
             incognitoRepository = incognitoRepository,
             aiAssistantRepository = aiAssistantRepository,
             wallpaperRepository = wallpaperRepository,
+            messageDao = messageDao,
+            networkMonitor = networkMonitor,
         )
 
     // ── isCurrentUserMember ───────────────────────────────────────────────────
@@ -238,7 +244,7 @@ class ChatViewModelTest {
         advanceUntilIdle()
 
         assertEquals("", vm.state.value.inputText)
-        coVerify { sendMessageUseCase("conv1", "user1", "Hi!", any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        coVerify { sendMessageUseCase("conv1", "user1", "Hi!", any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -249,12 +255,12 @@ class ChatViewModelTest {
         vm.onIntent(ChatIntent.Send)
         advanceUntilIdle()
 
-        coVerify(exactly = 0) { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
     fun `Send sets error when sendMessageUseCase fails`() = runTest(sharedScheduler) {
-        coEvery { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns
+        coEvery { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns
                 Result.failure(RuntimeException("network error"))
 
         val vm = buildViewModel()
@@ -263,12 +269,12 @@ class ChatViewModelTest {
         vm.onIntent(ChatIntent.Send)
         advanceUntilIdle()
 
-        assertEquals("network error", vm.state.value.error)
+        assertEquals("Sin conexión. El mensaje se enviará cuando vuelva la red.", vm.state.value.error)
     }
 
     @Test
     fun `DismissError clears error state`() = runTest(sharedScheduler) {
-        coEvery { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns
+        coEvery { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns
                 Result.failure(RuntimeException("oops"))
 
         val vm = buildViewModel()
@@ -276,7 +282,7 @@ class ChatViewModelTest {
         vm.onIntent(ChatIntent.InputChanged("msg"))
         vm.onIntent(ChatIntent.Send)
         advanceUntilIdle()
-        assertEquals("oops", vm.state.value.error)
+        assertEquals("Sin conexión. El mensaje se enviará cuando vuelva la red.", vm.state.value.error)
 
         vm.onIntent(ChatIntent.DismissError)
         assertNull(vm.state.value.error)

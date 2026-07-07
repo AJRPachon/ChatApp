@@ -127,6 +127,7 @@ dependencies {
     implementation(libs.datastore.preferences)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.biometric)
+    implementation(libs.security.crypto)
 
     // Compose BOM
     val composeBom = platform(libs.compose.bom)
@@ -190,6 +191,10 @@ dependencies {
 
     // LiveKit
     implementation(libs.livekit.android)
+
+    // Media3 / ExoPlayer (inline video player)
+    implementation("androidx.media3:media3-exoplayer:1.5.1")
+    implementation("androidx.media3:media3-ui:1.5.1")
 
     // Coil (image loading)
     implementation(libs.coil.compose)

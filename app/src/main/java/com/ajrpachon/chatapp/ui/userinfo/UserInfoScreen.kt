@@ -91,7 +91,7 @@ fun UserInfoScreen(
             if (state.avatarUrl != null) {
                 AsyncImage(
                     model = state.avatarUrl,
-                    contentDescription = null,
+                    contentDescription = "Foto de perfil de ${state.displayName}",
                     modifier = Modifier.size(100.dp).clip(CircleShape),
                     contentScale = ContentScale.Crop,
                 )
@@ -190,10 +190,10 @@ fun MediaGalleryTab(mediaUrls: List<String>) {
             horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            items(mediaUrls) { url ->
+            items(mediaUrls, key = { it }) { url ->
                 AsyncImage(
                     model = url,
-                    contentDescription = null,
+                    contentDescription = "Ver imagen compartida",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .aspectRatio(1f)
@@ -231,7 +231,7 @@ private fun MediaFullScreenViewer(
         ) {
             AsyncImage(
                 model = url,
-                contentDescription = null,
+                contentDescription = "Imagen en pantalla completa",
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .fillMaxSize()

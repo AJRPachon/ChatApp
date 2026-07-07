@@ -35,4 +35,5 @@ data class MessageDBO(
     @ColumnInfo(name = "videoUrl") val videoUrl: String? = null,
     @ColumnInfo(name = "isPinned") val isPinned: Boolean = false,
     @ColumnInfo(name = "isSaved") val isSaved: Boolean = false,
+    @ColumnInfo(name = "sendStatus") val sendStatus: String = "sent", // "pending" | "failed" | "sent"
 )

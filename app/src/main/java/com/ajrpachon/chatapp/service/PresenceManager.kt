@@ -2,10 +2,12 @@ package com.ajrpachon.chatapp.service
 
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.utils.AppLogger
+import java.io.Closeable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -13,7 +15,7 @@ import kotlinx.coroutines.launch
 private const val TAG = "PresenceManager"
 private const val HEARTBEAT_INTERVAL_MS = 60_000L
 
-class PresenceManager(private val userRepository: UserRepository) {
+class PresenceManager(private val userRepository: UserRepository) : java.io.Closeable {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var heartbeatJob: Job? = null
@@ -33,5 +35,9 @@ class PresenceManager(private val userRepository: UserRepository) {
     fun stop() {
         heartbeatJob?.cancel()
         heartbeatJob = null
+    }
+
+    override fun close() {
+        scope.cancel()
     }
 }

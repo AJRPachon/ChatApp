@@ -2,6 +2,8 @@
 
 import kotlinx.datetime.Instant
 
+enum class SendStatus { PENDING, FAILED, SENT }
+
 data class MessageBO(
     val id: String,
     val conversationId: String,
@@ -32,6 +34,7 @@ data class MessageBO(
     val videoUrl: String? = null,
     val isPinned: Boolean = false,
     val isSaved: Boolean = false,
+    val sendStatus: SendStatus = SendStatus.SENT,
 ) {
     fun isExpired(): Boolean = expiresAt != null && expiresAt <= System.currentTimeMillis()
     fun expiresInSeconds(): Long? = expiresAt?.let { ((it - System.currentTimeMillis()) / 1000).coerceAtLeast(0) }
