@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.data.remote.source
+﻿package com.ajrpachon.chatapp.data.remote.source
 
 import com.ajrpachon.chatapp.data.remote.dto.MessageDTO
 import com.ajrpachon.chatapp.data.remote.dto.ReactionRemoteDTO
@@ -9,6 +9,7 @@ import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
 import io.github.jan.supabase.realtime.realtime
+import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
@@ -133,5 +134,35 @@ class MessageRemoteSource(private val supabase: SupabaseClient) {
                 runCatching { supabase.realtime.removeChannel(channel) }
             }
         }
+    }
+
+    // ---------------------------------------------------------------------------
+    // Storage uploads
+    // ---------------------------------------------------------------------------
+
+    suspend fun uploadAudio(conversationId: String, bytes: ByteArray): String {
+        val path = "$conversationId/${java.util.UUID.randomUUID()}.m4a"
+        supabase.storage["chat-audio"].upload(path, bytes) { upsert = false }
+        return supabase.storage["chat-audio"].publicUrl(path)
+    }
+
+    suspend fun uploadImage(conversationId: String, bytes: ByteArray, mimeType: String): String {
+        val ext = if (mimeType.contains("png")) "png" else "jpg"
+        val path = "$conversationId/${java.util.UUID.randomUUID()}.$ext"
+        supabase.storage["chat-images"].upload(path, bytes) { upsert = false }
+        return supabase.storage["chat-images"].publicUrl(path)
+    }
+
+    suspend fun uploadFile(conversationId: String, bytes: ByteArray, fileName: String): String {
+        val safeName = fileName.replace(Regex("[^A-Za-z0-9._-]"), "_")
+        val path = "$conversationId/${java.util.UUID.randomUUID()}_$safeName"
+        supabase.storage["chat-files"].upload(path, bytes) { upsert = false }
+        return supabase.storage["chat-files"].publicUrl(path)
+    }
+
+    suspend fun uploadVideo(conversationId: String, bytes: ByteArray): String {
+        val path = "$conversationId/${java.util.UUID.randomUUID()}.mp4"
+        supabase.storage["chat-videos"].upload(path, bytes) { upsert = false }
+        return supabase.storage["chat-videos"].publicUrl(path)
     }
 }

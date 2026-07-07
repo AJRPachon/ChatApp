@@ -19,8 +19,6 @@ import com.ajrpachon.chatapp.data.remote.source.UserRemoteSource
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import com.ajrpachon.chatapp.utils.E2EEKeyManager
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -37,18 +35,12 @@ import com.ajrpachon.chatapp.utils.UploadLimits.checkVideoSize
 import kotlinx.datetime.Instant
 private const val TAG = "MsgRepo"
 
-private const val BUCKET = "chat-images"
-private const val AUDIO_BUCKET = "chat-audio"
-private const val FILE_BUCKET = "chat-files"
-private const val VIDEO_BUCKET = "chat-videos"
-
 class MessageRepositoryImpl(
     private val messageDao: MessageDao,
     private val userDao: UserDao,
     private val reactionDao: ReactionDao,
     private val remoteSource: MessageRemoteSource,
     private val userRemoteSource: UserRemoteSource,
-    private val supabase: SupabaseClient,
 ) : MessageRepository {
 
     // Shared key cache: avoids a Supabase round-trip on every encrypt/decrypt.
@@ -156,32 +148,22 @@ class MessageRepositoryImpl(
 
     override suspend fun uploadAudio(conversationId: String, bytes: ByteArray): String {
         bytes.checkAudioSize()
-        val path = "$conversationId/${java.util.UUID.randomUUID()}.m4a"
-        supabase.storage[AUDIO_BUCKET].upload(path, bytes) { upsert = false }
-        return supabase.storage[AUDIO_BUCKET].publicUrl(path)
+        return remoteSource.uploadAudio(conversationId, bytes)
     }
 
     override suspend fun uploadImage(conversationId: String, bytes: ByteArray, mimeType: String): String {
         bytes.checkImageSize()
-        val ext = if (mimeType.contains("png")) "png" else "jpg"
-        val path = "$conversationId/${java.util.UUID.randomUUID()}.$ext"
-        supabase.storage[BUCKET].upload(path, bytes) { upsert = false }
-        return supabase.storage[BUCKET].publicUrl(path)
+        return remoteSource.uploadImage(conversationId, bytes, mimeType)
     }
 
     override suspend fun uploadFile(conversationId: String, bytes: ByteArray, fileName: String, mimeType: String): String {
         bytes.checkFileSize()
-        val safeName = fileName.replace(Regex("[^A-Za-z0-9._-]"), "_")
-        val path = "$conversationId/${java.util.UUID.randomUUID()}_$safeName"
-        supabase.storage[FILE_BUCKET].upload(path, bytes) { upsert = false }
-        return supabase.storage[FILE_BUCKET].publicUrl(path)
+        return remoteSource.uploadFile(conversationId, bytes, fileName)
     }
 
     override suspend fun uploadVideo(conversationId: String, bytes: ByteArray): String {
         bytes.checkVideoSize()
-        val path = "$conversationId/${java.util.UUID.randomUUID()}.mp4"
-        supabase.storage[VIDEO_BUCKET].upload(path, bytes) { upsert = false }
-        return supabase.storage[VIDEO_BUCKET].publicUrl(path)
+        return remoteSource.uploadVideo(conversationId, bytes)
     }
 
     override suspend fun markAsRead(conversationId: String, userId: String) {
