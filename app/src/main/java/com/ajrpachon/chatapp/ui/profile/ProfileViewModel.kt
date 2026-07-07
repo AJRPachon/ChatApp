@@ -1,7 +1,6 @@
 package com.ajrpachon.chatapp.ui.profile
 import com.ajrpachon.chatapp.utils.catchResult
 
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.data.local.AppLockRepository
 import com.ajrpachon.chatapp.data.local.ThemeRepository
@@ -9,6 +8,7 @@ import com.ajrpachon.chatapp.data.local.dao.UserDao
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.service.FcmTokenManager
+import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import com.ajrpachon.chatapp.utils.AppLogger
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
@@ -16,15 +16,10 @@ import io.github.jan.supabase.auth.SignOutScope
 import io.github.jan.supabase.auth.mfa.FactorType
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.storage.storage
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.ajrpachon.chatapp.utils.UploadLimits.checkAvatarSize
 import kotlinx.serialization.json.buildJsonObject
@@ -40,19 +35,13 @@ class ProfileViewModel(
     private val userRepository: UserRepository,
     private val themeRepository: ThemeRepository,
     private val appLockRepository: AppLockRepository,
-) : ViewModel() {
-
-    private val _state = MutableStateFlow(ProfileState())
-    val state = _state.asStateFlow()
-
-    private val _effect = Channel<ProfileEffect>(Channel.BUFFERED)
-    val effect = _effect.receiveAsFlow()
+) : BaseViewModel<ProfileState, ProfileEffect>(ProfileState()) {
 
     init {
         viewModelScope.launch {
             catchResult {
                 val user = getCurrentUserUseCase().filterNotNull().first()
-                _state.update {
+                updateState {
                     it.copy(
                         userId = user.id,
                         displayName = user.displayName,
@@ -67,10 +56,10 @@ class ProfileViewModel(
             load2FAStatus()
         }
         themeRepository.observe()
-            .onEach { pref -> _state.update { it.copy(themePreference = pref) } }
+            .onEach { pref -> updateState { it.copy(themePreference = pref) } }
             .launchIn(viewModelScope)
         appLockRepository.isEnabled
-            .onEach { enabled -> _state.update { it.copy(isAppLockEnabled = enabled) } }
+            .onEach { enabled -> updateState { it.copy(isAppLockEnabled = enabled) } }
             .launchIn(viewModelScope)
     }
 
@@ -78,12 +67,12 @@ class ProfileViewModel(
         when (intent) {
             is ProfileIntent.ToggleOnlineStatus -> {
                 val userId = supabase.auth.currentUserOrNull()?.id ?: return
-                _state.update { it.copy(showOnlineStatus = intent.show) }
+                updateState { it.copy(showOnlineStatus = intent.show) }
                 viewModelScope.launch {
                     catchResult { userRepository.updateShowOnlineStatus(userId, intent.show) }
                         .onFailure { e ->
                             AppLogger.e(TAG, "updateShowOnlineStatus failed", e)
-                            _state.update { it.copy(showOnlineStatus = !intent.show) }
+                            updateState { it.copy(showOnlineStatus = !intent.show) }
                         }
                 }
             }
@@ -96,7 +85,7 @@ class ProfileViewModel(
             is ProfileIntent.Enroll2FA -> enroll2FA()
             is ProfileIntent.Verify2FACode -> verify2FACode(intent.code)
             is ProfileIntent.Disable2FA -> disable2FA()
-            is ProfileIntent.Dismiss2FASheet -> _state.update {
+            is ProfileIntent.Dismiss2FASheet -> updateState {
                 it.copy(twoFactor = it.twoFactor.copy(
                     showEnrollSheet = false,
                     qrCodeSvg = null,
@@ -106,7 +95,7 @@ class ProfileViewModel(
                 ))
             }
             is ProfileIntent.ToggleAppLock -> toggleAppLock()
-            is ProfileIntent.EditDisplayName -> _state.update { it.copy(editingDisplayName = intent.value) }
+            is ProfileIntent.EditDisplayName -> updateState { it.copy(editingDisplayName = intent.value) }
             is ProfileIntent.SaveDisplayName -> saveDisplayName()
         }
     }
@@ -114,7 +103,7 @@ class ProfileViewModel(
     fun onAvatarSelected(bytes: ByteArray, mimeType: String) {
         val userId = supabase.auth.currentUserOrNull()?.id ?: return
         viewModelScope.launch {
-            _state.update { it.copy(isUploadingAvatar = true, error = null) }
+            updateState { it.copy(isUploadingAvatar = true, error = null) }
             catchResult {
                 bytes.checkAvatarSize()
                 val ext = if (mimeType.contains("png")) "png" else "jpg"
@@ -128,12 +117,12 @@ class ProfileViewModel(
                 ) { filter { eq("id", userId) } }
 
                 userDao.getById(userId)?.let { userDao.upsert(it.copy(avatarUrl = url)) }
-                _state.update { it.copy(avatarUrl = url) }
+                updateState { it.copy(avatarUrl = url) }
             }.onFailure { e ->
                 AppLogger.e(TAG, "Avatar upload failed", e)
-                _state.update { it.copy(error = e.message ?: "Error al subir la foto") }
+                updateState { it.copy(error = e.message ?: "Error al subir la foto") }
             }
-            _state.update { it.copy(isUploadingAvatar = false) }
+            updateState { it.copy(isUploadingAvatar = false) }
         }
     }
 
@@ -144,12 +133,12 @@ class ProfileViewModel(
                 supabase.auth.signOut()
                 userDao.clearCurrentUser()
             }.onFailure { e -> AppLogger.e(TAG, "Sign out failed", e) }
-            _effect.send(ProfileEffect.NavigateToAuth)
+            sendEffect(ProfileEffect.NavigateToAuth)
         }
     }
 
     fun requestSignOutAll() {
-        viewModelScope.launch { _effect.send(ProfileEffect.ShowSignOutAllConfirm) }
+        viewModelScope.launch { sendEffect(ProfileEffect.ShowSignOutAllConfirm) }
     }
 
     fun signOutAll() {
@@ -159,7 +148,7 @@ class ProfileViewModel(
                 supabase.auth.signOut(SignOutScope.GLOBAL)
                 userDao.clearCurrentUser()
             }.onFailure { e -> AppLogger.e(TAG, "Sign out all failed", e) }
-            _effect.send(ProfileEffect.NavigateToAuth)
+            sendEffect(ProfileEffect.NavigateToAuth)
         }
     }
 
@@ -167,7 +156,7 @@ class ProfileViewModel(
         catchResult {
             val factors = supabase.auth.mfa.retrieveFactorsForCurrentUser()
             val totpFactor = factors.firstOrNull { it.factorType == "totp" && it.isVerified }
-            _state.update { it.copy(twoFactor = it.twoFactor.copy(
+            updateState { it.copy(twoFactor = it.twoFactor.copy(
                 isEnrolled = totpFactor != null,
                 factorId = totpFactor?.id,
             )) }
@@ -176,10 +165,10 @@ class ProfileViewModel(
 
     private fun enroll2FA() {
         viewModelScope.launch {
-            _state.update { it.copy(twoFactor = it.twoFactor.copy(isLoading = true, enrollError = null)) }
+            updateState { it.copy(twoFactor = it.twoFactor.copy(isLoading = true, enrollError = null)) }
             catchResult {
                 val response = supabase.auth.mfa.enroll(FactorType.TOTP)
-                _state.update { it.copy(twoFactor = it.twoFactor.copy(
+                updateState { it.copy(twoFactor = it.twoFactor.copy(
                     isLoading = false,
                     showEnrollSheet = true,
                     qrCodeSvg = response.data.qrCode,
@@ -188,7 +177,7 @@ class ProfileViewModel(
                 )) }
             }.onFailure { e ->
                 AppLogger.e(TAG, "enroll2FA failed", e)
-                _state.update { it.copy(twoFactor = it.twoFactor.copy(
+                updateState { it.copy(twoFactor = it.twoFactor.copy(
                     isLoading = false,
                     enrollError = e.message ?: "Error al iniciar verificación en dos pasos",
                 )) }
@@ -197,13 +186,13 @@ class ProfileViewModel(
     }
 
     private fun verify2FACode(code: String) {
-        val factorId = _state.value.twoFactor.factorId ?: return
+        val factorId = state.value.twoFactor.factorId ?: return
         viewModelScope.launch {
-            _state.update { it.copy(twoFactor = it.twoFactor.copy(isLoading = true, verifyError = null)) }
+            updateState { it.copy(twoFactor = it.twoFactor.copy(isLoading = true, verifyError = null)) }
             catchResult {
                 val challenge = supabase.auth.mfa.createChallenge(factorId)
                 supabase.auth.mfa.verifyChallenge(factorId = factorId, challengeId = challenge.id, code = code)
-                _state.update { it.copy(twoFactor = it.twoFactor.copy(
+                updateState { it.copy(twoFactor = it.twoFactor.copy(
                     isLoading = false,
                     isEnrolled = true,
                     showEnrollSheet = false,
@@ -212,7 +201,7 @@ class ProfileViewModel(
                 )) }
             }.onFailure { e ->
                 AppLogger.e(TAG, "verify2FACode failed", e)
-                _state.update { it.copy(twoFactor = it.twoFactor.copy(
+                updateState { it.copy(twoFactor = it.twoFactor.copy(
                     isLoading = false,
                     verifyError = e.message ?: "Código incorrecto. Intenta de nuevo.",
                 )) }
@@ -223,7 +212,7 @@ class ProfileViewModel(
     private fun toggleAppLock() {
         viewModelScope.launch {
             catchResult {
-                if (_state.value.isAppLockEnabled) {
+                if (state.value.isAppLockEnabled) {
                     appLockRepository.disable()
                 } else {
                     appLockRepository.enable()
@@ -233,15 +222,15 @@ class ProfileViewModel(
     }
 
     private fun disable2FA() {
-        val factorId = _state.value.twoFactor.factorId ?: return
+        val factorId = state.value.twoFactor.factorId ?: return
         viewModelScope.launch {
-            _state.update { it.copy(twoFactor = it.twoFactor.copy(isLoading = true)) }
+            updateState { it.copy(twoFactor = it.twoFactor.copy(isLoading = true)) }
             catchResult {
                 supabase.auth.mfa.unenroll(factorId)
-                _state.update { it.copy(twoFactor = TwoFactorState(isEnrolled = false)) }
+                updateState { it.copy(twoFactor = TwoFactorState(isEnrolled = false)) }
             }.onFailure { e ->
                 AppLogger.e(TAG, "disable2FA failed", e)
-                _state.update { it.copy(twoFactor = it.twoFactor.copy(
+                updateState { it.copy(twoFactor = it.twoFactor.copy(
                     isLoading = false,
                     enrollError = e.message ?: "Error al desactivar la verificación en dos pasos",
                 )) }
@@ -251,15 +240,15 @@ class ProfileViewModel(
 
     private fun saveDisplayName() {
         val userId = supabase.auth.currentUserOrNull()?.id ?: return
-        val newName = _state.value.editingDisplayName.trim()
-        if (newName.isBlank() || newName == _state.value.displayName) return
+        val newName = state.value.editingDisplayName.trim()
+        if (newName.isBlank() || newName == state.value.displayName) return
         viewModelScope.launch {
-            _state.update { it.copy(isSavingDisplayName = true, error = null) }
+            updateState { it.copy(isSavingDisplayName = true, error = null) }
             catchResult { userRepository.updateDisplayName(userId, newName) }
-                .onSuccess { _state.update { it.copy(displayName = newName, isSavingDisplayName = false) } }
+                .onSuccess { updateState { it.copy(displayName = newName, isSavingDisplayName = false) } }
                 .onFailure { e ->
                     AppLogger.e(TAG, "updateDisplayName failed", e)
-                    _state.update { it.copy(
+                    updateState { it.copy(
                         isSavingDisplayName = false,
                         editingDisplayName = it.displayName,
                         error = e.message ?: "Error al guardar el nombre",

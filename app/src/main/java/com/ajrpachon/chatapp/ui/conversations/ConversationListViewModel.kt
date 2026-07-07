@@ -1,6 +1,5 @@
 package com.ajrpachon.chatapp.ui.conversations
 
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.data.local.DraftRepository
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
@@ -10,16 +9,12 @@ import com.ajrpachon.chatapp.domain.usecase.ObserveConversationsUseCase
 import com.ajrpachon.chatapp.domain.usecase.ObserveInvitationsUseCase
 import com.ajrpachon.chatapp.service.FcmTokenManager
 import com.ajrpachon.chatapp.service.PresenceManager
+import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.NetworkMonitor
 import com.ajrpachon.chatapp.utils.catchResult
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 
@@ -35,51 +30,45 @@ class ConversationListViewModel(
     private val draftRepository: DraftRepository,
     private val notificationSoundRepository: com.ajrpachon.chatapp.data.local.NotificationSoundRepository,
     private val networkMonitor: NetworkMonitor,
-) : ViewModel() {
-
-    private val _state = MutableStateFlow(ConversationListState())
-    val state = _state.asStateFlow()
-
-    private val _effect = Channel<ConversationListEffect>(Channel.BUFFERED)
-    val effect = _effect.receiveAsFlow()
+) : BaseViewModel<ConversationListState, ConversationListEffect>(ConversationListState()) {
 
     init {
         presenceManager.start()
         viewModelScope.launch { fcmTokenManager.syncToken() }
         viewModelScope.launch {
             networkMonitor.isOnline.collect { online ->
-                _state.update { it.copy(isOnline = online) }
+                updateState { it.copy(isOnline = online) }
             }
         }
         viewModelScope.launch {
             draftRepository.getAllDrafts().collect { drafts ->
-                _state.update { it.copy(drafts = drafts) }
+                updateState { it.copy(drafts = drafts) }
             }
         }
         viewModelScope.launch {
             catchResult {
                 val user = getCurrentUserUseCase().filterNotNull().first()
-                _state.update { it.copy(currentUserId = user.id, isLoading = false) }
+                updateState { it.copy(currentUserId = user.id, isLoading = false) }
                 supervisorScope {
                     launch {
                         observeInvitationsUseCase(user.id).collect { invitations ->
-                            _state.update { it.copy(pendingInvitationsCount = invitations.size) }
+                            updateState { it.copy(pendingInvitationsCount = invitations.size) }
                         }
                     }
                     launch {
                         observeConversationsUseCase(user.id).collect { convs ->
-                            _state.update { it.copy(conversations = sortedConversations(convs, it.sortByUnread)) }
+                            updateState { it.copy(conversations = sortedConversations(convs, state.value.sortByUnread)) }
                         }
                     }
                     launch {
                         conversationRepository.observeArchivedConversations(user.id).collect { convs ->
-                            _state.update { it.copy(archivedConversations = convs) }
+                            updateState { it.copy(archivedConversations = convs) }
                         }
                     }
                 }
             }.onFailure { e ->
                 AppLogger.e("ConversationListViewModel", "Observe conversations failed", e)
-                _state.update { it.copy(error = e.message, isLoading = false) }
+                updateState { it.copy(error = e.message, isLoading = false) }
             }
         }
     }
@@ -87,32 +76,32 @@ class ConversationListViewModel(
     fun onIntent(intent: ConversationListIntent) {
         when (intent) {
             is ConversationListIntent.OpenConversation ->
-                _effect.trySend(ConversationListEffect.NavigateToChat(intent.conversationId, intent.conversationName, intent.isGroup))
+                sendEffect(ConversationListEffect.NavigateToChat(intent.conversationId, intent.conversationName, intent.isGroup))
             is ConversationListIntent.DismissError ->
-                _state.update { it.copy(error = null) }
+                updateState { it.copy(error = null) }
             is ConversationListIntent.DeleteConversation ->
                 viewModelScope.launch {
                     catchResult { conversationRepository.deleteConversation(intent.conversationId) }
-                        .onFailure { e -> _state.update { it.copy(error = e.message) } }
+                        .onFailure { e -> updateState { it.copy(error = e.message) } }
                 }
             is ConversationListIntent.ToggleMute ->
                 viewModelScope.launch {
                     catchResult { conversationRepository.toggleMute(intent.conversationId, intent.muted) }
-                        .onFailure { e -> _state.update { it.copy(error = e.message) } }
+                        .onFailure { e -> updateState { it.copy(error = e.message) } }
                 }
             is ConversationListIntent.ClearChat ->
                 viewModelScope.launch {
                     catchResult { conversationRepository.clearChat(intent.conversationId) }
-                        .onFailure { e -> _state.update { it.copy(error = e.message) } }
+                        .onFailure { e -> updateState { it.copy(error = e.message) } }
                 }
             is ConversationListIntent.LeaveGroup ->
                 viewModelScope.launch {
-                    val userId = _state.value.currentUserId ?: return@launch
+                    val userId = state.value.currentUserId ?: return@launch
                     leaveGroupUseCase(intent.conversationId, userId)
-                        .onFailure { e -> _state.update { it.copy(error = e.message) } }
+                        .onFailure { e -> updateState { it.copy(error = e.message) } }
                 }
             is ConversationListIntent.ToggleSortByUnread -> {
-                _state.update { current ->
+                updateState { current ->
                     val newSort = !current.sortByUnread
                     current.copy(
                         sortByUnread = newSort,
@@ -121,35 +110,35 @@ class ConversationListViewModel(
                 }
             }
             is ConversationListIntent.SetFilter ->
-                _state.update { current ->
+                updateState { current ->
                     val newFilter = if (current.selectedFilter == intent.filter) ConversationFilter.ALL else intent.filter
                     current.copy(selectedFilter = newFilter)
                 }
             is ConversationListIntent.SearchQueryChanged ->
-                _state.update { it.copy(searchQuery = intent.query) }
+                updateState { it.copy(searchQuery = intent.query) }
             is ConversationListIntent.ToggleSearch ->
-                _state.update { current ->
+                updateState { current ->
                     if (current.isSearchActive) current.copy(isSearchActive = false, searchQuery = "")
                     else current.copy(isSearchActive = true)
                 }
             is ConversationListIntent.ArchiveConversation ->
                 viewModelScope.launch {
                     catchResult { conversationRepository.archiveConversation(intent.conversationId, intent.archived) }
-                        .onFailure { e -> _state.update { it.copy(error = e.message) } }
+                        .onFailure { e -> updateState { it.copy(error = e.message) } }
                 }
             is ConversationListIntent.ShowArchivedSheet ->
-                _state.update { it.copy(showArchivedSheet = true) }
+                updateState { it.copy(showArchivedSheet = true) }
             is ConversationListIntent.DismissArchivedSheet ->
-                _state.update { it.copy(showArchivedSheet = false) }
+                updateState { it.copy(showArchivedSheet = false) }
             is ConversationListIntent.ShowSoundPicker ->
-                _state.update { it.copy(soundPickerConversationId = intent.conversationId) }
+                updateState { it.copy(soundPickerConversationId = intent.conversationId) }
             is ConversationListIntent.DismissSoundPicker ->
-                _state.update { it.copy(soundPickerConversationId = null) }
+                updateState { it.copy(soundPickerConversationId = null) }
             is ConversationListIntent.SetNotificationSound ->
                 viewModelScope.launch {
                     catchResult { notificationSoundRepository.set(intent.conversationId, intent.sound) }
-                        .onFailure { e -> _state.update { it.copy(error = e.message) } }
-                    _state.update { it.copy(soundPickerConversationId = null) }
+                        .onFailure { e -> updateState { it.copy(error = e.message) } }
+                    updateState { it.copy(soundPickerConversationId = null) }
                 }
         }
     }

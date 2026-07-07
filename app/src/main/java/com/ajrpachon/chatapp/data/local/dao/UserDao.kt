@@ -15,6 +15,9 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE id = :id LIMIT 1")
     suspend fun getById(id: String): UserDBO?
 
+    @Query("SELECT * FROM users WHERE id IN (:ids)")
+    suspend fun getByIds(ids: List<String>): List<UserDBO>
+
     @Query("SELECT * FROM users WHERE id = :id LIMIT 1")
     fun observeById(id: String): Flow<UserDBO?>
 
