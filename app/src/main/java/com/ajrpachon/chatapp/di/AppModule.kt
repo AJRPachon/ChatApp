@@ -65,6 +65,7 @@ val databaseModule = module {
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().chatEventDao() }
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().sessionDao() }
     single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().scheduledMessageDao() }
+    single { get<com.ajrpachon.chatapp.data.local.ChatDatabase>().statusDao() }
 }
 
 val workManagerModule = module {
