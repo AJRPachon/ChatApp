@@ -62,21 +62,16 @@ class InvitationRemoteSource(private val supabase: SupabaseClient) {
             .update({ set("status", status) }) { filter { eq("id", invitationId) } }
     }
 
-    // Returns all invitations between these two users in either direction (any status).
-    // Retries once after 300 ms if the first call throws (e.g. PostgREST EOF on cold start).
+    // Returns all invitations between these two users in either direction (any status)
+    // Uses two separate queries to avoid or{and{...}} PostgREST parsing issues in Supabase 3.5.x
     suspend fun getRelationshipInvitations(userA: String, userB: String): List<InvitationDTO> {
-        // Two separate queries avoid the or{and{}} PostgREST bug that returns EOF body.
-        val query1 = catchResult {
-            supabase.postgrest["invitations"].select {
-                filter { eq("sender_id", userA); eq("receiver_id", userB) }
-            }.decodeList<InvitationDTO>()
-        }.getOrDefault(emptyList())
-        val query2 = catchResult {
-            supabase.postgrest["invitations"].select {
-                filter { eq("sender_id", userB); eq("receiver_id", userA) }
-            }.decodeList<InvitationDTO>()
-        }.getOrDefault(emptyList())
-        return (query1 + query2)
+        val sent = supabase.postgrest["invitations"]
+            .select { filter { eq("sender_id", userA); eq("receiver_id", userB) } }
+            .decodeList<InvitationDTO>()
+        val received = supabase.postgrest["invitations"]
+            .select { filter { eq("sender_id", userB); eq("receiver_id", userA) } }
+            .decodeList<InvitationDTO>()
+        return sent + received
     }
 
     suspend fun blockUser(blockerId: String, blockedId: String) {
@@ -90,18 +85,14 @@ class InvitationRemoteSource(private val supabase: SupabaseClient) {
     }
 
     suspend fun isBlocked(userA: String, userB: String): Boolean {
-        val q1 = catchResult {
-            supabase.postgrest["blocked_users"].select {
-                filter { eq("blocker_id", userA); eq("blocked_id", userB) }
-            }.decodeList<Map<String, String>>()
-        }.getOrDefault(emptyList())
-        if (q1.isNotEmpty()) return true
-        val q2 = catchResult {
-            supabase.postgrest["blocked_users"].select {
-                filter { eq("blocker_id", userB); eq("blocked_id", userA) }
-            }.decodeList<Map<String, String>>()
-        }.getOrDefault(emptyList())
-        return q2.isNotEmpty()
+        val byA = supabase.postgrest["blocked_users"]
+            .select { filter { eq("blocker_id", userA); eq("blocked_id", userB) } }
+            .decodeList<Map<String, String>>()
+        if (byA.isNotEmpty()) return true
+        val byB = supabase.postgrest["blocked_users"]
+            .select { filter { eq("blocker_id", userB); eq("blocked_id", userA) } }
+            .decodeList<Map<String, String>>()
+        return byB.isNotEmpty()
     }
 
     fun observeInvitations(userId: String): Flow<InvitationDTO> = channelFlow {
