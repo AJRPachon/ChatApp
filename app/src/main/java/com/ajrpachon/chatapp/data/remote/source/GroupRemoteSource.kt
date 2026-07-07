@@ -12,6 +12,7 @@ import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
 import io.github.jan.supabase.realtime.realtime
+import io.github.jan.supabase.storage.storage
 import com.ajrpachon.chatapp.utils.catchResult
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
@@ -24,7 +25,9 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+
 private const val TAG = "GroupRemote"
+private const val GROUP_AVATAR_BUCKET = "group-avatars"
 
 class GroupRemoteSource(private val supabase: SupabaseClient) {
 
@@ -146,5 +149,13 @@ class GroupRemoteSource(private val supabase: SupabaseClient) {
                     eq("user_id", userId)
                 }
             }
+    }
+
+    fun getCurrentUserId(): String? = supabase.auth.currentUserOrNull()?.id
+
+    suspend fun uploadGroupAvatar(conversationId: String, bytes: ByteArray): String {
+        val path = "$conversationId/${java.util.UUID.randomUUID()}.jpg"
+        supabase.storage[GROUP_AVATAR_BUCKET].upload(path, bytes) { upsert = true }
+        return supabase.storage[GROUP_AVATAR_BUCKET].publicUrl(path)
     }
 }
