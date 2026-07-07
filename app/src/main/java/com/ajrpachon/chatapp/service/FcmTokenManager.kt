@@ -1,9 +1,9 @@
 package com.ajrpachon.chatapp.service
 
 import android.content.Context
-import android.util.Log
 import com.ajrpachon.chatapp.data.session.AndroidSecureStorage
 import com.ajrpachon.chatapp.data.remote.source.FcmTokenRemoteSource
+import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.catchResult
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.Dispatchers
@@ -27,12 +27,12 @@ class FcmTokenManager(
     suspend fun syncToken() = tokenMutex.withLock {
         catchResult {
             val token = FirebaseMessaging.getInstance().token.await()
-            Log.d(TAG, "FCM token obtained: ${token.take(20)}...")
+            AppLogger.d(TAG, "FCM token obtained: ${token.take(20)}...")
             remoteSource.upsertToken(token)
             withContext(Dispatchers.IO) { storage.remove(KEY_PENDING_TOKEN) }
-            Log.d(TAG, "FCM token upserted successfully")
+            AppLogger.d(TAG, "FCM token upserted successfully")
         }.onFailure { e ->
-            Log.e(TAG, "syncToken failed", e)
+            AppLogger.e(TAG, "syncToken failed", e)
         }
     }
 
@@ -42,9 +42,9 @@ class FcmTokenManager(
             remoteSource.deleteToken(token)
             FirebaseMessaging.getInstance().deleteToken().await()
             withContext(Dispatchers.IO) { storage.remove(KEY_PENDING_TOKEN) }
-            Log.d(TAG, "FCM token deleted")
+            AppLogger.d(TAG, "FCM token deleted")
         }.onFailure { e ->
-            Log.e(TAG, "deleteToken failed", e)
+            AppLogger.e(TAG, "deleteToken failed", e)
         }
     }
 
