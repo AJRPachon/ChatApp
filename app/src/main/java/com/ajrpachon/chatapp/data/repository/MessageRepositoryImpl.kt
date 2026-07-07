@@ -80,8 +80,10 @@ class MessageRepositoryImpl(
         }
         messageDao.observeByConversation(conversationId, historyVisibleFrom).map { dbos ->
             AppLogger.d(TAG, "Room emit: ${dbos.size} msgs conv=$conversationId since=$historyVisibleFrom firstCreatedAt=${dbos.firstOrNull()?.createdAt} lastCreatedAt=${dbos.lastOrNull()?.createdAt}")
+            val senderIds = dbos.map { it.senderId }.distinct()
+            val senderMap = userDao.getByIds(senderIds).associateBy { it.id }
             dbos.map { dbo ->
-                val senderName = userDao.getById(dbo.senderId)?.displayName ?: dbo.senderId
+                val senderName = senderMap[dbo.senderId]?.displayName ?: dbo.senderId
                 val bo = dbo.toBO(currentUserId, senderName)
                 // Attempt to decrypt E2EE messages inline; fall back to ciphertext on error
                 if (bo.isEncrypted && bo.content.isNotBlank()) {
@@ -258,8 +260,11 @@ class MessageRepositoryImpl(
 
     override suspend fun searchMessages(conversationId: String, currentUserId: String, query: String): List<MessageBO> {
         if (query.isBlank()) return emptyList()
-        return messageDao.searchMessages(conversationId, query.trim()).map { dbo ->
-            val senderName = userDao.getById(dbo.senderId)?.displayName ?: dbo.senderId
+        val dbos = messageDao.searchMessages(conversationId, query.trim())
+        val senderIds = dbos.map { it.senderId }.distinct()
+        val senderMap = userDao.getByIds(senderIds).associateBy { it.id }
+        return dbos.map { dbo ->
+            val senderName = senderMap[dbo.senderId]?.displayName ?: dbo.senderId
             dbo.toBO(currentUserId, senderName)
         }
     }
@@ -274,8 +279,10 @@ class MessageRepositoryImpl(
 
     override fun getPinnedMessages(conversationId: String, currentUserId: String): Flow<List<MessageBO>> =
         messageDao.getPinnedMessages(conversationId).map { dbos ->
+            val senderIds = dbos.map { it.senderId }.distinct()
+            val senderMap = userDao.getByIds(senderIds).associateBy { it.id }
             dbos.map { dbo ->
-                val senderName = userDao.getById(dbo.senderId)?.displayName ?: dbo.senderId
+                val senderName = senderMap[dbo.senderId]?.displayName ?: dbo.senderId
                 dbo.toBO(currentUserId, senderName)
             }
         }
@@ -286,8 +293,10 @@ class MessageRepositoryImpl(
 
     override fun getSavedMessages(currentUserId: String): Flow<List<MessageBO>> =
         messageDao.getSavedMessages().map { dbos ->
+            val senderIds = dbos.map { it.senderId }.distinct()
+            val senderMap = userDao.getByIds(senderIds).associateBy { it.id }
             dbos.map { dbo ->
-                val senderName = userDao.getById(dbo.senderId)?.displayName ?: dbo.senderId
+                val senderName = senderMap[dbo.senderId]?.displayName ?: dbo.senderId
                 dbo.toBO(currentUserId, senderName)
             }
         }
@@ -356,8 +365,11 @@ class MessageRepositoryImpl(
     }
 
     override suspend fun getAllMessages(conversationId: String, currentUserId: String): List<MessageBO> {
-        return messageDao.getAllMessages(conversationId).map { dbo ->
-            val senderName = userDao.getById(dbo.senderId)?.displayName ?: dbo.senderId
+        val dbos = messageDao.getAllMessages(conversationId)
+        val senderIds = dbos.map { it.senderId }.distinct()
+        val senderMap = userDao.getByIds(senderIds).associateBy { it.id }
+        return dbos.map { dbo ->
+            val senderName = senderMap[dbo.senderId]?.displayName ?: dbo.senderId
             dbo.toBO(currentUserId, senderName)
         }
     }
