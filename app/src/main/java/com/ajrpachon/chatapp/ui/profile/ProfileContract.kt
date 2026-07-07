@@ -16,6 +16,8 @@ data class TwoFactorState(
 data class ProfileState(
     val userId: String = "",
     val displayName: String = "",
+    val editingDisplayName: String = "",
+    val isSavingDisplayName: Boolean = false,
     val username: String = "",
     val email: String = "",
     val avatarUrl: String? = null,
@@ -35,6 +37,8 @@ sealed interface ProfileIntent {
     data object Disable2FA : ProfileIntent
     data object Dismiss2FASheet : ProfileIntent
     data object ToggleAppLock : ProfileIntent
+    data class EditDisplayName(val value: String) : ProfileIntent
+    data object SaveDisplayName : ProfileIntent
 }
 
 sealed interface ProfileEffect {
