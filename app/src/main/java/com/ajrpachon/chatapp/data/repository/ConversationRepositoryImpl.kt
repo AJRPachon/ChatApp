@@ -1,7 +1,4 @@
-package com.ajrpachon.chatapp.data.repository
-import com.ajrpachon.chatapp.utils.catchResult
-import com.ajrpachon.chatapp.utils.AppLogger
-
+﻿package com.ajrpachon.chatapp.data.repository
 
 import com.ajrpachon.chatapp.data.local.dao.ConversationDao
 import com.ajrpachon.chatapp.data.local.dao.GroupMemberDao
@@ -10,21 +7,12 @@ import com.ajrpachon.chatapp.data.local.dao.UserDao
 import com.ajrpachon.chatapp.data.local.entity.ConversationDBO
 import com.ajrpachon.chatapp.data.mapper.toDBO
 import com.ajrpachon.chatapp.data.mapper.toBO
-import com.ajrpachon.chatapp.data.remote.dto.ConversationParticipantWithConvDTO
-import com.ajrpachon.chatapp.data.remote.dto.MessageDTO
-import com.ajrpachon.chatapp.data.remote.dto.UserDTO
+import com.ajrpachon.chatapp.data.remote.source.ConversationRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.MessageRemoteSource
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.postgrest.postgrest
-import io.github.jan.supabase.postgrest.query.Columns
-import io.github.jan.supabase.realtime.PostgresAction
-import io.github.jan.supabase.realtime.channel
-import io.github.jan.supabase.realtime.postgresChangeFlow
-import io.github.jan.supabase.realtime.realtime
-import kotlinx.coroutines.NonCancellable
+import com.ajrpachon.chatapp.utils.AppLogger
+import com.ajrpachon.chatapp.utils.catchResult
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -33,21 +21,11 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.put
+
 private const val TAG = "ConvRepo"
-
-private val lenientJson = Json { ignoreUnknownKeys = true }
-
-@Serializable
-private data class ParticipantUserIdDTO(@SerialName("user_id") val userId: String)
 
 class ConversationRepositoryImpl(
     private val conversationDao: ConversationDao,
@@ -55,7 +33,7 @@ class ConversationRepositoryImpl(
     private val messageDao: MessageDao,
     private val groupMemberDao: GroupMemberDao,
     private val messageRemoteSource: MessageRemoteSource,
-    private val supabase: SupabaseClient,
+    private val conversationRemoteSource: ConversationRemoteSource,
 ) : ConversationRepository {
 
     private val syncMutex = Mutex()
@@ -63,7 +41,6 @@ class ConversationRepositoryImpl(
     override fun observeConversations(userId: String): Flow<List<ConversationBO>> = channelFlow {
         launch { catchResult { syncConversations(userId) } }
 
-        // Periodic resync so group avatar / name changes are never missed if Realtime is delayed
         launch {
             while (isActive) {
                 delay(60_000)
@@ -72,122 +49,71 @@ class ConversationRepositoryImpl(
             }
         }
 
-        // Ensure user JWT is loaded so Realtime subscriptions are authenticated
-        catchResult { supabase.auth.currentSessionOrNull() }
-
-        val participantsChannel = supabase.channel("participants:$userId")
-        val messagesChannel = supabase.channel("messages:list:$userId")
+        catchResult { conversationRemoteSource.ensureSession() }
 
         launch {
-            val flow = participantsChannel.postgresChangeFlow<PostgresAction.Insert>(schema = "public") {
-                table = "conversation_participants"
-            }
-            participantsChannel.subscribe()
-            try {
-                flow.collect { action ->
-                    val addedUserId = action.record["user_id"]?.jsonPrimitive?.contentOrNull
-                    if (addedUserId == userId) catchResult { syncConversations(userId) }
-                }
-            } finally {
-                withContext(NonCancellable) {
-                    catchResult { participantsChannel.unsubscribe() }
-                    catchResult { supabase.realtime.removeChannel(participantsChannel) }
-                }
+            conversationRemoteSource.observeParticipantInserts(userId).collect { record ->
+                val addedUserId = record["user_id"]?.jsonPrimitive?.contentOrNull
+                if (addedUserId == userId) catchResult { syncConversations(userId) }
             }
         }
 
         launch {
-            val flow = messagesChannel.postgresChangeFlow<PostgresAction.Insert>(schema = "public") {
-                table = "messages"
-            }
-            messagesChannel.subscribe()
-            try {
-                flow.collect { action ->
-                    catchResult {
-                        val messageDto = lenientJson.decodeFromString<MessageDTO>(action.record.toString())
-                        messageDao.upsert(messageDto.toDBO())
-                        val existingConversation = conversationDao.getById(messageDto.conversationId)
-                        if (existingConversation != null) {
-                            val newUnread = if (messageDto.senderId != userId)
-                                existingConversation.unreadCount + 1
-                            else
-                                existingConversation.unreadCount
-                            conversationDao.upsert(existingConversation.copy(
+            conversationRemoteSource.observeNewMessageInserts(userId).collect { messageDto ->
+                catchResult {
+                    messageDao.upsert(messageDto.toDBO())
+                    val existingConversation = conversationDao.getById(messageDto.conversationId)
+                    if (existingConversation != null) {
+                        val newUnread = if (messageDto.senderId != userId)
+                            existingConversation.unreadCount + 1
+                        else
+                            existingConversation.unreadCount
+                        conversationDao.upsert(
+                            existingConversation.copy(
                                 updatedAt = System.currentTimeMillis(),
                                 unreadCount = newUnread,
-                            ))
-                        } else {
-                            syncConversations(userId)
-                        }
-                    }
-                }
-            } finally {
-                withContext(NonCancellable) {
-                    catchResult { messagesChannel.unsubscribe() }
-                    catchResult { supabase.realtime.removeChannel(messagesChannel) }
-                }
-            }
-        }
-
-        // Group avatar / name / description changes — conversations UPDATE
-        val conversationsUpdateChannel = supabase.channel("conversations:updates:$userId-${System.nanoTime()}")
-        launch {
-            val flow = conversationsUpdateChannel.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
-                table = "conversations"
-            }
-            AppLogger.d(TAG, "conversationsUpdateChannel subscribing userId=$userId")
-            conversationsUpdateChannel.subscribe()
-            AppLogger.d(TAG, "conversationsUpdateChannel subscribed userId=$userId")
-            try {
-                flow.collect { action ->
-                    AppLogger.d(TAG, "conversationsUpdateChannel UPDATE received userId=$userId record=${action.record}")
-                    catchResult { syncConversations(userId) }
-                        .onFailure { e -> AppLogger.e(TAG, "syncConversations failed after conversations UPDATE", e) }
-                }
-            } finally {
-                withContext(NonCancellable) {
-                    catchResult { conversationsUpdateChannel.unsubscribe() }
-                    catchResult { supabase.realtime.removeChannel(conversationsUpdateChannel) }
-                }
-            }
-        }
-
-        // Individual user avatar / name changes — profiles UPDATE
-        val profilesChannel = supabase.channel("profiles:updates:$userId-${System.nanoTime()}")
-        launch {
-            val flow = profilesChannel.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
-                table = "profiles"
-            }
-            profilesChannel.subscribe()
-            try {
-                flow.collect { action ->
-                    catchResult {
-                        val profileId = action.record["id"]?.jsonPrimitive?.contentOrNull ?: return@catchResult
-                        val existing = userDao.getById(profileId) ?: return@catchResult
-                        val newAvatarUrl = action.record["avatar_url"]?.jsonPrimitive?.contentOrNull
-                        val newDisplayName = action.record["display_name"]?.jsonPrimitive?.contentOrNull
-                        val newUsername = action.record["username"]?.jsonPrimitive?.contentOrNull
-                        userDao.upsert(
-                            existing.copy(
-                                avatarUrl = newAvatarUrl,
-                                displayName = newDisplayName ?: existing.displayName,
-                                username = newUsername ?: existing.username,
                             )
                         )
-                        // Touch the DM conversation so observeAll() re-emits with the new avatar
-                        conversationDao.getByOtherUserId(profileId)?.let { conv ->
-                            conversationDao.upsert(conv.copy(
+                    } else {
+                        syncConversations(userId)
+                    }
+                }
+            }
+        }
+
+        launch {
+            AppLogger.d(TAG, "conversationsUpdateChannel subscribing userId=$userId")
+            conversationRemoteSource.observeConversationUpdates(userId).collect {
+                AppLogger.d(TAG, "conversationsUpdateChannel UPDATE received userId=$userId")
+                catchResult { syncConversations(userId) }
+                    .onFailure { e -> AppLogger.e(TAG, "syncConversations failed after conversations UPDATE", e) }
+            }
+        }
+
+        launch {
+            conversationRemoteSource.observeProfileUpdates(userId).collect { record ->
+                catchResult {
+                    val profileId = record["id"]?.jsonPrimitive?.contentOrNull ?: return@catchResult
+                    val existing = userDao.getById(profileId) ?: return@catchResult
+                    val newAvatarUrl = record["avatar_url"]?.jsonPrimitive?.contentOrNull
+                    val newDisplayName = record["display_name"]?.jsonPrimitive?.contentOrNull
+                    val newUsername = record["username"]?.jsonPrimitive?.contentOrNull
+                    userDao.upsert(
+                        existing.copy(
+                            avatarUrl = newAvatarUrl,
+                            displayName = newDisplayName ?: existing.displayName,
+                            username = newUsername ?: existing.username,
+                        )
+                    )
+                    conversationDao.getByOtherUserId(profileId)?.let { conv ->
+                        conversationDao.upsert(
+                            conv.copy(
                                 name = newUsername?.takeIf { it.isNotBlank() }
                                     ?: newDisplayName?.takeIf { it.isNotBlank() }
                                     ?: conv.name,
-                            ))
-                        }
+                            )
+                        )
                     }
-                }
-            } finally {
-                withContext(NonCancellable) {
-                    catchResult { profilesChannel.unsubscribe() }
-                    catchResult { supabase.realtime.removeChannel(profilesChannel) }
                 }
             }
         }
@@ -229,24 +155,14 @@ class ConversationRepositoryImpl(
         currentUserId: String,
         otherUserId: String,
     ): ConversationBO {
-        val result = supabase.postgrest.rpc(
-            "get_or_create_direct_conversation",
-            buildJsonObject {
-                put("user_a", currentUserId)
-                put("user_b", otherUserId)
-            },
-        )
-        val conversationId = Json.decodeFromString<String>(result.data)
+        val conversationId = conversationRemoteSource.getOrCreateDirectConversation(currentUserId, otherUserId)
         val nowMs = System.currentTimeMillis()
         val now = Instant.fromEpochMilliseconds(nowMs)
 
-        // Prefer username over displayName; fetch from remote if not cached
         val otherName = userDao.getById(otherUserId)?.let { dbo ->
             dbo.username.takeIf { it.isNotBlank() } ?: dbo.displayName.takeIf { it.isNotBlank() }
         } ?: catchResult {
-            supabase.postgrest["profiles"]
-                .select { filter { eq("id", otherUserId) } }
-                .decodeSingleOrNull<UserDTO>()
+            conversationRemoteSource.fetchUserProfile(otherUserId)
                 ?.also { userDao.upsert(it.toDBO()) }
                 ?.let { dto ->
                     dto.username?.takeIf { it.isNotBlank() } ?: dto.displayName.takeIf { it.isNotBlank() }
@@ -301,11 +217,7 @@ class ConversationRepositoryImpl(
     }
 
     override suspend fun syncConversations(userId: String) = syncMutex.withLock {
-        val rows = supabase.postgrest["conversation_participants"]
-            .select(Columns.raw("conversation_id, joined_at, conversations(id,name,is_group,created_by,updated_at,avatar_url,description)")) {
-                filter { eq("user_id", userId) }
-            }
-            .decodeList<ConversationParticipantWithConvDTO>()
+        val rows = conversationRemoteSource.fetchParticipantsWithConversations(userId)
 
         for (participantRow in rows) {
             val conversationDto = participantRow.conversation
@@ -313,20 +225,16 @@ class ConversationRepositoryImpl(
             val historyVisibleFrom = catchResult {
                 Instant.parse(participantRow.joinedAt).toEpochMilliseconds()
             }.getOrDefault(0L)
-            AppLogger.d(TAG, "syncConv conv=${conversationDto.id} isGroup=${conversationDto.isGroup} avatarUrl=${conversationDto.avatarUrl} existingAvatarUrl=${existingConversation?.groupAvatarUrl}")
+            AppLogger.d(
+                TAG,
+                "syncConv conv=${conversationDto.id} isGroup=${conversationDto.isGroup} " +
+                    "avatarUrl=${conversationDto.avatarUrl} existingAvatarUrl=${existingConversation?.groupAvatarUrl}"
+            )
 
             var resolvedOtherUserId: String? = null
             val resolvedName = if (!conversationDto.isGroup) {
                 val otherUserId = catchResult {
-                    supabase.postgrest["conversation_participants"]
-                        .select(Columns.list("user_id")) {
-                            filter {
-                                eq("conversation_id", conversationDto.id)
-                                neq("user_id", userId)
-                            }
-                        }
-                        .decodeList<ParticipantUserIdDTO>()
-                        .firstOrNull()?.userId
+                    conversationRemoteSource.fetchOtherParticipantId(conversationDto.id, userId)
                 }.getOrNull()
                     ?: conversationDto.createdBy?.takeIf { it != userId }
 
@@ -334,9 +242,7 @@ class ConversationRepositoryImpl(
 
                 if (otherUserId != null) {
                     val otherUserProfile = catchResult {
-                        supabase.postgrest["profiles"]
-                            .select { filter { eq("id", otherUserId) } }
-                            .decodeSingleOrNull<UserDTO>()
+                        conversationRemoteSource.fetchUserProfile(otherUserId)
                             ?.also { userDao.upsert(it.toDBO()) }
                     }.getOrNull()
                     otherUserProfile?.username?.takeIf { it.isNotBlank() }
@@ -362,8 +268,6 @@ class ConversationRepositoryImpl(
                 )
             )
 
-            // Fetch the last message so the conversation list can show a preview
-            // without requiring the user to open each chat first.
             catchResult {
                 val lastMsg = messageRemoteSource.getLastMessage(conversationDto.id, historyVisibleFrom)
                 if (lastMsg != null) messageDao.upsert(lastMsg.toDBO())
