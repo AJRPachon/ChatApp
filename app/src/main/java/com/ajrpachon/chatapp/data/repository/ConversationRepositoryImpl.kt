@@ -228,16 +228,6 @@ class ConversationRepositoryImpl(
         )
     }
 
-    override suspend fun getById(conversationId: String): ConversationBO? =
-        conversationDao.getById(conversationId)?.toBO("")
-
-    override fun observeById(conversationId: String): Flow<ConversationBO?> =
-        conversationDao.observeById(conversationId).map { dbo -> dbo?.toBO("") }
-
-    override suspend fun resetUnreadCount(conversationId: String) {
-        conversationDao.resetUnreadCount(conversationId)
-    }
-
     override suspend fun getOrCreateDirectConversation(
         currentUserId: String,
         otherUserId: String,
