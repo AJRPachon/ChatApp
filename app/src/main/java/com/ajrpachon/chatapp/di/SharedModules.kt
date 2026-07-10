@@ -6,6 +6,7 @@ import com.ajrpachon.chatapp.data.remote.source.FcmTokenRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.GroupRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.InvitationRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.MessageRemoteSource
+import com.ajrpachon.chatapp.data.remote.source.ReactionRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.StatusRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.UserRemoteSource
 import com.ajrpachon.chatapp.service.FcmTokenManager
@@ -64,6 +65,7 @@ val remoteModule = module {
     singleOf(::InvitationRemoteSource)
     singleOf(::GroupRemoteSource)
     singleOf(::FcmTokenRemoteSource)
+    singleOf(::ReactionRemoteSource)
     singleOf(::StatusRemoteSource)
     single { FcmTokenManager(get(), get()) }
 }
