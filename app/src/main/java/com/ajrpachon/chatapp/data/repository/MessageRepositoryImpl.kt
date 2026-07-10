@@ -364,7 +364,7 @@ class MessageRepositoryImpl(
         }
     }
 
-    override suspend fun savePendingMessage(id: String, conversationId: String, senderId: String, content: String, replyToId: String?, replyToContent: String?, replyToSenderName: String?) {
+    suspend fun savePendingMessage(id: String, conversationId: String, senderId: String, content: String, replyToId: String?, replyToContent: String?, replyToSenderName: String?) {
         val dbo = com.ajrpachon.chatapp.data.local.entity.MessageDBO(id = id, conversationId = conversationId, senderId = senderId, content = content, isRead = true, createdAt = System.currentTimeMillis(), replyToId = replyToId, replyToContent = replyToContent, replyToSenderName = replyToSenderName, sendStatus = "pending")
         messageDao.upsert(dbo)
     }
