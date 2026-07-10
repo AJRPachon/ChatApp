@@ -1,28 +1,26 @@
 package com.ajrpachon.chatapp.ui.chat
 
-import com.ajrpachon.chatapp.data.local.dao.ConversationDao
-import com.ajrpachon.chatapp.data.local.entity.ConversationDBO
+import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.GroupRole
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.repository.CallRepository
+import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
+import com.ajrpachon.chatapp.domain.repository.ReactionRepository
+import com.ajrpachon.chatapp.domain.repository.ScheduledMessageRepository
+import com.ajrpachon.chatapp.domain.repository.TypingRepository
+import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.data.local.ChatThemeRepository
 import com.ajrpachon.chatapp.data.local.DraftRepository
 import com.ajrpachon.chatapp.data.local.IncognitoRepository
 import com.ajrpachon.chatapp.data.local.PollRepository
-import com.ajrpachon.chatapp.data.local.dao.MessageDao
-import com.ajrpachon.chatapp.data.local.dao.ScheduledMessageDao
 import com.ajrpachon.chatapp.data.repository.AiAssistantRepository
-import com.ajrpachon.chatapp.utils.NetworkMonitor
-import com.ajrpachon.chatapp.domain.repository.ConversationRepository
-import com.ajrpachon.chatapp.domain.repository.ReactionRepository
-import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.utils.AudioTranscriber
+import com.ajrpachon.chatapp.utils.NetworkMonitor
 import com.ajrpachon.chatapp.utils.TranslationManager
-import io.github.jan.supabase.SupabaseClient
 import androidx.work.WorkManager
 import com.ajrpachon.chatapp.domain.usecase.GetGroupMembersUseCase
 import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
@@ -32,9 +30,9 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import com.ajrpachon.chatapp.util.sharedScheduler
@@ -54,7 +52,6 @@ class ChatViewModelTest {
 
     private val sendMessageUseCase = mockk<SendMessageUseCase>()
     private val messageRepository = mockk<MessageRepository>(relaxed = true)
-    private val conversationDao = mockk<ConversationDao>()
     private val callRepository = mockk<CallRepository>(relaxed = true)
     private val userRepository = mockk<UserRepository>(relaxed = true)
     private val getGroupMembersUseCase = mockk<GetGroupMembersUseCase>()
@@ -62,23 +59,20 @@ class ChatViewModelTest {
     private val groupRepository = mockk<GroupRepository>(relaxed = true)
     private val reactionRepository = mockk<ReactionRepository>(relaxed = true)
     private val conversationRepository = mockk<ConversationRepository>(relaxed = true)
-    private val supabaseClient = mockk<SupabaseClient>(relaxed = true)
+    private val scheduledMessageRepository = mockk<ScheduledMessageRepository>(relaxed = true)
+    private val typingRepository = mockk<TypingRepository>(relaxed = true)
     private val draftRepository = mockk<DraftRepository>(relaxed = true)
     private val translationManager = mockk<TranslationManager>(relaxed = true)
     private val audioTranscriber = mockk<AudioTranscriber>(relaxed = true)
     private val pollRepository = mockk<PollRepository>(relaxed = true)
     private val chatThemeRepository = mockk<ChatThemeRepository>(relaxed = true)
-    private val scheduledMessageDao = mockk<ScheduledMessageDao>(relaxed = true)
     private val workManager = mockk<WorkManager>(relaxed = true)
     private val incognitoRepository = mockk<IncognitoRepository>(relaxed = true)
     private val aiAssistantRepository = mockk<AiAssistantRepository>(relaxed = true)
     private val wallpaperRepository = mockk<com.ajrpachon.chatapp.data.local.WallpaperRepository>(relaxed = true)
-    private val messageDao = mockk<MessageDao>(relaxed = true)
     private val networkMonitor = mockk<NetworkMonitor>(relaxed = true)
 
-    // Start with current user as member — mirrors what the repository emits after initial fetch
     private val membersFlow = MutableStateFlow<List<GroupMemberBO>>(emptyList())
-    // Populated in setUp() after member() helper is available
 
     private val testUser = UserBO(
         id = "user1",
@@ -89,37 +83,43 @@ class ChatViewModelTest {
         createdAt = Instant.fromEpochMilliseconds(0),
     )
 
-    private val groupConvDBO = ConversationDBO(
+    private val groupConvBO = ConversationBO(
         id = "conv1",
         name = "Test Group",
         isGroup = true,
-        createdBy = "creator",
-        updatedAt = 0L,
+        participants = emptyList(),
+        lastMessage = null,
+        unreadCount = 0,
+        updatedAt = Instant.fromEpochMilliseconds(0),
     )
 
-    private val dmConvDBO = ConversationDBO(
+    private val dmConvBO = ConversationBO(
         id = "conv2",
         name = "DM",
         isGroup = false,
-        createdBy = "user1",
-        updatedAt = 0L,
+        participants = emptyList(),
+        lastMessage = null,
+        unreadCount = 0,
+        updatedAt = Instant.fromEpochMilliseconds(0),
         otherUserId = "user2",
     )
 
     @Before
     fun setUp() {
-        membersFlow.value = listOf(member("user1")) // default: current user is a member
+        membersFlow.value = listOf(member("user1"))
         every { getGroupMembersUseCase(any()) } returns membersFlow
-        // Block the polling loop so it never spins: suspends at the first call so the while loop never runs.
         coEvery { groupRepository.syncMembership(any()) } coAnswers { awaitCancellation() }
         every { userRepository.getCurrentUserId() } returns "user1"
-        coEvery { conversationDao.getById(any()) } returns groupConvDBO
-        every { conversationDao.observeById(any()) } returns flowOf(groupConvDBO)
+        coEvery { conversationRepository.getById(any()) } returns groupConvBO
+        every { conversationRepository.observeById(any()) } returns flowOf(groupConvBO)
+        every { scheduledMessageRepository.observeAll() } returns flowOf(emptyList())
+        every { typingRepository.observeTypingNames(any(), any()) } returns flowOf(emptyList())
         every { draftRepository.getDraft(any()) } returns flowOf("")
         every { conversationRepository.observeConversations(any()) } returns flowOf(emptyList())
         every { networkMonitor.isOnline } returns flowOf(true)
-        coEvery { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns
-                Result.success(mockk<MessageBO>(relaxed = true))
+        coEvery {
+            sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        } returns Result.success(mockk<MessageBO>(relaxed = true))
     }
 
     private fun buildViewModel(conversationId: String = "conv1"): ChatViewModel =
@@ -127,7 +127,6 @@ class ChatViewModelTest {
             args = ChatArgs(conversationId = conversationId, otherUserName = "Test Group"),
             sendMessageUseCase = sendMessageUseCase,
             messageRepository = messageRepository,
-            conversationDao = conversationDao,
             callRepository = callRepository,
             userRepository = userRepository,
             getGroupMembersUseCase = getGroupMembersUseCase,
@@ -135,18 +134,17 @@ class ChatViewModelTest {
             groupRepository = groupRepository,
             reactionRepository = reactionRepository,
             conversationRepository = conversationRepository,
-            supabaseClient = supabaseClient,
+            scheduledMessageRepository = scheduledMessageRepository,
+            typingRepository = typingRepository,
             draftRepository = draftRepository,
             translationManager = translationManager,
             audioTranscriber = audioTranscriber,
             pollRepository = pollRepository,
             chatThemeRepository = chatThemeRepository,
-            scheduledMessageDao = scheduledMessageDao,
             workManager = workManager,
             incognitoRepository = incognitoRepository,
             aiAssistantRepository = aiAssistantRepository,
             wallpaperRepository = wallpaperRepository,
-            messageDao = messageDao,
             networkMonitor = networkMonitor,
         )
 
@@ -202,8 +200,8 @@ class ChatViewModelTest {
 
     @Test
     fun `isCurrentUserMember is true for DM conversations (non-group)`() = runTest(sharedScheduler) {
-        coEvery { conversationDao.getById(any()) } returns dmConvDBO
-        every { conversationDao.observeById(any()) } returns flowOf(dmConvDBO)
+        coEvery { conversationRepository.getById(any()) } returns dmConvBO
+        every { conversationRepository.observeById(any()) } returns flowOf(dmConvBO)
         val vm = buildViewModel("conv2")
         advanceUntilIdle()
         assertTrue(vm.state.value.isCurrentUserMember)
