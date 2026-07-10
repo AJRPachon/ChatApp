@@ -96,7 +96,7 @@ val networkModule = module {
 
 val viewModelModule = module {
     // BuildConfig values not injectable â€” kept as lambda
-    viewModel { AuthViewModel(androidApplication(), get(), get(), BuildConfig.GOOGLE_WEB_CLIENT_ID, get(), get(), get()) }
+    viewModel { AuthViewModel(androidApplication(), get(), get(), get(), BuildConfig.GOOGLE_WEB_CLIENT_ID, get(), get()) }
 
     viewModelOf(::ConversationListViewModel)
     viewModelOf(::InvitationsViewModel)
