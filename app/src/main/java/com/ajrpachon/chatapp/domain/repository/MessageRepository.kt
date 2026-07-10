@@ -58,24 +58,4 @@ interface MessageRepository {
     suspend fun countVideos(): Int
     suspend fun getMostActiveConversationId(): String?
     suspend fun countMessagesByDay(since: Long): List<Pair<Long, Int>>
-    @Suppress("LongParameterList")
-    suspend fun savePendingMessage(
-        id: String,
-        conversationId: String,
-        senderId: String,
-        content: String,
-        replyToId: String? = null,
-        replyToContent: String? = null,
-        replyToSenderName: String? = null,
-    )
-    suspend fun searchAllMessages(query: String): List<MessageBO>
-    suspend fun countSent(userId: String): Int
-    suspend fun countReceived(userId: String): Int
-    suspend fun countCalls(): Int
-    suspend fun sumCallDurationSeconds(): Int
-    suspend fun countImages(): Int
-    suspend fun countAudio(): Int
-    suspend fun countVideos(): Int
-    suspend fun getMostActiveConversationId(): String?
-    suspend fun countMessagesByDay(since: Long): List<Pair<Long, Int>>
 }
