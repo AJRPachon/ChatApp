@@ -1,10 +1,11 @@
 package com.ajrpachon.chatapp.di
 
-import com.ajrpachon.chatapp.data.remote.source.CallRemoteSource
+import com.ajrpachon.chatapp.data.remote.source.ConversationRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.FcmTokenRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.GroupRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.InvitationRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.MessageRemoteSource
+import com.ajrpachon.chatapp.data.remote.source.ReactionRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.StatusRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.UserRemoteSource
 import com.ajrpachon.chatapp.service.FcmTokenManager
@@ -13,9 +14,7 @@ import com.ajrpachon.chatapp.data.repository.ConversationRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.GroupRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.InvitationRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.MessageRepositoryImpl
-import com.ajrpachon.chatapp.data.repository.PollRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.ReactionRepositoryImpl
-import com.ajrpachon.chatapp.data.repository.ScheduledMessageRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.StatusRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.UserRepositoryImpl
 import com.ajrpachon.chatapp.domain.repository.CallRepository
@@ -23,46 +22,40 @@ import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
 import com.ajrpachon.chatapp.domain.repository.InvitationRepository
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
-import com.ajrpachon.chatapp.domain.repository.PollRepository
 import com.ajrpachon.chatapp.domain.repository.ReactionRepository
-import com.ajrpachon.chatapp.domain.repository.ScheduledMessageRepository
 import com.ajrpachon.chatapp.domain.repository.StatusRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.AddGroupMemberUseCase
 import com.ajrpachon.chatapp.domain.usecase.BlockUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.CreateGroupUseCase
-import com.ajrpachon.chatapp.domain.usecase.CreatePollUseCase
-import com.ajrpachon.chatapp.domain.usecase.ExportConversationUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetGroupMembersUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetOrCreateConversationUseCase
-import com.ajrpachon.chatapp.domain.usecase.GetSavedMessagesUseCase
 import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
 import com.ajrpachon.chatapp.domain.usecase.ObserveConversationsUseCase
 import com.ajrpachon.chatapp.domain.usecase.ObserveInvitationsUseCase
 import com.ajrpachon.chatapp.domain.usecase.ObserveMessagesUseCase
 import com.ajrpachon.chatapp.domain.usecase.PromoteGroupMemberUseCase
+import com.ajrpachon.chatapp.domain.usecase.SendInvitationUseCase
 import com.ajrpachon.chatapp.domain.usecase.RemoveGroupMemberUseCase
 import com.ajrpachon.chatapp.domain.usecase.RespondInvitationUseCase
-import com.ajrpachon.chatapp.domain.usecase.ScheduleMessageUseCase
 import com.ajrpachon.chatapp.domain.usecase.SearchUsersUseCase
-import com.ajrpachon.chatapp.domain.usecase.SendInvitationUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
 import com.ajrpachon.chatapp.domain.usecase.SetUsernameUseCase
 import com.ajrpachon.chatapp.domain.usecase.UpdateGroupUseCase
-import com.ajrpachon.chatapp.domain.usecase.VotePollUseCase
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
 val remoteModule = module {
-    singleOf(::CallRemoteSource)
+    singleOf(::ConversationRemoteSource)
     singleOf(::UserRemoteSource)
     singleOf(::MessageRemoteSource)
     singleOf(::InvitationRemoteSource)
     singleOf(::GroupRemoteSource)
     singleOf(::FcmTokenRemoteSource)
+    singleOf(::ReactionRemoteSource)
     singleOf(::StatusRemoteSource)
     single { FcmTokenManager(get(), get()) }
 }
@@ -76,8 +69,6 @@ val repositoryModule = module {
     singleOf(::CallRepositoryImpl) { bind<CallRepository>() }
     singleOf(::ReactionRepositoryImpl) { bind<ReactionRepository>() }
     singleOf(::StatusRepositoryImpl) { bind<StatusRepository>() }
-    singleOf(::PollRepositoryImpl) { bind<PollRepository>() }
-    singleOf(::ScheduledMessageRepositoryImpl) { bind<ScheduledMessageRepository>() }
 }
 
 val useCaseModule = module {
@@ -99,11 +90,6 @@ val useCaseModule = module {
     factoryOf(::PromoteGroupMemberUseCase)
     factoryOf(::SendInvitationUseCase)
     factoryOf(::BlockUserUseCase)
-    factoryOf(::CreatePollUseCase)
-    factoryOf(::VotePollUseCase)
-    factoryOf(::ScheduleMessageUseCase)
-    factoryOf(::ExportConversationUseCase)
-    factoryOf(::GetSavedMessagesUseCase)
 }
 
 val sharedModules = listOf(remoteModule, repositoryModule, useCaseModule)

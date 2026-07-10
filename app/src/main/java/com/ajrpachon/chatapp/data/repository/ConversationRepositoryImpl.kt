@@ -1,8 +1,5 @@
 ﻿package com.ajrpachon.chatapp.data.repository
 
-import com.ajrpachon.chatapp.utils.catchResult
-import com.ajrpachon.chatapp.utils.AppLogger
-
 import com.ajrpachon.chatapp.data.local.dao.ConversationDao
 import com.ajrpachon.chatapp.data.local.dao.GroupMemberDao
 import com.ajrpachon.chatapp.data.local.dao.MessageDao
@@ -14,6 +11,8 @@ import com.ajrpachon.chatapp.data.remote.source.ConversationRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.MessageRemoteSource
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
+import com.ajrpachon.chatapp.utils.AppLogger
+import com.ajrpachon.chatapp.utils.catchResult
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -69,10 +68,12 @@ class ConversationRepositoryImpl(
                             existingConversation.unreadCount + 1
                         else
                             existingConversation.unreadCount
-                        conversationDao.upsert(existingConversation.copy(
-                            updatedAt = System.currentTimeMillis(),
-                            unreadCount = newUnread,
-                        ))
+                        conversationDao.upsert(
+                            existingConversation.copy(
+                                updatedAt = System.currentTimeMillis(),
+                                unreadCount = newUnread,
+                            )
+                        )
                     } else {
                         syncConversations(userId)
                     }
@@ -82,8 +83,8 @@ class ConversationRepositoryImpl(
 
         launch {
             AppLogger.d(TAG, "conversationsUpdateChannel subscribing userId=$userId")
-            conversationRemoteSource.observeConversationUpdates(userId).collect { record ->
-                AppLogger.d(TAG, "conversationsUpdateChannel UPDATE received userId=$userId record=$record")
+            conversationRemoteSource.observeConversationUpdates(userId).collect {
+                AppLogger.d(TAG, "conversationsUpdateChannel UPDATE received userId=$userId")
                 catchResult { syncConversations(userId) }
                     .onFailure { e -> AppLogger.e(TAG, "syncConversations failed after conversations UPDATE", e) }
             }
@@ -105,11 +106,13 @@ class ConversationRepositoryImpl(
                         )
                     )
                     conversationDao.getByOtherUserId(profileId)?.let { conv ->
-                        conversationDao.upsert(conv.copy(
-                            name = newUsername?.takeIf { it.isNotBlank() }
-                                ?: newDisplayName?.takeIf { it.isNotBlank() }
-                                ?: conv.name,
-                        ))
+                        conversationDao.upsert(
+                            conv.copy(
+                                name = newUsername?.takeIf { it.isNotBlank() }
+                                    ?: newDisplayName?.takeIf { it.isNotBlank() }
+                                    ?: conv.name,
+                            )
+                        )
                     }
                 }
             }
@@ -148,16 +151,6 @@ class ConversationRepositoryImpl(
         )
     }
 
-    override suspend fun getById(conversationId: String): ConversationBO? =
-        conversationDao.getById(conversationId)?.toBO("")
-
-    override fun observeById(conversationId: String): Flow<ConversationBO?> =
-        conversationDao.observeById(conversationId).map { dbo -> dbo?.toBO("") }
-
-    override suspend fun resetUnreadCount(conversationId: String) {
-        conversationDao.resetUnreadCount(conversationId)
-    }
-
     override suspend fun getOrCreateDirectConversation(
         currentUserId: String,
         otherUserId: String,
@@ -168,11 +161,13 @@ class ConversationRepositoryImpl(
 
         val otherName = userDao.getById(otherUserId)?.let { dbo ->
             dbo.username.takeIf { it.isNotBlank() } ?: dbo.displayName.takeIf { it.isNotBlank() }
-        } ?: run {
-            val dto = conversationRemoteSource.fetchUserProfile(otherUserId)
-            dto?.let { userDao.upsert(it.toDBO()) }
-            dto?.username?.takeIf { it.isNotBlank() } ?: dto?.displayName?.takeIf { it.isNotBlank() }
-        }
+        } ?: catchResult {
+            conversationRemoteSource.fetchUserProfile(otherUserId)
+                ?.also { userDao.upsert(it.toDBO()) }
+                ?.let { dto ->
+                    dto.username?.takeIf { it.isNotBlank() } ?: dto.displayName.takeIf { it.isNotBlank() }
+                }
+        }.getOrNull()
 
         conversationDao.upsert(
             ConversationDBO(
@@ -230,18 +225,26 @@ class ConversationRepositoryImpl(
             val historyVisibleFrom = catchResult {
                 Instant.parse(participantRow.joinedAt).toEpochMilliseconds()
             }.getOrDefault(0L)
-            AppLogger.d(TAG, "syncConv conv=${conversationDto.id} isGroup=${conversationDto.isGroup} avatarUrl=${conversationDto.avatarUrl} existingAvatarUrl=${existingConversation?.groupAvatarUrl}")
+            AppLogger.d(
+                TAG,
+                "syncConv conv=${conversationDto.id} isGroup=${conversationDto.isGroup} " +
+                    "avatarUrl=${conversationDto.avatarUrl} existingAvatarUrl=${existingConversation?.groupAvatarUrl}"
+            )
 
             var resolvedOtherUserId: String? = null
             val resolvedName = if (!conversationDto.isGroup) {
-                val otherUserId = conversationRemoteSource.fetchOtherParticipantId(conversationDto.id, userId)
+                val otherUserId = catchResult {
+                    conversationRemoteSource.fetchOtherParticipantId(conversationDto.id, userId)
+                }.getOrNull()
                     ?: conversationDto.createdBy?.takeIf { it != userId }
 
                 resolvedOtherUserId = otherUserId ?: existingConversation?.otherUserId
 
                 if (otherUserId != null) {
-                    val otherUserProfile = conversationRemoteSource.fetchUserProfile(otherUserId)
-                    otherUserProfile?.let { userDao.upsert(it.toDBO()) }
+                    val otherUserProfile = catchResult {
+                        conversationRemoteSource.fetchUserProfile(otherUserId)
+                            ?.also { userDao.upsert(it.toDBO()) }
+                    }.getOrNull()
                     otherUserProfile?.username?.takeIf { it.isNotBlank() }
                         ?: otherUserProfile?.displayName?.takeIf { it.isNotBlank() }
                         ?: userDao.getById(otherUserId)?.username?.takeIf { it.isNotBlank() }

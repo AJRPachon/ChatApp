@@ -1,11 +1,11 @@
-package com.ajrpachon.chatapp.data.remote.source
+﻿package com.ajrpachon.chatapp.data.remote.source
 
 import com.ajrpachon.chatapp.data.remote.dto.ConversationParticipantWithConvDTO
 import com.ajrpachon.chatapp.data.remote.dto.MessageDTO
 import com.ajrpachon.chatapp.data.remote.dto.UserDTO
-import com.ajrpachon.chatapp.utils.catchResult
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.user.UserSession
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.realtime.PostgresAction
@@ -16,8 +16,6 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -33,9 +31,7 @@ internal data class ParticipantUserIdDTO(@SerialName("user_id") val userId: Stri
 
 class ConversationRemoteSource(private val supabase: SupabaseClient) {
 
-    suspend fun ensureSession() {
-        supabase.auth.currentSessionOrNull()
-    }
+    fun ensureSession(): UserSession? = supabase.auth.currentSessionOrNull()
 
     suspend fun fetchParticipantsWithConversations(userId: String): List<ConversationParticipantWithConvDTO> =
         supabase.postgrest["conversation_participants"]
@@ -46,27 +42,24 @@ class ConversationRemoteSource(private val supabase: SupabaseClient) {
             ) {
                 filter { eq("user_id", userId) }
             }
-            .decodeList<ConversationParticipantWithConvDTO>()
+            .decodeList()
 
     suspend fun fetchOtherParticipantId(conversationId: String, excludeUserId: String): String? =
-        catchResult {
-            supabase.postgrest["conversation_participants"]
-                .select(Columns.list("user_id")) {
-                    filter {
-                        eq("conversation_id", conversationId)
-                        neq("user_id", excludeUserId)
-                    }
+        supabase.postgrest["conversation_participants"]
+            .select(Columns.list("user_id")) {
+                filter {
+                    eq("conversation_id", conversationId)
+                    neq("user_id", excludeUserId)
                 }
-                .decodeList<ParticipantUserIdDTO>()
-                .firstOrNull()?.userId
-        }.getOrNull()
+            }
+            .decodeList<ParticipantUserIdDTO>()
+            .firstOrNull()
+            ?.userId
 
     suspend fun fetchUserProfile(userId: String): UserDTO? =
-        catchResult {
-            supabase.postgrest["profiles"]
-                .select { filter { eq("id", userId) } }
-                .decodeSingleOrNull<UserDTO>()
-        }.getOrNull()
+        supabase.postgrest["profiles"]
+            .select { filter { eq("id", userId) } }
+            .decodeSingleOrNull()
 
     suspend fun getOrCreateDirectConversation(userA: String, userB: String): String {
         val result = supabase.postgrest.rpc(
@@ -80,70 +73,73 @@ class ConversationRemoteSource(private val supabase: SupabaseClient) {
     }
 
     fun observeParticipantInserts(userId: String): Flow<JsonObject> = channelFlow {
-        val channel = supabase.channel("participants:$userId")
-        channel.postgresChangeFlow<PostgresAction.Insert>(schema = "public") {
+        val ch = supabase.channel("participants:$userId")
+        val flow = ch.postgresChangeFlow<PostgresAction.Insert>(schema = "public") {
             table = "conversation_participants"
-        }.onEach { action -> trySend(action.record) }.launchIn(this)
-        channel.subscribe()
+        }
+        ch.subscribe()
         try {
+            flow.collect { action -> send(action.record) }
             awaitCancellation()
         } finally {
             withContext(NonCancellable) {
-                catchResult { channel.unsubscribe() }
-                catchResult { supabase.realtime.removeChannel(channel) }
+                runCatching { ch.unsubscribe() }
+                runCatching { supabase.realtime.removeChannel(ch) }
             }
         }
     }
 
     fun observeNewMessageInserts(userId: String): Flow<MessageDTO> = channelFlow {
-        val channel = supabase.channel("messages:list:$userId")
-        channel.postgresChangeFlow<PostgresAction.Insert>(schema = "public") {
+        val ch = supabase.channel("messages:list:$userId")
+        val flow = ch.postgresChangeFlow<PostgresAction.Insert>(schema = "public") {
             table = "messages"
-        }.onEach { action ->
-            catchResult {
-                val dto = lenientJson.decodeFromString<MessageDTO>(action.record.toString())
-                trySend(dto)
-            }
-        }.launchIn(this)
-        channel.subscribe()
+        }
+        ch.subscribe()
         try {
+            flow.collect { action ->
+                runCatching {
+                    lenientJson.decodeFromString<MessageDTO>(action.record.toString())
+                }.getOrNull()?.let { send(it) }
+            }
             awaitCancellation()
         } finally {
             withContext(NonCancellable) {
-                catchResult { channel.unsubscribe() }
-                catchResult { supabase.realtime.removeChannel(channel) }
+                runCatching { ch.unsubscribe() }
+                runCatching { supabase.realtime.removeChannel(ch) }
             }
         }
     }
 
     fun observeConversationUpdates(userId: String): Flow<JsonObject> = channelFlow {
-        val channel = supabase.channel("conversations:updates:$userId-${System.nanoTime()}")
-        channel.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
+        val ch = supabase.channel("conversations:updates:$userId-${System.nanoTime()}")
+        val flow = ch.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
             table = "conversations"
-        }.onEach { action -> trySend(action.record) }.launchIn(this)
-        channel.subscribe()
+        }
+        ch.subscribe()
         try {
+            flow.collect { action -> send(action.record) }
             awaitCancellation()
         } finally {
             withContext(NonCancellable) {
-                catchResult { channel.unsubscribe() }
-                catchResult { supabase.realtime.removeChannel(channel) }
+                runCatching { ch.unsubscribe() }
+                runCatching { supabase.realtime.removeChannel(ch) }
             }
         }
     }
 
     fun observeProfileUpdates(userId: String): Flow<JsonObject> = channelFlow {
-        val channel = supabase.channel("profiles:updates:$userId-${System.nanoTime()}")
-        channel.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
+        val ch = supabase.channel("profiles:updates:$userId-${System.nanoTime()}")
+        val flow = ch.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
             table = "profiles"
-        }.onEach { action -> trySend(action.record) }.launchIn(this)
-        channel.subscribe()
+        }
+        ch.subscribe()
         try {
+            flow.collect { action -> send(action.record) }
             awaitCancellation()
         } finally {
             withContext(NonCancellable) {
-                catchResult { channel.unsubscribe() }
-                catchResult { supabase.realtime.removeChannel(channel) }
+                runCatching { ch.unsubscribe() }
+                runCatching { supabase.realtime.removeChannel(ch) }
             }
         }
     }
