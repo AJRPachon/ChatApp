@@ -1,36 +1,25 @@
-package com.ajrpachon.chatapp.ui.profile
+﻿package com.ajrpachon.chatapp.ui.profile
 import com.ajrpachon.chatapp.utils.catchResult
 
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.data.local.AppLockRepository
 import com.ajrpachon.chatapp.data.local.ThemeRepository
-import com.ajrpachon.chatapp.data.local.dao.UserDao
+import com.ajrpachon.chatapp.domain.repository.AuthRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.service.FcmTokenManager
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import com.ajrpachon.chatapp.utils.AppLogger
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.auth.SignOutScope
-import io.github.jan.supabase.auth.mfa.FactorType
-import io.github.jan.supabase.postgrest.postgrest
-import io.github.jan.supabase.storage.storage
+import com.ajrpachon.chatapp.utils.UploadLimits.checkAvatarSize
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import com.ajrpachon.chatapp.utils.UploadLimits.checkAvatarSize
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
-
-private const val AVATARS_BUCKET = "avatars"
 
 class ProfileViewModel(
-    private val supabase: SupabaseClient,
+    private val authRepository: AuthRepository,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
-    private val userDao: UserDao,
     private val fcmTokenManager: FcmTokenManager,
     private val userRepository: UserRepository,
     private val themeRepository: ThemeRepository,
@@ -66,7 +55,7 @@ class ProfileViewModel(
     fun onIntent(intent: ProfileIntent) {
         when (intent) {
             is ProfileIntent.ToggleOnlineStatus -> {
-                val userId = supabase.auth.currentUserOrNull()?.id ?: return
+                val userId = authRepository.getCurrentUserId() ?: return
                 updateState { it.copy(showOnlineStatus = intent.show) }
                 viewModelScope.launch {
                     catchResult { userRepository.updateShowOnlineStatus(userId, intent.show) }
@@ -101,22 +90,12 @@ class ProfileViewModel(
     }
 
     fun onAvatarSelected(bytes: ByteArray, mimeType: String) {
-        val userId = supabase.auth.currentUserOrNull()?.id ?: return
+        val userId = authRepository.getCurrentUserId() ?: return
         viewModelScope.launch {
             updateState { it.copy(isUploadingAvatar = true, error = null) }
             catchResult {
                 bytes.checkAvatarSize()
-                val ext = if (mimeType.contains("png")) "png" else "jpg"
-                val path = "$userId/avatar.$ext"
-
-                supabase.storage[AVATARS_BUCKET].upload(path, bytes) { upsert = true }
-                val url = supabase.storage[AVATARS_BUCKET].publicUrl(path)
-
-                supabase.postgrest["profiles"].update(
-                    buildJsonObject { put("avatar_url", url) }
-                ) { filter { eq("id", userId) } }
-
-                userDao.getById(userId)?.let { userDao.upsert(it.copy(avatarUrl = url)) }
+                val url = userRepository.uploadAvatar(userId, bytes, mimeType)
                 updateState { it.copy(avatarUrl = url) }
             }.onFailure { e ->
                 AppLogger.e(TAG, "Avatar upload failed", e)
@@ -130,8 +109,8 @@ class ProfileViewModel(
         viewModelScope.launch {
             catchResult {
                 fcmTokenManager.deleteToken()
-                supabase.auth.signOut()
-                userDao.clearCurrentUser()
+                authRepository.signOut()
+                userRepository.clearCurrentUser()
             }.onFailure { e -> AppLogger.e(TAG, "Sign out failed", e) }
             sendEffect(ProfileEffect.NavigateToAuth)
         }
@@ -145,8 +124,8 @@ class ProfileViewModel(
         viewModelScope.launch {
             catchResult {
                 fcmTokenManager.deleteToken()
-                supabase.auth.signOut(SignOutScope.GLOBAL)
-                userDao.clearCurrentUser()
+                authRepository.signOutAll()
+                userRepository.clearCurrentUser()
             }.onFailure { e -> AppLogger.e(TAG, "Sign out all failed", e) }
             sendEffect(ProfileEffect.NavigateToAuth)
         }
@@ -154,11 +133,10 @@ class ProfileViewModel(
 
     private suspend fun load2FAStatus() {
         catchResult {
-            val factors = supabase.auth.mfa.retrieveFactorsForCurrentUser()
-            val totpFactor = factors.firstOrNull { it.factorType == "totp" && it.isVerified }
+            val totpFactorId = authRepository.getVerifiedTotpFactorId()
             updateState { it.copy(twoFactor = it.twoFactor.copy(
-                isEnrolled = totpFactor != null,
-                factorId = totpFactor?.id,
+                isEnrolled = totpFactorId != null,
+                factorId = totpFactorId,
             )) }
         }.onFailure { e -> AppLogger.e(TAG, "load2FAStatus failed", e) }
     }
@@ -167,19 +145,19 @@ class ProfileViewModel(
         viewModelScope.launch {
             updateState { it.copy(twoFactor = it.twoFactor.copy(isLoading = true, enrollError = null)) }
             catchResult {
-                val response = supabase.auth.mfa.enroll(FactorType.TOTP)
+                val enrollment = authRepository.enrollTotp()
                 updateState { it.copy(twoFactor = it.twoFactor.copy(
                     isLoading = false,
                     showEnrollSheet = true,
-                    qrCodeSvg = response.data.qrCode,
-                    secret = response.data.secret,
-                    factorId = response.id,
+                    qrCodeSvg = enrollment.qrCodeSvg,
+                    secret = enrollment.secret,
+                    factorId = enrollment.factorId,
                 )) }
             }.onFailure { e ->
                 AppLogger.e(TAG, "enroll2FA failed", e)
                 updateState { it.copy(twoFactor = it.twoFactor.copy(
                     isLoading = false,
-                    enrollError = e.message ?: "Error al iniciar verificación en dos pasos",
+                    enrollError = e.message ?: "Error al iniciar verificacion en dos pasos",
                 )) }
             }
         }
@@ -190,8 +168,8 @@ class ProfileViewModel(
         viewModelScope.launch {
             updateState { it.copy(twoFactor = it.twoFactor.copy(isLoading = true, verifyError = null)) }
             catchResult {
-                val challenge = supabase.auth.mfa.createChallenge(factorId)
-                supabase.auth.mfa.verifyChallenge(factorId = factorId, challengeId = challenge.id, code = code)
+                val challengeId = authRepository.createMfaChallenge(factorId)
+                authRepository.verifyMfaChallenge(factorId, challengeId, code)
                 updateState { it.copy(twoFactor = it.twoFactor.copy(
                     isLoading = false,
                     isEnrolled = true,
@@ -203,7 +181,7 @@ class ProfileViewModel(
                 AppLogger.e(TAG, "verify2FACode failed", e)
                 updateState { it.copy(twoFactor = it.twoFactor.copy(
                     isLoading = false,
-                    verifyError = e.message ?: "Código incorrecto. Intenta de nuevo.",
+                    verifyError = e.message ?: "Codigo incorrecto. Intenta de nuevo.",
                 )) }
             }
         }
@@ -212,11 +190,8 @@ class ProfileViewModel(
     private fun toggleAppLock() {
         viewModelScope.launch {
             catchResult {
-                if (state.value.isAppLockEnabled) {
-                    appLockRepository.disable()
-                } else {
-                    appLockRepository.enable()
-                }
+                if (state.value.isAppLockEnabled) appLockRepository.disable()
+                else appLockRepository.enable()
             }.onFailure { e -> AppLogger.e(TAG, "toggleAppLock failed", e) }
         }
     }
@@ -226,20 +201,20 @@ class ProfileViewModel(
         viewModelScope.launch {
             updateState { it.copy(twoFactor = it.twoFactor.copy(isLoading = true)) }
             catchResult {
-                supabase.auth.mfa.unenroll(factorId)
+                authRepository.unenrollFactor(factorId)
                 updateState { it.copy(twoFactor = TwoFactorState(isEnrolled = false)) }
             }.onFailure { e ->
                 AppLogger.e(TAG, "disable2FA failed", e)
                 updateState { it.copy(twoFactor = it.twoFactor.copy(
                     isLoading = false,
-                    enrollError = e.message ?: "Error al desactivar la verificación en dos pasos",
+                    enrollError = e.message ?: "Error al desactivar la verificacion en dos pasos",
                 )) }
             }
         }
     }
 
     private fun saveDisplayName() {
-        val userId = supabase.auth.currentUserOrNull()?.id ?: return
+        val userId = authRepository.getCurrentUserId() ?: return
         val newName = state.value.editingDisplayName.trim()
         if (newName.isBlank() || newName == state.value.displayName) return
         viewModelScope.launch {
