@@ -1,8 +1,8 @@
-package com.ajrpachon.chatapp.ui.group
+﻿package com.ajrpachon.chatapp.ui.group
 import com.ajrpachon.chatapp.utils.catchResult
 
 import androidx.lifecycle.viewModelScope
-import com.ajrpachon.chatapp.data.local.dao.ConversationDao
+import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.model.GroupRole
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
@@ -26,12 +26,12 @@ class GroupInfoViewModel(
     private val leaveGroupUseCase: LeaveGroupUseCase,
     private val searchUsersUseCase: SearchUsersUseCase,
     private val groupRepository: GroupRepository,
-    private val conversationDao: ConversationDao,
+    private val conversationRepository: ConversationRepository,
 ) : BaseViewModel<GroupInfoState, GroupInfoEffect>(GroupInfoState()) {
 
     init {
         viewModelScope.launch {
-            conversationDao.observeById(conversationId).collect { conv ->
+            conversationRepository.observeById(conversationId).collect { conv ->
                 if (conv != null) {
                     updateState { it.copy(groupAvatarUrl = conv.groupAvatarUrl) }
                 }

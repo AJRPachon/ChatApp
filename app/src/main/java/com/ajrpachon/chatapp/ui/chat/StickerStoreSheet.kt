@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.ui.chat
+﻿package com.ajrpachon.chatapp.ui.chat
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -83,7 +83,7 @@ fun StickerStoreSheet(
 
 @Composable
 private fun StickerPackStoreRow(
-    pack: com.ajrpachon.chatapp.data.local.entity.StickerPackDBO,
+    pack: com.ajrpachon.chatapp.domain.model.StickerPackBO,
     onInstall: () -> Unit,
     vm: StickerPackViewModel,
 ) {
