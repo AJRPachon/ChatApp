@@ -19,6 +19,8 @@ import com.ajrpachon.chatapp.data.remote.source.UserRemoteSource
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import com.ajrpachon.chatapp.utils.E2EEKeyManager
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -35,12 +37,18 @@ import com.ajrpachon.chatapp.utils.UploadLimits.checkVideoSize
 import kotlinx.datetime.Instant
 private const val TAG = "MsgRepo"
 
+private const val BUCKET = "chat-images"
+private const val AUDIO_BUCKET = "chat-audio"
+private const val FILE_BUCKET = "chat-files"
+private const val VIDEO_BUCKET = "chat-videos"
+
 class MessageRepositoryImpl(
     private val messageDao: MessageDao,
     private val userDao: UserDao,
     private val reactionDao: ReactionDao,
     private val remoteSource: MessageRemoteSource,
     private val userRemoteSource: UserRemoteSource,
+    private val supabase: SupabaseClient,
 ) : MessageRepository {
 
     // Shared key cache: avoids a Supabase round-trip on every encrypt/decrypt.
@@ -148,22 +156,32 @@ class MessageRepositoryImpl(
 
     override suspend fun uploadAudio(conversationId: String, bytes: ByteArray): String {
         bytes.checkAudioSize()
-        return remoteSource.uploadAudio(conversationId, bytes)
+        val path = "$conversationId/${java.util.UUID.randomUUID()}.m4a"
+        supabase.storage[AUDIO_BUCKET].upload(path, bytes) { upsert = false }
+        return supabase.storage[AUDIO_BUCKET].publicUrl(path)
     }
 
     override suspend fun uploadImage(conversationId: String, bytes: ByteArray, mimeType: String): String {
         bytes.checkImageSize()
-        return remoteSource.uploadImage(conversationId, bytes, mimeType)
+        val ext = if (mimeType.contains("png")) "png" else "jpg"
+        val path = "$conversationId/${java.util.UUID.randomUUID()}.$ext"
+        supabase.storage[BUCKET].upload(path, bytes) { upsert = false }
+        return supabase.storage[BUCKET].publicUrl(path)
     }
 
     override suspend fun uploadFile(conversationId: String, bytes: ByteArray, fileName: String, mimeType: String): String {
         bytes.checkFileSize()
-        return remoteSource.uploadFile(conversationId, bytes, fileName)
+        val safeName = fileName.replace(Regex("[^A-Za-z0-9._-]"), "_")
+        val path = "$conversationId/${java.util.UUID.randomUUID()}_$safeName"
+        supabase.storage[FILE_BUCKET].upload(path, bytes) { upsert = false }
+        return supabase.storage[FILE_BUCKET].publicUrl(path)
     }
 
     override suspend fun uploadVideo(conversationId: String, bytes: ByteArray): String {
         bytes.checkVideoSize()
-        return remoteSource.uploadVideo(conversationId, bytes)
+        val path = "$conversationId/${java.util.UUID.randomUUID()}.mp4"
+        supabase.storage[VIDEO_BUCKET].upload(path, bytes) { upsert = false }
+        return supabase.storage[VIDEO_BUCKET].publicUrl(path)
     }
 
     override suspend fun markAsRead(conversationId: String, userId: String) {
@@ -346,21 +364,30 @@ class MessageRepositoryImpl(
         }
     }
 
-
-    override suspend fun searchAllMessages(query: String): List<com.ajrpachon.chatapp.domain.model.MessageBO> = emptyList()
-    override suspend fun countSent(userId: String): Int = 0
-    override suspend fun countReceived(userId: String): Int = 0
-    override suspend fun countCalls(): Int = 0
-    override suspend fun sumCallDurationSeconds(): Int = 0
-    override suspend fun countImages(): Int = 0
-    override suspend fun countAudio(): Int = 0
-    override suspend fun countVideos(): Int = 0
-    override suspend fun getMostActiveConversationId(): String? = null
-    override suspend fun countMessagesByDay(since: Long): List<Pair<Long, Int>> = emptyList()
-
-    @Suppress("LongParameterList")
     override suspend fun savePendingMessage(id: String, conversationId: String, senderId: String, content: String, replyToId: String?, replyToContent: String?, replyToSenderName: String?) {
-        // stub: not yet implemented
+        val dbo = com.ajrpachon.chatapp.data.local.entity.MessageDBO(id = id, conversationId = conversationId, senderId = senderId, content = content, isRead = true, createdAt = System.currentTimeMillis(), replyToId = replyToId, replyToContent = replyToContent, replyToSenderName = replyToSenderName, sendStatus = "pending")
+        messageDao.upsert(dbo)
     }
+
+    override suspend fun searchAllMessages(query: String): List<MessageBO> {
+        val dbos = messageDao.searchAllMessages(query)
+        val senderIds = dbos.map { it.senderId }.distinct()
+        val senderMap = userDao.getByIds(senderIds).associateBy { it.id }
+        return dbos.map { dbo ->
+            val senderName = senderMap[dbo.senderId]?.displayName ?: dbo.senderId
+            dbo.toBO("", senderName)
+        }
+    }
+
+    override suspend fun countSent(userId: String): Int = messageDao.countSent(userId)
+    override suspend fun countReceived(userId: String): Int = messageDao.countReceived(userId)
+    override suspend fun countCalls(): Int = messageDao.countCalls()
+    override suspend fun sumCallDurationSeconds(): Int = messageDao.sumCallDurationSeconds()
+    override suspend fun countImages(): Int = messageDao.countImages()
+    override suspend fun countAudio(): Int = messageDao.countAudio()
+    override suspend fun countVideos(): Int = messageDao.countVideos()
+    override suspend fun getMostActiveConversationId(): String? = messageDao.getMostActiveConversation()?.conversationId
+    override suspend fun countMessagesByDay(since: Long): List<Pair<Long, Int>> =
+        messageDao.countMessagesByDay(since).map { it.dayEpoch to it.count }
 }
 

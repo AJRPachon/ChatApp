@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.domain.repository
+﻿package com.ajrpachon.chatapp.domain.repository
 
 import androidx.paging.PagingData
 import com.ajrpachon.chatapp.domain.model.MessageBO

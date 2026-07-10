@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.data.repository
+﻿package com.ajrpachon.chatapp.data.repository
 
 import com.ajrpachon.chatapp.data.local.dao.ScheduledMessageDao
 import com.ajrpachon.chatapp.data.local.entity.ScheduledMessageDBO
@@ -8,18 +8,9 @@ import kotlinx.coroutines.flow.Flow
 class ScheduledMessageRepositoryImpl(
     private val scheduledMessageDao: ScheduledMessageDao,
 ) : ScheduledMessageRepository {
-
-    override fun observeAll(): Flow<List<ScheduledMessageDBO>> =
-        scheduledMessageDao.observeAll()
-
-    override suspend fun insert(dbo: ScheduledMessageDBO) {
-        scheduledMessageDao.insert(dbo)
-    }
-
-    override suspend fun deleteById(id: String) {
-        scheduledMessageDao.deleteById(id)
-    }
-
+    override fun observeAll(): Flow<List<ScheduledMessageDBO>> = scheduledMessageDao.observeAll()
+    override suspend fun insert(dbo: ScheduledMessageDBO) { scheduledMessageDao.insert(dbo) }
+    override suspend fun deleteById(id: String) { scheduledMessageDao.deleteById(id) }
     override suspend fun schedule(
         id: String,
         conversationId: String,
@@ -28,15 +19,6 @@ class ScheduledMessageRepositoryImpl(
         scheduledAtMs: Long,
         createdAt: Long,
     ) {
-        scheduledMessageDao.insert(
-            ScheduledMessageDBO(
-                id = id,
-                conversationId = conversationId,
-                senderId = senderId,
-                text = text,
-                scheduledAtMs = scheduledAtMs,
-                createdAt = createdAt,
-            )
-        )
+        scheduledMessageDao.insert(ScheduledMessageDBO(id, conversationId, senderId, text, scheduledAtMs, createdAt))
     }
 }

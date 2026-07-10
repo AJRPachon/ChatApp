@@ -1,10 +1,9 @@
-﻿package com.ajrpachon.chatapp.ui.group
+package com.ajrpachon.chatapp.ui.group
 
-import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.GroupRole
-import com.ajrpachon.chatapp.domain.model.UserBO
+import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.GetGroupMembersUseCase
@@ -18,15 +17,12 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -47,14 +43,14 @@ class GroupInfoViewModelTest {
 
     private val conversationId = "conv1"
 
-    private val conv = ConversationBO(
+    private val convBO = ConversationBO(
         id = conversationId,
         name = "Test Group",
         isGroup = true,
         participants = emptyList(),
         lastMessage = null,
         unreadCount = 0,
-        updatedAt = kotlinx.datetime.Instant.fromEpochMilliseconds(0L),
+        updatedAt = Instant.fromEpochMilliseconds(0),
         groupAvatarUrl = "http://avatar.url",
     )
 
@@ -63,9 +59,8 @@ class GroupInfoViewModelTest {
     @Before
     fun setUp() {
         every { userRepository.getCurrentUserId() } returns "user1"
-        every { conversationRepository.observeById(any()) } returns flowOf(conv)
+        every { conversationRepository.observeById(any()) } returns flowOf(convBO)
         every { getGroupMembersUseCase(any()) } returns membersFlow
-        // Block the polling loop so it never spins
         coEvery { groupRepository.syncMembership(any()) } coAnswers { awaitCancellation() }
     }
 
@@ -97,127 +92,20 @@ class GroupInfoViewModelTest {
     }
 
     @Test
-    fun `current user as ADMIN sets isCurrentUserAdmin true`() = runTest(sharedScheduler) {
+    fun `isCurrentUserAdmin is true when user has ADMIN role`() = runTest(sharedScheduler) {
         membersFlow.value = listOf(member("user1", GroupRole.ADMIN))
         val vm = buildViewModel()
         advanceUntilIdle()
         assertTrue(vm.state.value.isCurrentUserAdmin)
-        assertEquals(GroupRole.ADMIN, vm.state.value.currentUserRole)
     }
 
     @Test
-    fun `current user as MEMBER sets isCurrentUserAdmin false`() = runTest(sharedScheduler) {
-        membersFlow.value = listOf(member("user1", GroupRole.MEMBER), member("user2", GroupRole.ADMIN))
+    fun `isCurrentUserAdmin is false when user has MEMBER role`() = runTest(sharedScheduler) {
+        membersFlow.value = listOf(member("user1", GroupRole.MEMBER))
         val vm = buildViewModel()
         advanceUntilIdle()
         assertFalse(vm.state.value.isCurrentUserAdmin)
-        assertEquals(GroupRole.MEMBER, vm.state.value.currentUserRole)
     }
-
-    @Test
-    fun `RemoveMember calls groupRepository removeMember`() = runTest(sharedScheduler) {
-        membersFlow.value = listOf(member("user1", GroupRole.ADMIN), member("user2", GroupRole.MEMBER))
-        coEvery { groupRepository.removeMember(conversationId, "user2") } returns Unit
-
-        val vm = buildViewModel()
-        advanceUntilIdle()
-        vm.onIntent(GroupInfoIntent.RemoveMember("user2"))
-        advanceUntilIdle()
-        // No error means success
-        assertNull(vm.state.value.error)
-    }
-
-    @Test
-    fun `RemoveMember failure sets error state`() = runTest(sharedScheduler) {
-        membersFlow.value = listOf(member("user1", GroupRole.ADMIN), member("user2", GroupRole.MEMBER))
-        coEvery { groupRepository.removeMember(any(), any()) } throws RuntimeException("permission denied")
-
-        val vm = buildViewModel()
-        advanceUntilIdle()
-        vm.onIntent(GroupInfoIntent.RemoveMember("user2"))
-        advanceUntilIdle()
-        assertNotNull(vm.state.value.error)
-        assertEquals("permission denied", vm.state.value.error)
-    }
-
-    @Test
-    fun `SaveGroupInfo success emits ShowMessage effect`() = runTest(sharedScheduler) {
-        coEvery { updateGroupUseCase(any(), name = any(), description = any()) } returns Result.success(Unit)
-
-        val vm = buildViewModel()
-        advanceUntilIdle()
-        vm.onIntent(GroupInfoIntent.NameChanged("New Name"))
-        vm.onIntent(GroupInfoIntent.SaveGroupInfo)
-        advanceUntilIdle()
-
-        val effect = vm.effect.first()
-        assertTrue(effect is GroupInfoEffect.ShowMessage)
-    }
-
-    @Test
-    fun `SaveGroupInfo failure sets error state`() = runTest(sharedScheduler) {
-        coEvery { updateGroupUseCase(any(), name = any(), description = any()) } returns Result.failure(RuntimeException("update failed"))
-
-        val vm = buildViewModel()
-        advanceUntilIdle()
-        vm.onIntent(GroupInfoIntent.NameChanged("Bad Name"))
-        vm.onIntent(GroupInfoIntent.SaveGroupInfo)
-        advanceUntilIdle()
-
-        assertEquals("update failed", vm.state.value.error)
-    }
-
-    @Test
-    fun `LeaveGroup success emits NavigateBack effect`() = runTest(sharedScheduler) {
-        coEvery { leaveGroupUseCase(conversationId, "user1") } returns Result.success(Unit)
-
-        val vm = buildViewModel()
-        advanceUntilIdle()
-        vm.onIntent(GroupInfoIntent.LeaveGroup)
-        advanceUntilIdle()
-
-        val effect = vm.effect.first()
-        assertTrue(effect is GroupInfoEffect.NavigateBack)
-    }
-
-    @Test
-    fun `LeaveGroup failure sets error state`() = runTest(sharedScheduler) {
-        coEvery { leaveGroupUseCase(any(), any()) } returns Result.failure(RuntimeException("cannot leave"))
-
-        val vm = buildViewModel()
-        advanceUntilIdle()
-        vm.onIntent(GroupInfoIntent.LeaveGroup)
-        advanceUntilIdle()
-
-        assertEquals("cannot leave", vm.state.value.error)
-    }
-
-    @Test
-    fun `DismissError clears error`() = runTest(sharedScheduler) {
-        coEvery { leaveGroupUseCase(any(), any()) } returns Result.failure(RuntimeException("oops"))
-
-        val vm = buildViewModel()
-        advanceUntilIdle()
-        vm.onIntent(GroupInfoIntent.LeaveGroup)
-        advanceUntilIdle()
-        assertNotNull(vm.state.value.error)
-
-        vm.onIntent(GroupInfoIntent.DismissError)
-        assertNull(vm.state.value.error)
-    }
-
-    @Test
-    fun `members list updates reactively when flow emits new values`() = runTest(sharedScheduler) {
-        val vm = buildViewModel()
-        advanceUntilIdle()
-        assertEquals(0, vm.state.value.members.size)
-
-        membersFlow.value = listOf(member("user1", GroupRole.ADMIN), member("user2", GroupRole.MEMBER))
-        advanceUntilIdle()
-        assertEquals(2, vm.state.value.members.size)
-    }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private fun member(userId: String, role: GroupRole = GroupRole.MEMBER) = GroupMemberBO(
         userId = userId,

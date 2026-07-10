@@ -96,7 +96,7 @@ val networkModule = module {
 
 val viewModelModule = module {
     // BuildConfig values not injectable â€” kept as lambda
-    viewModel { AuthViewModel(androidApplication(), get(), get(), get(), BuildConfig.GOOGLE_WEB_CLIENT_ID, get(), get()) }
+    viewModel { AuthViewModel(androidApplication(), get(), get(), BuildConfig.GOOGLE_WEB_CLIENT_ID, get(), get(), get()) }
 
     viewModelOf(::ConversationListViewModel)
     viewModelOf(::InvitationsViewModel)
@@ -111,14 +111,12 @@ val viewModelModule = module {
     viewModelOf(::SessionAuditViewModel)
     viewModelOf(::BackupViewModel)
     viewModelOf(::GlobalSearchViewModel)
-    // ChatViewModel: exceeds viewModelOf 22-param limit â€” kept as lambda
+    // ChatViewModel: Repositories only, no DAOs
     viewModel { params ->
         ChatViewModel(
             args = params[0],
             sendMessageUseCase = get(),
             messageRepository = get(),
-            conversationDao = get(),
-            messageDao = get(),
             callRepository = get(),
             userRepository = get(),
             getGroupMembersUseCase = get(),
@@ -126,13 +124,13 @@ val viewModelModule = module {
             groupRepository = get(),
             reactionRepository = get(),
             conversationRepository = get(),
-            supabaseClient = get(),
+            scheduledMessageRepository = get(),
+            typingRepository = get(),
             draftRepository = get(),
             translationManager = get(),
             audioTranscriber = get(),
             pollRepository = get(),
             chatThemeRepository = get(),
-            scheduledMessageDao = get(),
             workManager = get(),
             incognitoRepository = get(),
             aiAssistantRepository = get(),
@@ -198,4 +196,3 @@ val appModules = listOf(
     workManagerModule,
     aiModule,
 )
-
