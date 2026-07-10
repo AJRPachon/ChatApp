@@ -16,8 +16,4 @@ interface UserRepository {
     suspend fun updateDisplayName(userId: String, displayName: String)
     fun observeUserById(id: String): Flow<UserBO?>
     suspend fun searchUsersByEmails(emails: List<String>): List<UserBO>
-    suspend fun clearCurrentUser()
-    suspend fun markAsCurrentUser(userId: String, email: String): UserBO?
-    suspend fun fetchProfileFromRemote(userId: String): UserBO?
-    suspend fun uploadAvatar(userId: String, bytes: ByteArray, mimeType: String): String
 }
