@@ -1,7 +1,7 @@
-package com.ajrpachon.chatapp.ui.usagestats
+﻿package com.ajrpachon.chatapp.ui.usagestats
 
-import com.ajrpachon.chatapp.data.local.dao.ConversationDao
-import com.ajrpachon.chatapp.data.local.dao.MessageDao
+import com.ajrpachon.chatapp.domain.repository.ConversationRepository
+import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
@@ -17,8 +17,8 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 class UsageStatsViewModel(
-    private val messageDao: MessageDao,
-    private val conversationDao: ConversationDao,
+    private val messageRepository: MessageRepository,
+    private val conversationRepository: ConversationRepository,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
 ) : BaseViewModel<UsageStatsState, Nothing>(UsageStatsState()) {
 
@@ -38,24 +38,24 @@ class UsageStatsViewModel(
             catchResult {
                 val userId = getCurrentUserUseCase().filterNotNull().first().id
 
-                val sent = messageDao.countSent(userId)
-                val received = messageDao.countReceived(userId)
-                val calls = messageDao.countCalls()
-                val callSeconds = messageDao.sumCallDurationSeconds()
-                val images = messageDao.countImages()
-                val audio = messageDao.countAudio()
-                val videos = messageDao.countVideos()
+                val sent = messageRepository.countSent(userId)
+                val received = messageRepository.countReceived(userId)
+                val calls = messageRepository.countCalls()
+                val callSeconds = messageRepository.sumCallDurationSeconds()
+                val images = messageRepository.countImages()
+                val audio = messageRepository.countAudio()
+                val videos = messageRepository.countVideos()
 
-                val mostActive = messageDao.getMostActiveConversation()
-                val mostActiveName = mostActive?.let { result ->
-                    conversationDao.getById(result.conversationId)?.name ?: ""
+                val mostActiveConvId = messageRepository.getMostActiveConversationId()
+                val mostActiveName = mostActiveConvId?.let { id ->
+                    conversationRepository.getById(id)?.name ?: ""
                 } ?: ""
 
                 val sevenDaysAgoMs = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(7)
-                val dayCounts = messageDao.countMessagesByDay(sevenDaysAgoMs)
+                val dayCounts = messageRepository.countMessagesByDay(sevenDaysAgoMs)
 
                 // Build a map of dayEpoch -> count from DB results
-                val dbMap = dayCounts.associate { it.dayEpoch to it.count }
+                val dbMap = dayCounts.toMap()
 
                 // Generate last 7 days (today inclusive) as Pair<label, count>
                 val zoneId = ZoneId.systemDefault()

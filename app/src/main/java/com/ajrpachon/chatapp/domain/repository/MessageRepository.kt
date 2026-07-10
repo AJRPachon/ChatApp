@@ -29,7 +29,6 @@ interface MessageRepository {
         fileSize: Long? = null,
         fileMimeType: String? = null,
         videoUrl: String? = null,
-        // E2EE: pass the other user's ID for 1:1 conversations (null = skip encryption)
         otherUserId: String? = null,
     ): MessageBO
     suspend fun uploadImage(conversationId: String, bytes: ByteArray, mimeType: String): String
@@ -49,7 +48,16 @@ interface MessageRepository {
     fun getSavedMessages(currentUserId: String): Flow<List<MessageBO>>
     suspend fun setSaved(messageId: String, saved: Boolean)
     suspend fun getAllMessages(conversationId: String, currentUserId: String): List<MessageBO>
-
+    suspend fun searchAllMessages(query: String): List<MessageBO>
+    suspend fun countSent(userId: String): Int
+    suspend fun countReceived(userId: String): Int
+    suspend fun countCalls(): Int
+    suspend fun sumCallDurationSeconds(): Int
+    suspend fun countImages(): Int
+    suspend fun countAudio(): Int
+    suspend fun countVideos(): Int
+    suspend fun getMostActiveConversationId(): String?
+    suspend fun countMessagesByDay(since: Long): List<Pair<Long, Int>>
     @Suppress("LongParameterList")
     suspend fun savePendingMessage(
         id: String,
@@ -60,4 +68,14 @@ interface MessageRepository {
         replyToContent: String? = null,
         replyToSenderName: String? = null,
     )
+    suspend fun searchAllMessages(query: String): List<MessageBO>
+    suspend fun countSent(userId: String): Int
+    suspend fun countReceived(userId: String): Int
+    suspend fun countCalls(): Int
+    suspend fun sumCallDurationSeconds(): Int
+    suspend fun countImages(): Int
+    suspend fun countAudio(): Int
+    suspend fun countVideos(): Int
+    suspend fun getMostActiveConversationId(): String?
+    suspend fun countMessagesByDay(since: Long): List<Pair<Long, Int>>
 }

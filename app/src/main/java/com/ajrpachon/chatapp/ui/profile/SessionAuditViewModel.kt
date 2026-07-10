@@ -1,21 +1,21 @@
-package com.ajrpachon.chatapp.ui.profile
+﻿package com.ajrpachon.chatapp.ui.profile
 
 import android.os.Build
-import com.ajrpachon.chatapp.data.local.dao.SessionDao
-import com.ajrpachon.chatapp.data.local.entity.SessionDBO
+import com.ajrpachon.chatapp.domain.repository.AuthRepository
+import com.ajrpachon.chatapp.domain.model.SessionBO
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import com.ajrpachon.chatapp.utils.catchResult
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.auth.auth
+import com.ajrpachon.chatapp.domain.repository.SessionRepository
+
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.util.UUID
 
 class SessionAuditViewModel(
-    private val supabase: SupabaseClient,
-    private val sessionDao: SessionDao,
+    private val authRepository: AuthRepository,
+    private val sessionRepository: SessionRepository,
 ) : BaseViewModel<SessionAuditState, SessionAuditEffect>(SessionAuditState()) {
 
     init {
@@ -25,13 +25,13 @@ class SessionAuditViewModel(
 
     private fun ensureCurrentSessionRecorded() {
         viewModelScope.launch {
-            val session = supabase.auth.currentSessionOrNull() ?: return@launch
+            val session = authRepository.getCurrentSessionInfo() ?: return@launch
             val now = System.currentTimeMillis()
             val deviceLabel = "${Build.MANUFACTURER} ${Build.MODEL}".trim()
-            sessionDao.updateCurrentLastActive(now)
-            sessionDao.upsert(
-                SessionDBO(
-                    id = session.accessToken.take(36).let { token ->
+            sessionRepository.updateCurrentLastActive(now)
+            sessionRepository.upsert(
+                SessionBO(
+                    id = session.userId.take(36).let { token ->
                         runCatching { UUID.nameUUIDFromBytes(token.toByteArray()).toString() }
                             .getOrDefault(token.padEnd(36, '0').take(36))
                     },
@@ -45,17 +45,17 @@ class SessionAuditViewModel(
     }
 
     private fun observeSessions() {
-        sessionDao.observeAll()
+        sessionRepository.observeAll()
             .onEach { list ->
                 updateState { s ->
                     s.copy(
-                        sessions = list.map { dbo ->
+                        sessions = list.map { bo ->
                             SessionInfo(
-                                id = dbo.id,
-                                deviceInfo = dbo.deviceInfo,
-                                createdAt = dbo.createdAt,
-                                lastActiveAt = dbo.lastActiveAt,
-                                isCurrent = dbo.isCurrent,
+                                id = bo.id,
+                                deviceInfo = bo.deviceInfo,
+                                createdAt = bo.createdAt,
+                                lastActiveAt = bo.lastActiveAt,
+                                isCurrent = bo.isCurrent,
                             )
                         },
                         isLoading = false,
@@ -80,10 +80,10 @@ class SessionAuditViewModel(
             val isCurrent = state.value.sessions.find { it.id == sessionId }?.isCurrent == true
             catchResult {
                 if (isCurrent) {
-                    supabase.auth.signOut()
-                    sessionDao.deleteAll()
+                    authRepository.signOut()
+                    sessionRepository.deleteAll()
                 } else {
-                    sessionDao.delete(sessionId)
+                    sessionRepository.delete(sessionId)
                 }
             }.onFailure { e ->
                 updateState { it.copy(error = e.message) }
@@ -97,7 +97,7 @@ class SessionAuditViewModel(
     private fun revokeAllOthers() {
         viewModelScope.launch {
             catchResult {
-                sessionDao.deleteAllOthers()
+                sessionRepository.deleteAllOthers()
             }.onFailure { e ->
                 updateState { it.copy(error = e.message) }
                 sendEffect(SessionAuditEffect.Error(e.message ?: "Error al cerrar otras sesiones"))
