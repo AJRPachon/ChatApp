@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.ui.chat
+﻿package com.ajrpachon.chatapp.ui.chat
 
 import android.content.Context
 import android.media.MediaRecorder
@@ -15,22 +15,17 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import com.ajrpachon.chatapp.data.local.AppLockRepository
 import com.ajrpachon.chatapp.data.local.ChatTheme
 import com.ajrpachon.chatapp.data.local.ChatThemeRepository
 import com.ajrpachon.chatapp.data.local.DraftRepository
 import com.ajrpachon.chatapp.data.local.IncognitoRepository
 import com.ajrpachon.chatapp.data.local.WallpaperRepository
-import com.ajrpachon.chatapp.data.local.dao.ConversationDao
-import com.ajrpachon.chatapp.data.local.dao.MessageDao
 import com.ajrpachon.chatapp.data.local.PollRepository
-import com.ajrpachon.chatapp.data.local.dao.ScheduledMessageDao
-import com.ajrpachon.chatapp.data.local.entity.MessageDBO
 import com.ajrpachon.chatapp.data.local.entity.PollDBO
 import com.ajrpachon.chatapp.data.local.entity.PollOptionDBO
 import com.ajrpachon.chatapp.data.local.entity.ScheduledMessageDBO
 import com.ajrpachon.chatapp.data.repository.AiAssistantRepository
-import com.ajrpachon.chatapp.domain.model.CallBO
+import com.ajrpachon.chatapp.data.repository.TypingRepositoryImpl
 import com.ajrpachon.chatapp.domain.model.CallType
 import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.MessageBO
@@ -39,6 +34,8 @@ import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import com.ajrpachon.chatapp.domain.repository.ReactionRepository
+import com.ajrpachon.chatapp.domain.repository.ScheduledMessageRepository
+import com.ajrpachon.chatapp.domain.repository.TypingRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.GetGroupMembersUseCase
 import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
@@ -51,11 +48,6 @@ import com.ajrpachon.chatapp.utils.TranslationManager
 import com.ajrpachon.chatapp.utils.catchResult
 import com.ajrpachon.chatapp.worker.MessageRetryWorker
 import com.ajrpachon.chatapp.worker.ScheduledMessageWorker
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.realtime.RealtimeChannel
-import io.github.jan.supabase.realtime.channel
-import io.github.jan.supabase.realtime.presenceDataFlow
-import io.github.jan.supabase.realtime.realtime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -69,21 +61,8 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
-import java.io.File
 import java.util.UUID
 import java.util.concurrent.TimeUnit
-
-
-
-@Serializable
-private data class TypingPresence(
-    val isTyping: Boolean = false,
-    val userId: String = "",
-    val userName: String = "",
-)
 
 data class ChatArgs(val conversationId: String, val otherUserName: String)
 
@@ -92,8 +71,6 @@ class ChatViewModel(
     args: ChatArgs,
     private val sendMessageUseCase: SendMessageUseCase,
     private val messageRepository: MessageRepository,
-    private val conversationDao: ConversationDao,
-    private val messageDao: MessageDao,
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
     private val getGroupMembersUseCase: GetGroupMembersUseCase,
@@ -101,14 +78,13 @@ class ChatViewModel(
     private val groupRepository: GroupRepository,
     private val reactionRepository: ReactionRepository,
     private val conversationRepository: ConversationRepository,
-    private val supabaseClient: SupabaseClient,
+    private val scheduledMessageRepository: ScheduledMessageRepository,
+    private val typingRepository: TypingRepository,
     private val draftRepository: DraftRepository,
     private val translationManager: TranslationManager,
     private val audioTranscriber: AudioTranscriber,
     private val pollRepository: PollRepository,
     private val chatThemeRepository: ChatThemeRepository,
-    // TODO: Extract ScheduledMessageDao and ConversationDao to repositories (out of scope for this PR)
-    private val scheduledMessageDao: ScheduledMessageDao,
     private val workManager: WorkManager,
     private val incognitoRepository: IncognitoRepository,
     private val aiAssistantRepository: AiAssistantRepository,
@@ -118,12 +94,6 @@ class ChatViewModel(
 
     private val conversationId = args.conversationId
     private val otherUserName = args.otherUserName
-
-    // Resolved synchronously — Supabase Auth is in-memory, never blocks.
-    // TODO: conversationDao is still injected directly because ConversationBO does not expose
-    //  otherUserId, historyVisibleFrom, or disappearingModeSeconds. A follow-up ticket should
-    //  add those fields to ConversationBO, expose getConversationById / observeConversationById /
-    //  resetUnreadCount on ConversationRepository, and remove the DAO dependency from this VM.
     private val currentUserId: String? = userRepository.getCurrentUserId()
 
     private val _historyVisibleFrom = MutableStateFlow(0L)
@@ -133,228 +103,166 @@ class ChatViewModel(
 
     val messages: Flow<PagingData<MessageBO>> = _historyVisibleFrom
         .flatMapLatest { since ->
-            messageRepository.getMessagesPaged(
-                conversationId,
-                currentUserId ?: "",
-                since,
-            )
+            messageRepository.getMessagesPaged(conversationId, currentUserId ?: "", since)
         }
         .cachedIn(viewModelScope)
 
-    val pinnedMessages: kotlinx.coroutines.flow.Flow<List<MessageBO>> =
+    val pinnedMessages: Flow<List<MessageBO>> =
         messageRepository.getPinnedMessages(conversationId, currentUserId ?: "")
 
-    // Cached group members used for @mention autocomplete
     private var groupMembers: List<GroupMemberBO> = emptyList()
-
     private var recorder: MediaRecorder? = null
     private var recordingTimerJob: Job? = null
     private var remoteSyncJob: Job? = null
-    private var typingChannel: RealtimeChannel? = null
     private var typingResetJob: Job? = null
     private var typingPresenceJob: Job? = null
     private var draftSaveJob: Job? = null
-    // Group presence: tracks online status per member userId
     private val memberOnlineStatuses = MutableStateFlow<Map<String, Boolean>>(emptyMap())
     private var memberObserveJob: Job? = null
 
     init {
         viewModelScope.launch {
-            networkMonitor.isOnline.collect { online ->
-                updateState { it.copy(isOnline = online) }
-            }
+            networkMonitor.isOnline.collect { online -> updateState { it.copy(isOnline = online) } }
         }
-
-        // Propagate group member online count to state
         viewModelScope.launch {
             memberOnlineStatuses.collect { map ->
                 updateState { it.copy(onlineMemberCount = map.values.count { v -> v }) }
             }
         }
-
-        // Delete expired self-destruct messages when the screen opens
         viewModelScope.launch { catchResult { messageRepository.deleteExpiredMessages() } }
-
-        // Observe scheduled messages for this conversation
         viewModelScope.launch {
-            scheduledMessageDao.observeAll().collect { all ->
+            scheduledMessageRepository.observeAll().collect { all ->
                 val forThisConversation = all.filter { it.conversationId == conversationId }
-                updateState {
-                    it.copy(
-                        scheduledMessageCount = forThisConversation.size,
-                        scheduledMessages = forThisConversation,
-                    )
-                }
+                updateState { it.copy(scheduledMessageCount = forThisConversation.size, scheduledMessages = forThisConversation) }
             }
         }
-
-        // Observe incognito mode for this conversation
         viewModelScope.launch {
             incognitoRepository.isIncognito(conversationId).collect { incognito ->
                 updateState { it.copy(isIncognito = incognito) }
             }
         }
-
-        // Load saved draft for this conversation
         viewModelScope.launch {
             val draft = draftRepository.getDraft(conversationId).first()
-            if (draft.isNotBlank()) {
-                updateState { it.copy(inputText = draft) }
-            }
+            if (draft.isNotBlank()) updateState { it.copy(inputText = draft) }
         }
-
-        // Observe per-conversation chat theme
         viewModelScope.launch {
-            chatThemeRepository.observe(conversationId).collect { theme ->
-                updateState { it.copy(chatTheme = theme) }
-            }
+            chatThemeRepository.observe(conversationId).collect { theme -> updateState { it.copy(chatTheme = theme) } }
         }
-
-        // Observe per-conversation wallpaper color
         viewModelScope.launch {
-            wallpaperRepository.getWallpaperColor(conversationId).collect { color ->
-                updateState { it.copy(wallpaperColor = color) }
-            }
+            wallpaperRepository.getWallpaperColor(conversationId).collect { color -> updateState { it.copy(wallpaperColor = color) } }
         }
-
         updateState { it.copy(conversationTitle = otherUserName) }
         val uid = currentUserId
         if (uid != null) {
             updateState { it.copy(currentUserId = uid) }
             viewModelScope.launch {
-            val conv = conversationDao.getById(conversationId)
-            val otherUserId = conv?.otherUserId
-            val isGroup = conv?.isGroup == true
-            val historyVisibleFrom = conv?.historyVisibleFrom ?: 0L
-            AppLogger.d(TAG, "init conv=$conversationId historyVisibleFrom=$historyVisibleFrom isGroup=$isGroup")
-            updateState {
-                it.copy(
-                    otherUserId = otherUserId,
-                    isGroup = isGroup,
-                    groupAvatarUrl = conv?.groupAvatarUrl,
-                    isCurrentUserMember = true,
-                    isMuted = conv?.isEffectivelyMuted() == true,
-                    mutedUntil = conv?.mutedUntil ?: 0L,
-                    disappearingModeSeconds = conv?.disappearingModeSeconds ?: 0L,
-                )
-            }
-            _historyVisibleFrom.value = historyVisibleFrom
-            startRemoteSync(historyVisibleFrom)
-            startTypingPresence()
-
-            launch {
-                catchResult { messageRepository.markAsRead(conversationId, uid) }
-                catchResult { conversationDao.resetUnreadCount(conversationId) }
-            }
-
-            if (otherUserId != null) {
+                val conv = conversationRepository.getById(conversationId)
+                val otherUserId = conv?.otherUserId
+                val isGroup = conv?.isGroup == true
+                val historyVisibleFrom = conv?.historyVisibleFrom ?: 0L
+                updateState {
+                    it.copy(
+                        otherUserId = otherUserId,
+                        isGroup = isGroup,
+                        groupAvatarUrl = conv?.groupAvatarUrl,
+                        isCurrentUserMember = true,
+                        isMuted = conv?.isMuted == true,
+                        mutedUntil = conv?.mutedUntil ?: 0L,
+                        disappearingModeSeconds = conv?.disappearingModeSeconds ?: 0L,
+                    )
+                }
+                _historyVisibleFrom.value = historyVisibleFrom
+                startRemoteSync(historyVisibleFrom)
+                startTypingPresence(uid)
                 launch {
-                    userRepository.observeUserById(otherUserId).collect { user ->
-                        updateState {
-                            it.copy(
-                                otherUserAvatarUrl = user?.avatarUrl ?: it.otherUserAvatarUrl,
-                                isOtherUserOnline = user?.isOnline() == true,
-                                otherUserLastSeenMs = user?.lastSeen?.toEpochMilliseconds(),
-                            )
+                    catchResult { messageRepository.markAsRead(conversationId, uid) }
+                    catchResult { conversationRepository.resetUnreadCount(conversationId) }
+                }
+                if (otherUserId != null) {
+                    launch {
+                        userRepository.observeUserById(otherUserId).collect { user ->
+                            updateState {
+                                it.copy(
+                                    otherUserAvatarUrl = user?.avatarUrl ?: it.otherUserAvatarUrl,
+                                    isOtherUserOnline = user?.isOnline() == true,
+                                    otherUserLastSeenMs = user?.lastSeen?.toEpochMilliseconds(),
+                                )
+                            }
+                        }
+                    }
+                    launch { catchResult { userRepository.getUserById(otherUserId) } }
+                }
+                launch {
+                    conversationRepository.observeById(conversationId).collect { c ->
+                        if (c != null) {
+                            updateState {
+                                it.copy(
+                                    groupAvatarUrl = c.groupAvatarUrl,
+                                    conversationTitle = if (c.isGroup) c.name.takeIf { n -> n.isNotBlank() } ?: it.conversationTitle else it.conversationTitle,
+                                )
+                            }
                         }
                     }
                 }
-                launch {
-                    catchResult { userRepository.getUserById(otherUserId) }
-                }
-            }
-
-            launch {
-                conversationDao.observeById(conversationId).collect { conv ->
-                    if (conv != null) {
-                        updateState {
-                            it.copy(
-                                groupAvatarUrl = conv.groupAvatarUrl,
-                                conversationTitle = if (conv.isGroup) conv.name?.takeIf { n -> n.isNotBlank() } ?: it.conversationTitle else it.conversationTitle,
-                            )
-                        }
-                    }
-                }
-            }
-
-            if (isGroup) {
-                launch {
-                    catchResult { groupRepository.syncMembership(conversationId) }
-                    while (isActive) {
-                        delay(3_000)
+                if (isGroup) {
+                    launch {
                         catchResult { groupRepository.syncMembership(conversationId) }
+                        while (isActive) {
+                            delay(3_000)
+                            catchResult { groupRepository.syncMembership(conversationId) }
+                        }
                     }
-                }
-                var previousIsMember = true
-                catchResult {
-                    getGroupMembersUseCase(conversationId).collect { members ->
-                        groupMembers = members
-                        val isMember = members.any { it.userId == uid }
-                        AppLogger.d(TAG, "members emission: size=${members.size} isMember=$isMember prev=$previousIsMember")
-                        updateState { it.copy(isCurrentUserMember = isMember, groupMemberCount = members.size) }
-                        // Restart per-member online status observation whenever the member list changes
-                        memberObserveJob?.cancel()
-                        memberObserveJob = launch {
-                            memberOnlineStatuses.value = emptyMap()
-                            for (member in members) {
-                                launch {
-                                    catchResult {
-                                        userRepository.observeUserById(member.userId).collect { user ->
-                                            memberOnlineStatuses.value = memberOnlineStatuses.value + (member.userId to (user?.isOnline() == true))
+                    var previousIsMember = true
+                    catchResult {
+                        getGroupMembersUseCase(conversationId).collect { members ->
+                            groupMembers = members
+                            val isMember = members.any { it.userId == uid }
+                            updateState { it.copy(isCurrentUserMember = isMember, groupMemberCount = members.size) }
+                            memberObserveJob?.cancel()
+                            memberObserveJob = launch {
+                                memberOnlineStatuses.value = emptyMap()
+                                for (member in members) {
+                                    launch {
+                                        catchResult {
+                                            userRepository.observeUserById(member.userId).collect { user ->
+                                                memberOnlineStatuses.value = memberOnlineStatuses.value + (member.userId to (user?.isOnline() == true))
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                        when {
-                            isMember && !previousIsMember -> {
-                                launch {
-                                    val since = conversationDao.getById(conversationId)?.historyVisibleFrom ?: 0L
-                                    AppLogger.d(TAG, "re-joined: syncMessages since=$since")
-                                    catchResult { messageRepository.syncMessages(conversationId, since) }
-                                    _historyVisibleFrom.value = since
-                                    startRemoteSync(since)
+                            when {
+                                isMember && !previousIsMember -> {
+                                    launch {
+                                        val since = conversationRepository.getById(conversationId)?.historyVisibleFrom ?: 0L
+                                        catchResult { messageRepository.syncMessages(conversationId, since) }
+                                        _historyVisibleFrom.value = since
+                                        startRemoteSync(since)
+                                    }
+                                }
+                                !isMember && previousIsMember -> {
+                                    launch { catchResult { messageRepository.clearMessages(conversationId) } }
                                 }
                             }
-                            !isMember && previousIsMember -> {
-                                launch {
-                                    AppLogger.d(TAG, "expelled: clearMessages")
-                                    catchResult { messageRepository.clearMessages(conversationId) }
-                                }
-                            }
+                            previousIsMember = isMember
                         }
-                        previousIsMember = isMember
-                    }
-                }.onFailure { e ->
-                    AppLogger.e(TAG, "getGroupMembers collect FAILED conv=$conversationId", e)
+                    }.onFailure { e -> AppLogger.e(TAG, "getGroupMembers FAILED", e) }
                 }
-                AppLogger.w(TAG, "getGroupMembers collect ENDED conv=$conversationId")
             }
-        }
         } else {
-            AppLogger.e(TAG, "getCurrentUserId returned null — aborting init conv=$conversationId")
+            AppLogger.e(TAG, "getCurrentUserId null -- aborting init")
         }
     }
 
-    private fun startTypingPresence() {
+    private fun startTypingPresence(uid: String) {
         typingPresenceJob?.cancel()
         typingPresenceJob = viewModelScope.launch {
             catchResult {
-                val channel = supabaseClient.channel("typing-$conversationId")
-                typingChannel = channel
-                channel.presenceDataFlow<TypingPresence>()
-                    .onEach { presences ->
-                        val uid = currentUserId
-                        val typingNames = presences
-                            .filter { it.isTyping && it.userId != uid }
-                            .map { it.userName }
-                        updateState { it.copy(typingUserNames = typingNames) }
-                    }
+                typingRepository.observeTypingNames(conversationId, uid)
+                    .onEach { names -> updateState { it.copy(typingUserNames = names) } }
                     .launchIn(this)
-                channel.subscribe()
-            }.onFailure { e ->
-                AppLogger.d(TAG, "typing presence failed (optional feature): ${e.message}")
-            }
+                (typingRepository as? TypingRepositoryImpl)?.subscribeChannel(conversationId)
+            }.onFailure { e -> AppLogger.d(TAG, "typing presence failed: ${e.message}") }
         }
     }
 
@@ -362,19 +270,19 @@ class ChatViewModel(
         val uid = currentUserId ?: return
         viewModelScope.launch {
             catchResult {
-                typingChannel?.track(buildJsonObject {
-                    put("isTyping", isTyping)
-                    put("userId", uid)
-                    put("userName", if (isTyping) otherUserName.ifBlank { "Usuario" } else "")
-                })
-            } // Typing presence is optional — silently ignore failures
+                typingRepository.sendTypingState(
+                    conversationId = conversationId,
+                    userId = uid,
+                    userName = if (isTyping) otherUserName.ifBlank { "Usuario" } else "",
+                    isTyping = isTyping,
+                )
+            }
         }
     }
 
     private fun startRemoteSync(historyVisibleFrom: Long) {
         remoteSyncJob?.cancel()
         remoteSyncJob = viewModelScope.launch {
-            AppLogger.d(TAG, "startRemoteSync conv=$conversationId since=$historyVisibleFrom")
             messageRepository.syncRemote(conversationId, historyVisibleFrom).collect { }
         }
     }
@@ -389,13 +297,11 @@ class ChatViewModel(
                     delay(500)
                     draftRepository.saveDraft(conversationId, intent.text)
                 }
-                // @mention autocomplete: check last word
                 val lastWord = intent.text.substringAfterLast(' ')
                 if (state.value.isGroup && lastWord.startsWith("@") && lastWord.length > 1) {
                     val partial = lastWord.removePrefix("@").lowercase()
-                    val matches = groupMembers.filter { member ->
-                        member.username.lowercase().contains(partial) ||
-                            member.displayName.lowercase().contains(partial)
+                    val matches = groupMembers.filter { m ->
+                        m.username.lowercase().contains(partial) || m.displayName.lowercase().contains(partial)
                     }
                     updateState { it.copy(mentionSuggestions = matches, showMentionSuggestions = matches.isNotEmpty()) }
                 } else {
@@ -404,13 +310,9 @@ class ChatViewModel(
                 if (intent.text.isNotEmpty()) {
                     sendTypingPresence(true)
                     typingResetJob?.cancel()
-                    typingResetJob = viewModelScope.launch {
-                        delay(3_000)
-                        sendTypingPresence(false)
-                    }
+                    typingResetJob = viewModelScope.launch { delay(3_000); sendTypingPresence(false) }
                 } else {
-                    typingResetJob?.cancel()
-                    sendTypingPresence(false)
+                    typingResetJob?.cancel(); sendTypingPresence(false)
                 }
             }
             is ChatIntent.Send -> if (state.value.editingMessage != null) confirmEdit() else sendMessage()
@@ -450,31 +352,19 @@ class ChatViewModel(
             is ChatIntent.ClearSelection -> updateState { it.copy(selectedMessageIds = emptySet()) }
             is ChatIntent.DeleteSelectedMessages -> deleteSelectedMessages()
             is ChatIntent.ShowForwardDialog -> showForwardDialog(intent.message)
-            is ChatIntent.DismissForwardDialog -> updateState {
-                it.copy(showForwardDialog = false, forwardingMessage = null, forwardableConversations = emptyList())
-            }
+            is ChatIntent.DismissForwardDialog -> updateState { it.copy(showForwardDialog = false, forwardingMessage = null, forwardableConversations = emptyList()) }
             is ChatIntent.ForwardMessage -> forwardMessage(intent.messageId, intent.targetConversationId)
             is ChatIntent.ShowForwardSelectionDialog -> showForwardSelectionDialog()
-            is ChatIntent.DismissForwardSelectionDialog -> updateState {
-                it.copy(showForwardSelectionDialog = false, forwardableConversations = emptyList())
-            }
+            is ChatIntent.DismissForwardSelectionDialog -> updateState { it.copy(showForwardSelectionDialog = false, forwardableConversations = emptyList()) }
             is ChatIntent.ForwardSelectedMessages -> forwardSelectedMessages(intent.targetConversationId)
             is ChatIntent.SendLocation -> sendLocationMessage(intent.mapsUrl)
             is ChatIntent.TranslateMessage -> translateMessage(intent.messageId, intent.text)
-            is ChatIntent.DismissTranslation -> updateState {
-                it.copy(translatedTexts = it.translatedTexts - intent.messageId)
-            }
+            is ChatIntent.DismissTranslation -> updateState { it.copy(translatedTexts = it.translatedTexts - intent.messageId) }
             is ChatIntent.TranscribeAudio -> transcribeAudio(intent.context, intent.messageId)
             is ChatIntent.PinMessage -> pinMessage(intent.messageId)
             is ChatIntent.UnpinMessage -> unpinMessage(intent.messageId)
-            is ChatIntent.SaveMessage -> viewModelScope.launch {
-                catchResult { messageRepository.setSaved(intent.messageId, true) }
-                    .onFailure { e -> AppLogger.e(TAG, "Save message failed", e) }
-            }
-            is ChatIntent.UnsaveMessage -> viewModelScope.launch {
-                catchResult { messageRepository.setSaved(intent.messageId, false) }
-                    .onFailure { e -> AppLogger.e(TAG, "Unsave message failed", e) }
-            }
+            is ChatIntent.SaveMessage -> viewModelScope.launch { catchResult { messageRepository.setSaved(intent.messageId, true) } }
+            is ChatIntent.UnsaveMessage -> viewModelScope.launch { catchResult { messageRepository.setSaved(intent.messageId, false) } }
             is ChatIntent.OpenCreatePollSheet -> updateState { it.copy(showCreatePollSheet = true) }
             is ChatIntent.DismissCreatePollSheet -> updateState { it.copy(showCreatePollSheet = false) }
             is ChatIntent.CreatePoll -> createPoll(intent.question, intent.options)
@@ -487,7 +377,7 @@ class ChatViewModel(
             is ChatIntent.DismissDisappearingModeSheet -> updateState { it.copy(showDisappearingModeSheet = false) }
             is ChatIntent.SetDisappearingMode -> setDisappearingMode(intent.conversationId, intent.seconds)
             is ChatIntent.SelectMention -> selectMention(intent.member)
-                        is ChatIntent.ToggleIncognito -> toggleIncognito()
+            is ChatIntent.ToggleIncognito -> toggleIncognito()
             is ChatIntent.DismissIncognitoDialog -> updateState { it.copy(showIncognitoInfoDialog = false) }
             is ChatIntent.ConfirmIncognito -> confirmIncognito()
             is ChatIntent.OpenScheduleDialog -> updateState { it.copy(showScheduleDialog = true) }
@@ -507,9 +397,7 @@ class ChatViewModel(
             }
             is ChatIntent.OpenWallpaperPicker -> updateState { it.copy(showWallpaperPicker = true) }
             is ChatIntent.DismissWallpaperPicker -> updateState { it.copy(showWallpaperPicker = false) }
-            is ChatIntent.SetWallpaperColor -> viewModelScope.launch {
-                wallpaperRepository.setWallpaperColor(conversationId, intent.color)
-            }
+            is ChatIntent.SetWallpaperColor -> viewModelScope.launch { wallpaperRepository.setWallpaperColor(conversationId, intent.color) }
             is ChatIntent.SendContact -> sendContact(intent.name, intent.phone)
             is ChatIntent.RetryMessage -> enqueueMessageRetry()
         }
@@ -517,12 +405,8 @@ class ChatViewModel(
 
     private fun enqueueMessageRetry() {
         val request = OneTimeWorkRequestBuilder<MessageRetryWorker>()
-            .setConstraints(
-                Constraints.Builder()
-                    .setRequiredNetworkType(NetworkType.CONNECTED)
-                    .build(),
-            )
-            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, java.util.concurrent.TimeUnit.SECONDS)
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
             .build()
         workManager.enqueueUniqueWork(MessageRetryWorker.WORK_NAME, ExistingWorkPolicy.KEEP, request)
     }
@@ -534,51 +418,29 @@ class ChatViewModel(
         viewModelScope.launch {
             sendEffect(ChatEffect.ScrollToBottom)
             updateState { it.copy(replyingTo = null) }
-            sendMessageUseCase(
-                conversationId, userId, content,
-                replyToId = reply?.id,
-                replyToContent = reply?.replySnippet(),
-                replyToSenderName = reply?.senderName,
-            ).onFailure { e ->
-                AppLogger.e(TAG, "sendContact failed", e)
-                updateState { it.copy(error = e.message ?: "Error al enviar el contacto") }
-            }
+            sendMessageUseCase(conversationId, userId, content,
+                replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
+            ).onFailure { e -> updateState { it.copy(error = e.message ?: "Error al enviar el contacto") } }
         }
     }
 
     private fun selectMention(member: GroupMemberBO) {
         val currentText = state.value.inputText
         val lastAtIndex = currentText.lastIndexOf('@')
-        val newText = if (lastAtIndex >= 0) {
-            currentText.substring(0, lastAtIndex) + "@${member.username} "
-        } else {
-            currentText + "@${member.username} "
-        }
-        updateState {
-            it.copy(
-                inputText = newText,
-                mentionSuggestions = emptyList(),
-                showMentionSuggestions = false,
-            )
-        }
+        val newText = if (lastAtIndex >= 0) currentText.substring(0, lastAtIndex) + "@${member.username} "
+                      else currentText + "@${member.username} "
+        updateState { it.copy(inputText = newText, mentionSuggestions = emptyList(), showMentionSuggestions = false) }
     }
 
     private fun sendLocationMessage(mapsUrl: String) {
         val userId = state.value.currentUserId ?: return
         val reply = state.value.replyingTo
-        val content = "📍 Mi ubicación: $mapsUrl"
         viewModelScope.launch {
             sendEffect(ChatEffect.ScrollToBottom)
             updateState { it.copy(replyingTo = null) }
-            sendMessageUseCase(
-                conversationId, userId, content,
-                replyToId = reply?.id,
-                replyToContent = reply?.replySnippet(),
-                replyToSenderName = reply?.senderName,
-            ).onFailure { e ->
-                AppLogger.e(TAG, "Send location failed", e)
-                updateState { it.copy(error = e.message ?: "Error al enviar la ubicación") }
-            }
+            sendMessageUseCase(conversationId, userId, "Mi ubicacion: $mapsUrl",
+                replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
+            ).onFailure { e -> updateState { it.copy(error = e.message ?: "Error") } }
         }
     }
 
@@ -587,17 +449,12 @@ class ChatViewModel(
     private fun searchMessages(query: String) {
         updateState { it.copy(searchQuery = query) }
         searchJob?.cancel()
-        if (query.isBlank()) {
-            updateState { it.copy(searchResults = emptyList(), isSearching = false) }
-            return
-        }
+        if (query.isBlank()) { updateState { it.copy(searchResults = emptyList(), isSearching = false) }; return }
         searchJob = viewModelScope.launch {
             updateState { it.copy(isSearching = true) }
             delay(300L)
             val uid = currentUserId ?: return@launch
-            val results = catchResult {
-                messageRepository.searchMessages(conversationId, uid, query)
-            }.getOrDefault(emptyList())
+            val results = catchResult { messageRepository.searchMessages(conversationId, uid, query) }.getOrDefault(emptyList())
             updateState { it.copy(searchResults = results, isSearching = false) }
         }
     }
@@ -606,17 +463,13 @@ class ChatViewModel(
         updateState { it.copy(expiryDialogMessageId = null) }
         viewModelScope.launch {
             catchResult { messageRepository.setMessageExpiry(messageId, expiresAt) }
-                .onFailure { e -> AppLogger.e(TAG, "setExpiry failed: ${e.message}") }
+                .onFailure { e -> AppLogger.e(TAG, "setExpiry failed", e) }
         }
     }
 
     private fun toggleMessageSelection(messageId: String) {
         updateState { s ->
-            val updated = if (messageId in s.selectedMessageIds) {
-                s.selectedMessageIds - messageId
-            } else {
-                s.selectedMessageIds + messageId
-            }
+            val updated = if (messageId in s.selectedMessageIds) s.selectedMessageIds - messageId else s.selectedMessageIds + messageId
             s.copy(selectedMessageIds = updated)
         }
     }
@@ -626,33 +479,22 @@ class ChatViewModel(
         updateState { it.copy(selectedMessageIds = emptySet()) }
         viewModelScope.launch {
             for (id in ids) {
-                messageRepository.deleteMessage(id)
-                    .onFailure { e -> AppLogger.e(TAG, "Delete message $id failed", e) }
+                messageRepository.deleteMessage(id).onFailure { e -> AppLogger.e(TAG, "deleteMessage $id failed", e) }
             }
         }
     }
 
     private fun jumpToMessage(messageId: String) {
-        updateState {
-            it.copy(
-                isSearchActive = false,
-                searchQuery = "",
-                searchResults = emptyList(),
-                highlightedMessageId = messageId,
-            )
-        }
-        // Clear highlight after 2 seconds so the animation fades out
+        updateState { it.copy(isSearchActive = false, searchQuery = "", searchResults = emptyList(), highlightedMessageId = messageId) }
         viewModelScope.launch {
-            kotlinx.coroutines.delay(2_000)
+            delay(2_000)
             updateState { if (it.highlightedMessageId == messageId) it.copy(highlightedMessageId = null) else it }
         }
     }
 
     private fun toggleReaction(messageId: String, emoji: String) {
         val uid = currentUserId ?: return
-        viewModelScope.launch {
-            catchResult { reactionRepository.toggleReaction(messageId, uid, emoji) }
-        }
+        viewModelScope.launch { catchResult { reactionRepository.toggleReaction(messageId, uid, emoji) } }
     }
 
     private fun sendMessage() {
@@ -661,60 +503,41 @@ class ChatViewModel(
         if (text.isBlank()) return
         val reply = state.value.replyingTo
         val disappearingSecs = state.value.disappearingModeSeconds
-
         viewModelScope.launch {
             sendEffect(ChatEffect.ScrollToBottom)
             updateState { it.copy(isSending = true, inputText = "", replyingTo = null) }
             draftSaveJob?.cancel()
             draftRepository.saveDraft(conversationId, "")
-            val result = sendMessageUseCase(
-                conversationId, userId, text,
-                replyToId = reply?.id,
-                replyToContent = reply?.replySnippet(),
-                replyToSenderName = reply?.senderName,
+            val result = sendMessageUseCase(conversationId, userId, text,
+                replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
             )
             result.onSuccess { msg ->
                 if (disappearingSecs > 0L) {
-                    val expiresAt = System.currentTimeMillis() + disappearingSecs * 1_000L
-                    catchResult { messageRepository.setMessageExpiry(msg.id, expiresAt) }
+                    catchResult { messageRepository.setMessageExpiry(msg.id, System.currentTimeMillis() + disappearingSecs * 1_000L) }
                 }
             }
             if (result.isFailure) {
                 val e = result.exceptionOrNull()
-                AppLogger.e(TAG, "Send message failed — queueing for offline retry", e)
-                val pendingId = UUID.randomUUID().toString()
-                val pendingDbo = MessageDBO(
-                    id = pendingId,
-                    conversationId = conversationId,
-                    senderId = userId,
-                    content = text,
-                    isRead = true,
-                    createdAt = System.currentTimeMillis(),
-                    replyToId = reply?.id,
-                    replyToContent = reply?.replySnippet(),
-                    replyToSenderName = reply?.senderName,
-                    sendStatus = "pending",
-                )
-                catchResult { messageDao.upsert(pendingDbo) }
-                    .onFailure { dbErr -> AppLogger.e(TAG, "Failed to save pending message locally", dbErr) }
+                AppLogger.e(TAG, "Send failed -- offline retry", e)
+                catchResult {
+                    messageRepository.savePendingMessage(
+                        id = UUID.randomUUID().toString(),
+                        conversationId = conversationId,
+                        senderId = userId,
+                        content = text,
+                        replyToId = reply?.id,
+                        replyToContent = reply?.replySnippet(),
+                        replyToSenderName = reply?.senderName,
+                    )
+                }.onFailure { dbErr -> AppLogger.e(TAG, "Failed to save pending message", dbErr) }
                 workManager.enqueueUniqueWork(
-                    MessageRetryWorker.WORK_NAME,
-                    ExistingWorkPolicy.KEEP,
+                    MessageRetryWorker.WORK_NAME, ExistingWorkPolicy.KEEP,
                     OneTimeWorkRequestBuilder<MessageRetryWorker>()
-                        .setConstraints(
-                            Constraints.Builder()
-                                .setRequiredNetworkType(NetworkType.CONNECTED)
-                                .build()
-                        )
+                        .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
                         .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
                         .build()
                 )
-                updateState {
-                    it.copy(
-                        error = "Sin conexión. El mensaje se enviará cuando vuelva la red.",
-                        inputText = text,
-                    )
-                }
+                updateState { it.copy(error = "Sin conexion. El mensaje se enviara cuando vuelva la red.", inputText = text) }
             }
             updateState { it.copy(isSending = false) }
         }
@@ -736,94 +559,64 @@ class ChatViewModel(
             updateState { it.copy(isUploadingImage = true, replyingTo = null) }
             for ((index, uri) in uris.withIndex()) {
                 val bytes = catchResult {
-                    withContext(Dispatchers.IO) {
-                        context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-                    }
-                }.getOrNull()
-                if (bytes == null) continue
+                    withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { stream -> stream.readBytes() } }
+                }.getOrNull() ?: continue
                 catchResult {
                     val mimeType = context.contentResolver.getType(uri) ?: "image/jpeg"
                     val imageUrl = messageRepository.uploadImage(conversationId, bytes, mimeType)
                     val replyForImage = if (index == 0) reply else null
-                    sendMessageUseCase(
-                        conversationId, userId, "", imageUrl,
-                        replyToId = replyForImage?.id,
-                        replyToContent = replyForImage?.replySnippet(),
-                        replyToSenderName = replyForImage?.senderName,
+                    sendMessageUseCase(conversationId, userId, "", imageUrl,
+                        replyToId = replyForImage?.id, replyToContent = replyForImage?.replySnippet(), replyToSenderName = replyForImage?.senderName,
                     )
-                }.onFailure { e ->
-                    AppLogger.e(TAG, "Send image failed", e)
-                    updateState { it.copy(error = e.message ?: "Error uploading image") }
-                }
+                }.onFailure { e -> updateState { it.copy(error = e.message ?: "Error uploading image") } }
             }
             updateState { it.copy(isUploadingImage = false) }
         }
     }
 
     private fun startRecording(context: Context, outputFilePath: String) {
-        val rec = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            MediaRecorder(context)
-        } else {
-            @Suppress("DEPRECATION")
-            MediaRecorder()
-        }
+        val rec = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) MediaRecorder(context)
+                  else @Suppress("DEPRECATION") MediaRecorder()
         catchResult {
             rec.apply {
                 setAudioSource(MediaRecorder.AudioSource.MIC)
                 setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
                 setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
                 setOutputFile(outputFilePath)
-                prepare()
-                start()
+                prepare(); start()
             }
             recorder = rec
-            updateState {
-                it.copy(audioState = AudioState(isRecording = true, pendingFilePath = outputFilePath))
-            }
+            updateState { it.copy(audioState = AudioState(isRecording = true, pendingFilePath = outputFilePath)) }
             val startMs = System.currentTimeMillis()
             recordingTimerJob = viewModelScope.launch {
                 while (true) {
                     delay(100)
                     val elapsed = System.currentTimeMillis() - startMs
-                    val amp = catchResult {
-                        (recorder?.maxAmplitude ?: 0).toFloat() / 32767f
-                    }.getOrDefault(0f)
+                    val amp = catchResult { (recorder?.maxAmplitude ?: 0).toFloat() / 32767f }.getOrDefault(0f)
                     updateState { s ->
                         val newHistory = (s.audioState.amplitudeHistory + amp).takeLast(30)
-                        s.copy(audioState = s.audioState.copy(
-                            recordingDurationMs = elapsed,
-                            amplitudeHistory = newHistory,
-                        ))
+                        s.copy(audioState = s.audioState.copy(recordingDurationMs = elapsed, amplitudeHistory = newHistory))
                     }
                 }
             }
         }.onFailure { e ->
             AppLogger.e(TAG, "Recording failed", e)
             catchResult { rec.release() }
-            updateState { it.copy(error = "No se pudo iniciar la grabación") }
+            updateState { it.copy(error = "No se pudo iniciar la grabacion") }
         }
     }
 
     private fun stopRecording() {
-        recordingTimerJob?.cancel()
-        recordingTimerJob = null
+        recordingTimerJob?.cancel(); recordingTimerJob = null
         val durationMs = state.value.audioState.recordingDurationMs
-        catchResult { recorder?.apply { stop(); release() } }
-        recorder = null
-        updateState {
-            it.copy(
-                audioState = it.audioState.copy(
-                    isRecording = false,
-                    recordingDurationMs = durationMs,
-                    transcription = "Transcripción no disponible",
-                ),
-            )
-        }
+        catchResult { recorder?.apply { stop(); release() } }; recorder = null
+        updateState { it.copy(audioState = it.audioState.copy(isRecording = false, recordingDurationMs = durationMs)) }
     }
 
     private fun discardAudio() {
-        val path = state.value.audioState.pendingFilePath
-        path?.let { catchResult { File(it).delete() } }
+        state.value.audioState.pendingFilePath?.let { path ->
+            catchResult { java.io.File(path).delete() }
+        }
         updateState { it.copy(audioState = AudioState()) }
     }
 
@@ -834,27 +627,17 @@ class ChatViewModel(
         viewModelScope.launch {
             sendEffect(ChatEffect.ScrollToBottom)
             updateState { it.copy(audioState = it.audioState.copy(isUploading = true), replyingTo = null) }
-            draftSaveJob?.cancel()
-            draftRepository.saveDraft(conversationId, "")
+            draftSaveJob?.cancel(); draftRepository.saveDraft(conversationId, "")
             catchResult {
-                val bytes = withContext(Dispatchers.IO) { File(filePath).readBytes() }
+                val bytes = withContext(Dispatchers.IO) { java.io.File(filePath).readBytes() }
                 val audioUrl = messageRepository.uploadAudio(conversationId, bytes)
-                sendMessageUseCase(
-                    conversationId, userId, "", audioUrl = audioUrl,
-                    replyToId = reply?.id,
-                    replyToContent = reply?.replySnippet(),
-                    replyToSenderName = reply?.senderName,
+                sendMessageUseCase(conversationId, userId, "", audioUrl = audioUrl,
+                    replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
                 )
-                catchResult { File(filePath).delete() }
+                catchResult { java.io.File(filePath).delete() }
                 updateState { it.copy(audioState = AudioState()) }
             }.onFailure { e ->
-                AppLogger.e(TAG, "Send audio failed", e)
-                updateState {
-                    it.copy(
-                        audioState = it.audioState.copy(isUploading = false),
-                        error = e.message ?: "Error al enviar el audio",
-                    )
-                }
+                updateState { it.copy(audioState = it.audioState.copy(isUploading = false), error = e.message ?: "Error al enviar el audio") }
             }
         }
     }
@@ -869,30 +652,19 @@ class ChatViewModel(
                 val mimeType = context.contentResolver.getType(uri) ?: "application/octet-stream"
                 val displayName = context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
                     val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                    cursor.moveToFirst()
-                    if (idx >= 0) cursor.getString(idx) else null
+                    cursor.moveToFirst(); if (idx >= 0) cursor.getString(idx) else null
                 } ?: "archivo"
                 val fileSize = context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
                     val idx = cursor.getColumnIndex(OpenableColumns.SIZE)
-                    cursor.moveToFirst()
-                    if (idx >= 0) cursor.getLong(idx) else null
+                    cursor.moveToFirst(); if (idx >= 0) cursor.getLong(idx) else null
                 }
-                val bytes = withContext(Dispatchers.IO) {
-                    context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-                } ?: return@catchResult
+                val bytes = withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { stream -> stream.readBytes() } } ?: return@catchResult
                 val fileUrl = messageRepository.uploadFile(conversationId, bytes, displayName, mimeType)
-                sendMessageUseCase(
-                    conversationId, userId, "",
-                    fileUrl = fileUrl, fileName = displayName,
+                sendMessageUseCase(conversationId, userId, "", fileUrl = fileUrl, fileName = displayName,
                     fileSize = fileSize, fileMimeType = mimeType,
-                    replyToId = reply?.id,
-                    replyToContent = reply?.replySnippet(),
-                    replyToSenderName = reply?.senderName,
+                    replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
                 )
-            }.onFailure { e ->
-                AppLogger.e(TAG, "Send file failed", e)
-                updateState { it.copy(error = e.message ?: "Error al enviar el archivo") }
-            }
+            }.onFailure { e -> updateState { it.copy(error = e.message ?: "Error al enviar el archivo") } }
             updateState { it.copy(isUploadingFile = false) }
         }
     }
@@ -904,21 +676,12 @@ class ChatViewModel(
             sendEffect(ChatEffect.ScrollToBottom)
             updateState { it.copy(isUploadingFile = true, replyingTo = null) }
             catchResult {
-                val bytes = withContext(Dispatchers.IO) {
-                    context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-                } ?: return@catchResult
+                val bytes = withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { stream -> stream.readBytes() } } ?: return@catchResult
                 val videoUrl = messageRepository.uploadVideo(conversationId, bytes)
-                sendMessageUseCase(
-                    conversationId, userId, "",
-                    videoUrl = videoUrl,
-                    replyToId = reply?.id,
-                    replyToContent = reply?.replySnippet(),
-                    replyToSenderName = reply?.senderName,
+                sendMessageUseCase(conversationId, userId, "", videoUrl = videoUrl,
+                    replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
                 )
-            }.onFailure { e ->
-                AppLogger.e(TAG, "Send video failed", e)
-                updateState { it.copy(error = e.message ?: "Error al enviar el video") }
-            }
+            }.onFailure { e -> updateState { it.copy(error = e.message ?: "Error al enviar el video") } }
             updateState { it.copy(isUploadingFile = false) }
         }
     }
@@ -928,17 +691,10 @@ class ChatViewModel(
         val isGroup = state.value.isGroup
         viewModelScope.launch {
             catchResult {
-                val call = if (isGroup) {
-                    callRepository.createGroupCall(conversationId, callType)
-                } else {
-                    val calleeId = state.value.otherUserId ?: return@launch
-                    callRepository.createCall(conversationId, calleeId, callType)
-                }
+                val call = if (isGroup) callRepository.createGroupCall(conversationId, callType)
+                           else callRepository.createCall(conversationId, state.value.otherUserId ?: return@catchResult, callType)
                 sendEffect(ChatEffect.NavigateToCall(call))
-            }.onFailure { e ->
-                AppLogger.e(TAG, "Start call failed", e)
-                updateState { it.copy(error = e.message ?: "Error al iniciar la llamada") }
-            }
+            }.onFailure { e -> updateState { it.copy(error = e.message ?: "Error al iniciar la llamada") } }
         }
     }
 
@@ -948,16 +704,9 @@ class ChatViewModel(
         viewModelScope.launch {
             sendEffect(ChatEffect.ScrollToBottom)
             updateState { it.copy(showStickerPicker = false, replyingTo = null) }
-            sendMessageUseCase(
-                conversationId, userId, "",
-                gifUrl = url,
-                replyToId = reply?.id,
-                replyToContent = reply?.replySnippet(),
-                replyToSenderName = reply?.senderName,
-            ).onFailure { e ->
-                AppLogger.e(TAG, "Send GIF failed", e)
-                updateState { it.copy(error = e.message ?: "Error al enviar el GIF") }
-            }
+            sendMessageUseCase(conversationId, userId, "", gifUrl = url,
+                replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
+            ).onFailure { e -> updateState { it.copy(error = e.message ?: "Error al enviar el GIF") } }
         }
     }
 
@@ -967,16 +716,9 @@ class ChatViewModel(
         viewModelScope.launch {
             sendEffect(ChatEffect.ScrollToBottom)
             updateState { it.copy(showStickerPicker = false, replyingTo = null) }
-            sendMessageUseCase(
-                conversationId, userId, "",
-                stickerUrl = emoji,
-                replyToId = reply?.id,
-                replyToContent = reply?.replySnippet(),
-                replyToSenderName = reply?.senderName,
-            ).onFailure { e ->
-                AppLogger.e(TAG, "Send sticker failed", e)
-                updateState { it.copy(error = e.message ?: "Error al enviar el sticker") }
-            }
+            sendMessageUseCase(conversationId, userId, "", stickerUrl = emoji,
+                replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
+            ).onFailure { e -> updateState { it.copy(error = e.message ?: "Error al enviar el sticker") } }
         }
     }
 
@@ -985,35 +727,25 @@ class ChatViewModel(
         updateState { it.copy(isMuted = newMuted) }
         viewModelScope.launch {
             catchResult { conversationRepository.toggleMute(conversationId, newMuted) }
-                .onFailure { e ->
-                    updateState { it.copy(isMuted = !newMuted) }
-                    AppLogger.e(TAG, "Toggle mute failed", e)
-                }
+                .onFailure { updateState { it.copy(isMuted = !newMuted) } }
         }
     }
 
     private fun muteFor(mutedUntil: Long) {
         updateState { it.copy(showMuteDialog = false, isMuted = mutedUntil != 0L, mutedUntil = mutedUntil) }
-        viewModelScope.launch {
-            catchResult { conversationRepository.muteFor(conversationId, mutedUntil) }
-                .onFailure { e -> AppLogger.e(TAG, "MuteFor failed", e) }
-        }
+        viewModelScope.launch { catchResult { conversationRepository.muteFor(conversationId, mutedUntil) } }
     }
 
     private fun confirmEdit() {
         val editingMsg = state.value.editingMessage ?: return
         val newContent = state.value.inputText.trim()
         if (newContent.isBlank() || newContent == editingMsg.content) {
-            updateState { it.copy(editingMessage = null, inputText = "") }
-            return
+            updateState { it.copy(editingMessage = null, inputText = "") }; return
         }
         viewModelScope.launch {
             updateState { it.copy(editingMessage = null, inputText = "") }
             messageRepository.editMessage(editingMsg.id, newContent)
-                .onFailure { e ->
-                    AppLogger.e(TAG, "Edit message failed", e)
-                    updateState { it.copy(error = "No se pudo editar el mensaje") }
-                }
+                .onFailure { e -> AppLogger.e(TAG, "Edit failed", e); updateState { it.copy(error = "No se pudo editar") } }
         }
     }
 
@@ -1022,20 +754,14 @@ class ChatViewModel(
         viewModelScope.launch {
             leaveGroupUseCase(conversationId, userId)
                 .onSuccess { sendEffect(ChatEffect.NavigateBack) }
-                .onFailure { e ->
-                    AppLogger.e(TAG, "Leave group failed", e)
-                    updateState { it.copy(error = e.message ?: "Error al salir del grupo") }
-                }
+                .onFailure { e -> updateState { it.copy(error = e.message ?: "Error al salir del grupo") } }
         }
     }
 
     private fun deleteMessage(messageId: String) {
         viewModelScope.launch {
             messageRepository.deleteMessage(messageId)
-                .onFailure { e ->
-                    AppLogger.e(TAG, "Delete message failed", e)
-                    updateState { it.copy(error = "No se pudo eliminar el mensaje") }
-                }
+                .onFailure { e -> AppLogger.e(TAG, "deleteMessage failed", e); updateState { it.copy(error = "No se pudo eliminar") } }
         }
     }
 
@@ -1043,19 +769,9 @@ class ChatViewModel(
         val uid = currentUserId ?: return
         viewModelScope.launch {
             catchResult {
-                val conversations = conversationRepository.observeConversations(uid).first()
-                    .filter { it.id != conversationId }
-                updateState {
-                    it.copy(
-                        showForwardDialog = true,
-                        forwardingMessage = message,
-                        forwardableConversations = conversations,
-                    )
-                }
-            }.onFailure { e ->
-                AppLogger.e(TAG, "showForwardDialog failed", e)
-                updateState { it.copy(error = "No se pudo cargar las conversaciones") }
-            }
+                val conversations = conversationRepository.observeConversations(uid).first().filter { it.id != conversationId }
+                updateState { it.copy(showForwardDialog = true, forwardingMessage = message, forwardableConversations = conversations) }
+            }.onFailure { updateState { it.copy(error = "No se pudo cargar las conversaciones") } }
         }
     }
 
@@ -1065,20 +781,11 @@ class ChatViewModel(
         updateState { it.copy(showForwardDialog = false, forwardingMessage = null, forwardableConversations = emptyList()) }
         viewModelScope.launch {
             catchResult {
-                messageRepository.sendMessage(
-                    conversationId = targetConversationId,
-                    senderId = uid,
-                    content = message.content,
-                    imageUrl = message.imageUrl,
-                    audioUrl = message.audioUrl,
-                    gifUrl = message.gifUrl,
-                    stickerUrl = message.stickerUrl,
+                messageRepository.sendMessage(conversationId = targetConversationId, senderId = uid, content = message.content,
+                    imageUrl = message.imageUrl, audioUrl = message.audioUrl, gifUrl = message.gifUrl, stickerUrl = message.stickerUrl,
                 )
                 sendEffect(ChatEffect.ShowSnackbar("Mensaje reenviado"))
-            }.onFailure { e ->
-                AppLogger.e(TAG, "forwardMessage failed", e)
-                updateState { it.copy(error = "No se pudo reenviar el mensaje") }
-            }
+            }.onFailure { updateState { it.copy(error = "No se pudo reenviar") } }
         }
     }
 
@@ -1086,58 +793,30 @@ class ChatViewModel(
         val uid = currentUserId ?: return
         viewModelScope.launch {
             catchResult {
-                val conversations = conversationRepository.observeConversations(uid).first()
-                    .filter { it.id != conversationId }
-                updateState {
-                    it.copy(
-                        showForwardSelectionDialog = true,
-                        forwardableConversations = conversations,
-                    )
-                }
-            }.onFailure { e ->
-                AppLogger.e(TAG, "showForwardSelectionDialog failed", e)
-                updateState { it.copy(error = "No se pudo cargar las conversaciones") }
-            }
+                val conversations = conversationRepository.observeConversations(uid).first().filter { it.id != conversationId }
+                updateState { it.copy(showForwardSelectionDialog = true, forwardableConversations = conversations) }
+            }.onFailure { updateState { it.copy(error = "No se pudo cargar las conversaciones") } }
         }
     }
 
     private fun forwardSelectedMessages(targetConversationId: String) {
         val uid = currentUserId ?: return
         val ids = state.value.selectedMessageIds.toSet()
-        updateState {
-            it.copy(
-                showForwardSelectionDialog = false,
-                forwardableConversations = emptyList(),
-                selectedMessageIds = emptySet(),
-            )
-        }
+        updateState { it.copy(showForwardSelectionDialog = false, forwardableConversations = emptyList(), selectedMessageIds = emptySet()) }
         viewModelScope.launch {
-            val allMessages = catchResult {
-                withContext(Dispatchers.IO) { messageRepository.getAllMessages(conversationId, uid) }
-            }.getOrDefault(emptyList())
+            val allMessages = catchResult { withContext(Dispatchers.IO) { messageRepository.getAllMessages(conversationId, uid) } }.getOrDefault(emptyList())
             val toForward = allMessages.filter { it.id in ids }
             var forwarded = 0
             for (message in toForward) {
                 catchResult {
-                    messageRepository.sendMessage(
-                        conversationId = targetConversationId,
-                        senderId = uid,
-                        content = message.content,
-                        imageUrl = message.imageUrl,
-                        audioUrl = message.audioUrl,
-                        gifUrl = message.gifUrl,
-                        stickerUrl = message.stickerUrl,
+                    messageRepository.sendMessage(conversationId = targetConversationId, senderId = uid, content = message.content,
+                        imageUrl = message.imageUrl, audioUrl = message.audioUrl, gifUrl = message.gifUrl, stickerUrl = message.stickerUrl,
                     )
                     forwarded++
-                }.onFailure { e ->
-                    AppLogger.e(TAG, "forwardSelectedMessages: failed for ${message.id}", e)
                 }
             }
-            if (forwarded > 0) {
-                sendEffect(ChatEffect.ShowSnackbar("$forwarded mensaje(s) reenviado(s)"))
-            } else {
-                updateState { it.copy(error = "No se pudieron reenviar los mensajes") }
-            }
+            if (forwarded > 0) sendEffect(ChatEffect.ShowSnackbar("$forwarded mensaje(s) reenviado(s)"))
+            else updateState { it.copy(error = "No se pudieron reenviar") }
         }
     }
 
@@ -1147,41 +826,18 @@ class ChatViewModel(
         viewModelScope.launch {
             catchResult {
                 val pollId = UUID.randomUUID().toString()
-                pollRepository.insertPoll(
-                    PollDBO(
-                        id = pollId,
-                        conversationId = conversationId,
-                        question = question,
-                        createdBy = userId,
-                        createdAt = System.currentTimeMillis(),
-                    )
-                )
-                pollRepository.insertOptions(
-                    options.mapIndexed { index, text ->
-                        PollOptionDBO(
-                            id = "$pollId-$index",
-                            pollId = pollId,
-                            text = text,
-                        )
-                    }
-                )
+                pollRepository.insertPoll(PollDBO(id = pollId, conversationId = conversationId, question = question, createdBy = userId, createdAt = System.currentTimeMillis()))
+                pollRepository.insertOptions(options.mapIndexed { i, text -> PollOptionDBO(id = "$pollId-$i", pollId = pollId, text = text) })
                 sendMessageUseCase(conversationId, userId, "poll:$pollId")
-            }.onFailure { e ->
-                AppLogger.e(TAG, "CreatePoll failed", e)
-                updateState { it.copy(error = "No se pudo crear la encuesta") }
-            }
+            }.onFailure { e -> AppLogger.e(TAG, "createPoll failed", e); updateState { it.copy(error = "No se pudo crear la encuesta") } }
         }
     }
 
     private fun votePoll(pollId: String, optionId: String) {
         val userId = state.value.currentUserId ?: return
         viewModelScope.launch {
-            catchResult {
-                pollRepository.vote(pollId, userId, optionId)
-            }.onFailure { e ->
-                AppLogger.e(TAG, "VotePoll failed", e)
-                updateState { it.copy(error = "No se pudo registrar el voto") }
-            }
+            catchResult { pollRepository.vote(pollId, userId, optionId) }
+                .onFailure { e -> AppLogger.e(TAG, "votePoll failed", e); updateState { it.copy(error = "No se pudo registrar el voto") } }
         }
     }
 
@@ -1190,9 +846,7 @@ class ChatViewModel(
         viewModelScope.launch {
             updateState { it.copy(isExporting = true) }
             catchResult {
-                val messages = withContext(Dispatchers.IO) {
-                    messageRepository.getAllMessages(conversationId, uid)
-                }
+                val messages = withContext(Dispatchers.IO) { messageRepository.getAllMessages(conversationId, uid) }
                 val formatter = java.text.SimpleDateFormat("HH:mm dd/MM/yyyy", java.util.Locale.getDefault())
                 val text = buildString {
                     for (msg in messages) {
@@ -1211,55 +865,33 @@ class ChatViewModel(
                         appendLine(line)
                     }
                 }
-                val file = withContext(Dispatchers.IO) {
-                    val f = java.io.File(context.cacheDir, "chat_$conversationId.txt")
-                    java.io.FileOutputStream(f).use { it.write(text.toByteArray()) }
-                    f
+                val f = withContext(Dispatchers.IO) {
+                    val outFile = java.io.File(context.cacheDir, "chat_$conversationId.txt")
+                    java.io.FileOutputStream(outFile).use { it.write(text.toByteArray()) }
+                    outFile
                 }
-                val uri = FileProvider.getUriForFile(
-                    context,
-                    "${context.packageName}.fileprovider",
-                    file,
-                )
-                sendEffect(ChatEffect.ShowShareSheet(uri))
-            }.onFailure { e ->
-                AppLogger.e(TAG, "exportConversation failed", e)
-                sendEffect(ChatEffect.ShowSnackbar("No se pudo exportar"))
-            }
+                sendEffect(ChatEffect.ShowShareSheet(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", f)))
+            }.onFailure { sendEffect(ChatEffect.ShowSnackbar("No se pudo exportar")) }
             updateState { it.copy(isExporting = false) }
         }
     }
 
     private fun setChatTheme(theme: ChatTheme) {
-        viewModelScope.launch {
-            catchResult { chatThemeRepository.set(conversationId, theme) }
-                .onFailure { e -> AppLogger.e(TAG, "setChatTheme failed", e) }
-        }
+        viewModelScope.launch { catchResult { chatThemeRepository.set(conversationId, theme) } }
     }
 
     private fun pinMessage(messageId: String) {
-        viewModelScope.launch {
-            catchResult { messageRepository.setPinned(messageId, true) }
-                .onFailure { e -> AppLogger.e(TAG, "Pin message failed", e) }
-        }
+        viewModelScope.launch { catchResult { messageRepository.setPinned(messageId, true) } }
     }
 
     private fun unpinMessage(messageId: String) {
-        viewModelScope.launch {
-            catchResult { messageRepository.setPinned(messageId, false) }
-                .onFailure { e -> AppLogger.e(TAG, "Unpin message failed", e) }
-        }
+        viewModelScope.launch { catchResult { messageRepository.setPinned(messageId, false) } }
     }
 
     private fun transcribeAudio(context: Context, messageId: String) {
         viewModelScope.launch {
-            val result = catchResult { audioTranscriber.transcribeFromMic(context) }
-                .getOrDefault("Transcripción no disponible")
-            updateState { s ->
-                s.copy(
-                    audioTranscriptions = s.audioTranscriptions + (messageId to result),
-                )
-            }
+            val result = catchResult { audioTranscriber.transcribeFromMic(context) }.getOrDefault("Transcripcion no disponible")
+            updateState { s -> s.copy(audioTranscriptions = s.audioTranscriptions + (messageId to result)) }
         }
     }
 
@@ -1269,39 +901,20 @@ class ChatViewModel(
         viewModelScope.launch {
             catchResult { translationManager.translate(text) }
                 .onSuccess { translated ->
-                    updateState {
-                        it.copy(
-                            translatedTexts = it.translatedTexts + (messageId to translated),
-                            translatingMessageIds = it.translatingMessageIds - messageId,
-                        )
-                    }
+                    updateState { it.copy(translatedTexts = it.translatedTexts + (messageId to translated), translatingMessageIds = it.translatingMessageIds - messageId) }
                 }
-                .onFailure { e ->
-                    AppLogger.e(TAG, "Translation failed for $messageId", e)
-                    updateState {
-                        it.copy(
-                            translatingMessageIds = it.translatingMessageIds - messageId,
-                            error = "No se pudo traducir el mensaje",
-                        )
-                    }
-                }
+                .onFailure { updateState { it.copy(translatingMessageIds = it.translatingMessageIds - messageId, error = "No se pudo traducir") } }
         }
     }
 
     private fun toggleIncognito() {
-        val current = state.value.isIncognito
-        if (current) {
-            viewModelScope.launch { incognitoRepository.setIncognito(conversationId, false) }
-        } else {
-            updateState { it.copy(showIncognitoInfoDialog = true) }
-        }
+        if (state.value.isIncognito) viewModelScope.launch { incognitoRepository.setIncognito(conversationId, false) }
+        else updateState { it.copy(showIncognitoInfoDialog = true) }
     }
 
     private fun confirmIncognito() {
         updateState { it.copy(showIncognitoInfoDialog = false) }
-        viewModelScope.launch {
-            incognitoRepository.setIncognito(conversationId, true)
-        }
+        viewModelScope.launch { incognitoRepository.setIncognito(conversationId, true) }
     }
 
     private fun scheduleMessage(scheduledAt: Long) {
@@ -1312,36 +925,28 @@ class ChatViewModel(
         draftSaveJob?.cancel()
         viewModelScope.launch {
             draftRepository.saveDraft(conversationId, "")
-            val id = UUID.randomUUID().toString()
             val dbo = ScheduledMessageDBO(
-                id = id,
-                conversationId = conversationId,
-                senderId = userId,
-                text = text,
-                scheduledAtMs = scheduledAt,
-                createdAt = System.currentTimeMillis(),
+                id = UUID.randomUUID().toString(), conversationId = conversationId, senderId = userId,
+                text = text, scheduledAtMs = scheduledAt, createdAt = System.currentTimeMillis(),
             )
-            catchResult { scheduledMessageDao.insert(dbo) }
+            catchResult { scheduledMessageRepository.insert(dbo) }
                 .onSuccess {
                     val delayMs = (scheduledAt - System.currentTimeMillis()).coerceAtLeast(0L)
-                    val request = OneTimeWorkRequestBuilder<ScheduledMessageWorker>()
-                        .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
-                        .addTag(ScheduledMessageWorker.WORK_TAG)
-                        .build()
-                    workManager.enqueue(request)
+                    workManager.enqueue(
+                        OneTimeWorkRequestBuilder<ScheduledMessageWorker>()
+                            .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
+                            .addTag(ScheduledMessageWorker.WORK_TAG).build()
+                    )
                     sendEffect(ChatEffect.ShowSnackbar("Mensaje programado"))
                 }
-                .onFailure { _ ->
-                    updateState { it.copy(error = "No se pudo programar el mensaje", inputText = text) }
-                }
+                .onFailure { updateState { it.copy(error = "No se pudo programar el mensaje", inputText = text) } }
         }
     }
 
     private fun cancelScheduledMessage(id: String) {
         viewModelScope.launch {
             workManager.cancelAllWorkByTag("scheduled_$id")
-            catchResult { scheduledMessageDao.deleteById(id) }
-                .onFailure { e -> AppLogger.e(TAG, "cancelScheduledMessage $id failed", e) }
+            catchResult { scheduledMessageRepository.deleteById(id) }
         }
     }
 
@@ -1349,8 +954,7 @@ class ChatViewModel(
         val uid = currentUserId ?: return
         updateState { it.copy(isAiLoading = true) }
         viewModelScope.launch {
-            val snippets = catchResult { messageRepository.getAllMessages(conversationId, uid).takeLast(20).map { it.content } }
-                .getOrDefault(emptyList())
+            val snippets = catchResult { messageRepository.getAllMessages(conversationId, uid).takeLast(20).map { it.content } }.getOrDefault(emptyList())
             aiAssistantRepository.summarize(snippets)
                 .onSuccess { result -> updateState { it.copy(aiSuggestion = result, isAiLoading = false) } }
                 .onFailure { e -> updateState { it.copy(isAiLoading = false, error = e.message) } }
@@ -1361,8 +965,7 @@ class ChatViewModel(
         val uid = currentUserId ?: return
         updateState { it.copy(isAiLoading = true) }
         viewModelScope.launch {
-            val last = catchResult { messageRepository.getAllMessages(conversationId, uid).lastOrNull { it.senderId != uid }?.content ?: "" }
-                .getOrDefault("")
+            val last = catchResult { messageRepository.getAllMessages(conversationId, uid).lastOrNull { it.senderId != uid }?.content ?: "" }.getOrDefault("")
             aiAssistantRepository.suggestReply(last)
                 .onSuccess { result -> updateState { it.copy(aiSuggestion = result, isAiLoading = false) } }
                 .onFailure { e -> updateState { it.copy(isAiLoading = false, error = e.message) } }
@@ -1380,25 +983,12 @@ class ChatViewModel(
 
     override fun onCleared() {
         super.onCleared()
-        AppLogger.d(TAG, "onCleared conv=$conversationId")
-        recordingTimerJob?.cancel()
-        remoteSyncJob?.cancel()
-        typingResetJob?.cancel()
-        typingPresenceJob?.cancel()
-        draftSaveJob?.cancel()
+        recordingTimerJob?.cancel(); remoteSyncJob?.cancel(); typingResetJob?.cancel()
+        typingPresenceJob?.cancel(); draftSaveJob?.cancel()
         viewModelScope.launch {
-            withContext(NonCancellable) {
-                catchResult {
-                    typingChannel?.let { ch ->
-                        ch.unsubscribe()
-                        supabaseClient.realtime.removeChannel(ch)
-                    }
-                } // optional feature — ignore failures
-            }
+            withContext(NonCancellable) { catchResult { typingRepository.close(conversationId) } }
         }
-        typingChannel = null
-        catchResult { recorder?.apply { stop(); release() } }
-        recorder = null
+        catchResult { recorder?.apply { stop(); release() } }; recorder = null
     }
 
     companion object {

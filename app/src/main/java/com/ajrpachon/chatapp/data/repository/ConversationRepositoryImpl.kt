@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.data.repository
+﻿package com.ajrpachon.chatapp.data.repository
 import com.ajrpachon.chatapp.utils.catchResult
 import com.ajrpachon.chatapp.utils.AppLogger
 
@@ -129,7 +129,7 @@ class ConversationRepositoryImpl(
             }
         }
 
-        // Group avatar / name / description changes — conversations UPDATE
+        // Group avatar / name / description changes â€” conversations UPDATE
         val conversationsUpdateChannel = supabase.channel("conversations:updates:$userId-${System.nanoTime()}")
         launch {
             val flow = conversationsUpdateChannel.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
@@ -152,7 +152,7 @@ class ConversationRepositoryImpl(
             }
         }
 
-        // Individual user avatar / name changes — profiles UPDATE
+        // Individual user avatar / name changes â€” profiles UPDATE
         val profilesChannel = supabase.channel("profiles:updates:$userId-${System.nanoTime()}")
         launch {
             val flow = profilesChannel.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
@@ -222,7 +222,20 @@ class ConversationRepositoryImpl(
             isMuted = isEffectivelyMuted(),
             mutedUntil = mutedUntil,
             isArchived = isArchived,
+            otherUserId = otherUserId,
+            historyVisibleFrom = historyVisibleFrom,
+            disappearingModeSeconds = disappearingModeSeconds,
         )
+    }
+
+    override suspend fun getById(conversationId: String): ConversationBO? =
+        conversationDao.getById(conversationId)?.toBO("")
+
+    override fun observeById(conversationId: String): Flow<ConversationBO?> =
+        conversationDao.observeById(conversationId).map { dbo -> dbo?.toBO("") }
+
+    override suspend fun resetUnreadCount(conversationId: String) {
+        conversationDao.resetUnreadCount(conversationId)
     }
 
     override suspend fun getOrCreateDirectConversation(

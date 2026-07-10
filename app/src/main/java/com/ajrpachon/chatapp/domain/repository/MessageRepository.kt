@@ -49,4 +49,15 @@ interface MessageRepository {
     fun getSavedMessages(currentUserId: String): Flow<List<MessageBO>>
     suspend fun setSaved(messageId: String, saved: Boolean)
     suspend fun getAllMessages(conversationId: String, currentUserId: String): List<MessageBO>
+
+    @Suppress("LongParameterList")
+    suspend fun savePendingMessage(
+        id: String,
+        conversationId: String,
+        senderId: String,
+        content: String,
+        replyToId: String? = null,
+        replyToContent: String? = null,
+        replyToSenderName: String? = null,
+    )
 }

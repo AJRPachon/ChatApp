@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.domain.repository
+﻿package com.ajrpachon.chatapp.domain.repository
 
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import kotlinx.coroutines.flow.Flow
@@ -15,4 +15,8 @@ interface ConversationRepository {
     fun observeArchivedConversations(userId: String): Flow<List<ConversationBO>>
     suspend fun setDisappearingMode(conversationId: String, seconds: Long)
 
+
+    suspend fun getById(conversationId: String): ConversationBO?
+    fun observeById(conversationId: String): Flow<ConversationBO?>
+    suspend fun resetUnreadCount(conversationId: String)
 }

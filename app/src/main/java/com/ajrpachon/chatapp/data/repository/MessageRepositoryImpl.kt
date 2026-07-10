@@ -363,4 +363,30 @@ class MessageRepositoryImpl(
             dbo.toBO(currentUserId, senderName)
         }
     }
+
+    override suspend fun savePendingMessage(id: String, conversationId: String, senderId: String, content: String, replyToId: String?, replyToContent: String?, replyToSenderName: String?) {
+        val dbo = com.ajrpachon.chatapp.data.local.entity.MessageDBO(id = id, conversationId = conversationId, senderId = senderId, content = content, isRead = true, createdAt = System.currentTimeMillis(), replyToId = replyToId, replyToContent = replyToContent, replyToSenderName = replyToSenderName, sendStatus = "pending")
+        messageDao.upsert(dbo)
+    }
+
+    override suspend fun searchAllMessages(query: String): List<MessageBO> {
+        val dbos = messageDao.searchAllMessages(query)
+        val senderIds = dbos.map { it.senderId }.distinct()
+        val senderMap = userDao.getByIds(senderIds).associateBy { it.id }
+        return dbos.map { dbo ->
+            val senderName = senderMap[dbo.senderId]?.displayName ?: dbo.senderId
+            dbo.toBO("", senderName)
+        }
+    }
+
+    override suspend fun countSent(userId: String): Int = messageDao.countSent(userId)
+    override suspend fun countReceived(userId: String): Int = messageDao.countReceived(userId)
+    override suspend fun countCalls(): Int = messageDao.countCalls()
+    override suspend fun sumCallDurationSeconds(): Int = messageDao.sumCallDurationSeconds()
+    override suspend fun countImages(): Int = messageDao.countImages()
+    override suspend fun countAudio(): Int = messageDao.countAudio()
+    override suspend fun countVideos(): Int = messageDao.countVideos()
+    override suspend fun getMostActiveConversationId(): String? = messageDao.getMostActiveConversation()?.conversationId
+    override suspend fun countMessagesByDay(since: Long): List<Pair<Long, Int>> =
+        messageDao.countMessagesByDay(since).map { it.dayEpoch to it.count }
 }
