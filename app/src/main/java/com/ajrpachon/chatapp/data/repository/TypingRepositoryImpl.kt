@@ -37,9 +37,9 @@ class TypingRepositoryImpl(
         val ch = channels[conversationId] ?: supabase.channel("typing-$conversationId").also { channels[conversationId] = it }
         return ch.presenceDataFlow<TypingPresence>()
             .map { presences ->
-                presences.values.flatten()
-                    .filter { it.isTyping && it.userId != currentUserId }
-                    .map { it.userName }
+                presences
+                    .filter { p -> p.isTyping && p.userId != currentUserId }
+                    .map { p -> p.userName }
                     .distinct()
             }
     }
