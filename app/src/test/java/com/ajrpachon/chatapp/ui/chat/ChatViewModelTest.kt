@@ -267,7 +267,7 @@ class ChatViewModelTest {
         vm.onIntent(ChatIntent.Send)
         advanceUntilIdle()
 
-        assertEquals("Sin conexión. El mensaje se enviará cuando vuelva la red.", vm.state.value.error)
+        assertEquals("Sin conexion. El mensaje se enviara cuando vuelva la red.", vm.state.value.error)
     }
 
     @Test
@@ -280,7 +280,7 @@ class ChatViewModelTest {
         vm.onIntent(ChatIntent.InputChanged("msg"))
         vm.onIntent(ChatIntent.Send)
         advanceUntilIdle()
-        assertEquals("Sin conexión. El mensaje se enviará cuando vuelva la red.", vm.state.value.error)
+        assertEquals("Sin conexion. El mensaje se enviara cuando vuelva la red.", vm.state.value.error)
 
         vm.onIntent(ChatIntent.DismissError)
         assertNull(vm.state.value.error)
