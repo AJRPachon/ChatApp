@@ -1,7 +1,7 @@
-package com.ajrpachon.chatapp.ui.group
+﻿package com.ajrpachon.chatapp.ui.group
 
-import com.ajrpachon.chatapp.data.local.dao.ConversationDao
-import com.ajrpachon.chatapp.data.local.entity.ConversationDBO
+import com.ajrpachon.chatapp.domain.repository.ConversationRepository
+import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.GroupRole
 import com.ajrpachon.chatapp.domain.model.UserBO
@@ -43,16 +43,18 @@ class GroupInfoViewModelTest {
     private val leaveGroupUseCase = mockk<LeaveGroupUseCase>(relaxed = true)
     private val searchUsersUseCase = mockk<SearchUsersUseCase>(relaxed = true)
     private val groupRepository = mockk<GroupRepository>(relaxed = true)
-    private val conversationDao = mockk<ConversationDao>(relaxed = true)
+    private val conversationRepository = mockk<ConversationRepository>(relaxed = true)
 
     private val conversationId = "conv1"
 
-    private val convDBO = ConversationDBO(
+    private val conv = ConversationBO(
         id = conversationId,
         name = "Test Group",
         isGroup = true,
-        createdBy = "user1",
-        updatedAt = 0L,
+        participants = emptyList(),
+        lastMessage = null,
+        unreadCount = 0,
+        updatedAt = kotlinx.datetime.Instant.fromEpochMilliseconds(0L),
         groupAvatarUrl = "http://avatar.url",
     )
 
@@ -61,7 +63,7 @@ class GroupInfoViewModelTest {
     @Before
     fun setUp() {
         every { userRepository.getCurrentUserId() } returns "user1"
-        every { conversationDao.observeById(any()) } returns flowOf(convDBO)
+        every { conversationRepository.observeById(any()) } returns flowOf(conv)
         every { getGroupMembersUseCase(any()) } returns membersFlow
         // Block the polling loop so it never spins
         coEvery { groupRepository.syncMembership(any()) } coAnswers { awaitCancellation() }
@@ -75,7 +77,7 @@ class GroupInfoViewModelTest {
         leaveGroupUseCase = leaveGroupUseCase,
         searchUsersUseCase = searchUsersUseCase,
         groupRepository = groupRepository,
-        conversationDao = conversationDao,
+        conversationRepository = conversationRepository,
     )
 
     @Test
