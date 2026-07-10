@@ -4,6 +4,7 @@ import com.ajrpachon.chatapp.data.remote.dto.UserDTO
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.storage.storage
 import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -93,6 +94,23 @@ class UserRemoteSource(private val supabase: SupabaseClient) {
                 .select { filter { isIn("email", emails) } }
                 .decodeList<UserDTO>()
         }.getOrDefault(emptyList())
+    }
+
+
+    suspend fun getProfileOrThrow(userId: String): UserDTO? =
+        supabase.postgrest["profiles"]
+            .select { filter { eq("id", userId) } }
+            .decodeSingleOrNull<UserDTO>()
+
+    suspend fun uploadAvatar(userId: String, bytes: ByteArray, mimeType: String): String {
+        val ext = if (mimeType.contains("png")) "png" else "jpg"
+        val path = "$userId/avatar.$ext"
+        supabase.storage["avatars"].upload(path, bytes) { upsert = true }
+        val url = supabase.storage["avatars"].publicUrl(path)
+        supabase.postgrest["profiles"].update(
+            kotlinx.serialization.json.buildJsonObject { put("avatar_url", url) }
+        ) { filter { eq("id", userId) } }
+        return url
     }
 
     suspend fun getPublicKey(userId: String): PublicKeyDTO? = runCatching {

@@ -75,6 +75,26 @@ class UserRepositoryImpl(
             dto.toBO().also { bo -> com.ajrpachon.chatapp.utils.catchResult { userDao.upsert(bo.toDBO()) } }
         }
 
+    override suspend fun clearCurrentUser() {
+        userDao.clearCurrentUser()
+    }
+
+    override suspend fun markAsCurrentUser(userId: String, email: String): UserBO? {
+        val dto = remoteSource.getProfileOrThrow(userId) ?: return null
+        userDao.clearCurrentUser()
+        userDao.upsert(dto.toDBO(email = email, isCurrentUser = true))
+        return dto.toBO(email = email)
+    }
+
+    override suspend fun fetchProfileFromRemote(userId: String): UserBO? =
+        remoteSource.getProfileOrThrow(userId)?.toBO()
+
+    override suspend fun uploadAvatar(userId: String, bytes: ByteArray, mimeType: String): String {
+        val url = remoteSource.uploadAvatar(userId, bytes, mimeType)
+        userDao.getById(userId)?.let { userDao.upsert(it.copy(avatarUrl = url)) }
+        return url
+    }
+
     private fun UserBO.toDBO(isCurrentUser: Boolean = false) =
         com.ajrpachon.chatapp.data.local.entity.UserDBO(
             id = id,
@@ -88,3 +108,4 @@ class UserRepositoryImpl(
             showOnlineStatus = showOnlineStatus,
         )
 }
+

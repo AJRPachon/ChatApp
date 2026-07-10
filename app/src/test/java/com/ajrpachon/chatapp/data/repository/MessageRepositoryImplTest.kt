@@ -5,8 +5,8 @@ import com.ajrpachon.chatapp.data.local.dao.ReactionDao
 import com.ajrpachon.chatapp.data.local.dao.UserDao
 import com.ajrpachon.chatapp.data.remote.dto.MessageDTO
 import com.ajrpachon.chatapp.data.remote.source.MessageRemoteSource
+import com.ajrpachon.chatapp.data.remote.source.UserRemoteSource
 import com.ajrpachon.chatapp.util.MainDispatcherRule
-import io.github.jan.supabase.SupabaseClient
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -23,10 +23,9 @@ class MessageRepositoryImplTest {
     private val userDao = mockk<UserDao>(relaxed = true)
     private val reactionDao = mockk<ReactionDao>(relaxed = true)
     private val remoteSource = mockk<MessageRemoteSource>(relaxed = true)
-    private val userRemoteSource = mockk<com.ajrpachon.chatapp.data.remote.source.UserRemoteSource>(relaxed = true)
-    private val supabase = mockk<SupabaseClient>(relaxed = true)
+    private val userRemoteSource = mockk<UserRemoteSource>(relaxed = true)
 
-    private val repo = MessageRepositoryImpl(messageDao, userDao, reactionDao, remoteSource, userRemoteSource, supabase)
+    private val repo = MessageRepositoryImpl(messageDao, userDao, reactionDao, remoteSource, userRemoteSource)
 
     // ── syncMessages — fetches remote and upserts ─────────────────────────────
 

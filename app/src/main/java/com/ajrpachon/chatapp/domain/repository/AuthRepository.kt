@@ -1,4 +1,4 @@
-﻿package com.ajrpachon.chatapp.domain.repository
+package com.ajrpachon.chatapp.domain.repository
 
 import android.content.Context
 import com.ajrpachon.chatapp.utils.IntegrityResult

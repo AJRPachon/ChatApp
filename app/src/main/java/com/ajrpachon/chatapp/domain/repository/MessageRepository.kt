@@ -1,4 +1,4 @@
-﻿package com.ajrpachon.chatapp.domain.repository
+package com.ajrpachon.chatapp.domain.repository
 
 import androidx.paging.PagingData
 import com.ajrpachon.chatapp.domain.model.MessageBO
@@ -58,4 +58,14 @@ interface MessageRepository {
     suspend fun countVideos(): Int
     suspend fun getMostActiveConversationId(): String?
     suspend fun countMessagesByDay(since: Long): List<Pair<Long, Int>>
+    @Suppress("LongParameterList")
+    suspend fun savePendingMessage(
+        id: String,
+        conversationId: String,
+        senderId: String,
+        content: String,
+        replyToId: String? = null,
+        replyToContent: String? = null,
+        replyToSenderName: String? = null,
+    )
 }

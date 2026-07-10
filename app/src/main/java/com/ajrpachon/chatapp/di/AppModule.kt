@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.di
+﻿package com.ajrpachon.chatapp.di
 
 import com.ajrpachon.chatapp.BuildConfig
 import com.ajrpachon.chatapp.data.local.DraftRepository
@@ -95,8 +95,8 @@ val networkModule = module {
 }
 
 val viewModelModule = module {
-    // BuildConfig values not injectable — kept as lambda
-    viewModel { AuthViewModel(androidApplication(), get(), get(), BuildConfig.GOOGLE_WEB_CLIENT_ID, get(), get(), get()) }
+    // BuildConfig values not injectable â€” kept as lambda
+    viewModel { AuthViewModel(androidApplication(), get(), get(), get(), BuildConfig.GOOGLE_WEB_CLIENT_ID, get(), get()) }
 
     viewModelOf(::ConversationListViewModel)
     viewModelOf(::InvitationsViewModel)
@@ -111,7 +111,7 @@ val viewModelModule = module {
     viewModelOf(::SessionAuditViewModel)
     viewModelOf(::BackupViewModel)
     viewModelOf(::GlobalSearchViewModel)
-    // ChatViewModel: exceeds viewModelOf 22-param limit — kept as lambda
+    // ChatViewModel: exceeds viewModelOf 22-param limit â€” kept as lambda
     viewModel { params ->
         ChatViewModel(
             args = params[0],
@@ -145,7 +145,7 @@ val viewModelModule = module {
     viewModelOf(::ChatMediaGalleryViewModel)
     viewModelOf(::PdfViewerViewModel)
 
-    // CallViewModel: BuildConfig.LIVEKIT_URL + androidApplication() not injectable — kept as lambda
+    // CallViewModel: BuildConfig.LIVEKIT_URL + androidApplication() not injectable â€” kept as lambda
     viewModel { params ->
         CallViewModel(
             context = androidApplication(),
@@ -198,3 +198,4 @@ val appModules = listOf(
     workManagerModule,
     aiModule,
 )
+
