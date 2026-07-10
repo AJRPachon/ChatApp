@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.di
+﻿package com.ajrpachon.chatapp.di
 
 import com.ajrpachon.chatapp.data.remote.source.FcmTokenRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.GroupRemoteSource
@@ -14,7 +14,14 @@ import com.ajrpachon.chatapp.data.repository.InvitationRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.MessageRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.ReactionRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.StatusRepositoryImpl
-import com.ajrpachon.chatapp.data.repository.UserRepositoryImpl
+import com.ajrpachon.chatapp.data.repository.AuthRepositoryImpl
+import com.ajrpachon.chatapp.data.repository.BroadcastListRepositoryImpl
+import com.ajrpachon.chatapp.data.repository.SessionRepositoryImpl
+import com.ajrpachon.chatapp.data.repository.StickerPackRepositoryImpl
+import com.ajrpachon.chatapp.domain.repository.AuthRepository
+import com.ajrpachon.chatapp.domain.repository.BroadcastListRepository
+import com.ajrpachon.chatapp.domain.repository.SessionRepository
+import com.ajrpachon.chatapp.domain.repository.StickerPackRepositoryimport com.ajrpachon.chatapp.data.repository.UserRepositoryImpl
 import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
@@ -65,6 +72,10 @@ val repositoryModule = module {
     singleOf(::CallRepositoryImpl) { bind<CallRepository>() }
     singleOf(::ReactionRepositoryImpl) { bind<ReactionRepository>() }
     singleOf(::StatusRepositoryImpl) { bind<StatusRepository>() }
+    singleOf(::AuthRepositoryImpl) { bind<AuthRepository>() }
+    singleOf(::BroadcastListRepositoryImpl) { bind<BroadcastListRepository>() }
+    singleOf(::SessionRepositoryImpl) { bind<SessionRepository>() }
+    singleOf(::StickerPackRepositoryImpl) { bind<StickerPackRepository>() }
 }
 
 val useCaseModule = module {
