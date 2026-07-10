@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.data.repository
+﻿package com.ajrpachon.chatapp.data.repository
 import com.ajrpachon.chatapp.utils.catchResult
 import com.ajrpachon.chatapp.utils.AppLogger
 
@@ -369,5 +369,17 @@ class ConversationRepositoryImpl(
                 if (lastMsg != null) messageDao.upsert(lastMsg.toDBO())
             }
         }
+    }
+    override suspend fun getById(conversationId: String): ConversationBO? {
+        val dbo = conversationDao.getById(conversationId) ?: return null
+        val userId = supabase.auth.currentSessionOrNull()?.user?.id ?: return null
+        return dbo.toBO(userId)
+    }
+    override fun observeById(conversationId: String): Flow<ConversationBO?> {
+        val userId = supabase.auth.currentSessionOrNull()?.user?.id ?: return kotlinx.coroutines.flow.flowOf(null)
+        return conversationDao.observeById(conversationId).map { it?.toBO(userId) }
+    }
+    override suspend fun resetUnreadCount(conversationId: String) {
+        conversationDao.resetUnreadCount(conversationId)
     }
 }
