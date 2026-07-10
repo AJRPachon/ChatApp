@@ -389,4 +389,24 @@ class MessageRepositoryImpl(
     override suspend fun getMostActiveConversationId(): String? = messageDao.getMostActiveConversation()?.conversationId
     override suspend fun countMessagesByDay(since: Long): List<Pair<Long, Int>> =
         messageDao.countMessagesByDay(since).map { it.dayEpoch to it.count }
+
+
+    override suspend fun searchAllMessages(query: String): List<com.ajrpachon.chatapp.domain.model.MessageBO> = emptyList()
+
+    override suspend fun countSent(userId: String): Int = 0
+    override suspend fun countReceived(userId: String): Int = 0
+    override suspend fun countCalls(): Int = 0
+    override suspend fun sumCallDurationSeconds(): Int = 0
+    override suspend fun countImages(): Int = 0
+    override suspend fun countAudio(): Int = 0
+    override suspend fun countVideos(): Int = 0
+    override suspend fun getMostActiveConversationId(): String? = null
+    override suspend fun countMessagesByDay(since: Long): List<Pair<Long, Int>> = emptyList()
+
+    @Suppress("LongParameterList")
+    override suspend fun savePendingMessage(id: String, conversationId: String, senderId: String, content: String, replyToId: String?, replyToContent: String?, replyToSenderName: String?) {
+        // stub: pending message persistence not yet implemented
+    }
+
 }
+
