@@ -26,7 +26,7 @@ class CallRepositoryImplTest {
 
     @Test
     fun `createCall throws when user is not authenticated`() {
-        // relaxed supabase mock returns null for currentUserOrNull() by default
+        every { callRemoteSource.getCurrentUserId() } returns null
         assertThrows(IllegalStateException::class.java) {
             kotlinx.coroutines.runBlocking { repo.createCall("conv1", "callee1", CallType.AUDIO) }
         }
