@@ -11,10 +11,7 @@ class StatusRemoteSource(private val supabase: SupabaseClient) {
 
     fun getCurrentUserId(): String? = supabase.auth.currentUserOrNull()?.id
 
-
     private val STATUS_IMAGE_BUCKET = "status-images"
-
-    fun getCurrentUserId(): String? = supabase.auth.currentUserOrNull()?.id
 
     suspend fun getActiveStatuses(contactIds: List<String>): List<StatusDTO> {
         if (contactIds.isEmpty()) return emptyList()
