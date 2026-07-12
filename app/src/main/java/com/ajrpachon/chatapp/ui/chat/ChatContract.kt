@@ -3,8 +3,8 @@
 import android.content.Context
 import android.net.Uri
 import com.ajrpachon.chatapp.data.local.ChatTheme
-import com.ajrpachon.chatapp.data.local.entity.ScheduledMessageDBO
 import com.ajrpachon.chatapp.domain.model.CallBO
+import com.ajrpachon.chatapp.domain.model.ScheduledMessage
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.MessageBO
@@ -73,7 +73,7 @@ data class ChatState(
     val scheduledAtMs: Long? = null,
     val scheduledMessageCount: Int = 0,
     val showScheduledSheet: Boolean = false,
-    val scheduledMessages: List<ScheduledMessageDBO> = emptyList(),
+    val scheduledMessages: List<ScheduledMessage> = emptyList(),
     // AI Assistant
     val showAiSheet: Boolean = false,
     val aiSuggestion: String? = null,

@@ -1,11 +1,10 @@
 ﻿package com.ajrpachon.chatapp.domain.repository
 
-import com.ajrpachon.chatapp.data.local.entity.ScheduledMessageDBO
+import com.ajrpachon.chatapp.domain.model.ScheduledMessage
 import kotlinx.coroutines.flow.Flow
 
 interface ScheduledMessageRepository {
-    fun observeAll(): Flow<List<ScheduledMessageDBO>>
-    suspend fun insert(dbo: ScheduledMessageDBO)
+    fun observeAll(): Flow<List<ScheduledMessage>>
     suspend fun deleteById(id: String)
     @Suppress("LongParameterList")
     suspend fun schedule(
