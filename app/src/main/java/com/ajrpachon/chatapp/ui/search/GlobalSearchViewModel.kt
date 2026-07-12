@@ -1,7 +1,7 @@
-package com.ajrpachon.chatapp.ui.search
+﻿package com.ajrpachon.chatapp.ui.search
 
-import com.ajrpachon.chatapp.data.local.dao.ConversationDao
-import com.ajrpachon.chatapp.data.local.dao.MessageDao
+import com.ajrpachon.chatapp.domain.repository.ConversationRepository
+import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -32,8 +32,8 @@ sealed class GlobalSearchIntent {
 
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class GlobalSearchViewModel(
-    private val messageDao: MessageDao,
-    private val conversationDao: ConversationDao,
+    private val messageRepository: MessageRepository,
+    private val conversationRepository: ConversationRepository,
 ) : BaseViewModel<GlobalSearchState, Nothing>(GlobalSearchState()) {
 
     private val _query = MutableStateFlow("")
@@ -49,15 +49,15 @@ class GlobalSearchViewModel(
                             return@flow
                         }
                         emit(GlobalSearchState(query = query, isLoading = true))
-                        val messages = messageDao.searchAllMessages(query)
+                        val messages = messageRepository.searchAllMessages(query)
                         val results = messages.map { msg ->
-                            val conversationName = conversationDao.getById(msg.conversationId)?.name ?: "Chat"
+                            val conversationName = conversationRepository.getById(msg.conversationId)?.name ?: "Chat"
                             GlobalSearchResultItem(
                                 messageId = msg.id,
                                 conversationId = msg.conversationId,
                                 conversationName = conversationName,
                                 content = msg.content,
-                                createdAtMs = msg.createdAt,
+                                createdAtMs = msg.createdAt.toEpochMilliseconds(),
                             )
                         }
                         emit(GlobalSearchState(query = query, results = results, isLoading = false))

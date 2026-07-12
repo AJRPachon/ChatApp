@@ -30,4 +30,5 @@ data class MessageDTO(
     @SerialName("file_size") val fileSize: Long? = null,
     @SerialName("file_mime_type") val fileMimeType: String? = null,
     @SerialName("video_url") val videoUrl: String? = null,
+    @SerialName("expires_at") val expiresAt: String? = null,
 )

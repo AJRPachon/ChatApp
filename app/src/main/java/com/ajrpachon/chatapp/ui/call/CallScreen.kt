@@ -175,7 +175,7 @@ private fun CallScreenContent(
 
     // Collect CallEffects (e.g. RequestScreenShare)
     LaunchedEffect(vm) {
-        vm.effects.collect { effect ->
+        vm.effect.collect { effect ->
             when (effect) {
                 is CallEffect.RequestScreenShare -> {
                     val mgr = context.getSystemService(MediaProjectionManager::class.java)

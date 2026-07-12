@@ -9,13 +9,14 @@ import kotlinx.coroutines.flow.map
 
 private val Context.wallpaperDataStore by preferencesDataStore(name = "chat_wallpapers")
 
-class WallpaperRepository(private val context: Context) {
-    fun getWallpaperColor(conversationId: String): Flow<Long?> =
+class WallpaperRepository(private val context: Context) :
+    com.ajrpachon.chatapp.domain.repository.WallpaperRepository {
+    override fun getWallpaperColor(conversationId: String): Flow<Long?> =
         context.wallpaperDataStore.data.map { prefs ->
             prefs[stringPreferencesKey("color_$conversationId")]?.toLongOrNull()
         }
 
-    suspend fun setWallpaperColor(conversationId: String, color: Long?) {
+    override suspend fun setWallpaperColor(conversationId: String, color: Long?) {
         context.wallpaperDataStore.edit { prefs ->
             val key = stringPreferencesKey("color_$conversationId")
             if (color == null) prefs.remove(key) else prefs[key] = color.toString()

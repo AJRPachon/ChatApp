@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.data.repository
+﻿package com.ajrpachon.chatapp.data.repository
 import com.ajrpachon.chatapp.utils.catchResult
 import com.ajrpachon.chatapp.utils.AppLogger
 
@@ -129,7 +129,7 @@ class ConversationRepositoryImpl(
             }
         }
 
-        // Group avatar / name / description changes — conversations UPDATE
+        // Group avatar / name / description changes â€” conversations UPDATE
         val conversationsUpdateChannel = supabase.channel("conversations:updates:$userId-${System.nanoTime()}")
         launch {
             val flow = conversationsUpdateChannel.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
@@ -152,7 +152,7 @@ class ConversationRepositoryImpl(
             }
         }
 
-        // Individual user avatar / name changes — profiles UPDATE
+        // Individual user avatar / name changes â€” profiles UPDATE
         val profilesChannel = supabase.channel("profiles:updates:$userId-${System.nanoTime()}")
         launch {
             val flow = profilesChannel.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
@@ -207,22 +207,7 @@ class ConversationRepositoryImpl(
         }
         val trailingImages = messageDao.getTrailingImageCount(id)
         val otherUser = otherUserId?.let { userDao.getById(it) }
-        return ConversationBO(
-            id = id,
-            name = name ?: "Chat",
-            isGroup = isGroup,
-            participants = emptyList(),
-            lastMessage = lastMsg,
-            unreadCount = unreadCount,
-            updatedAt = Instant.fromEpochMilliseconds(updatedAt),
-            trailingImageCount = trailingImages,
-            otherUserAvatarUrl = otherUser?.avatarUrl,
-            groupAvatarUrl = groupAvatarUrl,
-            description = description,
-            isMuted = isEffectivelyMuted(),
-            mutedUntil = mutedUntil,
-            isArchived = isArchived,
-        )
+        return toBO(lastMsg, trailingImages, otherUser?.avatarUrl)
     }
 
     override suspend fun getOrCreateDirectConversation(
@@ -347,18 +332,12 @@ class ConversationRepositoryImpl(
             } else conversationDto.name
 
             conversationDao.upsert(
-                ConversationDBO(
-                    id = conversationDto.id,
-                    name = resolvedName ?: existingConversation?.name ?: conversationDto.name,
-                    isGroup = conversationDto.isGroup,
+                conversationDto.toDBO(
                     createdBy = conversationDto.createdBy ?: userId,
-                    updatedAt = catchResult { Instant.parse(conversationDto.updatedAt).toEpochMilliseconds() }
-                        .getOrElse { System.currentTimeMillis() },
-                    otherUserId = resolvedOtherUserId,
-                    description = conversationDto.description ?: existingConversation?.description,
-                    groupAvatarUrl = conversationDto.avatarUrl ?: existingConversation?.groupAvatarUrl,
+                    resolvedName = resolvedName,
+                    resolvedOtherUserId = resolvedOtherUserId,
                     historyVisibleFrom = historyVisibleFrom,
-                    isArchived = existingConversation?.isArchived ?: false,
+                    existing = existingConversation,
                 )
             )
 
@@ -369,5 +348,17 @@ class ConversationRepositoryImpl(
                 if (lastMsg != null) messageDao.upsert(lastMsg.toDBO())
             }
         }
+    }
+    override suspend fun getById(conversationId: String): ConversationBO? {
+        val dbo = conversationDao.getById(conversationId) ?: return null
+        val userId = supabase.auth.currentSessionOrNull()?.user?.id ?: return null
+        return dbo.toBO(userId)
+    }
+    override fun observeById(conversationId: String): Flow<ConversationBO?> {
+        val userId = supabase.auth.currentSessionOrNull()?.user?.id ?: return kotlinx.coroutines.flow.flowOf(null)
+        return conversationDao.observeById(conversationId).map { it?.toBO(userId) }
+    }
+    override suspend fun resetUnreadCount(conversationId: String) {
+        conversationDao.resetUnreadCount(conversationId)
     }
 }

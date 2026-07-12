@@ -9,21 +9,22 @@ import kotlinx.coroutines.flow.map
 
 private val Context.draftDataStore by preferencesDataStore(name = "message_drafts")
 
-class DraftRepository(private val context: Context) {
+class DraftRepository(private val context: Context) :
+    com.ajrpachon.chatapp.domain.repository.DraftRepository {
 
-    suspend fun saveDraft(conversationId: String, text: String) {
+    override suspend fun saveDraft(conversationId: String, text: String) {
         val key = stringPreferencesKey("draft_$conversationId")
         context.draftDataStore.edit { prefs ->
             if (text.isBlank()) prefs.remove(key) else prefs[key] = text
         }
     }
 
-    fun getDraft(conversationId: String): Flow<String> {
+    override fun getDraft(conversationId: String): Flow<String> {
         val key = stringPreferencesKey("draft_$conversationId")
         return context.draftDataStore.data.map { prefs -> prefs[key] ?: "" }
     }
 
-    fun getAllDrafts(): Flow<Map<String, String>> =
+    override fun getAllDrafts(): Flow<Map<String, String>> =
         context.draftDataStore.data.map { prefs ->
             prefs.asMap()
                 .entries
