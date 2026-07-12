@@ -17,15 +17,14 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.ajrpachon.chatapp.data.local.ChatTheme
 import com.ajrpachon.chatapp.data.local.ChatThemeRepository
-import com.ajrpachon.chatapp.data.local.DraftRepository
-import com.ajrpachon.chatapp.data.local.IncognitoRepository
-import com.ajrpachon.chatapp.data.local.WallpaperRepository
 import com.ajrpachon.chatapp.data.local.PollRepository
 import com.ajrpachon.chatapp.data.local.entity.PollDBO
 import com.ajrpachon.chatapp.data.local.entity.PollOptionDBO
 import com.ajrpachon.chatapp.data.local.entity.ScheduledMessageDBO
-import com.ajrpachon.chatapp.data.repository.AiAssistantRepository
-import com.ajrpachon.chatapp.data.repository.TypingRepositoryImpl
+import com.ajrpachon.chatapp.domain.repository.AiAssistantRepository
+import com.ajrpachon.chatapp.domain.repository.DraftRepository
+import com.ajrpachon.chatapp.domain.repository.IncognitoRepository
+import com.ajrpachon.chatapp.domain.repository.WallpaperRepository
 import com.ajrpachon.chatapp.domain.model.CallType
 import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.MessageBO
@@ -261,7 +260,7 @@ class ChatViewModel(
                 typingRepository.observeTypingNames(conversationId, uid)
                     .onEach { names -> updateState { it.copy(typingUserNames = names) } }
                     .launchIn(this)
-                (typingRepository as? TypingRepositoryImpl)?.subscribeChannel(conversationId)
+                typingRepository.subscribeChannel(conversationId)
             }.onFailure { e -> AppLogger.d(TAG, "typing presence failed: ${e.message}") }
         }
     }

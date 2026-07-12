@@ -1,3 +1,5 @@
 package com.ajrpachon.chatapp.data.local
 
-enum class ThemePreference { SYSTEM, LIGHT, DARK }
+// Canonical definition lives in domain.model; this typealias preserves backward-compat
+// for any existing imports from data.local.
+typealias ThemePreference = com.ajrpachon.chatapp.domain.model.ThemePreference

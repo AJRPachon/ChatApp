@@ -9,14 +9,15 @@ import kotlinx.coroutines.flow.map
 
 private val Context.incognitoDataStore by preferencesDataStore(name = "incognito_prefs")
 
-class IncognitoRepository(private val context: Context) {
+class IncognitoRepository(private val context: Context) :
+    com.ajrpachon.chatapp.domain.repository.IncognitoRepository {
 
-    fun isIncognito(conversationId: String): Flow<Boolean> {
+    override fun isIncognito(conversationId: String): Flow<Boolean> {
         val key = booleanPreferencesKey("incognito_$conversationId")
         return context.incognitoDataStore.data.map { prefs -> prefs[key] ?: false }
     }
 
-    suspend fun setIncognito(conversationId: String, enabled: Boolean) {
+    override suspend fun setIncognito(conversationId: String, enabled: Boolean) {
         val key = booleanPreferencesKey("incognito_$conversationId")
         context.incognitoDataStore.edit { prefs ->
             if (enabled) prefs[key] = true else prefs.remove(key)

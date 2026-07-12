@@ -26,7 +26,7 @@ class TypingRepositoryImpl(
     private val channels = ConcurrentHashMap<String, RealtimeChannel>()
 
     /** Must be called once to subscribe; safe to call multiple times (idempotent). */
-    suspend fun subscribeChannel(conversationId: String) {
+    override suspend fun subscribeChannel(conversationId: String) {
         if (channels.containsKey(conversationId)) return
         val ch = supabase.channel("typing-$conversationId")
         channels[conversationId] = ch

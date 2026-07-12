@@ -1,7 +1,6 @@
 ﻿package com.ajrpachon.chatapp.di
 
 import com.ajrpachon.chatapp.BuildConfig
-import com.ajrpachon.chatapp.data.local.DraftRepository
 import com.ajrpachon.chatapp.data.local.ThemeRepository
 import com.ajrpachon.chatapp.data.local.buildChatDatabase
 import com.ajrpachon.chatapp.data.session.AndroidSessionManager
@@ -167,9 +166,13 @@ val utilsModule = module {
     single { PresenceManager(get()) }
     single { LinkPreviewFetcher() }
     single { com.ajrpachon.chatapp.data.local.AppLockRepository(androidContext()) }
-    single { com.ajrpachon.chatapp.data.local.IncognitoRepository(androidContext()) }
+    single<com.ajrpachon.chatapp.domain.repository.IncognitoRepository> {
+        com.ajrpachon.chatapp.data.local.IncognitoRepository(androidContext())
+    }
     single { ThemeRepository(androidContext()) }
-    single { DraftRepository(androidContext()) }
+    single<com.ajrpachon.chatapp.domain.repository.DraftRepository> {
+        com.ajrpachon.chatapp.data.local.DraftRepository(androidContext())
+    }
     single { TranslationManager() }
     single { com.ajrpachon.chatapp.data.local.NotificationSoundRepository(androidContext()) }
     single { com.ajrpachon.chatapp.utils.AudioTranscriber() }
@@ -177,12 +180,16 @@ val utilsModule = module {
     single { com.ajrpachon.chatapp.utils.NetworkMonitor(androidContext()) }
     single { com.ajrpachon.chatapp.utils.ContactSyncManager(androidContext().contentResolver) }
     single { com.ajrpachon.chatapp.utils.BackupManager(androidContext(), get()) }
-    single { com.ajrpachon.chatapp.data.local.WallpaperRepository(androidContext()) }
+    single<com.ajrpachon.chatapp.domain.repository.WallpaperRepository> {
+        com.ajrpachon.chatapp.data.local.WallpaperRepository(androidContext())
+    }
     single { androidContext().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager }
 }
 
 val aiModule = module {
-    single { com.ajrpachon.chatapp.data.repository.AiAssistantRepository(get()) }
+    single<com.ajrpachon.chatapp.domain.repository.AiAssistantRepository> {
+        com.ajrpachon.chatapp.data.repository.AiAssistantRepository(get())
+    }
 }
 
 val appModules = listOf(
