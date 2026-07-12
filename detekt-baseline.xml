@@ -27,10 +27,10 @@
     <ID>LongParameterList:GroupInfoViewModel.kt$GroupInfoViewModel$( private val conversationId: String, private val userRepository: UserRepository, private val getGroupMembersUseCase: GetGroupMembersUseCase, private val updateGroupUseCase: UpdateGroupUseCase, private val leaveGroupUseCase: LeaveGroupUseCase, private val searchUsersUseCase: SearchUsersUseCase, private val groupRepository: GroupRepository, private val conversationRepository: ConversationRepository, )</ID>
     <ID>LoopWithTooManyJumpStatements:ChatScreen.kt$while</ID>
     <ID>LoopWithTooManyJumpStatements:ChatViewModel.kt$ChatViewModel$for</ID>
+    <ID>LoopWithTooManyJumpStatements:ContactRepositoryImpl.kt$ContactRepositoryImpl$while</ID>
     <ID>LoopWithTooManyJumpStatements:ExportConversationUseCase.kt$ExportConversationUseCase$for</ID>
-    <ID>LoopWithTooManyJumpStatements:NewChatScreen.kt$while</ID>
-    <ID>MatchingDeclarationName:ChatMediaGalleryScreen.kt$ChatMediaGalleryViewModel : ViewModel</ID>
     <ID>MatchingDeclarationName:StickerPacks.kt$StickerCategory</ID>
+    <ID>MatchingDeclarationName:UiConstants.kt$ChatConstants</ID>
     <ID>MayBeConst:ChatScreen.kt$private val LOCATION_MESSAGE_PREFIX = "ðŸ“ Mi ubicaciÃ³n: https://maps.google.com/?q="</ID>
     <ID>MissingPackageDeclaration:AppModule.kt$.AppModule.kt</ID>
     <ID>MissingPackageDeclaration:AuthViewModel.kt$.AuthViewModel.kt</ID>
@@ -187,7 +187,14 @@
     <ID>UnusedImports:ChatScreen.kt$import androidx.compose.material.icons.filled.SmartToy</ID>
     <ID>UnusedImports:ChatScreen.kt$import androidx.compose.material.icons.filled.Stop</ID>
     <ID>UnusedImports:ChatScreen.kt$import com.ajrpachon.chatapp.domain.model.MessageLimits</ID>
+    <ID>UnusedImports:ChatScreen.kt$import com.ajrpachon.chatapp.ui.common.ChatConstants</ID>
     <ID>UnusedImports:ChatScreen.kt$import com.ajrpachon.chatapp.ui.components.ChatAppTextField</ID>
+    <ID>UnusedImports:ChatViewModel.kt$import com.ajrpachon.chatapp.data.local.AppLockRepository</ID>
+    <ID>UnusedImports:ChatViewModel.kt$import com.ajrpachon.chatapp.data.local.dao.ConversationDao</ID>
+    <ID>UnusedImports:ChatViewModel.kt$import com.ajrpachon.chatapp.data.local.dao.MessageDao</ID>
+    <ID>UnusedImports:ConversationListScreen.kt$import kotlin.time.Instant</ID>
+    <ID>UnusedImports:ConversationListScreen.kt$import kotlinx.coroutines.launch</ID>
+    <ID>UnusedImports:ConversationListViewModel.kt$import com.ajrpachon.chatapp.domain.model.ThemePreference</ID>
     <ID>UnusedImports:CreateGroupScreen.kt$import androidx.compose.material.icons.filled.Search</ID>
     <ID>UnusedImports:CreateGroupScreen.kt$import androidx.compose.material3.CircularProgressIndicator</ID>
     <ID>UnusedImports:GroupInfoScreen.kt$import androidx.compose.material.icons.filled.Search</ID>
@@ -196,8 +203,6 @@
     <ID>UnusedImports:IncomingCallScreen.kt$import androidx.compose.foundation.layout.padding</ID>
     <ID>UnusedImports:MainActivity.kt$import androidx.lifecycle.compose.collectAsStateWithLifecycle</ID>
     <ID>UnusedImports:MainActivity.kt$import androidx.lifecycle.compose.dropUnlessResumed</ID>
-    <ID>UnusedImports:NewChatScreen.kt$import androidx.compose.material3.Surface</ID>
-    <ID>UnusedImports:NewChatScreen.kt$import com.ajrpachon.chatapp.ui.components.ChatAppTextField</ID>
     <ID>UnusedImports:ProfileScreen.kt$import androidx.compose.foundation.layout.height</ID>
     <ID>UnusedImports:SessionAuditScreen.kt$import androidx.compose.material.icons.filled.DevicesOther</ID>
     <ID>UnusedImports:Shimmer.kt$import androidx.compose.ui.graphics.Color</ID>
