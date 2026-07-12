@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.profile
 
+import android.graphics.Bitmap
 import com.ajrpachon.chatapp.data.local.ThemePreference
 
 data class TwoFactorState(
@@ -26,6 +27,7 @@ data class ProfileState(
     val themePreference: ThemePreference = ThemePreference.SYSTEM,
     val twoFactor: TwoFactorState = TwoFactorState(),
     val isAppLockEnabled: Boolean = false,
+    val qrBitmap: Bitmap? = null,
     val error: String? = null,
 )
 
