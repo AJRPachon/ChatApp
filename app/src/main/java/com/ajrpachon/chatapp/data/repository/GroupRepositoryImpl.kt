@@ -6,11 +6,12 @@ import com.ajrpachon.chatapp.data.local.dao.GroupMemberDao
 import com.ajrpachon.chatapp.data.local.dao.MessageDao
 import com.ajrpachon.chatapp.data.local.entity.ConversationDBO
 import com.ajrpachon.chatapp.data.local.entity.GroupMemberDBO
+import com.ajrpachon.chatapp.data.mapper.toDBO
+import com.ajrpachon.chatapp.data.mapper.toBO
 import com.ajrpachon.chatapp.data.remote.dto.GroupMemberDTO
 import com.ajrpachon.chatapp.data.remote.source.GroupRemoteSource
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.GroupMemberBO
-import com.ajrpachon.chatapp.domain.model.GroupRole
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
 import com.ajrpachon.chatapp.utils.UploadLimits.checkAvatarSize
 import kotlinx.coroutines.flow.Flow
@@ -129,18 +130,7 @@ class GroupRepositoryImpl(
     override suspend fun getMembers(conversationId: String): List<GroupMemberBO> {
         val remote = remoteSource.getMembers(conversationId) ?: return emptyList()
         if (remote.isNotEmpty()) groupMemberDao.upsertAll(remote.map { it.toDBO() })
-        return remote.map { dto ->
-            GroupMemberBO(
-                userId = dto.userId,
-                conversationId = dto.conversationId,
-                displayName = dto.profile?.displayName ?: dto.userId,
-                username = dto.profile?.username ?: "",
-                avatarUrl = dto.profile?.avatarUrl,
-                role = if (dto.role == "admin") GroupRole.ADMIN else GroupRole.MEMBER,
-                joinedAt = catchResult { Instant.parse(dto.joinedAt) }
-                    .getOrDefault(Instant.fromEpochMilliseconds(0)),
-            )
-        }
+        return remote.map { it.toDBO().toBO() }
     }
     override suspend fun addMember(conversationId: String, userId: String, canSeeHistory: Boolean) {
         remoteSource.addMember(conversationId, userId, canSeeHistory)
@@ -208,23 +198,5 @@ class GroupRepositoryImpl(
 
     }
 }
-// ── Mappers ───────────────────────────────────────────────────────────────────
-private fun GroupMemberDTO.toDBO() = GroupMemberDBO(
-    conversationId = conversationId,
-    userId = userId,
-    displayName = profile?.displayName ?: userId,
-    username = profile?.username ?: "",
-    avatarUrl = profile?.avatarUrl,
-    role = role,
-    joinedAt = catchResult { Instant.parse(joinedAt).toEpochMilliseconds() }
-        .getOrDefault(System.currentTimeMillis()),
-)
-private fun GroupMemberDBO.toBO() = GroupMemberBO(
-    userId = userId,
-    conversationId = conversationId,
-    displayName = displayName,
-    username = username,
-    avatarUrl = avatarUrl,
-    role = if (role == "admin") GroupRole.ADMIN else GroupRole.MEMBER,
-    joinedAt = Instant.fromEpochMilliseconds(joinedAt),
-)
+
+// Mappers moved to data/mapper/GroupMapper.kt
