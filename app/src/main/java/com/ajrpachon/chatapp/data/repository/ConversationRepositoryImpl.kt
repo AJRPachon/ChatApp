@@ -207,25 +207,7 @@ class ConversationRepositoryImpl(
         }
         val trailingImages = messageDao.getTrailingImageCount(id)
         val otherUser = otherUserId?.let { userDao.getById(it) }
-        return ConversationBO(
-            id = id,
-            name = name ?: "Chat",
-            isGroup = isGroup,
-            participants = emptyList(),
-            lastMessage = lastMsg,
-            unreadCount = unreadCount,
-            updatedAt = Instant.fromEpochMilliseconds(updatedAt),
-            trailingImageCount = trailingImages,
-            otherUserAvatarUrl = otherUser?.avatarUrl,
-            groupAvatarUrl = groupAvatarUrl,
-            description = description,
-            isMuted = isEffectivelyMuted(),
-            mutedUntil = mutedUntil,
-            isArchived = isArchived,
-            otherUserId = otherUserId,
-            historyVisibleFrom = historyVisibleFrom,
-            disappearingModeSeconds = disappearingModeSeconds,
-        )
+        return toBO(lastMsg, trailingImages, otherUser?.avatarUrl)
     }
 
     override suspend fun getOrCreateDirectConversation(
@@ -350,18 +332,12 @@ class ConversationRepositoryImpl(
             } else conversationDto.name
 
             conversationDao.upsert(
-                ConversationDBO(
-                    id = conversationDto.id,
-                    name = resolvedName ?: existingConversation?.name ?: conversationDto.name,
-                    isGroup = conversationDto.isGroup,
+                conversationDto.toDBO(
                     createdBy = conversationDto.createdBy ?: userId,
-                    updatedAt = catchResult { Instant.parse(conversationDto.updatedAt).toEpochMilliseconds() }
-                        .getOrElse { System.currentTimeMillis() },
-                    otherUserId = resolvedOtherUserId,
-                    description = conversationDto.description ?: existingConversation?.description,
-                    groupAvatarUrl = conversationDto.avatarUrl ?: existingConversation?.groupAvatarUrl,
+                    resolvedName = resolvedName,
+                    resolvedOtherUserId = resolvedOtherUserId,
                     historyVisibleFrom = historyVisibleFrom,
-                    isArchived = existingConversation?.isArchived ?: false,
+                    existing = existingConversation,
                 )
             )
 
