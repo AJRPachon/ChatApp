@@ -26,7 +26,6 @@ import com.ajrpachon.chatapp.domain.repository.DraftRepository
 import com.ajrpachon.chatapp.domain.repository.IncognitoRepository
 import com.ajrpachon.chatapp.domain.repository.PollRepository
 import com.ajrpachon.chatapp.domain.repository.WallpaperRepository
-import com.ajrpachon.chatapp.domain.model.CallBO
 import com.ajrpachon.chatapp.domain.model.CallType
 import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.MessageBO
@@ -423,7 +422,7 @@ class ChatViewModel(
                 }
             }.onFailure { e ->
                 AppLogger.e(TAG, "handleContactSelected failed", e)
-                _state.update { it.copy(error = "No se pudo leer el contacto") }
+                updateState { it.copy(error = "No se pudo leer el contacto") }
             }
         }
     }

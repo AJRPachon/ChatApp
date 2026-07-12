@@ -453,34 +453,6 @@ private fun ContactItem(contact: PhoneContact, onInvite: () -> Unit) {
     )
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-private fun copyToClipboard(context: Context, username: String) {
-    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    clipboard.setPrimaryClip(ClipData.newPlainText("invite_code", "@$username"))
-}
-
-private fun shareInviteText(context: Context, username: String) {
-    val text = "¡Únete a ChatApp! Búscame como @$username y hablamos 💬"
-    val intent = Intent(Intent.ACTION_SEND).apply {
-        type = "text/plain"
-        putExtra(Intent.EXTRA_TEXT, text)
-    }
-    context.startActivity(Intent.createChooser(intent, "Compartir invitación"))
-}
-
-private fun inviteContact(context: Context, phoneNumber: String, username: String) {
-    val message = "¡Únete a ChatApp! Búscame como @$username y hablamos 💬"
-    val smsIntent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$phoneNumber")).apply {
-        putExtra("sms_body", message)
-    }
-    if (smsIntent.resolveActivity(context.packageManager) != null) {
-        context.startActivity(smsIntent)
-    } else {
-        shareInviteText(context, username)
-    }
-}
-
 @Composable
 private fun SuggestedContactChip(
     user: UserBO,

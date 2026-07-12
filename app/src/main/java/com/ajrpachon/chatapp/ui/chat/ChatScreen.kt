@@ -102,7 +102,6 @@ import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Wallpaper
 import androidx.compose.foundation.border
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
@@ -112,9 +111,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.RadioButton
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.StrokeCap
-import com.ajrpachon.chatapp.domain.model.PollBO
-import com.ajrpachon.chatapp.domain.model.PollOptionBO
-import com.ajrpachon.chatapp.domain.model.PollVoteBO
 import com.ajrpachon.chatapp.domain.repository.PollRepository
 import com.ajrpachon.chatapp.service.ActiveChatTracker
 import com.ajrpachon.chatapp.ui.components.ChatMessagesSkeleton
