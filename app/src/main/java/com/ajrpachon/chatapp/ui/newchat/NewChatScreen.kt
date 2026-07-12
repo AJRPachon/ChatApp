@@ -3,12 +3,10 @@ package com.ajrpachon.chatapp.ui.newchat
 import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
-import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.provider.ContactsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -45,7 +43,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -67,13 +64,10 @@ import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.model.UserRelationship
 import com.ajrpachon.chatapp.ui.components.ChatAppSecondaryButton
 import com.ajrpachon.chatapp.ui.components.ChatAppSearchField
-import com.ajrpachon.chatapp.ui.components.ChatAppTextField
 import com.ajrpachon.chatapp.ui.components.ChatAppTopBar
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import com.github.skydoves.navgraph.annotations.NavDestination
 import com.github.skydoves.navgraph.annotations.NavEdge
 import com.ajrpachon.chatapp.ChatRoute
@@ -110,10 +104,7 @@ fun NewChatScreen(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
-            scope.launch {
-                val contacts = withContext(Dispatchers.IO) { loadContacts(context.contentResolver) }
-                vm.onIntent(NewChatIntent.ContactsLoaded(contacts))
-            }
+            vm.onIntent(NewChatIntent.LoadContacts)
         } else {
             vm.onIntent(NewChatIntent.ContactsPermissionDenied)
         }
@@ -134,8 +125,7 @@ fun NewChatScreen(
     LaunchedEffect(Unit) {
         val permission = Manifest.permission.READ_CONTACTS
         if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
-            val contacts = withContext(Dispatchers.IO) { loadContacts(context.contentResolver) }
-            vm.onIntent(NewChatIntent.ContactsLoaded(contacts))
+            vm.onIntent(NewChatIntent.LoadContacts)
         } else {
             requestPermission.launch(permission)
         }
@@ -467,32 +457,9 @@ private fun inviteContact(context: Context, phoneNumber: String, username: Strin
     }
 }
 
-private fun loadContacts(resolver: ContentResolver): List<PhoneContact> {
-    val contacts = mutableListOf<PhoneContact>()
-    val cursor = resolver.query(
-        ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-        arrayOf(
-            ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
-            ContactsContract.CommonDataKinds.Phone.NUMBER,
-        ),
-        null, null,
-        "${ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME} ASC",
-    ) ?: return contacts
-    cursor.use {
-        val nameIdx = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
-        val numIdx = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
-        while (it.moveToNext()) {
-            val name = it.getString(nameIdx) ?: continue
-            val number = it.getString(numIdx) ?: continue
-            contacts.add(PhoneContact(name, number.trim()))
-        }
-    }
-    return contacts.distinctBy { it.phoneNumber }
-}
-
 @Composable
 private fun SuggestedContactChip(
-    user: com.ajrpachon.chatapp.domain.model.UserBO,
+    user: UserBO,
     onClick: () -> Unit,
 ) {
     Column(
