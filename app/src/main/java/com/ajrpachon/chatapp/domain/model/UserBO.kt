@@ -11,6 +11,7 @@ data class UserBO(
     val createdAt: Instant,
     val lastSeen: Instant? = null,
     val showOnlineStatus: Boolean = true,
+    val publicKey: String? = null,
 ) {
     fun isOnline(): Boolean =
         showOnlineStatus &&

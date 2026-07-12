@@ -1,7 +1,8 @@
 package com.ajrpachon.chatapp.data.repository
 import com.ajrpachon.chatapp.data.local.dao.StatusDao
 import com.ajrpachon.chatapp.data.local.dao.UserDao
-import com.ajrpachon.chatapp.data.local.entity.StatusDBO
+import com.ajrpachon.chatapp.data.mapper.toDBO
+import com.ajrpachon.chatapp.data.mapper.toBO
 import com.ajrpachon.chatapp.data.remote.dto.StatusDTO
 import com.ajrpachon.chatapp.data.remote.source.StatusRemoteSource
 import com.ajrpachon.chatapp.domain.model.StatusBO
@@ -21,16 +22,9 @@ class StatusRepositoryImpl(
             dbos.mapNotNull { dbo ->
                 val user = userDao.getById(dbo.userId) ?: return@mapNotNull null
                 val currentUserId = remoteSource.getCurrentUserId()
-                StatusBO(
-                    id = dbo.id,
-                    userId = dbo.userId,
+                dbo.toBO(
                     userName = user.displayName,
                     userAvatarUrl = user.avatarUrl,
-                    text = dbo.text,
-                    imageUrl = dbo.imageUrl,
-                    backgroundColor = dbo.backgroundColor,
-                    createdAt = Instant.fromEpochMilliseconds(dbo.createdAt),
-                    expiresAt = Instant.fromEpochMilliseconds(dbo.expiresAt),
                     isFromMe = dbo.userId == currentUserId,
                 )
             }
@@ -77,13 +71,6 @@ class StatusRepositoryImpl(
         remoteSource.deleteStatus(statusId)
         catchResult { statusDao.deleteExpired(0L) }
     }
-    private fun StatusDTO.toDBO() = StatusDBO(
-        id = id,
-        userId = userId,
-        text = text,
-        imageUrl = imageUrl,
-        backgroundColor = backgroundColor,
-        createdAt = runCatching { Instant.parse(createdAt).toEpochMilliseconds() }.getOrDefault(System.currentTimeMillis()),
-        expiresAt = runCatching { Instant.parse(expiresAt).toEpochMilliseconds() }.getOrDefault(System.currentTimeMillis() + STATUS_TTL_MS),
-    )
+
+    // StatusDTO.toDBO() moved to data/mapper/StatusMapper.kt
 }

@@ -34,6 +34,7 @@ fun MessageDTO.toDBO() = MessageDBO(
     fileSize = fileSize,
     fileMimeType = fileMimeType,
     videoUrl = MediaUrlValidator.sanitize(videoUrl),
+    expiresAt = expiresAt?.let { runCatching { Instant.parse(it).toEpochMilliseconds() }.getOrNull() },
     // Messages arriving from the server are always "sent"
     sendStatus = "sent",
 )
@@ -60,6 +61,7 @@ fun MessageDBO.toBO(currentUserId: String, senderName: String) = MessageBO(
     isEncrypted = isEncrypted,
     isDeleted = isDeleted,
     isEdited = isEdited,
+    editedAt = editedAt,
     expiresAt = expiresAt,
     fileUrl = fileUrl,
     fileName = fileName,
