@@ -14,10 +14,12 @@ import com.ajrpachon.chatapp.domain.repository.ScheduledMessageRepository
 import com.ajrpachon.chatapp.domain.repository.TypingRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.data.local.ChatThemeRepository
-import com.ajrpachon.chatapp.data.local.DraftRepository
-import com.ajrpachon.chatapp.data.local.IncognitoRepository
-import com.ajrpachon.chatapp.data.local.PollRepository
-import com.ajrpachon.chatapp.data.repository.AiAssistantRepository
+import com.ajrpachon.chatapp.domain.repository.AiAssistantRepository
+import com.ajrpachon.chatapp.domain.repository.ContactRepository
+import com.ajrpachon.chatapp.domain.repository.DraftRepository
+import com.ajrpachon.chatapp.domain.repository.IncognitoRepository
+import com.ajrpachon.chatapp.domain.repository.PollRepository
+import com.ajrpachon.chatapp.domain.repository.WallpaperRepository
 import com.ajrpachon.chatapp.utils.AudioTranscriber
 import com.ajrpachon.chatapp.utils.NetworkMonitor
 import com.ajrpachon.chatapp.utils.TranslationManager
@@ -69,7 +71,8 @@ class ChatViewModelTest {
     private val workManager = mockk<WorkManager>(relaxed = true)
     private val incognitoRepository = mockk<IncognitoRepository>(relaxed = true)
     private val aiAssistantRepository = mockk<AiAssistantRepository>(relaxed = true)
-    private val wallpaperRepository = mockk<com.ajrpachon.chatapp.data.local.WallpaperRepository>(relaxed = true)
+    private val wallpaperRepository = mockk<WallpaperRepository>(relaxed = true)
+    private val contactRepository = mockk<ContactRepository>(relaxed = true)
     private val networkMonitor = mockk<NetworkMonitor>(relaxed = true)
 
     private val membersFlow = MutableStateFlow<List<GroupMemberBO>>(emptyList())
@@ -140,6 +143,7 @@ class ChatViewModelTest {
             translationManager = translationManager,
             audioTranscriber = audioTranscriber,
             pollRepository = pollRepository,
+            contactRepository = contactRepository,
             chatThemeRepository = chatThemeRepository,
             workManager = workManager,
             incognitoRepository = incognitoRepository,
