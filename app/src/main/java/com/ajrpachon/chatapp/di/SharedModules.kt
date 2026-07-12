@@ -2,6 +2,8 @@
 
 import com.ajrpachon.chatapp.data.repository.AuthRepositoryImpl
 import com.ajrpachon.chatapp.domain.repository.AuthRepository
+import com.ajrpachon.chatapp.data.remote.source.CallRemoteSource
+import com.ajrpachon.chatapp.data.remote.source.ConversationRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.FcmTokenRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.GroupRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.InvitationRemoteSource
@@ -60,6 +62,8 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
 val remoteModule = module {
+    singleOf(::CallRemoteSource)
+    singleOf(::ConversationRemoteSource)
     singleOf(::UserRemoteSource)
     singleOf(::MessageRemoteSource)
     singleOf(::InvitationRemoteSource)
