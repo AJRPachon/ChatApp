@@ -274,9 +274,15 @@ fun buildChatDatabase(context: Context): ChatDatabase {
             MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
             MIGRATION_9_10, MIGRATION_10_11, migration11To12,
             migration12To13, migration13To14, migration14To15, migration15To16, migration16To17,
-            migration17To18, migration18To19, migration19To20, migration20To21, migration21To22, migration22To23, migration23To24, migration24To25, migration25To26, migration26To27, migration27To28, migration28To29, migration29To30, migration30To31, migration31To32, migration32To33,
+            migration17To18, migration18To19, migration19To20, migration20To21, migration21To22, migration22To23, migration23To24, migration24To25, migration25To26, migration26To27, migration27To28, migration28To29, migration29To30, migration30To31, migration31To32, migration32To33, migration33To34,
         )
         .build()
+}
+
+private val migration33To34 = object : Migration(33, 34) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE users ADD COLUMN publicKey TEXT DEFAULT NULL")
+    }
 }
 
 private val migration26To27 = object : Migration(26, 27) {
