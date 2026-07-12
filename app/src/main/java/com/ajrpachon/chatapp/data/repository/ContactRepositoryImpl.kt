@@ -36,29 +36,33 @@ class ContactRepositoryImpl(
     }
 
     override suspend fun getContactByUri(uri: Uri): ContactBO? {
-        var name = ""
-        var phone = ""
-
-        contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-            if (cursor.moveToFirst()) {
-                val nameIdx = cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME)
-                if (nameIdx >= 0) name = cursor.getString(nameIdx) ?: ""
-                val idIdx = cursor.getColumnIndex(ContactsContract.Contacts._ID)
-                val contactId = if (idIdx >= 0) cursor.getString(idIdx) else null
-                if (contactId != null) {
-                    contentResolver.query(
-                        ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                        arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER),
-                        "${ContactsContract.CommonDataKinds.Phone.CONTACT_ID} = ?",
-                        arrayOf(contactId),
-                        null,
-                    )?.use { pc ->
-                        if (pc.moveToFirst()) phone = pc.getString(0) ?: ""
-                    }
-                }
-            }
-        } ?: return null
-
+        val (name, contactId) = readNameAndId(uri) ?: return null
+        val phone = if (contactId != null) readPhoneNumber(contactId) else ""
         return if (name.isNotBlank() || phone.isNotBlank()) ContactBO(name, phone) else null
+    }
+
+    private fun readNameAndId(uri: Uri): Pair<String, String?>? {
+        contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            if (!cursor.moveToFirst()) return null
+            val nameIdx = cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME)
+            val name = if (nameIdx >= 0) cursor.getString(nameIdx) ?: "" else ""
+            val idIdx = cursor.getColumnIndex(ContactsContract.Contacts._ID)
+            val contactId = if (idIdx >= 0) cursor.getString(idIdx) else null
+            return name to contactId
+        }
+        return null
+    }
+
+    private fun readPhoneNumber(contactId: String): String {
+        contentResolver.query(
+            ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+            arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER),
+            "${ContactsContract.CommonDataKinds.Phone.CONTACT_ID} = ?",
+            arrayOf(contactId),
+            null,
+        )?.use { pc ->
+            if (pc.moveToFirst()) return pc.getString(0) ?: ""
+        }
+        return ""
     }
 }

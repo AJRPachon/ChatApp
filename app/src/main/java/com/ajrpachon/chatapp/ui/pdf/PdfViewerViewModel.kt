@@ -22,10 +22,6 @@ data class PdfViewerState(
     val error: String? = null,
 )
 
-sealed class PdfViewerEffect {
-    data class SharePdf(val url: String) : PdfViewerEffect()
-}
-
 class PdfViewerViewModel(
     private val context: Context,
     private val okHttpClient: OkHttpClient,
