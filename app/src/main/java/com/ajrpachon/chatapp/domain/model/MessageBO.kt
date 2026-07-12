@@ -26,6 +26,7 @@ data class MessageBO(
     val isEncrypted: Boolean = false,
     val isDeleted: Boolean = false,
     val isEdited: Boolean = false,
+    val editedAt: Long? = null,
     val expiresAt: Long? = null,
     val fileUrl: String? = null,
     val fileName: String? = null,
