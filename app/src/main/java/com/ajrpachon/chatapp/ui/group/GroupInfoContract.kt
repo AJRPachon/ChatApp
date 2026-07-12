@@ -52,10 +52,12 @@ sealed interface GroupInfoIntent {
     data object DismissError : GroupInfoIntent
     data object GenerateInviteLink : GroupInfoIntent
     data object DismissInviteLinkSheet : GroupInfoIntent
+    data object ShareInviteLink : GroupInfoIntent
 }
 
 sealed interface GroupInfoEffect {
     data object NavigateBack : GroupInfoEffect
     data class ShowMessage(val message: String) : GroupInfoEffect
     data class CopyToClipboard(val text: String) : GroupInfoEffect
+    data class ShareInviteLink(val url: String) : GroupInfoEffect
 }

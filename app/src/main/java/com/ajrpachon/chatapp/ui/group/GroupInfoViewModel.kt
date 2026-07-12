@@ -92,6 +92,11 @@ class GroupInfoViewModel(
                 updateState { it.copy(inviteLink = link, showInviteLinkSheet = true) }
             }
             GroupInfoIntent.DismissInviteLinkSheet -> updateState { it.copy(showInviteLinkSheet = false) }
+            GroupInfoIntent.ShareInviteLink -> {
+                val url = state.value.inviteLink ?: return
+                sendEffect(GroupInfoEffect.ShareInviteLink(url))
+                updateState { it.copy(showInviteLinkSheet = false) }
+            }
         }
     }
 
