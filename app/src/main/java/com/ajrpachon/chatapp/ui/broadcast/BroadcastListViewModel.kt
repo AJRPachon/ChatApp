@@ -14,8 +14,30 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.UUID
-data class BroadcastListUiState(val lists: List<BroadcastListItem> = emptyList(), val isLoading: Boolean = true, val showCreateDialog: Boolean = false, val newListName: String = "", val searchQuery: String = "", val searchResults: List<UserBO> = emptyList(), val selectedMembers: List<UserBO> = emptyList(), val isCreating: Boolean = false, val sendingListId: String? = null, val broadcastMessage: String = "", val isSending: Boolean = false, val error: String? = null)
-data class BroadcastListItem(val id: String, val name: String, val createdAt: Long, val members: List<UserBO> = emptyList())
+
+data class BroadcastListUiState(
+    val lists: List<BroadcastListItem> = emptyList(),
+    val isLoading: Boolean = true,
+    val showCreateDialog: Boolean = false,
+    val newListName: String = "",
+    val searchQuery: String = "",
+    val searchResults: List<UserBO> = emptyList(),
+    val selectedMembers: List<UserBO> = emptyList(),
+    val selectedMemberIds: Set<String> = emptySet(),
+    val isCreating: Boolean = false,
+    val sendingListId: String? = null,
+    val broadcastMessage: String = "",
+    val isSending: Boolean = false,
+    val error: String? = null,
+)
+
+data class BroadcastListItem(
+    val id: String,
+    val name: String,
+    val createdAt: Long,
+    val members: List<UserBO> = emptyList(),
+)
+
 sealed interface BroadcastListIntent {
     data object OpenCreateDialog : BroadcastListIntent; data object DismissCreateDialog : BroadcastListIntent
     data class NameChanged(val name: String) : BroadcastListIntent; data class SearchQueryChanged(val query: String) : BroadcastListIntent
@@ -33,11 +55,15 @@ class BroadcastListViewModel(private val broadcastListRepository: BroadcastListR
     }
     fun onIntent(intent: BroadcastListIntent) {
         when (intent) {
-            BroadcastListIntent.OpenCreateDialog -> updateState { it.copy(showCreateDialog = true, newListName = "", searchQuery = "", searchResults = emptyList(), selectedMembers = emptyList()) }
+            BroadcastListIntent.OpenCreateDialog -> updateState { it.copy(showCreateDialog = true, newListName = "", searchQuery = "", searchResults = emptyList(), selectedMembers = emptyList(), selectedMemberIds = emptySet()) }
             BroadcastListIntent.DismissCreateDialog -> updateState { it.copy(showCreateDialog = false) }
             is BroadcastListIntent.NameChanged -> updateState { it.copy(newListName = intent.name) }
             is BroadcastListIntent.SearchQueryChanged -> { updateState { it.copy(searchQuery = intent.query) }; searchUsers(intent.query) }
-            is BroadcastListIntent.ToggleMember -> updateState { cur -> val s = cur.selectedMembers.toMutableList(); if (s.any { it.id == intent.user.id }) s.removeAll { it.id == intent.user.id } else s.add(intent.user); cur.copy(selectedMembers = s) }
+            is BroadcastListIntent.ToggleMember -> updateState { cur ->
+                val s = cur.selectedMembers.toMutableList()
+                if (s.any { it.id == intent.user.id }) s.removeAll { it.id == intent.user.id } else s.add(intent.user)
+                cur.copy(selectedMembers = s, selectedMemberIds = s.map { it.id }.toSet())
+            }
             BroadcastListIntent.CreateList -> createList()
             is BroadcastListIntent.DeleteList -> viewModelScope.launch { catchResult { broadcastListRepository.delete(intent.listId) }.onFailure { e -> updateState { it.copy(error = e.message) } } }
             is BroadcastListIntent.OpenSendDialog -> updateState { it.copy(sendingListId = intent.listId, broadcastMessage = "") }

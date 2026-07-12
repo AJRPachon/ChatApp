@@ -111,7 +111,7 @@ fun BroadcastListScreen(
                     }
                     LazyColumn(modifier = Modifier.height(200.dp)) {
                         items(state.searchResults, key = { it.id }) { user ->
-                            val isSelected = state.selectedMembers.any { it.id == user.id }
+                            val isSelected = user.id in state.selectedMemberIds
                             ListItem(
                                 headlineContent = { Text(user.displayName) },
                                 supportingContent = { Text("@${user.username}") },
