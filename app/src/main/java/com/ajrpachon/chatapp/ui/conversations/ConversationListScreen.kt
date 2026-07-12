@@ -69,7 +69,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -79,9 +78,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
-import com.ajrpachon.chatapp.data.local.ThemePreference
-import com.ajrpachon.chatapp.data.local.ThemeRepository
 import com.ajrpachon.chatapp.domain.model.ConversationBO
+import com.ajrpachon.chatapp.domain.model.ThemePreference
+import com.ajrpachon.chatapp.ui.common.ChatConstants
+import com.ajrpachon.chatapp.ui.common.formatConversationTime
 import com.ajrpachon.chatapp.domain.model.NotificationSound
 import com.ajrpachon.chatapp.ui.components.ChatAppAvatar
 import com.ajrpachon.chatapp.ui.components.ConversationListSkeleton
@@ -89,8 +89,6 @@ import com.ajrpachon.chatapp.ui.components.OfflineBanner
 import com.ajrpachon.chatapp.ui.status.StatusBar
 import kotlin.time.Instant
 import kotlinx.coroutines.launch
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import com.github.skydoves.navgraph.annotations.NavDestination
 import com.github.skydoves.navgraph.annotations.NavEdge
 import com.ajrpachon.chatapp.ChatRoute
@@ -101,7 +99,6 @@ import com.ajrpachon.chatapp.InvitationsRoute
 import com.ajrpachon.chatapp.NewChatRoute
 import com.ajrpachon.chatapp.ProfileRoute
 import org.koin.androidx.compose.koinViewModel
-import org.koin.compose.koinInject
 
 @NavEdge(to = ChatRoute::class, label = "Open Chat")
 @NavEdge(to = NewChatRoute::class, label = "New Chat")
@@ -126,9 +123,7 @@ fun ConversationListScreen(
     var menuConvId by remember { mutableStateOf<String?>(null) }
     val archivedSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    val themeRepo: ThemeRepository = koinInject()
-    val themePreference by themeRepo.observe().collectAsStateWithLifecycle(ThemePreference.SYSTEM)
-    val scope = rememberCoroutineScope()
+    val themePreference = state.themePreference
     var showThemeMenu by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -265,7 +260,7 @@ fun ConversationListScreen(
                                 text = { Text("Sistema") },
                                 leadingIcon = { Icon(Icons.Default.BrightnessAuto, contentDescription = null) },
                                 onClick = {
-                                    scope.launch { themeRepo.set(ThemePreference.SYSTEM) }
+                                    vm.onIntent(ConversationListIntent.SetTheme(ThemePreference.SYSTEM))
                                     showThemeMenu = false
                                 },
                             )
@@ -273,7 +268,7 @@ fun ConversationListScreen(
                                 text = { Text("Claro") },
                                 leadingIcon = { Icon(Icons.Default.LightMode, contentDescription = null) },
                                 onClick = {
-                                    scope.launch { themeRepo.set(ThemePreference.LIGHT) }
+                                    vm.onIntent(ConversationListIntent.SetTheme(ThemePreference.LIGHT))
                                     showThemeMenu = false
                                 },
                             )
@@ -281,7 +276,7 @@ fun ConversationListScreen(
                                 text = { Text("Oscuro") },
                                 leadingIcon = { Icon(Icons.Default.DarkMode, contentDescription = null) },
                                 onClick = {
-                                    scope.launch { themeRepo.set(ThemePreference.DARK) }
+                                    vm.onIntent(ConversationListIntent.SetTheme(ThemePreference.DARK))
                                     showThemeMenu = false
                                 },
                             )
@@ -699,7 +694,7 @@ private fun ConversationItem(
                     Box(modifier = Modifier.weight(1f)) {
                         when {
                             !draft.isNullOrBlank() -> Text(
-                                text = "Borrador: $draft",
+                                text = "${ChatConstants.DRAFT_PREFIX}$draft",
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                                 color = MaterialTheme.colorScheme.outline,
@@ -769,7 +764,7 @@ private fun ConversationItem(
                                 contentColor = MaterialTheme.colorScheme.onPrimary,
                             ) {
                                 Text(
-                                    text = if (conversation.unreadCount > 99) "99+" else conversation.unreadCount.toString(),
+                                    text = if (conversation.unreadCount > ChatConstants.MAX_UNREAD_DISPLAY) ChatConstants.MAX_UNREAD_LABEL else conversation.unreadCount.toString(),
                                     style = MaterialTheme.typography.labelSmall,
                                 )
                             }
@@ -821,29 +816,3 @@ private fun ConversationItem(
     }
 }
 
-@Suppress("DEPRECATION")
-private fun formatConversationTime(instant: Instant): String {
-    val tz = TimeZone.currentSystemDefault()
-    val now = Instant.fromEpochMilliseconds(System.currentTimeMillis()).toLocalDateTime(tz)
-    val dt = instant.toLocalDateTime(tz)
-
-    return when {
-        dt.date == now.date -> {
-            val h = dt.hour.toString().padStart(2, '0')
-            val m = dt.minute.toString().padStart(2, '0')
-            "$h:$m"
-        }
-        dt.date.year == now.date.year && dt.date.dayOfYear == now.date.dayOfYear - 1 -> "Ayer"
-        dt.date.year == now.date.year -> {
-            val day = dt.day.toString().padStart(2, '0')
-            val month = dt.monthNumber.toString().padStart(2, '0')
-            "$day/$month"
-        }
-        else -> {
-            val day = dt.day.toString().padStart(2, '0')
-            val month = dt.monthNumber.toString().padStart(2, '0')
-            val year = dt.year.toString().takeLast(2)
-            "$day/$month/$year"
-        }
-    }
-}

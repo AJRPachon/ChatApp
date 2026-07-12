@@ -66,7 +66,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import com.ajrpachon.chatapp.data.local.ThemePreference
+import com.ajrpachon.chatapp.domain.model.ThemePreference
 import com.ajrpachon.chatapp.ui.components.ChatAppDestructiveButton
 import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
 import com.ajrpachon.chatapp.ui.components.ChatAppSecondaryButton

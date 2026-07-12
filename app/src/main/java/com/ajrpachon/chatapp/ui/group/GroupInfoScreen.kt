@@ -306,13 +306,12 @@ fun GroupInfoScreen(
                 }
             }
 
-            val adminCount = state.members.count { it.role == GroupRole.ADMIN }
             items(state.members, key = { it.userId }) { member ->
                 MemberItem(
                     member = member,
                     isCurrentUser = member.userId == state.currentUserId,
                     isCurrentUserAdmin = state.isCurrentUserAdmin,
-                    isLastAdmin = member.role == GroupRole.ADMIN && adminCount == 1,
+                    isLastAdmin = state.isLastAdmin(member),
                     onRemove = { vm.onIntent(GroupInfoIntent.RemoveMember(member.userId)) },
                     onPromote = { vm.onIntent(GroupInfoIntent.PromoteMember(member.userId)) },
                     onDemote = { vm.onIntent(GroupInfoIntent.DemoteMember(member.userId)) },

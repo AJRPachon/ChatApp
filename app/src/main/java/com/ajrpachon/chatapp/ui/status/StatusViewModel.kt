@@ -24,6 +24,8 @@ data class StatusState(
     val showComposeDialog: Boolean = false,
     val composeText: String = "",
     val selectedColor: Long = 0xFF1976D2,
+    /** Statuses pre-filtered for a single user, set by [StatusIntent.FilterUserStatuses]. */
+    val userStatuses: List<StatusBO> = emptyList(),
 )
 
 sealed interface StatusEffect
@@ -37,6 +39,8 @@ sealed interface StatusIntent {
     data object PostTextStatus : StatusIntent
     data class PostImageStatus(val context: Context, val uri: Uri) : StatusIntent
     data class DeleteStatus(val statusId: String) : StatusIntent
+    /** Filters [allStatuses] by [userId] and stores the result in [StatusState.userStatuses]. */
+    data class FilterUserStatuses(val allStatuses: List<StatusBO>, val userId: String) : StatusIntent
 }
 
 class StatusViewModel(
@@ -64,6 +68,8 @@ class StatusViewModel(
             is StatusIntent.PostTextStatus -> postTextStatus()
             is StatusIntent.PostImageStatus -> postImageStatus(intent.context, intent.uri)
             is StatusIntent.DeleteStatus -> deleteStatus(intent.statusId)
+            is StatusIntent.FilterUserStatuses ->
+                updateState { it.copy(userStatuses = intent.allStatuses.filter { s -> s.userId == intent.userId }) }
         }
     }
 
