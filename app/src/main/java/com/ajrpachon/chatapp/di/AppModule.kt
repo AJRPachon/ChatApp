@@ -9,7 +9,7 @@ import com.ajrpachon.chatapp.ui.auth.AuthViewModel
 import com.ajrpachon.chatapp.ui.call.CallViewModel
 import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
 import com.ajrpachon.chatapp.ui.chat.ChatArgs
-import com.ajrpachon.chatapp.ui.chat.ChatMediaGalleryViewModel
+import com.ajrpachon.chatapp.ui.chat.gallery.ChatMediaGalleryViewModel
 import com.ajrpachon.chatapp.ui.chat.ChatViewModel
 import com.ajrpachon.chatapp.ui.chat.StickerPackViewModel
 import com.ajrpachon.chatapp.ui.conversations.ConversationListViewModel
