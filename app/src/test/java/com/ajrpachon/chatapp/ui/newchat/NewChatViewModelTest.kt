@@ -5,6 +5,7 @@ import com.ajrpachon.chatapp.domain.model.UserRelationship
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.BlockUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
+import com.ajrpachon.chatapp.domain.usecase.GetDeviceContactsUseCase
 import com.ajrpachon.chatapp.domain.usecase.SearchUsersUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationResult
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationUseCase
@@ -38,6 +39,7 @@ class NewChatViewModelTest {
     private val blockUserUseCase = mockk<BlockUserUseCase>(relaxed = true)
     private val userRepository = mockk<UserRepository>(relaxed = true)
     private val contactSyncManager = mockk<ContactSyncManager>(relaxed = true)
+    private val getDeviceContactsUseCase = mockk<GetDeviceContactsUseCase>(relaxed = true)
 
     private val testUser = UserBO(
         id = "user1",
@@ -74,6 +76,7 @@ class NewChatViewModelTest {
         blockUserUseCase = blockUserUseCase,
         userRepository = userRepository,
         contactSyncManager = contactSyncManager,
+        getDeviceContactsUseCase = getDeviceContactsUseCase,
     )
 
     @Test
