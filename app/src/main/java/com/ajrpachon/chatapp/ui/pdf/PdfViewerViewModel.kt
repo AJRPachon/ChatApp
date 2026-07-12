@@ -10,8 +10,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.utils.AppLogger
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -25,6 +28,10 @@ data class PdfViewerState(
     val error: String? = null,
 )
 
+sealed class PdfViewerEffect {
+    data class SharePdf(val url: String) : PdfViewerEffect()
+}
+
 class PdfViewerViewModel(
     private val context: Context,
     private val okHttpClient: OkHttpClient,
@@ -32,6 +39,9 @@ class PdfViewerViewModel(
 
     private val _state = MutableStateFlow(PdfViewerState())
     val state: StateFlow<PdfViewerState> = _state.asStateFlow()
+
+    private val _effect = MutableSharedFlow<PdfViewerEffect>()
+    val effect: SharedFlow<PdfViewerEffect> = _effect.asSharedFlow()
 
     fun loadPdf(url: String) {
         if (_state.value.isLoading || _state.value.pages.isNotEmpty()) return
@@ -43,6 +53,12 @@ class PdfViewerViewModel(
                     AppLogger.e("PdfViewerViewModel", "Failed to load PDF: ${e.message}")
                     _state.value = PdfViewerState(error = e.message ?: "Error loading PDF")
                 }
+        }
+    }
+
+    fun sharePdf(url: String) {
+        viewModelScope.launch {
+            _effect.emit(PdfViewerEffect.SharePdf(url))
         }
     }
 
