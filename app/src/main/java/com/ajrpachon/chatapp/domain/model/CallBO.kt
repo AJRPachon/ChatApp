@@ -1,5 +1,7 @@
 package com.ajrpachon.chatapp.domain.model
 
+import kotlinx.datetime.Instant
+
 data class CallBO(
     val id: String,
     val conversationId: String,
@@ -9,5 +11,6 @@ data class CallBO(
     val type: CallType,
     val status: CallStatus,
     val roomName: String,
+    val createdAt: Instant? = null,
 )
 
