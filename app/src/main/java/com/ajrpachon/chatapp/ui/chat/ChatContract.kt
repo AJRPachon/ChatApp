@@ -203,6 +203,7 @@ sealed interface ChatIntent {
     data object DismissWallpaperPicker : ChatIntent
     data class SetWallpaperColor(val color: Long?) : ChatIntent
     data class SendContact(val name: String, val phone: String) : ChatIntent
+    data class ContactSelected(val uri: android.net.Uri) : ChatIntent
     data class RetryMessage(val messageId: String) : ChatIntent
     // Multi-forward
     data object ShowForwardSelectionDialog : ChatIntent
