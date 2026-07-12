@@ -29,10 +29,16 @@ sealed interface NewChatIntent {
     data class UserScannedByQr(val userId: String) : NewChatIntent
     data class SuggestedContactsLoaded(val users: List<UserBO>) : NewChatIntent
     data object DismissError : NewChatIntent
+    data class CopyInviteCode(val username: String) : NewChatIntent
+    data class ShareInviteText(val username: String) : NewChatIntent
+    data class InviteContact(val phoneNumber: String, val username: String) : NewChatIntent
 }
 
 sealed interface NewChatEffect {
     data class NavigateToChat(val conversationId: String, val otherUserName: String) : NewChatEffect
     data object NavigateToInvitations : NewChatEffect
     data class ShowMessage(val text: String) : NewChatEffect
+    data class CopyToClipboard(val text: String) : NewChatEffect
+    data class ShareText(val text: String) : NewChatEffect
+    data class InviteContact(val phoneNumber: String, val text: String) : NewChatEffect
 }
