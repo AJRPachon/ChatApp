@@ -20,7 +20,6 @@ import com.ajrpachon.chatapp.data.local.ChatThemeRepository
 import com.ajrpachon.chatapp.data.local.PollRepository
 import com.ajrpachon.chatapp.data.local.entity.PollDBO
 import com.ajrpachon.chatapp.data.local.entity.PollOptionDBO
-import com.ajrpachon.chatapp.data.local.entity.ScheduledMessageDBO
 import com.ajrpachon.chatapp.domain.repository.AiAssistantRepository
 import com.ajrpachon.chatapp.domain.repository.DraftRepository
 import com.ajrpachon.chatapp.domain.repository.IncognitoRepository
@@ -924,11 +923,18 @@ class ChatViewModel(
         draftSaveJob?.cancel()
         viewModelScope.launch {
             draftRepository.saveDraft(conversationId, "")
-            val dbo = ScheduledMessageDBO(
-                id = UUID.randomUUID().toString(), conversationId = conversationId, senderId = userId,
-                text = text, scheduledAtMs = scheduledAt, createdAt = System.currentTimeMillis(),
-            )
-            catchResult { scheduledMessageRepository.insert(dbo) }
+            val msgId = UUID.randomUUID().toString()
+            val now = System.currentTimeMillis()
+            catchResult {
+                scheduledMessageRepository.schedule(
+                    id = msgId,
+                    conversationId = conversationId,
+                    senderId = userId,
+                    text = text,
+                    scheduledAtMs = scheduledAt,
+                    createdAt = now,
+                )
+            }
                 .onSuccess {
                     val delayMs = (scheduledAt - System.currentTimeMillis()).coerceAtLeast(0L)
                     workManager.enqueue(
