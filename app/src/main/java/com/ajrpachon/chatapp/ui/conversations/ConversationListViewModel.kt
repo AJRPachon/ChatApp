@@ -1,7 +1,9 @@
 package com.ajrpachon.chatapp.ui.conversations
 
 import androidx.lifecycle.viewModelScope
-import com.ajrpachon.chatapp.domain.repository.DraftRepository
+import com.ajrpachon.chatapp.data.local.DraftRepository
+import com.ajrpachon.chatapp.data.local.ThemeRepository
+import com.ajrpachon.chatapp.domain.model.ThemePreference
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
@@ -30,6 +32,7 @@ class ConversationListViewModel(
     private val draftRepository: DraftRepository,
     private val notificationSoundRepository: com.ajrpachon.chatapp.data.local.NotificationSoundRepository,
     private val networkMonitor: NetworkMonitor,
+    private val themeRepository: ThemeRepository,
 ) : BaseViewModel<ConversationListState, ConversationListEffect>(ConversationListState()) {
 
     init {
@@ -38,6 +41,11 @@ class ConversationListViewModel(
         viewModelScope.launch {
             networkMonitor.isOnline.collect { online ->
                 updateState { it.copy(isOnline = online) }
+            }
+        }
+        viewModelScope.launch {
+            themeRepository.observe().collect { theme ->
+                updateState { it.copy(themePreference = theme) }
             }
         }
         viewModelScope.launch {
@@ -139,6 +147,11 @@ class ConversationListViewModel(
                     catchResult { notificationSoundRepository.set(intent.conversationId, intent.sound) }
                         .onFailure { e -> updateState { it.copy(error = e.message) } }
                     updateState { it.copy(soundPickerConversationId = null) }
+                }
+            is ConversationListIntent.SetTheme ->
+                viewModelScope.launch {
+                    catchResult { themeRepository.set(intent.theme) }
+                        .onFailure { e -> updateState { it.copy(error = e.message) } }
                 }
         }
     }

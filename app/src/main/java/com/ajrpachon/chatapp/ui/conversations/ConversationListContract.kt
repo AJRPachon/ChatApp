@@ -2,6 +2,7 @@ package com.ajrpachon.chatapp.ui.conversations
 
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.NotificationSound
+import com.ajrpachon.chatapp.domain.model.ThemePreference
 
 enum class ConversationFilter { ALL, UNREAD, GROUPS, DIRECT }
 
@@ -20,6 +21,7 @@ data class ConversationListState(
     val drafts: Map<String, String> = emptyMap(),
     val soundPickerConversationId: String? = null,
     val isOnline: Boolean = true,
+    val themePreference: ThemePreference = ThemePreference.SYSTEM,
 ) {
     val filteredConversations: List<ConversationBO>
         get() {
@@ -51,6 +53,7 @@ sealed interface ConversationListIntent {
     data class ShowSoundPicker(val conversationId: String) : ConversationListIntent
     data object DismissSoundPicker : ConversationListIntent
     data class SetNotificationSound(val conversationId: String, val sound: NotificationSound) : ConversationListIntent
+    data class SetTheme(val theme: ThemePreference) : ConversationListIntent
 }
 
 sealed interface ConversationListEffect {

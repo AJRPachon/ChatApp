@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.domain.model.UserBO
+import com.ajrpachon.chatapp.ui.common.ChatConstants
 import com.ajrpachon.chatapp.domain.model.UserRelationship
 import com.ajrpachon.chatapp.ui.components.ChatAppSecondaryButton
 import com.ajrpachon.chatapp.ui.components.ChatAppSearchField
@@ -122,7 +123,7 @@ fun NewChatScreen(
     val qrScanLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
         val raw = result.contents ?: return@rememberLauncherForActivityResult
         val uri = runCatching { Uri.parse(raw) }.getOrNull() ?: return@rememberLauncherForActivityResult
-        if (uri.scheme == "chatapp" && uri.host == "user") {
+        if (uri.scheme == ChatConstants.DEEP_LINK_SCHEME && uri.host == ChatConstants.DEEP_LINK_USER_HOST) {
             val userId = uri.lastPathSegment?.takeIf { it.isNotBlank() }
                 ?: return@rememberLauncherForActivityResult
             vm.onIntent(NewChatIntent.UserScannedByQr(userId))

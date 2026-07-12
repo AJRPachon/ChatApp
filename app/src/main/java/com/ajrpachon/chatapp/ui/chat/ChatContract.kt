@@ -2,7 +2,9 @@
 
 import android.content.Context
 import android.net.Uri
-import com.ajrpachon.chatapp.data.local.ChatTheme
+import com.ajrpachon.chatapp.domain.model.ChatTheme
+import com.ajrpachon.chatapp.ui.common.formatDisappearingDuration
+import com.ajrpachon.chatapp.ui.common.formatLastSeen
 import com.ajrpachon.chatapp.domain.model.CallBO
 import com.ajrpachon.chatapp.domain.model.ScheduledMessage
 import com.ajrpachon.chatapp.domain.model.ConversationBO
@@ -90,6 +92,28 @@ data class ChatState(
 ) {
     val isMultiSelectActive: Boolean get() = selectedMessageIds.isNotEmpty()
     val latestPinnedMessage: MessageBO? get() = pinnedMessages.firstOrNull()
+
+    /** Formatted label for the disappearing-mode timer shown in the app bar. */
+    val disappearingDurationLabel: String get() = formatDisappearingDuration(disappearingModeSeconds)
+
+    /** Formatted presence text for 1-1 chats ("En línea" or "última vez hace X"). */
+    val presenceText: String?
+        get() = when {
+            isGroup -> null
+            isOtherUserOnline -> "En línea"
+            otherUserLastSeenMs != null ->
+                formatLastSeen(System.currentTimeMillis() - otherUserLastSeenMs)
+            else -> null
+        }
+
+    /** Group subtitle shown in the app bar ("X en línea" or "X miembros"). */
+    val subtitleText: String?
+        get() = when {
+            !isGroup -> null
+            onlineMemberCount > 0 -> "$onlineMemberCount en línea"
+            groupMemberCount > 0 -> "$groupMemberCount miembros"
+            else -> null
+        }
 }
 
 sealed interface ChatIntent {

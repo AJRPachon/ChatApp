@@ -176,8 +176,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.domain.model.CallBO
-import com.ajrpachon.chatapp.data.local.ChatTheme
+import com.ajrpachon.chatapp.domain.model.ChatTheme
 import com.ajrpachon.chatapp.domain.model.ConversationBO
+import com.ajrpachon.chatapp.ui.common.ChatConstants
 import com.ajrpachon.chatapp.domain.model.MediaUrlValidator
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.MessageLimits
@@ -539,6 +540,7 @@ fun ChatScreen(
     }
 
     val chatTheme = state.chatTheme
+    val chatThemeColors = chatTheme.toColors()
 
     if (state.showThemePicker) {
         ChatThemePickerSheet(
@@ -686,10 +688,10 @@ fun ChatScreen(
     val latestPinned = state.latestPinnedMessage
     var pinnedBannerVisible by rememberSaveable(latestPinned?.id) { mutableStateOf(true) }
 
-    val scaffoldContainerColor = if (chatTheme.backgroundTint == androidx.compose.ui.graphics.Color.Transparent) {
+    val scaffoldContainerColor = if (chatThemeColors.backgroundTint == androidx.compose.ui.graphics.Color.Transparent) {
         MaterialTheme.colorScheme.background
     } else {
-        chatTheme.backgroundTint
+        chatThemeColors.backgroundTint
     }
 
     Scaffold(
@@ -796,47 +798,31 @@ fun ChatScreen(
                                     )
                                     Spacer(Modifier.width(2.dp))
                                     Text(
-                                        text = formatDisappearingDuration(state.disappearingModeSeconds),
+                                        text = state.disappearingDurationLabel,
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.tertiary,
                                     )
                                 }
                             }
-                            if (!state.isGroup) {
-                                val presenceText = when {
-                                    state.isOtherUserOnline -> "En lÃ­nea"
-                                    state.otherUserLastSeenMs != null -> {
-                                        val lastSeenMs = state.otherUserLastSeenMs ?: 0L
-                                        formatLastSeen(System.currentTimeMillis() - lastSeenMs)
-                                    }
-                                    else -> null
-                                }
-                                if (presenceText != null) {
-                                    Text(
-                                        text = presenceText,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = if (state.isOtherUserOnline)
-                                            androidx.compose.ui.graphics.Color(0xFF4CAF50)
-                                        else
-                                            MaterialTheme.colorScheme.outline,
-                                    )
-                                }
-                            } else {
-                                val groupSubtitle = if (state.onlineMemberCount > 0) {
-                                    "${state.onlineMemberCount} en línea"
-                                } else if (state.groupMemberCount > 0) {
-                                    "${state.groupMemberCount} miembros"
-                                } else null
-                                if (groupSubtitle != null) {
-                                    Text(
-                                        text = groupSubtitle,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = if (state.onlineMemberCount > 0)
-                                            androidx.compose.ui.graphics.Color(0xFF4CAF50)
-                                        else
-                                            MaterialTheme.colorScheme.outline,
-                                    )
-                                }
+                            state.presenceText?.let { presence ->
+                                Text(
+                                    text = presence,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (state.isOtherUserOnline)
+                                        androidx.compose.ui.graphics.Color(0xFF4CAF50)
+                                    else
+                                        MaterialTheme.colorScheme.outline,
+                                )
+                            }
+                            state.subtitleText?.let { subtitle ->
+                                Text(
+                                    text = subtitle,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (state.onlineMemberCount > 0)
+                                        androidx.compose.ui.graphics.Color(0xFF4CAF50)
+                                    else
+                                        MaterialTheme.colorScheme.outline,
+                                )
                             }
                         }
                     }
@@ -1255,7 +1241,7 @@ fun ChatScreen(
                                     isMultiSelectActive = state.isMultiSelectActive,
                                     onToggleSelect = { vm.onIntent(ChatIntent.ToggleMessageSelection(message.id)) },
                                     onForward = { vm.onIntent(ChatIntent.ShowForwardDialog(message)) },
-                                    outgoingBubbleColor = chatTheme.bubbleColor,
+                                    outgoingBubbleColor = chatThemeColors.bubbleColor,
                                     onOpenPdf = onOpenPdf,
                                     onVote = { optionId -> vm.onIntent(ChatIntent.VotePoll(message.content.removePrefix("poll:"), optionId)) },
                                     onRetryMessage = { vm.onIntent(ChatIntent.RetryMessage(it)) },
@@ -1283,7 +1269,7 @@ fun ChatScreen(
                                 isSelected = message.id in state.selectedMessageIds,
                                 isMultiSelectActive = state.isMultiSelectActive,
                                 onToggleSelect = { vm.onIntent(ChatIntent.ToggleMessageSelection(message.id)) },
-                                outgoingBubbleColor = chatTheme.bubbleColor,
+                                outgoingBubbleColor = chatThemeColors.bubbleColor,
                                 onOpenPdf = onOpenPdf,
                                 onVote = { optionId -> vm.onIntent(ChatIntent.VotePoll(message.content.removePrefix("poll:"), optionId)) },
                                 onShowReactionDetails = { reactionDetailMessageId = message.id },
@@ -2193,12 +2179,6 @@ private fun ReadReceiptIcon(isRead: Boolean) {
     )
 }
 
-private fun formatLastSeen(diffMs: Long): String = when {
-    diffMs < 60_000L -> "Ãºltima vez hace un momento"
-    diffMs < 3_600_000L -> "Ãºltima vez hace ${diffMs / 60_000} min"
-    diffMs < 86_400_000L -> "Ãºltima vez hace ${diffMs / 3_600_000} h"
-    else -> "Ãºltima vez hace ${diffMs / 86_400_000} d"
-}
 
 // â”€â”€ ImageGroupBubble â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -2782,7 +2762,7 @@ private fun ChatThemePickerSheet(
                                     color = if (theme == ChatTheme.DEFAULT)
                                         MaterialTheme.colorScheme.primaryContainer
                                     else
-                                        theme.bubbleColor,
+                                        theme.toColors().bubbleColor,
                                     shape = CircleShape,
                                 ),
                             contentAlignment = Alignment.Center,
@@ -2868,13 +2848,6 @@ private fun DisappearingModeSheet(
     }
 }
 
-private fun formatDisappearingDuration(seconds: Long): String = when {
-    seconds <= 0L -> ""
-    seconds < 3_600L -> "${seconds / 60}m"
-    seconds < 86_400L -> "${seconds / 3_600}h"
-    seconds < 604_800L -> "${seconds / 86_400}d"
-    else -> "${seconds / 604_800}s"
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
