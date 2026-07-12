@@ -22,6 +22,7 @@ sealed interface NewChatIntent {
     data class QueryChanged(val query: String) : NewChatIntent
     data class ContactsLoaded(val contacts: List<PhoneContact>) : NewChatIntent
     data object ContactsPermissionDenied : NewChatIntent
+    data object LoadContacts : NewChatIntent
     data class UserAction(val otherUser: UserBO) : NewChatIntent
     data class BlockUser(val otherUser: UserBO) : NewChatIntent
     data class UnblockUser(val otherUser: UserBO) : NewChatIntent

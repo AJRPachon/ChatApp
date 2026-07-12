@@ -71,7 +71,6 @@ import com.ajrpachon.chatapp.ui.components.ChatAppDestructiveButton
 import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
 import com.ajrpachon.chatapp.ui.components.ChatAppSecondaryButton
 import com.ajrpachon.chatapp.ui.components.ChatAppTextField
-import qrcode.QRCode
 import com.ajrpachon.chatapp.ui.components.ChatAppTopBar
 import com.github.skydoves.navgraph.annotations.NavDestination
 import com.github.skydoves.navgraph.annotations.NavEdge
@@ -100,8 +99,7 @@ fun ProfileScreen(
 
     // ── QR Bottom Sheet ────────────────────────────────────────────────────
     if (showQrSheet && state.userId.isNotBlank()) {
-        val qrContent = "chatapp://user/${state.userId}"
-        val qrBitmap = remember(qrContent) { generateQrBitmap(qrContent) }
+        val qrBitmap: Bitmap? = state.qrBitmap
 
         ModalBottomSheet(
             onDismissRequest = { showQrSheet = false },
@@ -634,9 +632,3 @@ private fun ThemeSelector(
     }
 }
 
-private fun generateQrBitmap(content: String): Bitmap? =
-    runCatching {
-        val qrCode = QRCode(content)
-        val rendered = qrCode.render()
-        rendered.nativeImage() as Bitmap
-    }.getOrNull()

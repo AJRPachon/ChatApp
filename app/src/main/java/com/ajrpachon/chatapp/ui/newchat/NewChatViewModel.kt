@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.ajrpachon.chatapp.domain.usecase.BlockUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
+import com.ajrpachon.chatapp.domain.usecase.GetDeviceContactsUseCase
 import com.ajrpachon.chatapp.domain.usecase.SearchUsersUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationResult
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationUseCase
@@ -26,6 +27,7 @@ class NewChatViewModel(
     private val blockUserUseCase: BlockUserUseCase,
     private val userRepository: UserRepository,
     private val contactSyncManager: ContactSyncManager,
+    private val getDeviceContactsUseCase: GetDeviceContactsUseCase,
 ) : BaseViewModel<NewChatState, NewChatEffect>(NewChatState()) {
 
     init {
@@ -50,6 +52,7 @@ class NewChatViewModel(
             }
             is NewChatIntent.ContactsPermissionDenied ->
                 updateState { it.copy(contactsPermissionDenied = true) }
+            is NewChatIntent.LoadContacts -> loadDeviceContacts()
             is NewChatIntent.UserAction -> handleUserAction(intent.otherUser)
             is NewChatIntent.BlockUser -> handleBlockUser(intent.otherUser)
             is NewChatIntent.UnblockUser -> handleUnblockUser(intent.otherUser)
@@ -57,6 +60,17 @@ class NewChatViewModel(
             is NewChatIntent.SuggestedContactsLoaded ->
                 updateState { it.copy(suggestedContacts = intent.users, isLoadingSuggested = false) }
             is NewChatIntent.DismissError -> updateState { it.copy(error = null) }
+        }
+    }
+
+    private fun loadDeviceContacts() {
+        viewModelScope.launch {
+            catchResult {
+                val contacts = withContext(Dispatchers.IO) { getDeviceContactsUseCase() }
+                val phoneContacts = contacts.map { PhoneContact(it.name, it.phoneNumber) }
+                updateState { it.copy(contacts = phoneContacts) }
+                loadSuggestedContacts()
+            }.onFailure { e -> AppLogger.e(TAG, "loadDeviceContacts failed", e) }
         }
     }
 

@@ -17,6 +17,7 @@ import com.ajrpachon.chatapp.data.repository.ConversationRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.GroupRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.InvitationRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.MessageRepositoryImpl
+import com.ajrpachon.chatapp.data.repository.ContactRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.ReactionRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.ScheduledMessageRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.TypingRepositoryImpl
@@ -30,6 +31,7 @@ import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
 import com.ajrpachon.chatapp.domain.repository.InvitationRepository
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
+import com.ajrpachon.chatapp.domain.repository.ContactRepository
 import com.ajrpachon.chatapp.domain.repository.ReactionRepository
 import com.ajrpachon.chatapp.domain.repository.ScheduledMessageRepository
 import com.ajrpachon.chatapp.domain.repository.TypingRepository
@@ -40,6 +42,7 @@ import com.ajrpachon.chatapp.domain.repository.StickerPackRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.AddGroupMemberUseCase
 import com.ajrpachon.chatapp.domain.usecase.BlockUserUseCase
+import com.ajrpachon.chatapp.domain.usecase.GetDeviceContactsUseCase
 import com.ajrpachon.chatapp.domain.usecase.CreateGroupUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetGroupMembersUseCase
@@ -56,6 +59,7 @@ import com.ajrpachon.chatapp.domain.usecase.SearchUsersUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
 import com.ajrpachon.chatapp.domain.usecase.SetUsernameUseCase
 import com.ajrpachon.chatapp.domain.usecase.UpdateGroupUseCase
+import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
@@ -85,6 +89,7 @@ val repositoryModule = module {
     singleOf(::ReactionRepositoryImpl) { bind<ReactionRepository>() }
     singleOf(::ScheduledMessageRepositoryImpl) { bind<ScheduledMessageRepository>() }
     singleOf(::TypingRepositoryImpl) { bind<TypingRepository>() }
+    single<ContactRepository> { ContactRepositoryImpl(androidContext().contentResolver) }
     singleOf(::StatusRepositoryImpl) { bind<StatusRepository>() }
     singleOf(::BroadcastListRepositoryImpl) { bind<BroadcastListRepository>() }
     singleOf(::SessionRepositoryImpl) { bind<SessionRepository>() }
@@ -110,6 +115,7 @@ val useCaseModule = module {
     factoryOf(::PromoteGroupMemberUseCase)
     factoryOf(::SendInvitationUseCase)
     factoryOf(::BlockUserUseCase)
+    factoryOf(::GetDeviceContactsUseCase)
 }
 
 val sharedModules = listOf(remoteModule, repositoryModule, useCaseModule)

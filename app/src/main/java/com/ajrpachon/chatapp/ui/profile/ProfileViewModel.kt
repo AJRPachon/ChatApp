@@ -15,7 +15,10 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import qrcode.QRCode
 
 class ProfileViewModel(
     private val authRepository: AuthRepository,
@@ -41,6 +44,7 @@ class ProfileViewModel(
                         showOnlineStatus = user.showOnlineStatus,
                     )
                 }
+                generateQrBitmap(user.id)
             }.onFailure { e -> AppLogger.e(TAG, "Load profile failed", e) }
             load2FAStatus()
         }
@@ -230,6 +234,17 @@ class ProfileViewModel(
                     ) }
                 }
         }
+    }
+
+    private suspend fun generateQrBitmap(userId: String) {
+        val bitmap = withContext(Dispatchers.Default) {
+            runCatching {
+                val content = "chatapp://user/$userId"
+                val rendered = QRCode(content).render()
+                rendered.nativeImage() as android.graphics.Bitmap
+            }.getOrNull()
+        }
+        updateState { it.copy(qrBitmap = bitmap) }
     }
 
     companion object {
