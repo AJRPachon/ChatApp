@@ -5,6 +5,7 @@ import com.ajrpachon.chatapp.data.local.ThemeRepository
 import com.ajrpachon.chatapp.data.local.buildChatDatabase
 import com.ajrpachon.chatapp.data.session.AndroidSessionManager
 import com.ajrpachon.chatapp.domain.repository.UserRepository
+import com.ajrpachon.chatapp.ui.applock.AppLockViewModel
 import com.ajrpachon.chatapp.ui.auth.AuthViewModel
 import com.ajrpachon.chatapp.ui.call.CallViewModel
 import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
@@ -97,6 +98,7 @@ val viewModelModule = module {
     // BuildConfig values not injectable â€” kept as lambda
     viewModel { AuthViewModel(androidApplication(), get(), get(), get(), BuildConfig.GOOGLE_WEB_CLIENT_ID, get(), get()) }
 
+    viewModelOf(::AppLockViewModel)
     viewModelOf(::ConversationListViewModel)
     viewModelOf(::InvitationsViewModel)
     viewModelOf(::NewChatViewModel)
