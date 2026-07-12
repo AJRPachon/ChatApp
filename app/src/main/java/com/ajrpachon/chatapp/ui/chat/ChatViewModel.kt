@@ -20,13 +20,13 @@ import com.ajrpachon.chatapp.data.local.ChatThemeRepository
 import com.ajrpachon.chatapp.domain.model.ChatTheme
 import com.ajrpachon.chatapp.data.local.dao.ConversationDao
 import com.ajrpachon.chatapp.data.local.dao.MessageDao
-import com.ajrpachon.chatapp.data.local.PollRepository
-import com.ajrpachon.chatapp.data.local.entity.PollDBO
-import com.ajrpachon.chatapp.data.local.entity.PollOptionDBO
 import com.ajrpachon.chatapp.domain.repository.AiAssistantRepository
+import com.ajrpachon.chatapp.domain.repository.ContactRepository
 import com.ajrpachon.chatapp.domain.repository.DraftRepository
 import com.ajrpachon.chatapp.domain.repository.IncognitoRepository
+import com.ajrpachon.chatapp.domain.repository.PollRepository
 import com.ajrpachon.chatapp.domain.repository.WallpaperRepository
+import com.ajrpachon.chatapp.domain.model.CallBO
 import com.ajrpachon.chatapp.domain.model.CallType
 import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.MessageBO
@@ -85,6 +85,7 @@ class ChatViewModel(
     private val translationManager: TranslationManager,
     private val audioTranscriber: AudioTranscriber,
     private val pollRepository: PollRepository,
+    private val contactRepository: ContactRepository,
     private val chatThemeRepository: ChatThemeRepository,
     private val workManager: WorkManager,
     private val incognitoRepository: IncognitoRepository,
@@ -400,6 +401,7 @@ class ChatViewModel(
             is ChatIntent.DismissWallpaperPicker -> updateState { it.copy(showWallpaperPicker = false) }
             is ChatIntent.SetWallpaperColor -> viewModelScope.launch { wallpaperRepository.setWallpaperColor(conversationId, intent.color) }
             is ChatIntent.SendContact -> sendContact(intent.name, intent.phone)
+            is ChatIntent.ContactSelected -> handleContactSelected(intent.uri)
             is ChatIntent.RetryMessage -> enqueueMessageRetry()
         }
     }
@@ -410,6 +412,20 @@ class ChatViewModel(
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
             .build()
         workManager.enqueueUniqueWork(MessageRetryWorker.WORK_NAME, ExistingWorkPolicy.KEEP, request)
+    }
+
+    private fun handleContactSelected(uri: android.net.Uri) {
+        viewModelScope.launch {
+            catchResult {
+                val contact = contactRepository.getContactByUri(uri)
+                if (contact != null) {
+                    sendContact(contact.name, contact.phoneNumber)
+                }
+            }.onFailure { e ->
+                AppLogger.e(TAG, "handleContactSelected failed", e)
+                _state.update { it.copy(error = "No se pudo leer el contacto") }
+            }
+        }
     }
 
     private fun sendContact(name: String, phone: String) {
@@ -826,9 +842,12 @@ class ChatViewModel(
         updateState { it.copy(showCreatePollSheet = false) }
         viewModelScope.launch {
             catchResult {
-                val pollId = UUID.randomUUID().toString()
-                pollRepository.insertPoll(PollDBO(id = pollId, conversationId = conversationId, question = question, createdBy = userId, createdAt = System.currentTimeMillis()))
-                pollRepository.insertOptions(options.mapIndexed { i, text -> PollOptionDBO(id = "$pollId-$i", pollId = pollId, text = text) })
+                val pollId = pollRepository.createPoll(
+                    conversationId = conversationId,
+                    question = question,
+                    createdBy = userId,
+                    options = options,
+                )
                 sendMessageUseCase(conversationId, userId, "poll:$pollId")
             }.onFailure { e -> AppLogger.e(TAG, "createPoll failed", e); updateState { it.copy(error = "No se pudo crear la encuesta") } }
         }

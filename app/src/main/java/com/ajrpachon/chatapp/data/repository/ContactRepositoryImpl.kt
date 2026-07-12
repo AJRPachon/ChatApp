@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.data.repository
 
 import android.content.ContentResolver
+import android.net.Uri
 import android.provider.ContactsContract
 import com.ajrpachon.chatapp.domain.model.ContactBO
 import com.ajrpachon.chatapp.domain.repository.ContactRepository
@@ -32,5 +33,32 @@ class ContactRepositoryImpl(
             }
         }
         return contacts.distinctBy { it.phoneNumber }
+    }
+
+    override suspend fun getContactByUri(uri: Uri): ContactBO? {
+        var name = ""
+        var phone = ""
+
+        contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val nameIdx = cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME)
+                if (nameIdx >= 0) name = cursor.getString(nameIdx) ?: ""
+                val idIdx = cursor.getColumnIndex(ContactsContract.Contacts._ID)
+                val contactId = if (idIdx >= 0) cursor.getString(idIdx) else null
+                if (contactId != null) {
+                    contentResolver.query(
+                        ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                        arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER),
+                        "${ContactsContract.CommonDataKinds.Phone.CONTACT_ID} = ?",
+                        arrayOf(contactId),
+                        null,
+                    )?.use { pc ->
+                        if (pc.moveToFirst()) phone = pc.getString(0) ?: ""
+                    }
+                }
+            }
+        } ?: return null
+
+        return if (name.isNotBlank() || phone.isNotBlank()) ContactBO(name, phone) else null
     }
 }

@@ -97,6 +97,32 @@ fun NewChatScreen(
                 is NewChatEffect.NavigateToChat -> onOpenConversation(effect.conversationId, effect.otherUserName)
                 is NewChatEffect.NavigateToInvitations -> onOpenInvitations()
                 is NewChatEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.text)
+                is NewChatEffect.CopyToClipboard -> {
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    clipboard.setPrimaryClip(ClipData.newPlainText("invite_code", effect.text))
+                    snackbarHostState.showSnackbar("Código copiado")
+                }
+                is NewChatEffect.ShareText -> {
+                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, effect.text)
+                    }
+                    context.startActivity(Intent.createChooser(shareIntent, "Compartir invitación"))
+                }
+                is NewChatEffect.InviteContact -> {
+                    val smsIntent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:${effect.phoneNumber}")).apply {
+                        putExtra("sms_body", effect.text)
+                    }
+                    if (smsIntent.resolveActivity(context.packageManager) != null) {
+                        context.startActivity(smsIntent)
+                    } else {
+                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, effect.text)
+                        }
+                        context.startActivity(Intent.createChooser(shareIntent, "Compartir invitación"))
+                    }
+                }
             }
         }
     }
@@ -177,11 +203,8 @@ fun NewChatScreen(
                     item {
                         InviteCodeCard(
                             username = state.currentUsername,
-                            onCopy = {
-                                copyToClipboard(context, state.currentUsername)
-                                scope.launch { snackbarHostState.showSnackbar("Código copiado") }
-                            },
-                            onShare = { shareInviteText(context, state.currentUsername) },
+                            onCopy = { vm.onIntent(NewChatIntent.CopyInviteCode(state.currentUsername)) },
+                            onShare = { vm.onIntent(NewChatIntent.ShareInviteText(state.currentUsername)) },
                         )
                     }
                 }
@@ -262,7 +285,7 @@ fun NewChatScreen(
                         ContactItem(
                             contact = contact,
                             onInvite = {
-                                inviteContact(context, contact.phoneNumber, state.currentUsername)
+                                vm.onIntent(NewChatIntent.InviteContact(contact.phoneNumber, state.currentUsername))
                             },
                         )
                         HorizontalDivider()

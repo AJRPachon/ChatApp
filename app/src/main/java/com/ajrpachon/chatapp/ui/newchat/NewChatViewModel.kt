@@ -60,6 +60,15 @@ class NewChatViewModel(
             is NewChatIntent.SuggestedContactsLoaded ->
                 updateState { it.copy(suggestedContacts = intent.users, isLoadingSuggested = false) }
             is NewChatIntent.DismissError -> updateState { it.copy(error = null) }
+            is NewChatIntent.CopyInviteCode -> sendEffect(NewChatEffect.CopyToClipboard("@${intent.username}"))
+            is NewChatIntent.ShareInviteText -> {
+                val text = "¡Únete a ChatApp! Búscame como @${intent.username} y hablamos 💬"
+                sendEffect(NewChatEffect.ShareText(text))
+            }
+            is NewChatIntent.InviteContact -> {
+                val text = "¡Únete a ChatApp! Búscame como @${intent.username} y hablamos 💬"
+                sendEffect(NewChatEffect.InviteContact(intent.phoneNumber, text))
+            }
         }
     }
 
