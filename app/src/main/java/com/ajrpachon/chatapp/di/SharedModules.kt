@@ -13,11 +13,12 @@ import com.ajrpachon.chatapp.data.remote.source.StatusRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.UserRemoteSource
 import com.ajrpachon.chatapp.service.FcmTokenManager
 import com.ajrpachon.chatapp.data.repository.CallRepositoryImpl
+import com.ajrpachon.chatapp.data.repository.ContactRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.ConversationRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.GroupRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.InvitationRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.MessageRepositoryImpl
-import com.ajrpachon.chatapp.data.repository.ContactRepositoryImpl
+import com.ajrpachon.chatapp.data.repository.PollRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.ReactionRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.ScheduledMessageRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.TypingRepositoryImpl
@@ -27,11 +28,12 @@ import com.ajrpachon.chatapp.data.repository.StatusRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.StickerPackRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.UserRepositoryImpl
 import com.ajrpachon.chatapp.domain.repository.CallRepository
+import com.ajrpachon.chatapp.domain.repository.ContactRepository
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
 import com.ajrpachon.chatapp.domain.repository.InvitationRepository
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
-import com.ajrpachon.chatapp.domain.repository.ContactRepository
+import com.ajrpachon.chatapp.domain.repository.PollRepository
 import com.ajrpachon.chatapp.domain.repository.ReactionRepository
 import com.ajrpachon.chatapp.domain.repository.ScheduledMessageRepository
 import com.ajrpachon.chatapp.domain.repository.TypingRepository
@@ -40,6 +42,7 @@ import com.ajrpachon.chatapp.domain.repository.SessionRepository
 import com.ajrpachon.chatapp.domain.repository.StatusRepository
 import com.ajrpachon.chatapp.domain.repository.StickerPackRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
+import org.koin.android.ext.koin.androidContext
 import com.ajrpachon.chatapp.domain.usecase.AddGroupMemberUseCase
 import com.ajrpachon.chatapp.domain.usecase.BlockUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetDeviceContactsUseCase
@@ -94,6 +97,7 @@ val repositoryModule = module {
     singleOf(::BroadcastListRepositoryImpl) { bind<BroadcastListRepository>() }
     singleOf(::SessionRepositoryImpl) { bind<SessionRepository>() }
     singleOf(::StickerPackRepositoryImpl) { bind<StickerPackRepository>() }
+    singleOf(::PollRepositoryImpl) { bind<PollRepository>() }
 }
 
 val useCaseModule = module {

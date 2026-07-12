@@ -131,6 +131,7 @@ val viewModelModule = module {
             translationManager = get(),
             audioTranscriber = get(),
             pollRepository = get(),
+            contactRepository = get(),
             chatThemeRepository = get(),
             workManager = get(),
             incognitoRepository = get(),

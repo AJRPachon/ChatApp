@@ -112,7 +112,10 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.RadioButton
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.StrokeCap
-import com.ajrpachon.chatapp.data.local.PollRepository
+import com.ajrpachon.chatapp.domain.model.PollBO
+import com.ajrpachon.chatapp.domain.model.PollOptionBO
+import com.ajrpachon.chatapp.domain.model.PollVoteBO
+import com.ajrpachon.chatapp.domain.repository.PollRepository
 import com.ajrpachon.chatapp.service.ActiveChatTracker
 import com.ajrpachon.chatapp.ui.components.ChatMessagesSkeleton
 import com.ajrpachon.chatapp.ui.components.OfflineBanner
@@ -418,25 +421,7 @@ fun ChatScreen(
         ActivityResultContracts.PickContact()
     ) { uri ->
         if (uri != null) {
-            val cursor = context.contentResolver.query(uri, null, null, null, null)
-            cursor?.use { c ->
-                if (c.moveToFirst()) {
-                    val nameIdx = c.getColumnIndex(android.provider.ContactsContract.Contacts.DISPLAY_NAME)
-                    val name = if (nameIdx >= 0) c.getString(nameIdx) else ""
-                    val idIdx = c.getColumnIndex(android.provider.ContactsContract.Contacts._ID)
-                    val contactId = if (idIdx >= 0) c.getString(idIdx) else null
-                    val phone = if (contactId != null) {
-                        context.contentResolver.query(
-                            android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                            arrayOf(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER),
-                            "${android.provider.ContactsContract.CommonDataKinds.Phone.CONTACT_ID} = ?",
-                            arrayOf(contactId),
-                            null
-                        )?.use { pc -> if (pc.moveToFirst()) pc.getString(0) else "" } ?: ""
-                    } else ""
-                    vm.onIntent(ChatIntent.SendContact(name = name, phone = phone))
-                }
-            }
+            vm.onIntent(ChatIntent.ContactSelected(uri))
         }
     }
 
