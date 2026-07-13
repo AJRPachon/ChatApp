@@ -84,7 +84,7 @@ val remoteModule = module {
 }
 
 val repositoryModule = module {
-    singleOf(::AuthRepositoryImpl) { bind<AuthRepository>() }
+    single<AuthRepository> { AuthRepositoryImpl(androidContext(), get()) }
     singleOf(::UserRepositoryImpl) { bind<UserRepository>() }
     singleOf(::ConversationRepositoryImpl) { bind<ConversationRepository>() }
     singleOf(::MessageRepositoryImpl) { bind<MessageRepository>() }
@@ -100,6 +100,9 @@ val repositoryModule = module {
     singleOf(::SessionRepositoryImpl) { bind<SessionRepository>() }
     singleOf(::StickerPackRepositoryImpl) { bind<StickerPackRepository>() }
     singleOf(::PollRepositoryImpl) { bind<PollRepository>() }
+    single<com.ajrpachon.chatapp.domain.repository.AudioRecorderRepository> {
+        com.ajrpachon.chatapp.data.repository.AudioRecorderRepositoryImpl(androidContext())
+    }
 }
 
 val useCaseModule = module {
@@ -124,6 +127,14 @@ val useCaseModule = module {
     factoryOf(::GetDeviceContactsUseCase)
     single { GetCacheFileUseCase(androidContext().cacheDir) }
     single { ReadUriAsBytesUseCase(androidContext().contentResolver) }
+    factory { com.ajrpachon.chatapp.domain.usecase.GetUriMetadataUseCase(androidContext().contentResolver) }
+    factory {
+        com.ajrpachon.chatapp.domain.usecase.ExportConversationUseCase(
+            messageRepository = get(),
+            context = androidContext(),
+            fileProviderAuthority = "${androidContext().packageName}.fileprovider",
+        )
+    }
 }
 
 val sharedModules = listOf(remoteModule, repositoryModule, useCaseModule)

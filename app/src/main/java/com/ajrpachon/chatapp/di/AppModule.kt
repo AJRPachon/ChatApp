@@ -97,8 +97,8 @@ val networkModule = module {
 }
 
 val viewModelModule = module {
-    // BuildConfig values not injectable â€” kept as lambda
-    viewModel { AuthViewModel(androidApplication(), get(), get(), get(), BuildConfig.GOOGLE_WEB_CLIENT_ID, get(), get()) }
+    // BuildConfig values not injectable — kept as lambda
+    viewModel { AuthViewModel(get(), get(), get(), get(), BuildConfig.GOOGLE_WEB_CLIENT_ID, get(), get()) }
 
     viewModelOf(::AppLockViewModel)
     viewModelOf(::ConversationListViewModel)
@@ -141,6 +141,10 @@ val viewModelModule = module {
             aiAssistantRepository = get(),
             wallpaperRepository = get(),
             networkMonitor = get<com.ajrpachon.chatapp.utils.NetworkMonitor>(),
+            readUriBytesUseCase = get(),
+            getUriMetadataUseCase = get(),
+            audioRecorderRepository = get(),
+            exportConversationUseCase = get(),
         )
     }
     viewModelOf(::GroupInfoViewModel)
@@ -182,7 +186,8 @@ val utilsModule = module {
     }
     single { TranslationManager() }
     single { com.ajrpachon.chatapp.data.local.NotificationSoundRepository(androidContext()) }
-    single { com.ajrpachon.chatapp.utils.AudioTranscriber() }
+    single { com.ajrpachon.chatapp.utils.AudioTranscriber(androidContext()) }
+    single { androidx.credentials.CredentialManager.create(androidContext()) }
     single { com.ajrpachon.chatapp.data.local.ChatThemeRepository(androidContext()) }
     single { com.ajrpachon.chatapp.utils.NetworkMonitor(androidContext()) }
     single { com.ajrpachon.chatapp.utils.ContactSyncManager(androidContext().contentResolver) }

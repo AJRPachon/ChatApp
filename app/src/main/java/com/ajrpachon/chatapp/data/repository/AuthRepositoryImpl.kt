@@ -1,6 +1,5 @@
 package com.ajrpachon.chatapp.data.repository
 
-import android.content.Context
 import com.ajrpachon.chatapp.domain.repository.AuthRepository
 import com.ajrpachon.chatapp.domain.repository.MfaAssuranceLevel
 import com.ajrpachon.chatapp.domain.repository.SessionInfo
@@ -15,7 +14,10 @@ import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.auth.SignOutScope
 
-class AuthRepositoryImpl(private val supabase: SupabaseClient) : AuthRepository {
+class AuthRepositoryImpl(
+    private val context: android.content.Context,
+    private val supabase: SupabaseClient,
+) : AuthRepository {
 
     override fun getCurrentUserId(): String? =
         supabase.auth.currentUserOrNull()?.id
@@ -57,7 +59,7 @@ class AuthRepositoryImpl(private val supabase: SupabaseClient) : AuthRepository 
         supabase.auth.signOut(SignOutScope.GLOBAL)
     }
 
-    override suspend fun checkIntegrity(context: Context): IntegrityResult =
+    override suspend fun checkIntegrity(): IntegrityResult =
         IntegrityChecker.check(context, supabase)
 
     override suspend fun getMfaAssuranceLevel(): MfaAssuranceLevel? {
