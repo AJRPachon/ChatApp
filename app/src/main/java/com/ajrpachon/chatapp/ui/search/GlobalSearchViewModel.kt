@@ -1,4 +1,4 @@
-﻿package com.ajrpachon.chatapp.ui.search
+package com.ajrpachon.chatapp.ui.search
 
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
@@ -6,10 +6,11 @@ import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 data class GlobalSearchResultItem(
@@ -36,11 +37,11 @@ class GlobalSearchViewModel(
     private val conversationRepository: ConversationRepository,
 ) : BaseViewModel<GlobalSearchState, Nothing>(GlobalSearchState()) {
 
-    private val _query = MutableStateFlow("")
-
     init {
         viewModelScope.launch {
-            _query
+            state
+                .map { it.query }
+                .distinctUntilChanged()
                 .debounce(300)
                 .flatMapLatest { query ->
                     flow {
@@ -69,10 +70,7 @@ class GlobalSearchViewModel(
 
     fun onIntent(intent: GlobalSearchIntent) {
         when (intent) {
-            is GlobalSearchIntent.QueryChanged -> {
-                _query.value = intent.query
-                updateState { it.copy(query = intent.query) }
-            }
+            is GlobalSearchIntent.QueryChanged -> updateState { it.copy(query = intent.query) }
         }
     }
 }

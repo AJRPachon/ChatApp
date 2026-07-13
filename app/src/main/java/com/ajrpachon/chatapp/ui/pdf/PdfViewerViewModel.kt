@@ -26,6 +26,13 @@ class PdfViewerViewModel(
     private val okHttpClient: OkHttpClient,
 ) : BaseViewModel<PdfViewerState, PdfViewerEffect>(PdfViewerState()) {
 
+    fun onIntent(intent: PdfViewerIntent) {
+        when (intent) {
+            is PdfViewerIntent.LoadPdf -> loadPdf(intent.url)
+            is PdfViewerIntent.SharePdf -> sharePdf(intent.url)
+        }
+    }
+
     fun loadPdf(url: String) {
         if (state.value.isLoading || state.value.pages.isNotEmpty()) return
         viewModelScope.launch {

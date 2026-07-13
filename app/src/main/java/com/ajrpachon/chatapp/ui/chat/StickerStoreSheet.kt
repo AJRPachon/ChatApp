@@ -25,6 +25,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,7 +43,8 @@ fun StickerStoreSheet(
     vm: StickerPackViewModel = koinViewModel(),
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val packs by vm.availablePacks.collectAsState()
+    val stickerState by vm.state.collectAsStateWithLifecycle()
+    val packs = stickerState.availablePacks
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -72,7 +74,7 @@ fun StickerStoreSheet(
                 items(packs, key = { it.id }) { pack ->
                     StickerPackStoreRow(
                         pack = pack,
-                        onInstall = { vm.installPack(pack.id) },
+                        onInstall = { vm.onIntent(StickerPackIntent.InstallPack(pack.id)) },
                         vm = vm,
                     )
                 }
