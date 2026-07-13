@@ -45,7 +45,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -66,12 +65,11 @@ fun StatusBar(
     vm: StatusViewModel = koinViewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
 
     val imageLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri ->
-        uri?.let { vm.onIntent(StatusIntent.PostImageStatus(context, it)) }
+        uri?.let { vm.onIntent(StatusIntent.PostImageStatus(it)) }
     }
 
     Column(modifier = modifier) {
