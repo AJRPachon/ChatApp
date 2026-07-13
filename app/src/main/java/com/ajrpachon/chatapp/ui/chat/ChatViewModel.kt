@@ -1,6 +1,9 @@
 ﻿package com.ajrpachon.chatapp.ui.chat
 
+import android.annotation.SuppressLint
+import android.app.Application
 import android.content.Context
+import android.location.LocationManager
 import android.media.MediaRecorder
 import android.net.Uri
 import android.os.Build
@@ -43,6 +46,7 @@ import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.AudioTranscriber
+import com.ajrpachon.chatapp.utils.ClipboardProtection
 import com.ajrpachon.chatapp.utils.NetworkMonitor
 import com.ajrpachon.chatapp.utils.TranslationManager
 import com.ajrpachon.chatapp.utils.catchResult
@@ -69,6 +73,8 @@ data class ChatArgs(val conversationId: String, val otherUserName: String)
 @Suppress("LongParameterList", "TooManyFunctions")
 class ChatViewModel(
     args: ChatArgs,
+    private val application: Application,
+    private val clipboardProtection: ClipboardProtection,
     private val sendMessageUseCase: SendMessageUseCase,
     private val messageRepository: MessageRepository,
     private val callRepository: CallRepository,
@@ -320,7 +326,7 @@ class ChatViewModel(
             is ChatIntent.SendImages -> sendImages(intent.context, intent.uris)
             is ChatIntent.SendFile -> sendFile(intent.context, intent.uri)
             is ChatIntent.SendVideo -> sendVideo(intent.context, intent.uri)
-            is ChatIntent.StartRecording -> startRecording(intent.context, intent.outputFilePath)
+            is ChatIntent.StartRecording -> startRecording()
             is ChatIntent.StopRecording -> stopRecording()
             is ChatIntent.DiscardAudio -> discardAudio()
             is ChatIntent.SendAudio -> sendAudio()
@@ -359,6 +365,7 @@ class ChatViewModel(
             is ChatIntent.DismissForwardSelectionDialog -> updateState { it.copy(showForwardSelectionDialog = false, forwardableConversations = emptyList()) }
             is ChatIntent.ForwardSelectedMessages -> forwardSelectedMessages(intent.targetConversationId)
             is ChatIntent.SendLocation -> sendLocationMessage(intent.mapsUrl)
+            is ChatIntent.FetchAndSendLocation -> fetchAndSendLocation()
             is ChatIntent.TranslateMessage -> translateMessage(intent.messageId, intent.text)
             is ChatIntent.DismissTranslation -> updateState { it.copy(translatedTexts = it.translatedTexts - intent.messageId) }
             is ChatIntent.TranscribeAudio -> transcribeAudio(intent.context, intent.messageId)
@@ -373,7 +380,8 @@ class ChatViewModel(
             is ChatIntent.SetChatTheme -> setChatTheme(intent.theme)
             is ChatIntent.OpenThemePicker -> updateState { it.copy(showThemePicker = true) }
             is ChatIntent.DismissThemePicker -> updateState { it.copy(showThemePicker = false) }
-            is ChatIntent.ExportConversation -> exportConversation(intent.context)
+            is ChatIntent.ExportConversation -> exportConversation()
+            is ChatIntent.CopyMessageContent -> clipboardProtection.copyWithTimeout("message", intent.content, viewModelScope)
             is ChatIntent.ShowDisappearingModeSheet -> updateState { it.copy(showDisappearingModeSheet = true) }
             is ChatIntent.DismissDisappearingModeSheet -> updateState { it.copy(showDisappearingModeSheet = false) }
             is ChatIntent.SetDisappearingMode -> setDisappearingMode(intent.conversationId, intent.seconds)
@@ -446,6 +454,21 @@ class ChatViewModel(
         val newText = if (lastAtIndex >= 0) currentText.substring(0, lastAtIndex) + "@${member.username} "
                       else currentText + "@${member.username} "
         updateState { it.copy(inputText = newText, mentionSuggestions = emptyList(), showMentionSuggestions = false) }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun fetchAndSendLocation() {
+        val lm = application.getSystemService(LocationManager::class.java)
+        val providers = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
+        val location = providers.firstNotNullOfOrNull { provider ->
+            runCatching { lm.getLastKnownLocation(provider) }.getOrNull()
+        }
+        if (location != null) {
+            val url = "https://maps.google.com/?q=${location.latitude},${location.longitude}"
+            sendLocationMessage(url)
+        } else {
+            viewModelScope.launch { sendEffect(ChatEffect.ShowSnackbar("No se pudo obtener la ubicacion")) }
+        }
     }
 
     private fun sendLocationMessage(mapsUrl: String) {
@@ -590,8 +613,9 @@ class ChatViewModel(
         }
     }
 
-    private fun startRecording(context: Context, outputFilePath: String) {
-        val rec = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) MediaRecorder(context)
+    private fun startRecording() {
+        val outputFilePath = java.io.File.createTempFile("audio_", ".m4a", application.cacheDir).absolutePath
+        val rec = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) MediaRecorder(application)
                   else @Suppress("DEPRECATION") MediaRecorder()
         catchResult {
             rec.apply {
@@ -860,7 +884,7 @@ class ChatViewModel(
         }
     }
 
-    private fun exportConversation(context: Context) {
+    private fun exportConversation() {
         val uid = currentUserId ?: return
         viewModelScope.launch {
             updateState { it.copy(isExporting = true) }
@@ -885,11 +909,11 @@ class ChatViewModel(
                     }
                 }
                 val f = withContext(Dispatchers.IO) {
-                    val outFile = java.io.File(context.cacheDir, "chat_$conversationId.txt")
+                    val outFile = java.io.File(application.cacheDir, "chat_$conversationId.txt")
                     java.io.FileOutputStream(outFile).use { it.write(text.toByteArray()) }
                     outFile
                 }
-                sendEffect(ChatEffect.ShowShareSheet(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", f)))
+                sendEffect(ChatEffect.ShowShareSheet(FileProvider.getUriForFile(application, "${application.packageName}.fileprovider", f)))
             }.onFailure { sendEffect(ChatEffect.ShowSnackbar("No se pudo exportar")) }
             updateState { it.copy(isExporting = false) }
         }

@@ -38,7 +38,6 @@ sealed interface NewChatEffect {
     data class NavigateToChat(val conversationId: String, val otherUserName: String) : NewChatEffect
     data object NavigateToInvitations : NewChatEffect
     data class ShowMessage(val text: String) : NewChatEffect
-    data class CopyToClipboard(val text: String) : NewChatEffect
     data class ShareText(val text: String) : NewChatEffect
     data class InviteContact(val phoneNumber: String, val text: String) : NewChatEffect
 }

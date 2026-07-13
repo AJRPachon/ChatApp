@@ -1,10 +1,14 @@
 package com.ajrpachon.chatapp.ui.newchat
 import com.ajrpachon.chatapp.utils.catchResult
 
+import android.app.Application
+import android.content.Intent
+import android.net.Uri
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.model.UserRelationship
 import com.ajrpachon.chatapp.domain.repository.UserRepository
+import com.ajrpachon.chatapp.utils.ClipboardProtection
 import com.ajrpachon.chatapp.utils.ContactSyncManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -20,7 +24,10 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
+@Suppress("LongParameterList")
 class NewChatViewModel(
+    private val application: Application,
+    private val clipboardProtection: ClipboardProtection,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val searchUsersUseCase: SearchUsersUseCase,
     private val sendInvitationUseCase: SendInvitationUseCase,
@@ -60,14 +67,24 @@ class NewChatViewModel(
             is NewChatIntent.SuggestedContactsLoaded ->
                 updateState { it.copy(suggestedContacts = intent.users, isLoadingSuggested = false) }
             is NewChatIntent.DismissError -> updateState { it.copy(error = null) }
-            is NewChatIntent.CopyInviteCode -> sendEffect(NewChatEffect.CopyToClipboard("@${intent.username}"))
+            is NewChatIntent.CopyInviteCode -> {
+                clipboardProtection.copyWithTimeout("invite_code", "@${intent.username}", viewModelScope)
+                viewModelScope.launch { sendEffect(NewChatEffect.ShowMessage("Código copiado")) }
+            }
             is NewChatIntent.ShareInviteText -> {
                 val text = "¡Únete a ChatApp! Búscame como @${intent.username} y hablamos 💬"
                 sendEffect(NewChatEffect.ShareText(text))
             }
             is NewChatIntent.InviteContact -> {
                 val text = "¡Únete a ChatApp! Búscame como @${intent.username} y hablamos 💬"
-                sendEffect(NewChatEffect.InviteContact(intent.phoneNumber, text))
+                val smsIntent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:${intent.phoneNumber}"))
+                @Suppress("DEPRECATION")
+                val canSendSms = application.packageManager.resolveActivity(smsIntent, 0) != null
+                if (canSendSms) {
+                    sendEffect(NewChatEffect.InviteContact(intent.phoneNumber, text))
+                } else {
+                    sendEffect(NewChatEffect.ShareText(text))
+                }
             }
         }
     }

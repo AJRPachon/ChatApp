@@ -1,7 +1,6 @@
 package com.ajrpachon.chatapp.ui.call
 
 import android.app.Activity
-import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.content.pm.PackageManager
 import com.ajrpachon.chatapp.ui.common.CallPermissions
@@ -175,8 +174,7 @@ private fun CallScreenContent(
         vm.effect.collect { effect ->
             when (effect) {
                 is CallEffect.RequestScreenShare -> {
-                    val mgr = context.getSystemService(MediaProjectionManager::class.java)
-                    screenShareLauncher.launch(mgr.createScreenCaptureIntent())
+                    screenShareLauncher.launch(vm.mediaProjectionManager.createScreenCaptureIntent())
                 }
                 is CallEffect.ShowRecordingSaved -> { /* recording saved — no UI needed here */ }
             }

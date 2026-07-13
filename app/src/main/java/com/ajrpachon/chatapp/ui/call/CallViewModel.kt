@@ -4,6 +4,7 @@ import com.ajrpachon.chatapp.utils.catchResult
 import android.content.Context
 import android.content.Intent
 import android.media.MediaRecorder
+import android.media.projection.MediaProjectionManager
 import android.os.Build
 import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
@@ -48,6 +49,9 @@ class CallViewModel(
     private val sendMessageUseCase: SendMessageUseCase,
     private val livekitUrl: String,
 ) : BaseViewModel<CallState, CallEffect>(CallState()) {
+
+    val mediaProjectionManager: MediaProjectionManager =
+        context.getSystemService(MediaProjectionManager::class.java)
 
     private val _roomFlow = MutableStateFlow<Room?>(null)
     val roomFlow = _roomFlow.asStateFlow()

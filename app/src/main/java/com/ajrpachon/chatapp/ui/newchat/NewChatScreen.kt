@@ -1,9 +1,6 @@
 package com.ajrpachon.chatapp.ui.newchat
 
 import android.Manifest
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -97,11 +94,6 @@ fun NewChatScreen(
                 is NewChatEffect.NavigateToChat -> onOpenConversation(effect.conversationId, effect.otherUserName)
                 is NewChatEffect.NavigateToInvitations -> onOpenInvitations()
                 is NewChatEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.text)
-                is NewChatEffect.CopyToClipboard -> {
-                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    clipboard.setPrimaryClip(ClipData.newPlainText("invite_code", effect.text))
-                    snackbarHostState.showSnackbar("Código copiado")
-                }
                 is NewChatEffect.ShareText -> {
                     val shareIntent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
@@ -113,15 +105,7 @@ fun NewChatScreen(
                     val smsIntent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:${effect.phoneNumber}")).apply {
                         putExtra("sms_body", effect.text)
                     }
-                    if (smsIntent.resolveActivity(context.packageManager) != null) {
-                        context.startActivity(smsIntent)
-                    } else {
-                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_TEXT, effect.text)
-                        }
-                        context.startActivity(Intent.createChooser(shareIntent, "Compartir invitación"))
-                    }
+                    context.startActivity(smsIntent)
                 }
             }
         }

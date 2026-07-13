@@ -182,7 +182,6 @@ import com.ajrpachon.chatapp.domain.model.MediaUrlValidator
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.MessageLimits
 import com.ajrpachon.chatapp.domain.model.StickerValidation
-import com.ajrpachon.chatapp.utils.ClipboardProtection
 import com.ajrpachon.chatapp.utils.LinkPreviewData
 import com.ajrpachon.chatapp.utils.LinkPreviewFetcher
 import kotlinx.coroutines.delay
@@ -387,8 +386,7 @@ fun ChatScreen(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
-            val file = File.createTempFile("audio_", ".m4a", context.cacheDir)
-            vm.onIntent(ChatIntent.StartRecording(context, file.absolutePath))
+            vm.onIntent(ChatIntent.StartRecording)
         }
     }
 
@@ -396,20 +394,7 @@ fun ChatScreen(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
-            val lm = context.getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
-            val providers = listOf(android.location.LocationManager.GPS_PROVIDER, android.location.LocationManager.NETWORK_PROVIDER)
-            val location = providers.firstNotNullOfOrNull { provider ->
-                runCatching {
-                    @Suppress("MissingPermission")
-                    lm.getLastKnownLocation(provider)
-                }.getOrNull()
-            }
-            if (location != null) {
-                val url = "https://maps.google.com/?q=${location.latitude},${location.longitude}"
-                vm.onIntent(ChatIntent.SendLocation(url))
-            } else {
-                scope.launch { snackbarHostState.showSnackbar("Activa el GPS y vuelve a intentarlo") }
-            }
+            vm.onIntent(ChatIntent.FetchAndSendLocation)
         }
     }
 
@@ -909,7 +894,7 @@ fun ChatScreen(
                                 enabled = !state.isExporting,
                                 onClick = {
                                     menuExpanded = false
-                                    vm.onIntent(ChatIntent.ExportConversation(context))
+                                    vm.onIntent(ChatIntent.ExportConversation)
                                 },
                             )
                             DropdownMenuItem(
@@ -1080,8 +1065,7 @@ fun ChatScreen(
                             when {
                                 ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
                                         == PackageManager.PERMISSION_GRANTED -> {
-                                    val file = File.createTempFile("audio_", ".m4a", context.cacheDir)
-                                    vm.onIntent(ChatIntent.StartRecording(context, file.absolutePath))
+                                    vm.onIntent(ChatIntent.StartRecording)
                                 }
                                 else -> audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                             }
@@ -1102,20 +1086,7 @@ fun ChatScreen(
                             when {
                                 ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
                                         == PackageManager.PERMISSION_GRANTED -> {
-                                    val lm = context.getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
-                                    val providers = listOf(android.location.LocationManager.GPS_PROVIDER, android.location.LocationManager.NETWORK_PROVIDER)
-                                    val location = providers.firstNotNullOfOrNull { provider ->
-                                        runCatching {
-                                            @Suppress("MissingPermission")
-                                            lm.getLastKnownLocation(provider)
-                                        }.getOrNull()
-                                    }
-                                    if (location != null) {
-                                        val url = "https://maps.google.com/?q=${location.latitude},${location.longitude}"
-                                        vm.onIntent(ChatIntent.SendLocation(url))
-                                    } else {
-                                        scope.launch { snackbarHostState.showSnackbar("Activa el GPS y vuelve a intentarlo") }
-                                    }
+                                    vm.onIntent(ChatIntent.FetchAndSendLocation)
                                 }
                                 else -> locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                             }
@@ -1226,6 +1197,7 @@ fun ChatScreen(
                                     onOpenPdf = onOpenPdf,
                                     onVote = { optionId -> vm.onIntent(ChatIntent.VotePoll(message.content.removePrefix("poll:"), optionId)) },
                                     onRetryMessage = { vm.onIntent(ChatIntent.RetryMessage(it)) },
+                                    onCopy = { vm.onIntent(ChatIntent.CopyMessageContent(it)) },
                                 )
                             }
                         } else {
@@ -1255,6 +1227,7 @@ fun ChatScreen(
                                 onVote = { optionId -> vm.onIntent(ChatIntent.VotePoll(message.content.removePrefix("poll:"), optionId)) },
                                 onShowReactionDetails = { reactionDetailMessageId = message.id },
                                 onRetryMessage = { vm.onIntent(ChatIntent.RetryMessage(it)) },
+                                onCopy = { vm.onIntent(ChatIntent.CopyMessageContent(it)) },
                             )
                         }
                     }
@@ -1724,7 +1697,7 @@ private fun DeletedMessageBubble(message: MessageBO) {
 
 // â”€â”€ MessageBubble â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-@Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList")
+@Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList", "ReturnCount")
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun MessageBubble(
@@ -1749,6 +1722,7 @@ private fun MessageBubble(
     onVote: ((optionId: String) -> Unit)? = null,
     onShowReactionDetails: () -> Unit = {},
     onRetryMessage: (String) -> Unit = {},
+    onCopy: (String) -> Unit = {},
 ) {
     if (message.isDeleted) {
         DeletedMessageBubble(message)
@@ -1954,7 +1928,7 @@ private fun MessageBubble(
                                 DropdownMenuItem(
                                     text = { Text("Copiar") },
                                     leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null) },
-                                    onClick = { showMsgMenu = false; ClipboardProtection.copyWithTimeout(context, "message", message.content, scope) },
+                                    onClick = { showMsgMenu = false; onCopy(message.content) },
                                 )
                                 if (onDelete != null) {
                                     DropdownMenuItem(
