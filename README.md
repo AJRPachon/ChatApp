@@ -148,11 +148,16 @@ El proyecto sigue **Clean Architecture** con tres capas bien definidas y el patr
 com.ajrpachon.chatapp/
 │
 ├── 🟣 domain/                     ← Kotlin puro, sin dependencias Android (KMP-ready)
-│   ├── model/                        UserBO, MessageBO, ConversationBO, CallBO…
+│   ├── model/                        UserBO, MessageBO, ConversationBO, CallBO,
+│   │                                 ScheduledMessage, PollBO, PollOptionBO, PollVoteBO,
+│   │                                 ContactBO, ThemePreference, ChatTheme,
 │   │                                 MediaUrlValidator, MessageLimits, StickerValidation,
 │   │                                 InputValidation — validación pura sin imports Android
-│   ├── repository/                   Interfaces (contratos)
-│   └── usecase/                      Un caso de uso por archivo (18 en total)
+│   ├── repository/                   Interfaces (contratos) — incluyendo interfaces de
+│   │                                 repositorios locales: DraftRepository, IncognitoRepository,
+│   │                                 WallpaperRepository, AiAssistantRepository, PollRepository,
+│   │                                 ContactRepository, ScheduledMessageRepository
+│   └── usecase/                      Un caso de uso por archivo (24 en total)
 │
 ├── 🔵 data/                       ← Implementa las interfaces del dominio
 │   ├── local/
@@ -161,20 +166,27 @@ com.ajrpachon.chatapp/
 │   │   │                             stickers, recibos de lectura, carpetas, difusión,
 │   │   │                             eventos de chat, sesiones y mensajes programados
 │   │   ├── dao/                      15 DAOs de acceso a la BD
-│   │   ├── ChatDatabase.kt           Base de datos Room (versión 32, cifrada con SQLCipher)
-│   │   ├── DatabaseBuilder.kt        Migraciones v1 → v32 (31 migraciones explícitas)
+│   │   ├── ChatDatabase.kt           Base de datos Room (versión 34, cifrada con SQLCipher)
+│   │   ├── DatabaseBuilder.kt        Migraciones v1 → v34 (33 migraciones explícitas)
 │   │   └── DatabaseKeyProvider.kt    Clave AES-256 en Android KeyStore
 │   ├── remote/
 │   │   ├── dto/                      Data Transfer Objects de Supabase
 │   │   └── source/                   Fuentes remotas (Supabase, FCM tokens)
 │   ├── repository/                   Coordinan caché local ↔ Supabase remoto
-│   ├── mapper/                       DBO ↔ BO  /  DTO → DBO
+│   ├── mapper/                       Mappers centralizados DBO ↔ BO / DTO → DBO:
+│   │                                 ConversationMapper, GroupMapper, UserMapper,
+│   │                                 MessageMapper, ReactionMapper, StatusMapper,
+│   │                                 ScheduledMessageMapper, InvitationMapper
 │   └── session/                      Gestión de sesión de autenticación
 │
 ├── 🟢 ui/                         ← Jetpack Compose + MVI
+│   ├── common/                       BaseViewModel (State/Intent/Effect), UiConstants
+│   │                                 (ChatConstants, CallPermissions), TimeFormatter,
+│   │                                 ChatThemeColors (mapeo ChatTheme → colores Compose)
 │   ├── auth/                         Login, registro, MFA challenge e IntegrityBlockedScreen
 │   ├── conversations/                Lista de conversaciones con carpetas y difusión
-│   ├── chat/                         Chat (StickerPicker, EmojiPicker, GiphyClient, asistente IA)
+│   ├── chat/                         Chat (StickerPicker, EmojiPicker, GiphyClient, asistente IA,
+│   │                                 ChatThemeColors); gallery/ con ChatMediaGalleryViewModel
 │   ├── call/                         Llamada en curso + overlay de entrante (filtros, grabación, grid grupal)
 │   ├── newchat/                      Buscar usuario / importar contactos / escanear QR
 │   ├── group/                        Crear grupo y gestión de miembros
@@ -182,10 +194,10 @@ com.ajrpachon.chatapp/
 │   ├── profile/                      Perfil propio (2FA, sesiones, backup, estadísticas, bloqueo)
 │   ├── userinfo/                     Perfil de otro usuario con galería de medios compartidos
 │   ├── status/                       Estados de presencia estilo stories
-│   ├── applock/                      Pantalla de bloqueo biométrico
+│   ├── applock/                      Pantalla de bloqueo biométrico (AppLockViewModel)
 │   ├── backup/                       Copia de seguridad en Google Drive
 │   ├── broadcast/                    Listas de difusión
-│   ├── pdf/                          Visor de PDF con PdfRenderer
+│   ├── pdf/                          Visor de PDF con PdfRenderer (PdfViewerViewModel)
 │   ├── saved/                        Mensajes guardados
 │   ├── usagestats/                   Estadísticas de uso con gráfico de barras
 │   ├── search/                       Búsqueda global de mensajes (GlobalSearchScreen + ViewModel)
@@ -257,7 +269,7 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | ![Compose](https://img.shields.io/badge/-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white) **Jetpack Compose BOM** | 2026.06.01 | UI declarativa |
 | ![M3](https://img.shields.io/badge/-Material%203-757575?logo=materialdesign&logoColor=white) **Material 3** | (BOM) | Sistema de diseño |
 | **Navigation 3** | 1.1.3 | Navegación entre pantallas |
-| ![Room](https://img.shields.io/badge/-Room-FF6F00?logo=android&logoColor=white) **Room** | 2.8.4 | Base de datos local (v32, 21 entidades, 15 DAOs) |
+| ![Room](https://img.shields.io/badge/-Room-FF6F00?logo=android&logoColor=white) **Room** | 2.8.4 | Base de datos local (v34, 21 entidades, 15 DAOs) |
 | **SQLCipher** | 4.6.1 | Cifrado AES-256 de la base de datos Room |
 | ![Koin](https://img.shields.io/badge/-Koin-F97316?logoColor=white) **Koin** | 4.2.2 | Inyección de dependencias |
 | **Kotlin Coroutines + Flow** | 1.11.0 | Concurrencia y streams asíncronos |
