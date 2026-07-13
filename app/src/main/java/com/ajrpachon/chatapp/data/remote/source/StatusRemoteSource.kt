@@ -1,12 +1,15 @@
-package com.ajrpachon.chatapp.data.remote.source
+﻿package com.ajrpachon.chatapp.data.remote.source
 
 import com.ajrpachon.chatapp.data.remote.dto.StatusDTO
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.storage.storage
 import kotlinx.datetime.Instant
 
 class StatusRemoteSource(private val supabase: SupabaseClient) {
+
+    fun getCurrentUserId(): String? = supabase.auth.currentUserOrNull()?.id
 
     private val STATUS_IMAGE_BUCKET = "status-images"
 

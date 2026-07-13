@@ -8,7 +8,6 @@ import com.ajrpachon.chatapp.data.local.entity.GroupMemberDBO
 import com.ajrpachon.chatapp.data.remote.dto.GroupMemberDTO
 import com.ajrpachon.chatapp.data.remote.source.GroupRemoteSource
 import com.ajrpachon.chatapp.util.MainDispatcherRule
-import io.github.jan.supabase.SupabaseClient
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -28,9 +27,8 @@ class GroupRepositoryImplTest {
     private val conversationDao = mockk<ConversationDao>(relaxed = true)
     private val messageDao = mockk<MessageDao>(relaxed = true)
     private val remoteSource = mockk<GroupRemoteSource>(relaxed = true)
-    private val supabase = mockk<SupabaseClient>(relaxed = true)
 
-    private val repo = GroupRepositoryImpl(groupMemberDao, conversationDao, messageDao, remoteSource, supabase)
+    private val repo = GroupRepositoryImpl(groupMemberDao, conversationDao, messageDao, remoteSource)
 
     // ── observeMembers — just maps Room ──────────────────────────────────────
 

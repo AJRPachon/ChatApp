@@ -12,6 +12,7 @@ import com.ajrpachon.chatapp.domain.usecase.ObserveInvitationsUseCase
 import com.ajrpachon.chatapp.service.FcmTokenManager
 import com.ajrpachon.chatapp.data.local.DraftRepository
 import com.ajrpachon.chatapp.data.local.NotificationSoundRepository
+import com.ajrpachon.chatapp.data.local.ThemeRepository
 import com.ajrpachon.chatapp.service.PresenceManager
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import com.ajrpachon.chatapp.utils.NetworkMonitor
@@ -43,6 +44,7 @@ class ConversationListViewModelTest {
     private val draftRepository = mockk<DraftRepository>(relaxed = true)
     private val notificationSoundRepository = mockk<NotificationSoundRepository>(relaxed = true)
     private val networkMonitor = mockk<NetworkMonitor>(relaxed = true)
+    private val themeRepository = mockk<ThemeRepository>(relaxed = true)
 
     private val testUser = UserBO(
         id = "user1",
@@ -76,6 +78,7 @@ class ConversationListViewModelTest {
         draftRepository = draftRepository,
         notificationSoundRepository = notificationSoundRepository,
         networkMonitor = networkMonitor,
+        themeRepository = themeRepository,
     )
 
     @Test

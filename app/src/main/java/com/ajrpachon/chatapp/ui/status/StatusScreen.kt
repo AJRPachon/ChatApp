@@ -54,9 +54,8 @@ import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.domain.model.StatusBO
 import com.ajrpachon.chatapp.ui.components.ChatAppAvatar
 import kotlinx.coroutines.delay
+import com.ajrpachon.chatapp.ui.common.ChatConstants
 import org.koin.androidx.compose.koinViewModel
-
-private const val STORY_DURATION_MS = 5_000L
 
 // ── Status bar (embedded in ConversationListScreen) ────────────────────────
 
@@ -228,7 +227,7 @@ fun StatusViewerScreen(
         progress.snapTo(0f)
         progress.animateTo(
             targetValue = 1f,
-            animationSpec = tween(STORY_DURATION_MS.toInt(), easing = LinearEasing),
+            animationSpec = tween(ChatConstants.STORY_DURATION_MS.toInt(), easing = LinearEasing),
         )
         if (currentIndex < statuses.lastIndex) currentIndex++ else onClose()
     }
@@ -338,9 +337,14 @@ fun StatusViewerScreen(
     onClose: () -> Unit,
     vm: StatusViewModel = koinViewModel(),
 ) {
-    val userStatuses = allStatuses.filter { it.userId == initialStatus.userId }
+    val state by vm.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(allStatuses, initialStatus.userId) {
+        vm.onIntent(StatusIntent.FilterUserStatuses(allStatuses, initialStatus.userId))
+    }
+
     StatusViewerScreen(
-        statuses = userStatuses,
+        statuses = state.userStatuses,
         initialIndex = 0,
         onClose = onClose,
         onDelete = { id -> vm.onIntent(StatusIntent.DeleteStatus(id)) },

@@ -15,6 +15,7 @@ fun UserDTO.toBO(email: String = "") = UserBO(
                 else Instant.fromEpochMilliseconds(System.currentTimeMillis()),
     lastSeen = lastSeen?.let { runCatching { Instant.parse(it) }.getOrNull() },
     showOnlineStatus = showOnlineStatus,
+    publicKey = publicKey,
 )
 
 fun UserDTO.toDBO(email: String = "", isCurrentUser: Boolean = false) = UserDBO(
@@ -28,6 +29,7 @@ fun UserDTO.toDBO(email: String = "", isCurrentUser: Boolean = false) = UserDBO(
     isCurrentUser = isCurrentUser,
     lastSeen = lastSeen?.let { runCatching { Instant.parse(it).toEpochMilliseconds() }.getOrNull() },
     showOnlineStatus = showOnlineStatus,
+    publicKey = publicKey,
 )
 
 fun UserDBO.toBO() = UserBO(
@@ -39,4 +41,5 @@ fun UserDBO.toBO() = UserBO(
     createdAt = Instant.fromEpochMilliseconds(createdAt),
     lastSeen = lastSeen?.let { Instant.fromEpochMilliseconds(it) },
     showOnlineStatus = showOnlineStatus,
+    publicKey = publicKey,
 )

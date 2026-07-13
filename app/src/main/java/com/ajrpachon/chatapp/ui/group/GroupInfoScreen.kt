@@ -116,6 +116,13 @@ fun GroupInfoScreen(
                 GroupInfoEffect.NavigateBack -> onBack()
                 is GroupInfoEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message)
                 is GroupInfoEffect.CopyToClipboard -> { /* handled inline via LocalClipboardManager */ }
+                is GroupInfoEffect.ShareInviteLink -> {
+                    val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(android.content.Intent.EXTRA_TEXT, effect.url)
+                    }
+                    context.startActivity(android.content.Intent.createChooser(shareIntent, "Compartir enlace"))
+                }
             }
         }
     }
@@ -199,14 +206,7 @@ fun GroupInfoScreen(
                         modifier = Modifier.weight(1f),
                     ) { Text("Copiar") }
                     Button(
-                        onClick = {
-                            val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(android.content.Intent.EXTRA_TEXT, state.inviteLink)
-                            }
-                            context.startActivity(android.content.Intent.createChooser(shareIntent, "Compartir enlace"))
-                            vm.onIntent(GroupInfoIntent.DismissInviteLinkSheet)
-                        },
+                        onClick = { vm.onIntent(GroupInfoIntent.ShareInviteLink) },
                         modifier = Modifier.weight(1f),
                     ) { Text("Compartir") }
                 }
@@ -306,13 +306,12 @@ fun GroupInfoScreen(
                 }
             }
 
-            val adminCount = state.members.count { it.role == GroupRole.ADMIN }
             items(state.members, key = { it.userId }) { member ->
                 MemberItem(
                     member = member,
                     isCurrentUser = member.userId == state.currentUserId,
                     isCurrentUserAdmin = state.isCurrentUserAdmin,
-                    isLastAdmin = member.role == GroupRole.ADMIN && adminCount == 1,
+                    isLastAdmin = state.isLastAdmin(member),
                     onRemove = { vm.onIntent(GroupInfoIntent.RemoveMember(member.userId)) },
                     onPromote = { vm.onIntent(GroupInfoIntent.PromoteMember(member.userId)) },
                     onDemote = { vm.onIntent(GroupInfoIntent.DemoteMember(member.userId)) },

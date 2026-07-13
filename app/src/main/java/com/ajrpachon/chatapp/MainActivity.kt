@@ -52,7 +52,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.handleDeeplinks
 import androidx.compose.runtime.produceState
-import kotlinx.coroutines.CoroutineScope
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.get
@@ -129,7 +129,7 @@ class MainActivity : ComponentActivity() {
                         !hasUser -> AuthRoute
                         sessionGuard.isSessionExpired() -> {
                             // Sign out server-side and clear local guard before routing
-                            CoroutineScope(Dispatchers.IO).launch {
+                            lifecycleScope.launch(Dispatchers.IO) {
                                 runCatching { get<SupabaseClient>().auth.signOut() }
                                 sessionGuard.clearSession()
                             }
@@ -249,7 +249,7 @@ class MainActivity : ComponentActivity() {
     override fun onPause() {
         super.onPause()
         val appLockRepository: AppLockRepository = get()
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             appLockRepository.recordBackgroundedAt(System.currentTimeMillis())
         }
     }
@@ -259,7 +259,7 @@ class MainActivity : ComponentActivity() {
         val sessionGuard: SessionGuard = get()
         if (sessionGuard.isSessionExpired()) {
             // Mid-session expiry: sign out and signal the UI to navigate to AuthRoute
-            CoroutineScope(Dispatchers.IO).launch {
+            lifecycleScope.launch(Dispatchers.IO) {
                 runCatching { get<SupabaseClient>().auth.signOut() }
                 sessionGuard.clearSession()
             }
@@ -269,7 +269,7 @@ class MainActivity : ComponentActivity() {
         }
         // App lock check: show lock screen if enabled and backgrounded for >30s
         val appLockRepository: AppLockRepository = get()
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             val isEnabled = appLockRepository.isEnabled.first()
             if (isEnabled) {
                 val backgroundedAt = appLockRepository.backgroundedAt.first()

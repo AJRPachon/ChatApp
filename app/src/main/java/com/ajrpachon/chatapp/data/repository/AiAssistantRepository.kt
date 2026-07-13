@@ -8,9 +8,10 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 
-class AiAssistantRepository(private val supabaseClient: SupabaseClient) {
+class AiAssistantRepository(private val supabaseClient: SupabaseClient) :
+    com.ajrpachon.chatapp.domain.repository.AiAssistantRepository {
 
-    suspend fun summarize(messageSnippets: List<String>): Result<String> = runCatching {
+    override suspend fun summarize(messageSnippets: List<String>): Result<String> = runCatching {
         val body = buildJsonObject {
             put("action", "summarize")
             putJsonArray("messages") {
@@ -23,7 +24,7 @@ class AiAssistantRepository(private val supabaseClient: SupabaseClient) {
         response.body<String>()
     }
 
-    suspend fun suggestReply(lastMessage: String): Result<String> = runCatching {
+    override suspend fun suggestReply(lastMessage: String): Result<String> = runCatching {
         val body = buildJsonObject {
             put("action", "suggest_reply")
             put("lastMessage", lastMessage)
@@ -34,7 +35,7 @@ class AiAssistantRepository(private val supabaseClient: SupabaseClient) {
         response.body<String>()
     }
 
-    suspend fun freeform(prompt: String): Result<String> = runCatching {
+    override suspend fun freeform(prompt: String): Result<String> = runCatching {
         val body = buildJsonObject {
             put("action", "freeform")
             put("prompt", prompt)

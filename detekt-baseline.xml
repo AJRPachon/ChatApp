@@ -10,7 +10,11 @@
     <ID>CyclomaticComplexMethod:ConversationListViewModel.kt$ConversationListViewModel$fun onIntent(intent: ConversationListIntent)</ID>
     <ID>CyclomaticComplexMethod:GroupInfoViewModel.kt$GroupInfoViewModel$fun onIntent(intent: GroupInfoIntent)</ID>
     <ID>CyclomaticComplexMethod:MainActivity.kt$MainActivity$override fun onCreate(savedInstanceState: Bundle?)</ID>
-    <ID>LargeClass:ChatViewModel.kt$ChatViewModel : ViewModel</ID>
+    <ID>EmptyElseBlock:BroadcastListViewModel.kt$BroadcastListViewModel$if (cur.newListName.isBlank() || cur.selectedMembers.isEmpty()) { updateState { it.copy(error = "Ingresa un nombre y selecciona al menos un miembro") }; return }</ID>
+    <ID>EmptyElseBlock:BroadcastListViewModel.kt$BroadcastListViewModel$if (li.members.isEmpty()) { updateState { it.copy(error = "Sin miembros") }; return }</ID>
+    <ID>EmptyElseBlock:BroadcastListViewModel.kt$BroadcastListViewModel$if (msg.isBlank()) { updateState { it.copy(error = "Escribe un mensaje") }; return }</ID>
+    <ID>EmptyElseBlock:BroadcastListViewModel.kt$BroadcastListViewModel$if (q.isBlank()) { updateState { it.copy(searchResults = emptyList()) }; return }</ID>
+    <ID>LargeClass:ChatViewModel.kt$ChatViewModel : BaseViewModel</ID>
     <ID>LongMethod:ChatScreen.kt$@Composable @OptIn(ExperimentalMaterial3Api::class) private fun AiAssistantSheet( aiSuggestion: String?, isAiLoading: Boolean, onDismiss: () -&gt; Unit, onSummarize: () -&gt; Unit, onSuggestReply: () -&gt; Unit, onFreeform: (String) -&gt; Unit, onInsert: () -&gt; Unit, )</ID>
     <ID>LongMethod:ChatScreen.kt$@Composable private fun ImageGroupBubble( messages: List&lt;MessageBO&gt;, onImageClick: (index: Int) -&gt; Unit, onReply: () -&gt; Unit, )</ID>
     <ID>LongMethod:ChatScreen.kt$@Composable private fun PollBubble( pollId: String, isFromMe: Boolean, pollRepository: PollRepository, currentUserId: String?, onVote: (optionId: String) -&gt; Unit, )</ID>
@@ -20,34 +24,67 @@
     <ID>LongMethod:MainActivity.kt$MainActivity$override fun onCreate(savedInstanceState: Bundle?)</ID>
     <ID>LongParameterList:CallViewModel.kt$CallViewModel$( private val context: Context, private val callId: String, private val conversationId: String, private val roomName: String, private val callType: String, private val isOutgoing: Boolean, private val isGroup: Boolean, private val callRepository: CallRepository, private val getCurrentUserUseCase: GetCurrentUserUseCase, private val sendMessageUseCase: SendMessageUseCase, private val livekitUrl: String, )</ID>
     <ID>LongParameterList:ChatScreen.kt$( conversationId: String, otherUserName: String, onBack: () -&gt; Unit, onStartCall: (CallBO) -&gt; Unit = {}, onGroupInfo: () -&gt; Unit = {}, onUserInfo: (userId: String) -&gt; Unit = {}, onOpenPdf: (url: String, filename: String) -&gt; Unit = { _, _ -&gt; }, onOpenMediaGallery: () -&gt; Unit = {}, )</ID>
-    <ID>LongParameterList:GroupInfoViewModel.kt$GroupInfoViewModel$( private val conversationId: String, private val userRepository: UserRepository, private val getGroupMembersUseCase: GetGroupMembersUseCase, private val updateGroupUseCase: UpdateGroupUseCase, private val leaveGroupUseCase: LeaveGroupUseCase, private val searchUsersUseCase: SearchUsersUseCase, private val groupRepository: GroupRepository, private val conversationDao: ConversationDao, )</ID>
+    <ID>LongParameterList:GroupInfoViewModel.kt$GroupInfoViewModel$( private val conversationId: String, private val userRepository: UserRepository, private val getGroupMembersUseCase: GetGroupMembersUseCase, private val updateGroupUseCase: UpdateGroupUseCase, private val leaveGroupUseCase: LeaveGroupUseCase, private val searchUsersUseCase: SearchUsersUseCase, private val groupRepository: GroupRepository, private val conversationRepository: ConversationRepository, )</ID>
     <ID>LoopWithTooManyJumpStatements:ChatScreen.kt$while</ID>
     <ID>LoopWithTooManyJumpStatements:ChatViewModel.kt$ChatViewModel$for</ID>
-    <ID>LoopWithTooManyJumpStatements:NewChatScreen.kt$while</ID>
-    <ID>MatchingDeclarationName:ChatMediaGalleryScreen.kt$ChatMediaGalleryViewModel : ViewModel</ID>
-    <ID>MatchingDeclarationName:IncomingCallContract.kt$IncomingCallState</ID>
+    <ID>LoopWithTooManyJumpStatements:ContactRepositoryImpl.kt$ContactRepositoryImpl$while</ID>
+    <ID>LoopWithTooManyJumpStatements:ExportConversationUseCase.kt$ExportConversationUseCase$for</ID>
     <ID>MatchingDeclarationName:StickerPacks.kt$StickerCategory</ID>
-    <ID>MatchingDeclarationName:UserInfoContract.kt$UserInfoState</ID>
+    <ID>MatchingDeclarationName:UiConstants.kt$ChatConstants</ID>
     <ID>MayBeConst:ChatScreen.kt$private val LOCATION_MESSAGE_PREFIX = "ðŸ“ Mi ubicaciÃ³n: https://maps.google.com/?q="</ID>
+    <ID>MissingPackageDeclaration:AppModule.kt$.AppModule.kt</ID>
+    <ID>MissingPackageDeclaration:AuthViewModel.kt$.AuthViewModel.kt</ID>
+    <ID>MissingPackageDeclaration:BroadcastListViewModel.kt$.BroadcastListViewModel.kt</ID>
     <ID>MissingPackageDeclaration:ChatContract.kt$.ChatContract.kt</ID>
     <ID>MissingPackageDeclaration:ChatScreen.kt$.ChatScreen.kt</ID>
     <ID>MissingPackageDeclaration:ChatViewModel.kt$.ChatViewModel.kt</ID>
+    <ID>MissingPackageDeclaration:ConversationBO.kt$.ConversationBO.kt</ID>
+    <ID>MissingPackageDeclaration:ConversationRemoteSource.kt$.ConversationRemoteSource.kt</ID>
+    <ID>MissingPackageDeclaration:ConversationRepository.kt$.ConversationRepository.kt</ID>
+    <ID>MissingPackageDeclaration:ConversationRepositoryImpl.kt$.ConversationRepositoryImpl.kt</ID>
     <ID>MissingPackageDeclaration:E2EEKeyManager.kt$.E2EEKeyManager.kt</ID>
+    <ID>MissingPackageDeclaration:GlobalSearchViewModel.kt$.GlobalSearchViewModel.kt</ID>
+    <ID>MissingPackageDeclaration:GroupInfoViewModel.kt$.GroupInfoViewModel.kt</ID>
     <ID>MissingPackageDeclaration:MessageBO.kt$.MessageBO.kt</ID>
     <ID>MissingPackageDeclaration:MessageDBO.kt$.MessageDBO.kt</ID>
     <ID>MissingPackageDeclaration:MessageDTO.kt$.MessageDTO.kt</ID>
     <ID>MissingPackageDeclaration:MessageMapper.kt$.MessageMapper.kt</ID>
+    <ID>MissingPackageDeclaration:MessageRemoteSource.kt$.MessageRemoteSource.kt</ID>
     <ID>MissingPackageDeclaration:MessageRepository.kt$.MessageRepository.kt</ID>
     <ID>MissingPackageDeclaration:MessageRepositoryImpl.kt$.MessageRepositoryImpl.kt</ID>
+    <ID>MissingPackageDeclaration:ProfileViewModel.kt$.ProfileViewModel.kt</ID>
+    <ID>MissingPackageDeclaration:ReactionRemoteSource.kt$.ReactionRemoteSource.kt</ID>
+    <ID>MissingPackageDeclaration:SavedMessagesViewModel.kt$.SavedMessagesViewModel.kt</ID>
+    <ID>MissingPackageDeclaration:ScheduledMessageRepository.kt$.ScheduledMessageRepository.kt</ID>
+    <ID>MissingPackageDeclaration:ScheduledMessageRepositoryImpl.kt$.ScheduledMessageRepositoryImpl.kt</ID>
     <ID>MissingPackageDeclaration:SendMessageUseCase.kt$.SendMessageUseCase.kt</ID>
+    <ID>MissingPackageDeclaration:SessionAuditViewModel.kt$.SessionAuditViewModel.kt</ID>
+    <ID>MissingPackageDeclaration:SharedModules.kt$.SharedModules.kt</ID>
+    <ID>MissingPackageDeclaration:StatusRemoteSource.kt$.StatusRemoteSource.kt</ID>
+    <ID>MissingPackageDeclaration:StickerPackViewModel.kt$.StickerPackViewModel.kt</ID>
+    <ID>MissingPackageDeclaration:StickerStoreSheet.kt$.StickerStoreSheet.kt</ID>
+    <ID>MissingPackageDeclaration:TypingRepository.kt$.TypingRepository.kt</ID>
+    <ID>MissingPackageDeclaration:TypingRepositoryImpl.kt$.TypingRepositoryImpl.kt</ID>
+    <ID>MissingPackageDeclaration:UsageStatsViewModel.kt$.UsageStatsViewModel.kt</ID>
     <ID>MissingPackageDeclaration:UserRemoteSource.kt$.UserRemoteSource.kt</ID>
+    <ID>MissingPackageDeclaration:UserRepository.kt$.UserRepository.kt</ID>
+    <ID>MissingPackageDeclaration:UserRepositoryImpl.kt$.UserRepositoryImpl.kt</ID>
     <ID>NestedBlockDepth:ChatItem.kt$internal fun List&lt;MessageBO&gt;.toChatItems(): List&lt;ChatItem&gt;</ID>
+    <ID>NewLineAtEndOfFile:BroadcastListViewModel.kt$.BroadcastListViewModel.kt</ID>
+    <ID>NewLineAtEndOfFile:ConversationRepository.kt$.ConversationRepository.kt</ID>
+    <ID>NewLineAtEndOfFile:GroupRemoteSource.kt$com.ajrpachon.chatapp.data.remote.source.GroupRemoteSource.kt</ID>
+    <ID>NewLineAtEndOfFile:MessageRemoteSource.kt$.MessageRemoteSource.kt</ID>
+    <ID>NewLineAtEndOfFile:MessageRepository.kt$.MessageRepository.kt</ID>
+    <ID>NewLineAtEndOfFile:SavedMessagesViewModel.kt$.SavedMessagesViewModel.kt</ID>
+    <ID>NewLineAtEndOfFile:StickerPackViewModel.kt$.StickerPackViewModel.kt</ID>
+    <ID>NewLineAtEndOfFile:UserRepository.kt$.UserRepository.kt</ID>
     <ID>ReturnCount:BroadcastListViewModel.kt$BroadcastListViewModel$private fun sendBroadcast()</ID>
     <ID>ReturnCount:ChatScreen.kt$@Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList") @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class) @Composable private fun MessageBubble( message: MessageBO, isGroup: Boolean = false, onImageClick: (String) -&gt; Unit, onReply: () -&gt; Unit, isHighlighted: Boolean = false, onReplyClick: (String) -&gt; Unit = {}, onDelete: (() -&gt; Unit)? = null, onEdit: (() -&gt; Unit)? = null, onSelfDestruct: (() -&gt; Unit)? = null, onForward: (() -&gt; Unit)? = null, messageReactions: List&lt;com.ajrpachon.chatapp.domain.model.ReactionBO&gt; = emptyList(), currentUserId: String? = null, onToggleReaction: (String) -&gt; Unit = {}, isSelected: Boolean = false, isMultiSelectActive: Boolean = false, onToggleSelect: () -&gt; Unit = {}, outgoingBubbleColor: Color = Color.Unspecified, onOpenPdf: (url: String, filename: String) -&gt; Unit = { _, _ -&gt; }, onVote: ((optionId: String) -&gt; Unit)? = null, onShowReactionDetails: () -&gt; Unit = {}, onRetryMessage: (String) -&gt; Unit = {}, )</ID>
     <ID>ReturnCount:InvitationRepositoryImpl.kt$InvitationRepositoryImpl$override suspend fun getRelationship(currentUserId: String, otherUserId: String): UserRelationship</ID>
-    <ID>TooManyFunctions:CallViewModel.kt$CallViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:CallViewModel.kt$CallViewModel : BaseViewModel</ID>
     <ID>TooManyFunctions:ChatScreen.kt$.ChatScreen.kt</ID>
     <ID>TooManyFunctions:MessageRepositoryImpl.kt$MessageRepositoryImpl : MessageRepository</ID>
+    <ID>TooManyFunctions:UserRepository.kt$UserRepository</ID>
     <ID>TopLevelPropertyNaming:ChatAppButton.kt$private val ButtonShape = RoundedCornerShape(50)</ID>
     <ID>TopLevelPropertyNaming:ChatAppTextField.kt$private val TextFieldShape = RoundedCornerShape(16.dp)</ID>
     <ID>TopLevelPropertyNaming:ChatScreen.kt$private val LOCATION_MESSAGE_PREFIX = "ðŸ“ Mi ubicaciÃ³n: https://maps.google.com/?q="</ID>
@@ -134,6 +171,7 @@
     <ID>TopLevelPropertyNaming:Theme.kt$private val LightColorScheme = lightColorScheme( primary = Pastel_Primary, onPrimary = Pastel_OnPrimary, primaryContainer = Pastel_PrimaryContainer, onPrimaryContainer = Pastel_OnPrimaryContainer, secondary = Pastel_Secondary, onSecondary = Pastel_OnSecondary, secondaryContainer = Pastel_SecondaryContainer, onSecondaryContainer = Pastel_OnSecondaryContainer, tertiary = Pastel_Tertiary, onTertiary = Pastel_OnTertiary, tertiaryContainer = Pastel_TertiaryContainer, onTertiaryContainer = Pastel_OnTertiaryContainer, error = Pastel_Error, onError = Pastel_OnError, errorContainer = Pastel_ErrorContainer, onErrorContainer = Pastel_OnErrorContainer, surface = Pastel_Surface, onSurface = Pastel_OnSurface, surfaceVariant = Pastel_SurfaceVariant, onSurfaceVariant = Pastel_OnSurfaceVariant, surfaceContainerLowest = Pastel_SurfaceContainerLowest, surfaceContainerLow = Pastel_SurfaceContainerLow, surfaceContainer = Pastel_SurfaceContainer, surfaceContainerHigh = Pastel_SurfaceContainerHigh, surfaceContainerHighest = Pastel_SurfaceContainerHighest, outline = Pastel_Outline, outlineVariant = Pastel_OutlineVariant, inverseSurface = Pastel_InverseSurface, inverseOnSurface = Pastel_InverseOnSurface, inversePrimary = Pastel_InversePrimary, )</ID>
     <ID>UnusedImports:AppModule.kt$import com.ajrpachon.chatapp.domain.repository.UserRepository</ID>
     <ID>UnusedImports:AppModule.kt$import com.ajrpachon.chatapp.ui.chat.ChatArgs</ID>
+    <ID>UnusedImports:AppModule.kt$import org.koin.dsl.onClose</ID>
     <ID>UnusedImports:AuthScreen.kt$import androidx.compose.material3.Tab</ID>
     <ID>UnusedImports:AuthScreen.kt$import androidx.compose.material3.TabRow</ID>
     <ID>UnusedImports:CallScreen.kt$import androidx.compose.foundation.layout.width</ID>
@@ -149,9 +187,14 @@
     <ID>UnusedImports:ChatScreen.kt$import androidx.compose.material.icons.filled.SmartToy</ID>
     <ID>UnusedImports:ChatScreen.kt$import androidx.compose.material.icons.filled.Stop</ID>
     <ID>UnusedImports:ChatScreen.kt$import com.ajrpachon.chatapp.domain.model.MessageLimits</ID>
+    <ID>UnusedImports:ChatScreen.kt$import com.ajrpachon.chatapp.ui.common.ChatConstants</ID>
     <ID>UnusedImports:ChatScreen.kt$import com.ajrpachon.chatapp.ui.components.ChatAppTextField</ID>
     <ID>UnusedImports:ChatViewModel.kt$import com.ajrpachon.chatapp.data.local.AppLockRepository</ID>
-    <ID>UnusedImports:ChatViewModel.kt$import com.ajrpachon.chatapp.domain.model.CallBO</ID>
+    <ID>UnusedImports:ChatViewModel.kt$import com.ajrpachon.chatapp.data.local.dao.ConversationDao</ID>
+    <ID>UnusedImports:ChatViewModel.kt$import com.ajrpachon.chatapp.data.local.dao.MessageDao</ID>
+    <ID>UnusedImports:ConversationListScreen.kt$import kotlin.time.Instant</ID>
+    <ID>UnusedImports:ConversationListScreen.kt$import kotlinx.coroutines.launch</ID>
+    <ID>UnusedImports:ConversationListViewModel.kt$import com.ajrpachon.chatapp.domain.model.ThemePreference</ID>
     <ID>UnusedImports:CreateGroupScreen.kt$import androidx.compose.material.icons.filled.Search</ID>
     <ID>UnusedImports:CreateGroupScreen.kt$import androidx.compose.material3.CircularProgressIndicator</ID>
     <ID>UnusedImports:GroupInfoScreen.kt$import androidx.compose.material.icons.filled.Search</ID>
@@ -160,8 +203,6 @@
     <ID>UnusedImports:IncomingCallScreen.kt$import androidx.compose.foundation.layout.padding</ID>
     <ID>UnusedImports:MainActivity.kt$import androidx.lifecycle.compose.collectAsStateWithLifecycle</ID>
     <ID>UnusedImports:MainActivity.kt$import androidx.lifecycle.compose.dropUnlessResumed</ID>
-    <ID>UnusedImports:NewChatScreen.kt$import androidx.compose.material3.Surface</ID>
-    <ID>UnusedImports:NewChatScreen.kt$import com.ajrpachon.chatapp.ui.components.ChatAppTextField</ID>
     <ID>UnusedImports:ProfileScreen.kt$import androidx.compose.foundation.layout.height</ID>
     <ID>UnusedImports:SessionAuditScreen.kt$import androidx.compose.material.icons.filled.DevicesOther</ID>
     <ID>UnusedImports:Shimmer.kt$import androidx.compose.ui.graphics.Color</ID>

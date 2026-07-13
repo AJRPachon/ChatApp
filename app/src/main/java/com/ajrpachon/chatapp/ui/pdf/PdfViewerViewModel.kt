@@ -6,13 +6,10 @@ import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import com.ajrpachon.chatapp.utils.AppLogger
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -28,22 +25,23 @@ data class PdfViewerState(
 class PdfViewerViewModel(
     private val context: Context,
     private val okHttpClient: OkHttpClient,
-) : ViewModel() {
-
-    private val _state = MutableStateFlow(PdfViewerState())
-    val state: StateFlow<PdfViewerState> = _state.asStateFlow()
+) : BaseViewModel<PdfViewerState, PdfViewerEffect>(PdfViewerState()) {
 
     fun loadPdf(url: String) {
-        if (_state.value.isLoading || _state.value.pages.isNotEmpty()) return
+        if (state.value.isLoading || state.value.pages.isNotEmpty()) return
         viewModelScope.launch {
-            _state.value = PdfViewerState(isLoading = true)
+            updateState { PdfViewerState(isLoading = true) }
             runCatching { downloadAndRender(url) }
-                .onSuccess { pages -> _state.value = PdfViewerState(pages = pages) }
+                .onSuccess { pages -> updateState { PdfViewerState(pages = pages) } }
                 .onFailure { e ->
                     AppLogger.e("PdfViewerViewModel", "Failed to load PDF: ${e.message}")
-                    _state.value = PdfViewerState(error = e.message ?: "Error loading PDF")
+                    updateState { PdfViewerState(error = e.message ?: "Error loading PDF") }
                 }
         }
+    }
+
+    fun sharePdf(url: String) {
+        sendEffect(PdfViewerEffect.SharePdf(url))
     }
 
     private suspend fun downloadAndRender(url: String): List<ImageBitmap> = withContext(Dispatchers.IO) {

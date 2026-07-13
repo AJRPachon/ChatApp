@@ -14,4 +14,5 @@ data class UserDBO(
     val isCurrentUser: Boolean = false,
     val lastSeen: Long? = null,
     val showOnlineStatus: Boolean = true,
+    val publicKey: String? = null,
 )

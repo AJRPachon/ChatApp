@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.domain.model
+﻿package com.ajrpachon.chatapp.domain.model
 
 import kotlinx.datetime.Instant
 
@@ -17,6 +17,9 @@ data class ConversationBO(
     val isMuted: Boolean = false,
     val mutedUntil: Long = 0L,
     val isArchived: Boolean = false,
+    val otherUserId: String? = null,
+    val historyVisibleFrom: Long = 0L,
+    val disappearingModeSeconds: Long = 0L,
 ) {
     val displayAvatarUrl: String? get() = if (isGroup) groupAvatarUrl else otherUserAvatarUrl
 }

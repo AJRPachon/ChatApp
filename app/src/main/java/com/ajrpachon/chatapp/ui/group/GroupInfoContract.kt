@@ -23,7 +23,14 @@ data class GroupInfoState(
     val showHistoryDialog: Boolean = false,
     val inviteLink: String? = null,
     val showInviteLinkSheet: Boolean = false,
-)
+) {
+    /** Number of admins in this group — derived from the members list. */
+    val adminCount: Int get() = members.count { it.role == GroupRole.ADMIN }
+
+    /** Returns true if [member] is the only remaining admin and cannot be removed/demoted. */
+    fun isLastAdmin(member: GroupMemberBO): Boolean =
+        member.role == GroupRole.ADMIN && adminCount == 1
+}
 
 sealed interface GroupInfoIntent {
     data object OpenEditDialog : GroupInfoIntent
@@ -45,10 +52,12 @@ sealed interface GroupInfoIntent {
     data object DismissError : GroupInfoIntent
     data object GenerateInviteLink : GroupInfoIntent
     data object DismissInviteLinkSheet : GroupInfoIntent
+    data object ShareInviteLink : GroupInfoIntent
 }
 
 sealed interface GroupInfoEffect {
     data object NavigateBack : GroupInfoEffect
     data class ShowMessage(val message: String) : GroupInfoEffect
     data class CopyToClipboard(val text: String) : GroupInfoEffect
+    data class ShareInviteLink(val url: String) : GroupInfoEffect
 }

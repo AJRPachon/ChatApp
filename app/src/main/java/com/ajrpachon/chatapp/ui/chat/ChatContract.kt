@@ -2,9 +2,11 @@
 
 import android.content.Context
 import android.net.Uri
-import com.ajrpachon.chatapp.data.local.ChatTheme
-import com.ajrpachon.chatapp.data.local.entity.ScheduledMessageDBO
+import com.ajrpachon.chatapp.domain.model.ChatTheme
+import com.ajrpachon.chatapp.ui.common.formatDisappearingDuration
+import com.ajrpachon.chatapp.ui.common.formatLastSeen
 import com.ajrpachon.chatapp.domain.model.CallBO
+import com.ajrpachon.chatapp.domain.model.ScheduledMessage
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.MessageBO
@@ -73,7 +75,7 @@ data class ChatState(
     val scheduledAtMs: Long? = null,
     val scheduledMessageCount: Int = 0,
     val showScheduledSheet: Boolean = false,
-    val scheduledMessages: List<ScheduledMessageDBO> = emptyList(),
+    val scheduledMessages: List<ScheduledMessage> = emptyList(),
     // AI Assistant
     val showAiSheet: Boolean = false,
     val aiSuggestion: String? = null,
@@ -90,6 +92,28 @@ data class ChatState(
 ) {
     val isMultiSelectActive: Boolean get() = selectedMessageIds.isNotEmpty()
     val latestPinnedMessage: MessageBO? get() = pinnedMessages.firstOrNull()
+
+    /** Formatted label for the disappearing-mode timer shown in the app bar. */
+    val disappearingDurationLabel: String get() = formatDisappearingDuration(disappearingModeSeconds)
+
+    /** Formatted presence text for 1-1 chats ("En línea" or "última vez hace X"). */
+    val presenceText: String?
+        get() = when {
+            isGroup -> null
+            isOtherUserOnline -> "En línea"
+            otherUserLastSeenMs != null ->
+                formatLastSeen(System.currentTimeMillis() - otherUserLastSeenMs)
+            else -> null
+        }
+
+    /** Group subtitle shown in the app bar ("X en línea" or "X miembros"). */
+    val subtitleText: String?
+        get() = when {
+            !isGroup -> null
+            onlineMemberCount > 0 -> "$onlineMemberCount en línea"
+            groupMemberCount > 0 -> "$groupMemberCount miembros"
+            else -> null
+        }
 }
 
 sealed interface ChatIntent {
@@ -179,6 +203,7 @@ sealed interface ChatIntent {
     data object DismissWallpaperPicker : ChatIntent
     data class SetWallpaperColor(val color: Long?) : ChatIntent
     data class SendContact(val name: String, val phone: String) : ChatIntent
+    data class ContactSelected(val uri: android.net.Uri) : ChatIntent
     data class RetryMessage(val messageId: String) : ChatIntent
     // Multi-forward
     data object ShowForwardSelectionDialog : ChatIntent

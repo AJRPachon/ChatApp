@@ -40,29 +40,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewModelScope
 import coil3.compose.AsyncImage
-import com.ajrpachon.chatapp.data.local.dao.MessageDao
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
+import com.ajrpachon.chatapp.ui.chat.gallery.ChatMediaGalleryViewModel
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
-
-// ── ViewModel ─────────────────────────────────────────────────────────────────
-
-class ChatMediaGalleryViewModel(
-    private val conversationId: String,
-    private val messageDao: MessageDao,
-) : ViewModel() {
-    val images: StateFlow<List<String>> = messageDao.getImagesForConversation(conversationId)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-
-    val videos: StateFlow<List<String>> = messageDao.getVideosForConversation(conversationId)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-}
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 

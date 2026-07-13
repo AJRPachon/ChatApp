@@ -1,5 +1,7 @@
 package com.ajrpachon.chatapp.ui.userinfo
 
+sealed interface UserInfoEffect
+
 data class UserInfoState(
     val displayName: String = "",
     val username: String = "",

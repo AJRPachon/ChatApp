@@ -20,9 +20,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -31,33 +28,37 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun AppLockScreen(onUnlocked: () -> Unit) {
+    val vm: AppLockViewModel = koinViewModel()
+    val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    // The actual BiometricPrompt must run in the screen (needs FragmentActivity + executor).
+    // The ViewModel emits Effect.LaunchBiometric; callbacks dispatch intents back to the VM.
     fun launchBiometric() {
         val activity = context as? FragmentActivity ?: return
         val executor = ContextCompat.getMainExecutor(context)
 
         val callback = object : BiometricPrompt.AuthenticationCallback() {
             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                errorMessage = null
-                onUnlocked()
+                vm.onIntent(AppLockIntent.AuthSucceeded)
             }
 
             override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                 if (errorCode != BiometricPrompt.ERROR_USER_CANCELED &&
                     errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON
                 ) {
-                    errorMessage = errString.toString()
+                    vm.onIntent(AppLockIntent.AuthError(errString.toString()))
                 }
             }
 
             override fun onAuthenticationFailed() {
-                errorMessage = "Autenticación fallida. Inténtalo de nuevo."
+                vm.onIntent(AppLockIntent.AuthFailed)
             }
         }
 
@@ -71,11 +72,22 @@ fun AppLockScreen(onUnlocked: () -> Unit) {
         prompt.authenticate(info)
     }
 
+    // Collect one-shot effects from the ViewModel
+    LaunchedEffect(Unit) {
+        vm.effect.collect { effect ->
+            when (effect) {
+                is AppLockEffect.LaunchBiometric -> launchBiometric()
+                is AppLockEffect.Authenticated -> onUnlocked()
+            }
+        }
+    }
+
+    // Auto-trigger biometric prompt on first composition if the device supports it
     LaunchedEffect(Unit) {
         val biometricManager = BiometricManager.from(context)
         val canAuth = biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
         if (canAuth == BiometricManager.BIOMETRIC_SUCCESS) {
-            launchBiometric()
+            vm.requestBiometric()
         }
     }
 
@@ -115,14 +127,14 @@ fun AppLockScreen(onUnlocked: () -> Unit) {
 
         ChatAppPrimaryButton(
             text = "Desbloquear con huella",
-            onClick = { launchBiometric() },
+            onClick = { vm.requestBiometric() },
             leadingIcon = Icons.Default.Fingerprint,
         )
 
-        if (errorMessage != null) {
+        if (state.errorMessage != null) {
             Spacer(Modifier.height(16.dp))
             Text(
-                text = errorMessage ?: "",
+                text = state.errorMessage ?: "",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
                 textAlign = TextAlign.Center,

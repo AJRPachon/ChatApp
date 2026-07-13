@@ -51,6 +51,20 @@ fun PdfViewerScreen(
 
     LaunchedEffect(url) { vm.loadPdf(url) }
 
+    LaunchedEffect(vm) {
+        vm.effect.collect { effect ->
+            when (effect) {
+                is PdfViewerEffect.SharePdf -> {
+                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = "application/pdf"
+                        putExtra(Intent.EXTRA_TEXT, effect.url)
+                    }
+                    context.startActivity(Intent.createChooser(shareIntent, "Share PDF"))
+                }
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -67,13 +81,7 @@ fun PdfViewerScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = {
-                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                            type = "application/pdf"
-                            putExtra(Intent.EXTRA_TEXT, url)
-                        }
-                        context.startActivity(Intent.createChooser(shareIntent, "Share PDF"))
-                    }) {
+                    IconButton(onClick = { vm.sharePdf(url) }) {
                         Icon(Icons.Default.Share, contentDescription = "Share")
                     }
                 },

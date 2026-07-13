@@ -1,16 +1,16 @@
-package com.ajrpachon.chatapp.di
+﻿package com.ajrpachon.chatapp.di
 
 import com.ajrpachon.chatapp.BuildConfig
-import com.ajrpachon.chatapp.data.local.DraftRepository
 import com.ajrpachon.chatapp.data.local.ThemeRepository
 import com.ajrpachon.chatapp.data.local.buildChatDatabase
 import com.ajrpachon.chatapp.data.session.AndroidSessionManager
 import com.ajrpachon.chatapp.domain.repository.UserRepository
+import com.ajrpachon.chatapp.ui.applock.AppLockViewModel
 import com.ajrpachon.chatapp.ui.auth.AuthViewModel
 import com.ajrpachon.chatapp.ui.call.CallViewModel
 import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
 import com.ajrpachon.chatapp.ui.chat.ChatArgs
-import com.ajrpachon.chatapp.ui.chat.ChatMediaGalleryViewModel
+import com.ajrpachon.chatapp.ui.chat.gallery.ChatMediaGalleryViewModel
 import com.ajrpachon.chatapp.ui.chat.ChatViewModel
 import com.ajrpachon.chatapp.ui.chat.StickerPackViewModel
 import com.ajrpachon.chatapp.ui.conversations.ConversationListViewModel
@@ -47,6 +47,7 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.androidx.viewmodel.dsl.viewModelOf
 import org.koin.dsl.module
+import org.koin.dsl.onClose
 
 val databaseModule = module {
     single { buildChatDatabase(androidContext()) }
@@ -94,9 +95,10 @@ val networkModule = module {
 }
 
 val viewModelModule = module {
-    // BuildConfig values not injectable — kept as lambda
-    viewModel { AuthViewModel(androidApplication(), get(), get(), BuildConfig.GOOGLE_WEB_CLIENT_ID, get(), get(), get()) }
+    // BuildConfig values not injectable â€” kept as lambda
+    viewModel { AuthViewModel(androidApplication(), get(), get(), get(), BuildConfig.GOOGLE_WEB_CLIENT_ID, get(), get()) }
 
+    viewModelOf(::AppLockViewModel)
     viewModelOf(::ConversationListViewModel)
     viewModelOf(::InvitationsViewModel)
     viewModelOf(::NewChatViewModel)
@@ -110,14 +112,12 @@ val viewModelModule = module {
     viewModelOf(::SessionAuditViewModel)
     viewModelOf(::BackupViewModel)
     viewModelOf(::GlobalSearchViewModel)
-    // ChatViewModel: exceeds viewModelOf 22-param limit — kept as lambda
+    // ChatViewModel: Repositories only, no DAOs
     viewModel { params ->
         ChatViewModel(
             args = params[0],
             sendMessageUseCase = get(),
             messageRepository = get(),
-            conversationDao = get(),
-            messageDao = get(),
             callRepository = get(),
             userRepository = get(),
             getGroupMembersUseCase = get(),
@@ -125,13 +125,14 @@ val viewModelModule = module {
             groupRepository = get(),
             reactionRepository = get(),
             conversationRepository = get(),
-            supabaseClient = get(),
+            scheduledMessageRepository = get(),
+            typingRepository = get(),
             draftRepository = get(),
             translationManager = get(),
             audioTranscriber = get(),
             pollRepository = get(),
+            contactRepository = get(),
             chatThemeRepository = get(),
-            scheduledMessageDao = get(),
             workManager = get(),
             incognitoRepository = get(),
             aiAssistantRepository = get(),
@@ -144,7 +145,7 @@ val viewModelModule = module {
     viewModelOf(::ChatMediaGalleryViewModel)
     viewModelOf(::PdfViewerViewModel)
 
-    // CallViewModel: BuildConfig.LIVEKIT_URL + androidApplication() not injectable — kept as lambda
+    // CallViewModel: BuildConfig.LIVEKIT_URL + androidApplication() not injectable â€” kept as lambda
     viewModel { params ->
         CallViewModel(
             context = androidApplication(),
@@ -168,9 +169,13 @@ val utilsModule = module {
     single { PresenceManager(get()) }
     single { LinkPreviewFetcher() }
     single { com.ajrpachon.chatapp.data.local.AppLockRepository(androidContext()) }
-    single { com.ajrpachon.chatapp.data.local.IncognitoRepository(androidContext()) }
+    single<com.ajrpachon.chatapp.domain.repository.IncognitoRepository> {
+        com.ajrpachon.chatapp.data.local.IncognitoRepository(androidContext())
+    }
     single { ThemeRepository(androidContext()) }
-    single { DraftRepository(androidContext()) }
+    single<com.ajrpachon.chatapp.domain.repository.DraftRepository> {
+        com.ajrpachon.chatapp.data.local.DraftRepository(androidContext())
+    }
     single { TranslationManager() }
     single { com.ajrpachon.chatapp.data.local.NotificationSoundRepository(androidContext()) }
     single { com.ajrpachon.chatapp.utils.AudioTranscriber() }
@@ -178,12 +183,16 @@ val utilsModule = module {
     single { com.ajrpachon.chatapp.utils.NetworkMonitor(androidContext()) }
     single { com.ajrpachon.chatapp.utils.ContactSyncManager(androidContext().contentResolver) }
     single { com.ajrpachon.chatapp.utils.BackupManager(androidContext(), get()) }
-    single { com.ajrpachon.chatapp.data.local.WallpaperRepository(androidContext()) }
+    single<com.ajrpachon.chatapp.domain.repository.WallpaperRepository> {
+        com.ajrpachon.chatapp.data.local.WallpaperRepository(androidContext())
+    }
     single { androidContext().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager }
 }
 
 val aiModule = module {
-    single { com.ajrpachon.chatapp.data.repository.AiAssistantRepository(get()) }
+    single<com.ajrpachon.chatapp.domain.repository.AiAssistantRepository> {
+        com.ajrpachon.chatapp.data.repository.AiAssistantRepository(get())
+    }
 }
 
 val appModules = listOf(

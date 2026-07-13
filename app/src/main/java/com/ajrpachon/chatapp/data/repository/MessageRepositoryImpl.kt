@@ -15,11 +15,11 @@ import com.ajrpachon.chatapp.data.mapper.toDBO
 import com.ajrpachon.chatapp.data.mapper.toBO
 import com.ajrpachon.chatapp.data.remote.dto.MessageDTO
 import com.ajrpachon.chatapp.data.remote.source.MessageRemoteSource
+import com.ajrpachon.chatapp.data.remote.source.UserRemoteSource
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import com.ajrpachon.chatapp.utils.E2EEKeyManager
 import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
@@ -35,8 +35,6 @@ import com.ajrpachon.chatapp.utils.UploadLimits.checkImageSize
 import com.ajrpachon.chatapp.utils.UploadLimits.checkFileSize
 import com.ajrpachon.chatapp.utils.UploadLimits.checkVideoSize
 import kotlinx.datetime.Instant
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 private const val TAG = "MsgRepo"
 
 private const val BUCKET = "chat-images"
@@ -44,18 +42,12 @@ private const val AUDIO_BUCKET = "chat-audio"
 private const val FILE_BUCKET = "chat-files"
 private const val VIDEO_BUCKET = "chat-videos"
 
-/** Minimal DTO for fetching only the public_key field from profiles. */
-@Serializable
-private data class PublicKeyDTO(
-    @SerialName("id") val id: String,
-    @SerialName("public_key") val publicKey: String? = null,
-)
-
 class MessageRepositoryImpl(
     private val messageDao: MessageDao,
     private val userDao: UserDao,
     private val reactionDao: ReactionDao,
     private val remoteSource: MessageRemoteSource,
+    private val userRemoteSource: UserRemoteSource,
     private val supabase: SupabaseClient,
 ) : MessageRepository {
 
@@ -80,8 +72,10 @@ class MessageRepositoryImpl(
         }
         messageDao.observeByConversation(conversationId, historyVisibleFrom).map { dbos ->
             AppLogger.d(TAG, "Room emit: ${dbos.size} msgs conv=$conversationId since=$historyVisibleFrom firstCreatedAt=${dbos.firstOrNull()?.createdAt} lastCreatedAt=${dbos.lastOrNull()?.createdAt}")
+            val senderIds = dbos.map { it.senderId }.distinct()
+            val senderMap = userDao.getByIds(senderIds).associateBy { it.id }
             dbos.map { dbo ->
-                val senderName = userDao.getById(dbo.senderId)?.displayName ?: dbo.senderId
+                val senderName = senderMap[dbo.senderId]?.displayName ?: dbo.senderId
                 val bo = dbo.toBO(currentUserId, senderName)
                 // Attempt to decrypt E2EE messages inline; fall back to ciphertext on error
                 if (bo.isEncrypted && bo.content.isNotBlank()) {
@@ -258,8 +252,11 @@ class MessageRepositoryImpl(
 
     override suspend fun searchMessages(conversationId: String, currentUserId: String, query: String): List<MessageBO> {
         if (query.isBlank()) return emptyList()
-        return messageDao.searchMessages(conversationId, query.trim()).map { dbo ->
-            val senderName = userDao.getById(dbo.senderId)?.displayName ?: dbo.senderId
+        val dbos = messageDao.searchMessages(conversationId, query.trim())
+        val senderIds = dbos.map { it.senderId }.distinct()
+        val senderMap = userDao.getByIds(senderIds).associateBy { it.id }
+        return dbos.map { dbo ->
+            val senderName = senderMap[dbo.senderId]?.displayName ?: dbo.senderId
             dbo.toBO(currentUserId, senderName)
         }
     }
@@ -274,8 +271,10 @@ class MessageRepositoryImpl(
 
     override fun getPinnedMessages(conversationId: String, currentUserId: String): Flow<List<MessageBO>> =
         messageDao.getPinnedMessages(conversationId).map { dbos ->
+            val senderIds = dbos.map { it.senderId }.distinct()
+            val senderMap = userDao.getByIds(senderIds).associateBy { it.id }
             dbos.map { dbo ->
-                val senderName = userDao.getById(dbo.senderId)?.displayName ?: dbo.senderId
+                val senderName = senderMap[dbo.senderId]?.displayName ?: dbo.senderId
                 dbo.toBO(currentUserId, senderName)
             }
         }
@@ -286,8 +285,10 @@ class MessageRepositoryImpl(
 
     override fun getSavedMessages(currentUserId: String): Flow<List<MessageBO>> =
         messageDao.getSavedMessages().map { dbos ->
+            val senderIds = dbos.map { it.senderId }.distinct()
+            val senderMap = userDao.getByIds(senderIds).associateBy { it.id }
             dbos.map { dbo ->
-                val senderName = userDao.getById(dbo.senderId)?.displayName ?: dbo.senderId
+                val senderName = senderMap[dbo.senderId]?.displayName ?: dbo.senderId
                 dbo.toBO(currentUserId, senderName)
             }
         }
@@ -310,9 +311,7 @@ class MessageRepositoryImpl(
         // Mutex prevents duplicate derivations when multiple messages arrive concurrently.
         return keyDerivationMutex.withLock {
             sharedKeyCache[cacheKey]?.let { return it }
-            val row = supabase.postgrest["profiles"]
-                .select { filter { eq("id", peerId) } }
-                .decodeSingleOrNull<PublicKeyDTO>()
+            val row = userRemoteSource.getPublicKey(peerId)
             val peerPublicKey = row?.publicKey
             if (peerPublicKey.isNullOrBlank()) return null
             E2EEKeyManager.getOrCreateKeyPair(localUserId)
@@ -327,12 +326,12 @@ class MessageRepositoryImpl(
         return runCatching {
             val sharedKey = getOrDeriveSharedKey(senderId, otherUserId)
             if (sharedKey == null) {
-                android.util.Log.d("E2EE", "No public key for $otherUserId — sending unencrypted")
+                AppLogger.d("E2EE", "No public key for $otherUserId — sending unencrypted")
                 return Pair(content, false)
             }
             Pair(E2EEKeyManager.encrypt(sharedKey, content), true)
         }.getOrElse { e ->
-            android.util.Log.w("E2EE", "Encryption failed, sending unencrypted: ${e.message}")
+            AppLogger.w("E2EE", "Encryption failed, sending unencrypted: ${e.message}")
             Pair(content, false)
         }
     }
@@ -345,20 +344,50 @@ class MessageRepositoryImpl(
         return runCatching {
             val sharedKey = getOrDeriveSharedKey(currentUserId, senderId)
             if (sharedKey == null) {
-                android.util.Log.d("E2EE", "No public key for sender $senderId — cannot decrypt")
+                AppLogger.d("E2EE", "No public key for sender $senderId — cannot decrypt")
                 return bo
             }
             bo.copy(content = E2EEKeyManager.decrypt(sharedKey, bo.content))
         }.getOrElse { e ->
-            android.util.Log.w("E2EE", "Decryption failed for msg ${bo.id}: ${e.message}")
+            AppLogger.w("E2EE", "Decryption failed for msg ${bo.id}: ${e.message}")
             bo
         }
     }
 
     override suspend fun getAllMessages(conversationId: String, currentUserId: String): List<MessageBO> {
-        return messageDao.getAllMessages(conversationId).map { dbo ->
-            val senderName = userDao.getById(dbo.senderId)?.displayName ?: dbo.senderId
+        val dbos = messageDao.getAllMessages(conversationId)
+        val senderIds = dbos.map { it.senderId }.distinct()
+        val senderMap = userDao.getByIds(senderIds).associateBy { it.id }
+        return dbos.map { dbo ->
+            val senderName = senderMap[dbo.senderId]?.displayName ?: dbo.senderId
             dbo.toBO(currentUserId, senderName)
         }
     }
+
+    override suspend fun savePendingMessage(id: String, conversationId: String, senderId: String, content: String, replyToId: String?, replyToContent: String?, replyToSenderName: String?) {
+        val dbo = com.ajrpachon.chatapp.data.local.entity.MessageDBO(id = id, conversationId = conversationId, senderId = senderId, content = content, isRead = true, createdAt = System.currentTimeMillis(), replyToId = replyToId, replyToContent = replyToContent, replyToSenderName = replyToSenderName, sendStatus = "pending")
+        messageDao.upsert(dbo)
+    }
+
+    override suspend fun searchAllMessages(query: String): List<MessageBO> {
+        val dbos = messageDao.searchAllMessages(query)
+        val senderIds = dbos.map { it.senderId }.distinct()
+        val senderMap = userDao.getByIds(senderIds).associateBy { it.id }
+        return dbos.map { dbo ->
+            val senderName = senderMap[dbo.senderId]?.displayName ?: dbo.senderId
+            dbo.toBO("", senderName)
+        }
+    }
+
+    override suspend fun countSent(userId: String): Int = messageDao.countSent(userId)
+    override suspend fun countReceived(userId: String): Int = messageDao.countReceived(userId)
+    override suspend fun countCalls(): Int = messageDao.countCalls()
+    override suspend fun sumCallDurationSeconds(): Int = messageDao.sumCallDurationSeconds()
+    override suspend fun countImages(): Int = messageDao.countImages()
+    override suspend fun countAudio(): Int = messageDao.countAudio()
+    override suspend fun countVideos(): Int = messageDao.countVideos()
+    override suspend fun getMostActiveConversationId(): String? = messageDao.getMostActiveConversation()?.conversationId
+    override suspend fun countMessagesByDay(since: Long): List<Pair<Long, Int>> =
+        messageDao.countMessagesByDay(since).map { it.dayEpoch to it.count }
 }
+

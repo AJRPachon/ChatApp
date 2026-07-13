@@ -3,12 +3,10 @@ package com.ajrpachon.chatapp.ui.newchat
 import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
-import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.provider.ContactsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -45,7 +43,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -64,16 +61,14 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.domain.model.UserBO
+import com.ajrpachon.chatapp.ui.common.ChatConstants
 import com.ajrpachon.chatapp.domain.model.UserRelationship
 import com.ajrpachon.chatapp.ui.components.ChatAppSecondaryButton
 import com.ajrpachon.chatapp.ui.components.ChatAppSearchField
-import com.ajrpachon.chatapp.ui.components.ChatAppTextField
 import com.ajrpachon.chatapp.ui.components.ChatAppTopBar
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import com.github.skydoves.navgraph.annotations.NavDestination
 import com.github.skydoves.navgraph.annotations.NavEdge
 import com.ajrpachon.chatapp.ChatRoute
@@ -102,6 +97,32 @@ fun NewChatScreen(
                 is NewChatEffect.NavigateToChat -> onOpenConversation(effect.conversationId, effect.otherUserName)
                 is NewChatEffect.NavigateToInvitations -> onOpenInvitations()
                 is NewChatEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.text)
+                is NewChatEffect.CopyToClipboard -> {
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    clipboard.setPrimaryClip(ClipData.newPlainText("invite_code", effect.text))
+                    snackbarHostState.showSnackbar("Código copiado")
+                }
+                is NewChatEffect.ShareText -> {
+                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, effect.text)
+                    }
+                    context.startActivity(Intent.createChooser(shareIntent, "Compartir invitación"))
+                }
+                is NewChatEffect.InviteContact -> {
+                    val smsIntent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:${effect.phoneNumber}")).apply {
+                        putExtra("sms_body", effect.text)
+                    }
+                    if (smsIntent.resolveActivity(context.packageManager) != null) {
+                        context.startActivity(smsIntent)
+                    } else {
+                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, effect.text)
+                        }
+                        context.startActivity(Intent.createChooser(shareIntent, "Compartir invitación"))
+                    }
+                }
             }
         }
     }
@@ -110,10 +131,7 @@ fun NewChatScreen(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
-            scope.launch {
-                val contacts = withContext(Dispatchers.IO) { loadContacts(context.contentResolver) }
-                vm.onIntent(NewChatIntent.ContactsLoaded(contacts))
-            }
+            vm.onIntent(NewChatIntent.LoadContacts)
         } else {
             vm.onIntent(NewChatIntent.ContactsPermissionDenied)
         }
@@ -122,7 +140,7 @@ fun NewChatScreen(
     val qrScanLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
         val raw = result.contents ?: return@rememberLauncherForActivityResult
         val uri = runCatching { Uri.parse(raw) }.getOrNull() ?: return@rememberLauncherForActivityResult
-        if (uri.scheme == "chatapp" && uri.host == "user") {
+        if (uri.scheme == ChatConstants.DEEP_LINK_SCHEME && uri.host == ChatConstants.DEEP_LINK_USER_HOST) {
             val userId = uri.lastPathSegment?.takeIf { it.isNotBlank() }
                 ?: return@rememberLauncherForActivityResult
             vm.onIntent(NewChatIntent.UserScannedByQr(userId))
@@ -134,8 +152,7 @@ fun NewChatScreen(
     LaunchedEffect(Unit) {
         val permission = Manifest.permission.READ_CONTACTS
         if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
-            val contacts = withContext(Dispatchers.IO) { loadContacts(context.contentResolver) }
-            vm.onIntent(NewChatIntent.ContactsLoaded(contacts))
+            vm.onIntent(NewChatIntent.LoadContacts)
         } else {
             requestPermission.launch(permission)
         }
@@ -186,11 +203,8 @@ fun NewChatScreen(
                     item {
                         InviteCodeCard(
                             username = state.currentUsername,
-                            onCopy = {
-                                copyToClipboard(context, state.currentUsername)
-                                scope.launch { snackbarHostState.showSnackbar("Código copiado") }
-                            },
-                            onShare = { shareInviteText(context, state.currentUsername) },
+                            onCopy = { vm.onIntent(NewChatIntent.CopyInviteCode(state.currentUsername)) },
+                            onShare = { vm.onIntent(NewChatIntent.ShareInviteText(state.currentUsername)) },
                         )
                     }
                 }
@@ -271,7 +285,7 @@ fun NewChatScreen(
                         ContactItem(
                             contact = contact,
                             onInvite = {
-                                inviteContact(context, contact.phoneNumber, state.currentUsername)
+                                vm.onIntent(NewChatIntent.InviteContact(contact.phoneNumber, state.currentUsername))
                             },
                         )
                         HorizontalDivider()
@@ -439,60 +453,9 @@ private fun ContactItem(contact: PhoneContact, onInvite: () -> Unit) {
     )
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-private fun copyToClipboard(context: Context, username: String) {
-    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    clipboard.setPrimaryClip(ClipData.newPlainText("invite_code", "@$username"))
-}
-
-private fun shareInviteText(context: Context, username: String) {
-    val text = "¡Únete a ChatApp! Búscame como @$username y hablamos 💬"
-    val intent = Intent(Intent.ACTION_SEND).apply {
-        type = "text/plain"
-        putExtra(Intent.EXTRA_TEXT, text)
-    }
-    context.startActivity(Intent.createChooser(intent, "Compartir invitación"))
-}
-
-private fun inviteContact(context: Context, phoneNumber: String, username: String) {
-    val message = "¡Únete a ChatApp! Búscame como @$username y hablamos 💬"
-    val smsIntent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$phoneNumber")).apply {
-        putExtra("sms_body", message)
-    }
-    if (smsIntent.resolveActivity(context.packageManager) != null) {
-        context.startActivity(smsIntent)
-    } else {
-        shareInviteText(context, username)
-    }
-}
-
-private fun loadContacts(resolver: ContentResolver): List<PhoneContact> {
-    val contacts = mutableListOf<PhoneContact>()
-    val cursor = resolver.query(
-        ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-        arrayOf(
-            ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
-            ContactsContract.CommonDataKinds.Phone.NUMBER,
-        ),
-        null, null,
-        "${ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME} ASC",
-    ) ?: return contacts
-    cursor.use {
-        val nameIdx = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
-        val numIdx = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
-        while (it.moveToNext()) {
-            val name = it.getString(nameIdx) ?: continue
-            val number = it.getString(numIdx) ?: continue
-            contacts.add(PhoneContact(name, number.trim()))
-        }
-    }
-    return contacts.distinctBy { it.phoneNumber }
-}
-
 @Composable
 private fun SuggestedContactChip(
-    user: com.ajrpachon.chatapp.domain.model.UserBO,
+    user: UserBO,
     onClick: () -> Unit,
 ) {
     Column(

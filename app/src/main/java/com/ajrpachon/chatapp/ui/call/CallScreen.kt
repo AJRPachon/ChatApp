@@ -3,8 +3,8 @@ package com.ajrpachon.chatapp.ui.call
 import android.app.Activity
 import android.media.projection.MediaProjectionManager
 import android.os.Build
-import android.Manifest
 import android.content.pm.PackageManager
+import com.ajrpachon.chatapp.ui.common.CallPermissions
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -104,10 +104,7 @@ fun CallScreen(
 ) {
     val context = LocalContext.current
     val required = remember(callType) {
-        buildList {
-            add(Manifest.permission.RECORD_AUDIO)
-            if (callType == "video") add(Manifest.permission.CAMERA)
-        }.toTypedArray()
+        CallPermissions.forCallType(callType).toTypedArray()
     }
     var granted by remember {
         mutableStateOf(required.all {
@@ -175,7 +172,7 @@ private fun CallScreenContent(
 
     // Collect CallEffects (e.g. RequestScreenShare)
     LaunchedEffect(vm) {
-        vm.effects.collect { effect ->
+        vm.effect.collect { effect ->
             when (effect) {
                 is CallEffect.RequestScreenShare -> {
                     val mgr = context.getSystemService(MediaProjectionManager::class.java)
