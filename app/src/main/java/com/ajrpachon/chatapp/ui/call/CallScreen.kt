@@ -85,6 +85,7 @@ import io.livekit.android.room.Room
 import io.livekit.android.room.track.LocalVideoTrack
 import io.livekit.android.room.track.VideoTrack
 import kotlin.math.roundToInt
+import com.ajrpachon.chatapp.ui.call.CallArgs
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -150,7 +151,7 @@ private fun CallScreenContent(
     val context = LocalContext.current
     val vm: CallViewModel = koinViewModel(
         key = callId,
-        parameters = { parametersOf(callId, conversationId, roomName, callType, isOutgoing, isGroup) },
+        parameters = { parametersOf(CallArgs(callId, conversationId, roomName, callType, isOutgoing, isGroup)) },
     )
     val state by vm.state.collectAsStateWithLifecycle()
     val currentRoom by vm.roomFlow.collectAsStateWithLifecycle()

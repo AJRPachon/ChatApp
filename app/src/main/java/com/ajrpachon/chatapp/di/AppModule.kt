@@ -7,6 +7,7 @@ import com.ajrpachon.chatapp.data.session.AndroidSessionManager
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.ui.applock.AppLockViewModel
 import com.ajrpachon.chatapp.ui.auth.AuthViewModel
+import com.ajrpachon.chatapp.ui.call.CallArgs
 import com.ajrpachon.chatapp.ui.call.CallViewModel
 import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
 import com.ajrpachon.chatapp.ui.chat.ChatArgs
@@ -152,16 +153,11 @@ val viewModelModule = module {
     viewModelOf(::ChatMediaGalleryViewModel)
     viewModelOf(::PdfViewerViewModel)
 
-    // CallViewModel: BuildConfig.LIVEKIT_URL + runtime params — kept as lambda
+    // CallViewModel: BuildConfig.LIVEKIT_URL + runtime CallArgs — kept as lambda
     viewModel { params ->
         CallViewModel(
+            args = params.get<CallArgs>(),
             application = androidApplication(),
-            callId = params[0],
-            conversationId = params[1],
-            roomName = params[2],
-            callType = params[3],
-            isOutgoing = params[4],
-            isGroup = params[5],
             callRepository = get(),
             getCurrentUserUseCase = get(),
             sendMessageUseCase = get(),

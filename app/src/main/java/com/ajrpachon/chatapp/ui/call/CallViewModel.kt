@@ -36,20 +36,30 @@ import kotlinx.coroutines.withTimeout
 
 private const val MISSED_CALL_TIMEOUT_MS = 20_000L
 
+data class CallArgs(
+    val callId: String,
+    val conversationId: String,
+    val roomName: String,
+    val callType: String,
+    val isOutgoing: Boolean,
+    val isGroup: Boolean,
+)
+
 class CallViewModel(
+    private val args: CallArgs,
     private val application: Application,
-    private val callId: String,
-    private val conversationId: String,
-    private val roomName: String,
-    private val callType: String,
-    private val isOutgoing: Boolean,
-    private val isGroup: Boolean,
     private val callRepository: CallRepository,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val sendMessageUseCase: SendMessageUseCase,
     private val livekitUrl: String,
     private val recordingsDir: File,
 ) : BaseViewModel<CallState, CallEffect>(CallState()) {
+    private val callId get() = args.callId
+    private val conversationId get() = args.conversationId
+    private val roomName get() = args.roomName
+    private val callType get() = args.callType
+    private val isOutgoing get() = args.isOutgoing
+    private val isGroup get() = args.isGroup
 
     private val _roomFlow = MutableStateFlow<Room?>(null)
     val roomFlow = _roomFlow.asStateFlow()

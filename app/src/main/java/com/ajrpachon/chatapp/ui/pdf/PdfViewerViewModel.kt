@@ -14,7 +14,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import java.io.File
 
 data class PdfViewerState(
     val pages: List<ImageBitmap> = emptyList(),
