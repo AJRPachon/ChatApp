@@ -45,9 +45,11 @@ import com.ajrpachon.chatapp.domain.repository.UserRepository
 import org.koin.android.ext.koin.androidContext
 import com.ajrpachon.chatapp.domain.usecase.AddGroupMemberUseCase
 import com.ajrpachon.chatapp.domain.usecase.BlockUserUseCase
+import com.ajrpachon.chatapp.domain.usecase.GetCacheFileUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetDeviceContactsUseCase
 import com.ajrpachon.chatapp.domain.usecase.CreateGroupUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
+import com.ajrpachon.chatapp.domain.usecase.ReadUriAsBytesUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetGroupMembersUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetOrCreateConversationUseCase
 import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
@@ -120,6 +122,8 @@ val useCaseModule = module {
     factoryOf(::SendInvitationUseCase)
     factoryOf(::BlockUserUseCase)
     factoryOf(::GetDeviceContactsUseCase)
+    single { GetCacheFileUseCase(androidContext().cacheDir) }
+    single { ReadUriAsBytesUseCase(androidContext().contentResolver) }
 }
 
 val sharedModules = listOf(remoteModule, repositoryModule, useCaseModule)

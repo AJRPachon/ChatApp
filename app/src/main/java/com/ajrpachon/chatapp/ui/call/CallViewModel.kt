@@ -1,10 +1,11 @@
 package com.ajrpachon.chatapp.ui.call
 import com.ajrpachon.chatapp.utils.catchResult
 
-import android.content.Context
+import android.app.Application
 import android.content.Intent
 import android.media.MediaRecorder
 import android.os.Build
+import java.io.File
 import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
@@ -36,7 +37,7 @@ import kotlinx.coroutines.withTimeout
 private const val MISSED_CALL_TIMEOUT_MS = 20_000L
 
 class CallViewModel(
-    private val context: Context,
+    private val application: Application,
     private val callId: String,
     private val conversationId: String,
     private val roomName: String,
@@ -47,6 +48,7 @@ class CallViewModel(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val sendMessageUseCase: SendMessageUseCase,
     private val livekitUrl: String,
+    private val recordingsDir: File,
 ) : BaseViewModel<CallState, CallEffect>(CallState()) {
 
     private val _roomFlow = MutableStateFlow<Room?>(null)
@@ -116,7 +118,7 @@ class CallViewModel(
             AppLogger.d(TAG, "joinCall: userId=${user.id} roomName=$roomName livekitUrl=$livekitUrl")
             val token = callRepository.fetchLivekitToken(roomName, user.id)
 
-            val livekitRoom = LiveKit.create(context)
+            val livekitRoom = LiveKit.create(application)
             room = livekitRoom
             _roomFlow.value = livekitRoom
 
@@ -368,11 +370,10 @@ class CallViewModel(
 
     private fun startRecording() {
         catchResult {
-            val dir = context.getExternalFilesDir("recordings")
-            dir?.mkdirs()
-            val file = java.io.File(dir, "$callId.m4a")
+            recordingsDir.mkdirs()
+            val file = File(recordingsDir, "$callId.m4a")
             val recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                MediaRecorder(context)
+                MediaRecorder(application)
             } else {
                 @Suppress("DEPRECATION")
                 MediaRecorder()

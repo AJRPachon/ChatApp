@@ -27,6 +27,7 @@ import com.ajrpachon.chatapp.ui.profile.SessionAuditViewModel
 import com.ajrpachon.chatapp.ui.backup.BackupViewModel
 import com.ajrpachon.chatapp.ui.pdf.PdfViewerViewModel
 import com.ajrpachon.chatapp.ui.search.GlobalSearchViewModel
+import com.ajrpachon.chatapp.ui.status.StatusViewModel
 import com.ajrpachon.chatapp.service.PresenceManager
 import com.ajrpachon.chatapp.utils.LinkPreviewFetcher
 import com.ajrpachon.chatapp.utils.OkHttpProvider
@@ -41,6 +42,7 @@ import io.github.jan.supabase.storage.Storage
 import io.ktor.client.engine.okhttp.OkHttp
 import android.app.NotificationManager
 import android.content.Context
+import android.os.Environment
 import okhttp3.OkHttpClient
 import org.koin.android.ext.koin.androidApplication
 import org.koin.android.ext.koin.androidContext
@@ -112,6 +114,7 @@ val viewModelModule = module {
     viewModelOf(::SessionAuditViewModel)
     viewModelOf(::BackupViewModel)
     viewModelOf(::GlobalSearchViewModel)
+    viewModelOf(::StatusViewModel)
     // ChatViewModel: Repositories only, no DAOs
     viewModel { params ->
         ChatViewModel(
@@ -145,10 +148,10 @@ val viewModelModule = module {
     viewModelOf(::ChatMediaGalleryViewModel)
     viewModelOf(::PdfViewerViewModel)
 
-    // CallViewModel: BuildConfig.LIVEKIT_URL + androidApplication() not injectable â€” kept as lambda
+    // CallViewModel: BuildConfig.LIVEKIT_URL + runtime params — kept as lambda
     viewModel { params ->
         CallViewModel(
-            context = androidApplication(),
+            application = androidApplication(),
             callId = params[0],
             conversationId = params[1],
             roomName = params[2],
@@ -159,6 +162,7 @@ val viewModelModule = module {
             getCurrentUserUseCase = get(),
             sendMessageUseCase = get(),
             livekitUrl = BuildConfig.LIVEKIT_URL,
+            recordingsDir = androidContext().getExternalFilesDir(Environment.DIRECTORY_MUSIC) ?: androidContext().filesDir,
         )
     }
 }
