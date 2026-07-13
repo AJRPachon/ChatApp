@@ -351,15 +351,15 @@ fun ChatScreen(
 
     val galleryLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickMultipleVisualMedia()
-    ) { uris -> if (uris.isNotEmpty()) vm.onIntent(ChatIntent.SendImages(context, uris)) }
+    ) { uris -> if (uris.isNotEmpty()) vm.onIntent(ChatIntent.SendImages(uris)) }
 
     val fileLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
-    ) { uri -> if (uri != null) vm.onIntent(ChatIntent.SendFile(context, uri)) }
+    ) { uri -> if (uri != null) vm.onIntent(ChatIntent.SendFile(uri)) }
 
     val videoLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CaptureVideo()
-    ) { success -> if (success) videoUri?.let { vm.onIntent(ChatIntent.SendVideo(context, it)) } }
+    ) { success -> if (success) videoUri?.let { vm.onIntent(ChatIntent.SendVideo(it)) } }
 
     val videoPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -372,7 +372,7 @@ fun ChatScreen(
 
     val cameraLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()
-    ) { success -> if (success) cameraUri?.let { vm.onIntent(ChatIntent.SendImages(context, listOf(it))) } }
+    ) { success -> if (success) cameraUri?.let { vm.onIntent(ChatIntent.SendImages(listOf(it))) } }
 
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -388,7 +388,7 @@ fun ChatScreen(
     ) { granted ->
         if (granted) {
             val file = File.createTempFile("audio_", ".m4a", context.cacheDir)
-            vm.onIntent(ChatIntent.StartRecording(context, file.absolutePath))
+            vm.onIntent(ChatIntent.StartRecording(file.absolutePath))
         }
     }
 
@@ -909,7 +909,7 @@ fun ChatScreen(
                                 enabled = !state.isExporting,
                                 onClick = {
                                     menuExpanded = false
-                                    vm.onIntent(ChatIntent.ExportConversation(context))
+                                    vm.onIntent(ChatIntent.ExportConversation)
                                 },
                             )
                             DropdownMenuItem(
@@ -1081,7 +1081,7 @@ fun ChatScreen(
                                 ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
                                         == PackageManager.PERMISSION_GRANTED -> {
                                     val file = File.createTempFile("audio_", ".m4a", context.cacheDir)
-                                    vm.onIntent(ChatIntent.StartRecording(context, file.absolutePath))
+                                    vm.onIntent(ChatIntent.StartRecording(file.absolutePath))
                                 }
                                 else -> audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                             }
