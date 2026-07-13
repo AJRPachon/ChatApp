@@ -4,6 +4,7 @@ import com.ajrpachon.chatapp.utils.catchResult
 import android.app.Application
 import android.content.Intent
 import android.media.MediaRecorder
+import android.media.projection.MediaProjectionManager
 import android.os.Build
 import java.io.File
 import com.ajrpachon.chatapp.domain.repository.CallRepository
@@ -60,6 +61,9 @@ class CallViewModel(
     private val callType get() = args.callType
     private val isOutgoing get() = args.isOutgoing
     private val isGroup get() = args.isGroup
+
+    val mediaProjectionManager: MediaProjectionManager =
+        application.getSystemService(MediaProjectionManager::class.java)
 
     private val _roomFlow = MutableStateFlow<Room?>(null)
     val roomFlow = _roomFlow.asStateFlow()

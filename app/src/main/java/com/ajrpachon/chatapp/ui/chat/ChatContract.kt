@@ -1,5 +1,6 @@
 ﻿package com.ajrpachon.chatapp.ui.chat
 
+import android.content.Context
 import android.net.Uri
 import com.ajrpachon.chatapp.domain.model.ChatTheme
 import com.ajrpachon.chatapp.ui.common.formatDisappearingDuration
@@ -118,10 +119,10 @@ data class ChatState(
 sealed interface ChatIntent {
     data class InputChanged(val text: String) : ChatIntent
     data object Send : ChatIntent
-    data class SendImages(val uris: List<Uri>) : ChatIntent
-    data class SendFile(val uri: Uri) : ChatIntent
-    data class SendVideo(val uri: Uri) : ChatIntent
-    data class StartRecording(val outputFilePath: String) : ChatIntent
+    data class SendImages(val context: Context, val uris: List<Uri>) : ChatIntent
+    data class SendFile(val context: Context, val uri: Uri) : ChatIntent
+    data class SendVideo(val context: Context, val uri: Uri) : ChatIntent
+    data object StartRecording : ChatIntent
     data object StopRecording : ChatIntent
     data object DiscardAudio : ChatIntent
     data object SendAudio : ChatIntent
@@ -162,7 +163,7 @@ sealed interface ChatIntent {
     data class SendLocation(val mapsUrl: String) : ChatIntent
     data class TranslateMessage(val messageId: String, val text: String) : ChatIntent
     data class DismissTranslation(val messageId: String) : ChatIntent
-    data class TranscribeAudio(val messageId: String) : ChatIntent
+    data class TranscribeAudio(val context: Context, val messageId: String) : ChatIntent
     data class PinMessage(val messageId: String) : ChatIntent
     data class UnpinMessage(val messageId: String) : ChatIntent
     data class SaveMessage(val messageId: String) : ChatIntent
@@ -204,6 +205,8 @@ sealed interface ChatIntent {
     data class SendContact(val name: String, val phone: String) : ChatIntent
     data class ContactSelected(val uri: android.net.Uri) : ChatIntent
     data class RetryMessage(val messageId: String) : ChatIntent
+    data class CopyMessageContent(val content: String) : ChatIntent
+    data object FetchAndSendLocation : ChatIntent
     // Multi-forward
     data object ShowForwardSelectionDialog : ChatIntent
     data object DismissForwardSelectionDialog : ChatIntent

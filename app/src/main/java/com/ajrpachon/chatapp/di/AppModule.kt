@@ -30,6 +30,7 @@ import com.ajrpachon.chatapp.ui.pdf.PdfViewerViewModel
 import com.ajrpachon.chatapp.ui.search.GlobalSearchViewModel
 import com.ajrpachon.chatapp.ui.status.StatusViewModel
 import com.ajrpachon.chatapp.service.PresenceManager
+import com.ajrpachon.chatapp.utils.ClipboardProtection
 import com.ajrpachon.chatapp.utils.LinkPreviewFetcher
 import com.ajrpachon.chatapp.utils.OkHttpProvider
 import com.ajrpachon.chatapp.utils.SessionGuard
@@ -120,6 +121,8 @@ val viewModelModule = module {
     viewModel { params ->
         ChatViewModel(
             args = params[0],
+            application = androidApplication(),
+            clipboardProtection = get(),
             sendMessageUseCase = get(),
             messageRepository = get(),
             callRepository = get(),
@@ -142,10 +145,6 @@ val viewModelModule = module {
             aiAssistantRepository = get(),
             wallpaperRepository = get(),
             networkMonitor = get<com.ajrpachon.chatapp.utils.NetworkMonitor>(),
-            readUriBytesUseCase = get(),
-            getUriMetadataUseCase = get(),
-            audioRecorderRepository = get(),
-            exportConversationUseCase = get(),
         )
     }
     viewModelOf(::GroupInfoViewModel)
@@ -168,6 +167,7 @@ val viewModelModule = module {
 }
 
 val utilsModule = module {
+    single { ClipboardProtection(androidApplication()) }
     single { SessionGuard(androidContext()) }
     // TODO: Call presenceManager.close() on Koin scope teardown when Koin 4.x onClose DSL is stable
     single { PresenceManager(get()) }

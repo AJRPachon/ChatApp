@@ -1,6 +1,14 @@
 ﻿package com.ajrpachon.chatapp.ui.chat
 
+import android.annotation.SuppressLint
+import android.app.Application
+import android.content.Context
+import android.location.LocationManager
+import android.media.MediaRecorder
 import android.net.Uri
+import android.os.Build
+import android.provider.OpenableColumns
+import androidx.core.content.FileProvider
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
@@ -32,16 +40,13 @@ import com.ajrpachon.chatapp.domain.repository.ReactionRepository
 import com.ajrpachon.chatapp.domain.repository.ScheduledMessageRepository
 import com.ajrpachon.chatapp.domain.repository.TypingRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
-import com.ajrpachon.chatapp.domain.repository.AudioRecorderRepository
-import com.ajrpachon.chatapp.domain.usecase.ExportConversationUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetGroupMembersUseCase
-import com.ajrpachon.chatapp.domain.usecase.GetUriMetadataUseCase
 import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
-import com.ajrpachon.chatapp.domain.usecase.ReadUriAsBytesUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.AudioTranscriber
+import com.ajrpachon.chatapp.utils.ClipboardProtection
 import com.ajrpachon.chatapp.utils.NetworkMonitor
 import com.ajrpachon.chatapp.utils.TranslationManager
 import com.ajrpachon.chatapp.utils.catchResult
@@ -68,6 +73,8 @@ data class ChatArgs(val conversationId: String, val otherUserName: String)
 @Suppress("LongParameterList", "TooManyFunctions")
 class ChatViewModel(
     args: ChatArgs,
+    private val application: Application,
+    private val clipboardProtection: ClipboardProtection,
     private val sendMessageUseCase: SendMessageUseCase,
     private val messageRepository: MessageRepository,
     private val callRepository: CallRepository,
@@ -90,10 +97,6 @@ class ChatViewModel(
     private val aiAssistantRepository: AiAssistantRepository,
     private val wallpaperRepository: WallpaperRepository,
     private val networkMonitor: NetworkMonitor,
-    private val readUriBytesUseCase: ReadUriAsBytesUseCase,
-    private val getUriMetadataUseCase: GetUriMetadataUseCase,
-    private val audioRecorderRepository: AudioRecorderRepository,
-    private val exportConversationUseCase: ExportConversationUseCase,
 ) : BaseViewModel<ChatState, ChatEffect>(ChatState()) {
 
     private val conversationId = args.conversationId
@@ -115,6 +118,7 @@ class ChatViewModel(
         messageRepository.getPinnedMessages(conversationId, currentUserId ?: "")
 
     private var groupMembers: List<GroupMemberBO> = emptyList()
+    private var recorder: MediaRecorder? = null
     private var recordingTimerJob: Job? = null
     private var remoteSyncJob: Job? = null
     private var typingResetJob: Job? = null
@@ -319,10 +323,10 @@ class ChatViewModel(
                 }
             }
             is ChatIntent.Send -> if (state.value.editingMessage != null) confirmEdit() else sendMessage()
-            is ChatIntent.SendImages -> sendImages(intent.uris)
-            is ChatIntent.SendFile -> sendFile(intent.uri)
-            is ChatIntent.SendVideo -> sendVideo(intent.uri)
-            is ChatIntent.StartRecording -> startRecording(intent.outputFilePath)
+            is ChatIntent.SendImages -> sendImages(intent.context, intent.uris)
+            is ChatIntent.SendFile -> sendFile(intent.context, intent.uri)
+            is ChatIntent.SendVideo -> sendVideo(intent.context, intent.uri)
+            is ChatIntent.StartRecording -> startRecording()
             is ChatIntent.StopRecording -> stopRecording()
             is ChatIntent.DiscardAudio -> discardAudio()
             is ChatIntent.SendAudio -> sendAudio()
@@ -361,6 +365,7 @@ class ChatViewModel(
             is ChatIntent.DismissForwardSelectionDialog -> updateState { it.copy(showForwardSelectionDialog = false, forwardableConversations = emptyList()) }
             is ChatIntent.ForwardSelectedMessages -> forwardSelectedMessages(intent.targetConversationId)
             is ChatIntent.SendLocation -> sendLocationMessage(intent.mapsUrl)
+            is ChatIntent.FetchAndSendLocation -> fetchAndSendLocation()
             is ChatIntent.TranslateMessage -> translateMessage(intent.messageId, intent.text)
             is ChatIntent.DismissTranslation -> updateState { it.copy(translatedTexts = it.translatedTexts - intent.messageId) }
             is ChatIntent.TranscribeAudio -> transcribeAudio(intent.messageId)
@@ -376,6 +381,7 @@ class ChatViewModel(
             is ChatIntent.OpenThemePicker -> updateState { it.copy(showThemePicker = true) }
             is ChatIntent.DismissThemePicker -> updateState { it.copy(showThemePicker = false) }
             is ChatIntent.ExportConversation -> exportConversation()
+            is ChatIntent.CopyMessageContent -> clipboardProtection.copyWithTimeout("message", intent.content, viewModelScope)
             is ChatIntent.ShowDisappearingModeSheet -> updateState { it.copy(showDisappearingModeSheet = true) }
             is ChatIntent.DismissDisappearingModeSheet -> updateState { it.copy(showDisappearingModeSheet = false) }
             is ChatIntent.SetDisappearingMode -> setDisappearingMode(intent.conversationId, intent.seconds)
@@ -448,6 +454,21 @@ class ChatViewModel(
         val newText = if (lastAtIndex >= 0) currentText.substring(0, lastAtIndex) + "@${member.username} "
                       else currentText + "@${member.username} "
         updateState { it.copy(inputText = newText, mentionSuggestions = emptyList(), showMentionSuggestions = false) }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun fetchAndSendLocation() {
+        val lm = application.getSystemService(LocationManager::class.java)
+        val providers = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
+        val location = providers.firstNotNullOfOrNull { provider ->
+            runCatching { lm.getLastKnownLocation(provider) }.getOrNull()
+        }
+        if (location != null) {
+            val url = "https://maps.google.com/?q=${location.latitude},${location.longitude}"
+            sendLocationMessage(url)
+        } else {
+            viewModelScope.launch { sendEffect(ChatEffect.ShowSnackbar("No se pudo obtener la ubicacion")) }
+        }
     }
 
     private fun sendLocationMessage(mapsUrl: String) {
@@ -569,16 +590,18 @@ class ChatViewModel(
         }
     }
 
-    private fun sendImages(uris: List<Uri>) {
+    private fun sendImages(context: Context, uris: List<Uri>) {
         val userId = state.value.currentUserId ?: return
         val reply = state.value.replyingTo
         viewModelScope.launch {
             sendEffect(ChatEffect.ScrollToBottom)
             updateState { it.copy(isUploadingImage = true, replyingTo = null) }
             for ((index, uri) in uris.withIndex()) {
-                val bytes = catchResult { readUriBytesUseCase(uri) }.getOrNull() ?: continue
+                val bytes = catchResult {
+                    withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { stream -> stream.readBytes() } }
+                }.getOrNull() ?: continue
                 catchResult {
-                    val mimeType = getUriMetadataUseCase(uri).mimeType ?: "image/jpeg"
+                    val mimeType = context.contentResolver.getType(uri) ?: "image/jpeg"
                     val imageUrl = messageRepository.uploadImage(conversationId, bytes, mimeType)
                     val replyForImage = if (index == 0) reply else null
                     sendMessageUseCase(conversationId, userId, "", imageUrl,
@@ -590,33 +613,43 @@ class ChatViewModel(
         }
     }
 
-    private fun startRecording(outputFilePath: String) {
-        audioRecorderRepository.startRecording(outputFilePath)
-            .onSuccess {
-                updateState { it.copy(audioState = AudioState(isRecording = true, pendingFilePath = outputFilePath)) }
-                val startMs = System.currentTimeMillis()
-                recordingTimerJob = viewModelScope.launch {
-                    while (true) {
-                        delay(100)
-                        val elapsed = System.currentTimeMillis() - startMs
-                        val amp = audioRecorderRepository.getMaxAmplitude()
-                        updateState { s ->
-                            val newHistory = (s.audioState.amplitudeHistory + amp).takeLast(30)
-                            s.copy(audioState = s.audioState.copy(recordingDurationMs = elapsed, amplitudeHistory = newHistory))
-                        }
+    private fun startRecording() {
+        val outputFilePath = java.io.File.createTempFile("audio_", ".m4a", application.cacheDir).absolutePath
+        val rec = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) MediaRecorder(application)
+                  else @Suppress("DEPRECATION") MediaRecorder()
+        catchResult {
+            rec.apply {
+                setAudioSource(MediaRecorder.AudioSource.MIC)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                setOutputFile(outputFilePath)
+                prepare(); start()
+            }
+            recorder = rec
+            updateState { it.copy(audioState = AudioState(isRecording = true, pendingFilePath = outputFilePath)) }
+            val startMs = System.currentTimeMillis()
+            recordingTimerJob = viewModelScope.launch {
+                while (true) {
+                    delay(100)
+                    val elapsed = System.currentTimeMillis() - startMs
+                    val amp = catchResult { (recorder?.maxAmplitude ?: 0).toFloat() / 32767f }.getOrDefault(0f)
+                    updateState { s ->
+                        val newHistory = (s.audioState.amplitudeHistory + amp).takeLast(30)
+                        s.copy(audioState = s.audioState.copy(recordingDurationMs = elapsed, amplitudeHistory = newHistory))
                     }
                 }
             }
-            .onFailure { e ->
-                AppLogger.e(TAG, "Recording failed", e)
-                updateState { it.copy(error = "No se pudo iniciar la grabacion") }
-            }
+        }.onFailure { e ->
+            AppLogger.e(TAG, "Recording failed", e)
+            catchResult { rec.release() }
+            updateState { it.copy(error = "No se pudo iniciar la grabacion") }
+        }
     }
 
     private fun stopRecording() {
         recordingTimerJob?.cancel(); recordingTimerJob = null
         val durationMs = state.value.audioState.recordingDurationMs
-        audioRecorderRepository.stopRecording()
+        catchResult { recorder?.apply { stop(); release() } }; recorder = null
         updateState { it.copy(audioState = it.audioState.copy(isRecording = false, recordingDurationMs = durationMs)) }
     }
 
@@ -649,18 +682,23 @@ class ChatViewModel(
         }
     }
 
-    private fun sendFile(uri: Uri) {
+    private fun sendFile(context: Context, uri: Uri) {
         val userId = state.value.currentUserId ?: return
         val reply = state.value.replyingTo
         viewModelScope.launch {
             sendEffect(ChatEffect.ScrollToBottom)
             updateState { it.copy(isUploadingFile = true, replyingTo = null) }
             catchResult {
-                val metadata = getUriMetadataUseCase(uri)
-                val mimeType = metadata.mimeType ?: "application/octet-stream"
-                val displayName = metadata.displayName ?: "archivo"
-                val fileSize = metadata.size
-                val bytes = readUriBytesUseCase(uri)
+                val mimeType = context.contentResolver.getType(uri) ?: "application/octet-stream"
+                val displayName = context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                    val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    cursor.moveToFirst(); if (idx >= 0) cursor.getString(idx) else null
+                } ?: "archivo"
+                val fileSize = context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                    val idx = cursor.getColumnIndex(OpenableColumns.SIZE)
+                    cursor.moveToFirst(); if (idx >= 0) cursor.getLong(idx) else null
+                }
+                val bytes = withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { stream -> stream.readBytes() } } ?: return@catchResult
                 val fileUrl = messageRepository.uploadFile(conversationId, bytes, displayName, mimeType)
                 sendMessageUseCase(conversationId, userId, "", fileUrl = fileUrl, fileName = displayName,
                     fileSize = fileSize, fileMimeType = mimeType,
@@ -671,14 +709,14 @@ class ChatViewModel(
         }
     }
 
-    private fun sendVideo(uri: Uri) {
+    private fun sendVideo(context: Context, uri: Uri) {
         val userId = state.value.currentUserId ?: return
         val reply = state.value.replyingTo
         viewModelScope.launch {
             sendEffect(ChatEffect.ScrollToBottom)
             updateState { it.copy(isUploadingFile = true, replyingTo = null) }
             catchResult {
-                val bytes = readUriBytesUseCase(uri)
+                val bytes = withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { stream -> stream.readBytes() } } ?: return@catchResult
                 val videoUrl = messageRepository.uploadVideo(conversationId, bytes)
                 sendMessageUseCase(conversationId, userId, "", videoUrl = videoUrl,
                     replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
@@ -850,9 +888,33 @@ class ChatViewModel(
         val uid = currentUserId ?: return
         viewModelScope.launch {
             updateState { it.copy(isExporting = true) }
-            exportConversationUseCase(conversationId, uid)
-                .onSuccess { uri -> sendEffect(ChatEffect.ShowShareSheet(uri)) }
-                .onFailure { sendEffect(ChatEffect.ShowSnackbar("No se pudo exportar")) }
+            catchResult {
+                val messages = withContext(Dispatchers.IO) { messageRepository.getAllMessages(conversationId, uid) }
+                val formatter = java.text.SimpleDateFormat("HH:mm dd/MM/yyyy", java.util.Locale.getDefault())
+                val text = buildString {
+                    for (msg in messages) {
+                        if (msg.isDeleted) continue
+                        val date = formatter.format(java.util.Date(msg.createdAt.toEpochMilliseconds()))
+                        val line = when {
+                            msg.content.isNotBlank() -> "[$date] ${msg.senderName}: ${msg.content}"
+                            msg.imageUrl != null -> "[$date] ${msg.senderName}: [Imagen]"
+                            msg.audioUrl != null -> "[$date] ${msg.senderName}: [Audio]"
+                            msg.gifUrl != null -> "[$date] ${msg.senderName}: [GIF]"
+                            msg.stickerUrl != null -> "[$date] ${msg.senderName}: [Sticker]"
+                            msg.fileUrl != null -> "[$date] ${msg.senderName}: [Archivo: ${msg.fileName ?: ""}]"
+                            msg.videoUrl != null -> "[$date] ${msg.senderName}: [Video]"
+                            else -> continue
+                        }
+                        appendLine(line)
+                    }
+                }
+                val f = withContext(Dispatchers.IO) {
+                    val outFile = java.io.File(application.cacheDir, "chat_$conversationId.txt")
+                    java.io.FileOutputStream(outFile).use { it.write(text.toByteArray()) }
+                    outFile
+                }
+                sendEffect(ChatEffect.ShowShareSheet(FileProvider.getUriForFile(application, "${application.packageName}.fileprovider", f)))
+            }.onFailure { sendEffect(ChatEffect.ShowSnackbar("No se pudo exportar")) }
             updateState { it.copy(isExporting = false) }
         }
     }
@@ -976,7 +1038,7 @@ class ChatViewModel(
         viewModelScope.launch {
             withContext(NonCancellable) { catchResult { typingRepository.close(conversationId) } }
         }
-        audioRecorderRepository.release()
+        catchResult { recorder?.apply { stop(); release() } }; recorder = null
     }
 
     companion object {
