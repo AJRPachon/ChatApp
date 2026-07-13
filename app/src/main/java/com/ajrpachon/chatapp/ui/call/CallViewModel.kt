@@ -63,7 +63,7 @@ class CallViewModel(
     private val isGroup get() = args.isGroup
 
     val mediaProjectionManager: MediaProjectionManager =
-        context.getSystemService(MediaProjectionManager::class.java)
+        application.getSystemService(MediaProjectionManager::class.java)
 
     private val _roomFlow = MutableStateFlow<Room?>(null)
     val roomFlow = _roomFlow.asStateFlow()

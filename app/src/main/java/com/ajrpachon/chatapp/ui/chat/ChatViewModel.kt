@@ -933,7 +933,7 @@ class ChatViewModel(
 
     private fun transcribeAudio(context: Context, messageId: String) {
         viewModelScope.launch {
-            val result = catchResult { audioTranscriber.transcribeFromMic(context) }.getOrDefault("Transcripcion no disponible")
+            val result = catchResult { audioTranscriber.transcribeFromMic() }.getOrDefault("Transcripcion no disponible")
             updateState { s -> s.copy(audioTranscriptions = s.audioTranscriptions + (messageId to result)) }
         }
     }
