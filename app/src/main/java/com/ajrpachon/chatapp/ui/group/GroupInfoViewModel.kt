@@ -52,11 +52,16 @@ class GroupInfoViewModel(
                 AppLogger.d("GroupInfoVM", "members updated: size=${members.size} ids=${members.map { it.userId }}")
                 val currentRole = members.firstOrNull { it.userId == currentUserId }?.role ?: GroupRole.MEMBER
                 val isAdmin = currentRole == GroupRole.ADMIN
+                val admins = members.filter { it.role == GroupRole.ADMIN }
+                val adminCount = admins.size
+                val lastAdminId = if (adminCount == 1) admins.first().userId else null
                 updateState { currentState ->
                     currentState.copy(
                         members = members,
                         currentUserRole = currentRole,
                         isCurrentUserAdmin = isAdmin,
+                        adminCount = adminCount,
+                        lastAdminId = lastAdminId,
                     )
                 }
             }
