@@ -311,7 +311,7 @@ fun GroupInfoScreen(
                     member = member,
                     isCurrentUser = member.userId == state.currentUserId,
                     isCurrentUserAdmin = state.isCurrentUserAdmin,
-                    isLastAdmin = state.isLastAdmin(member),
+                    isLastAdmin = member.userId == state.lastAdminId,
                     onRemove = { vm.onIntent(GroupInfoIntent.RemoveMember(member.userId)) },
                     onPromote = { vm.onIntent(GroupInfoIntent.PromoteMember(member.userId)) },
                     onDemote = { vm.onIntent(GroupInfoIntent.DemoteMember(member.userId)) },

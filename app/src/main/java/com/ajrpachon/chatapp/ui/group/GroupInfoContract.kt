@@ -23,14 +23,11 @@ data class GroupInfoState(
     val showHistoryDialog: Boolean = false,
     val inviteLink: String? = null,
     val showInviteLinkSheet: Boolean = false,
-) {
-    /** Number of admins in this group — derived from the members list. */
-    val adminCount: Int get() = members.count { it.role == GroupRole.ADMIN }
-
-    /** Returns true if [member] is the only remaining admin and cannot be removed/demoted. */
-    fun isLastAdmin(member: GroupMemberBO): Boolean =
-        member.role == GroupRole.ADMIN && adminCount == 1
-}
+    /** Number of admins in this group — computed by the ViewModel whenever members change. */
+    val adminCount: Int = 0,
+    /** User ID of the sole admin, or null if there are zero or multiple admins. */
+    val lastAdminId: String? = null,
+)
 
 sealed interface GroupInfoIntent {
     data object OpenEditDialog : GroupInfoIntent

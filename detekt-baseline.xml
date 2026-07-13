@@ -20,6 +20,7 @@
     <ID>LongMethod:ChatScreen.kt$@Composable private fun PollBubble( pollId: String, isFromMe: Boolean, pollRepository: PollRepository, currentUserId: String?, onVote: (optionId: String) -&gt; Unit, )</ID>
     <ID>LongMethod:ChatScreen.kt$@NavEdge(to = CallRoute::class, label = "Start Call") @NavEdge(to = GroupInfoRoute::class, label = "Group Info") @NavEdge(to = UserInfoRoute::class, label = "User Info") @NavDestination(route = ChatRoute::class) @OptIn(ExperimentalMaterial3Api::class) @Composable fun ChatScreen( conversationId: String, otherUserName: String, onBack: () -&gt; Unit, onStartCall: (CallBO) -&gt; Unit = {}, onGroupInfo: () -&gt; Unit = {}, onUserInfo: (userId: String) -&gt; Unit = {}, onOpenPdf: (url: String, filename: String) -&gt; Unit = { _, _ -&gt; }, onOpenMediaGallery: () -&gt; Unit = {}, )</ID>
     <ID>LongMethod:ChatViewModel.kt$ChatViewModel$@Suppress("CyclomaticComplexMethod") fun onIntent(intent: ChatIntent)</ID>
+    <ID>LongMethod:ConversationListViewModel.kt$ConversationListViewModel$fun onIntent(intent: ConversationListIntent)</ID>
     <ID>LongMethod:ConversationRepositoryImpl.kt$ConversationRepositoryImpl$override fun observeConversations(userId: String): Flow&lt;List&lt;ConversationBO&gt;&gt;</ID>
     <ID>LongMethod:MainActivity.kt$MainActivity$override fun onCreate(savedInstanceState: Bundle?)</ID>
     <ID>LongParameterList:CallViewModel.kt$CallViewModel$( private val context: Context, private val callId: String, private val conversationId: String, private val roomName: String, private val callType: String, private val isOutgoing: Boolean, private val isGroup: Boolean, private val callRepository: CallRepository, private val getCurrentUserUseCase: GetCurrentUserUseCase, private val sendMessageUseCase: SendMessageUseCase, private val livekitUrl: String, )</ID>
@@ -30,7 +31,6 @@
     <ID>LoopWithTooManyJumpStatements:ContactRepositoryImpl.kt$ContactRepositoryImpl$while</ID>
     <ID>LoopWithTooManyJumpStatements:ExportConversationUseCase.kt$ExportConversationUseCase$for</ID>
     <ID>MatchingDeclarationName:StickerPacks.kt$StickerCategory</ID>
-    <ID>MatchingDeclarationName:UiConstants.kt$ChatConstants</ID>
     <ID>MayBeConst:ChatScreen.kt$private val LOCATION_MESSAGE_PREFIX = "ðŸ“ Mi ubicaciÃ³n: https://maps.google.com/?q="</ID>
     <ID>MissingPackageDeclaration:AppModule.kt$.AppModule.kt</ID>
     <ID>MissingPackageDeclaration:AuthViewModel.kt$.AuthViewModel.kt</ID>
