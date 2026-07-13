@@ -24,8 +24,6 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -48,9 +46,6 @@ class CallViewModel(
     private val sendMessageUseCase: SendMessageUseCase,
     private val livekitUrl: String,
 ) : BaseViewModel<CallState, CallEffect>(CallState()) {
-
-    private val _roomFlow = MutableStateFlow<Room?>(null)
-    val roomFlow = _roomFlow.asStateFlow()
 
     private var room: Room? = null
     private var durationJob: Job? = null
@@ -118,7 +113,7 @@ class CallViewModel(
 
             val livekitRoom = LiveKit.create(context)
             room = livekitRoom
-            _roomFlow.value = livekitRoom
+            updateState { it.copy(room = livekitRoom) }
 
             viewModelScope.launch {
                 livekitRoom.events.events.collect { event -> handleRoomEvent(event) }
@@ -342,7 +337,7 @@ class CallViewModel(
         updateState { it.copy(isBackgroundBlurred = !it.isBackgroundBlurred) }
     }
 
-    fun processIntent(intent: CallIntent) {
+    fun onIntent(intent: CallIntent) {
         when (intent) {
             is CallIntent.ToggleScreenShare -> {
                 if (state.value.isScreenSharing) {

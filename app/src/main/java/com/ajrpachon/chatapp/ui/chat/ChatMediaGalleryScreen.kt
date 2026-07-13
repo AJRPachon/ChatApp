@@ -59,8 +59,9 @@ fun ChatMediaGalleryScreen(
         key = conversationId,
         parameters = { parametersOf(conversationId) },
     )
-    val images by vm.images.collectAsStateWithLifecycle()
-    val videos by vm.videos.collectAsStateWithLifecycle()
+    val galleryState by vm.state.collectAsStateWithLifecycle()
+    val images = galleryState.images
+    val videos = galleryState.videos
 
     var selectedTab by remember { mutableIntStateOf(0) }
     var fullScreenImageUrl by remember { mutableStateOf<String?>(null) }

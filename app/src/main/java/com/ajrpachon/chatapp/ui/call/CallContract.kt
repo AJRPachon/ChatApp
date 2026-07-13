@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.call
 
+import io.livekit.android.room.Room
 import io.livekit.android.room.track.LocalVideoTrack
 import io.livekit.android.room.track.VideoTrack
 
@@ -25,6 +26,7 @@ data class InCallMessage(
 
 data class CallState(
     val phase: CallPhase = CallPhase.CONNECTING,
+    val room: Room? = null,
     val isMicMuted: Boolean = false,
     val isCameraOff: Boolean = false,
     val isFrontCamera: Boolean = true,

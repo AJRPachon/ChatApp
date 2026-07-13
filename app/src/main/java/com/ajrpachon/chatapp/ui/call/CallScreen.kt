@@ -153,7 +153,7 @@ private fun CallScreenContent(
         parameters = { parametersOf(callId, conversationId, roomName, callType, isOutgoing, isGroup) },
     )
     val state by vm.state.collectAsStateWithLifecycle()
-    val currentRoom by vm.roomFlow.collectAsStateWithLifecycle()
+    val currentRoom = state.room
 
     // Screen share MediaProjection launcher
     val screenShareLauncher = rememberLauncherForActivityResult(
@@ -392,7 +392,7 @@ private fun CallScreenContent(
 
             // Screen share toggle
             CallControlButton(
-                onClick = { vm.processIntent(CallIntent.ToggleScreenShare) },
+                onClick = { vm.onIntent(CallIntent.ToggleScreenShare) },
                 containerColor = if (state.isScreenSharing) Color(0xFFFF5722) else Color.White.copy(alpha = 0.2f),
                 iconTint = Color.White,
             ) {

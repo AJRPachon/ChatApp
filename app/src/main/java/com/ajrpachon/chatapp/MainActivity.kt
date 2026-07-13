@@ -39,6 +39,7 @@ import com.ajrpachon.chatapp.utils.IntegrityChecker
 import com.ajrpachon.chatapp.utils.IntegrityResult
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.Alignment
+import com.ajrpachon.chatapp.ui.call.IncomingCallIntent
 import com.ajrpachon.chatapp.ui.call.IncomingCallScreen
 import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
@@ -198,7 +199,7 @@ class MainActivity : ComponentActivity() {
                     IncomingCallScreen(
                         call = call,
                         onAccept = {
-                            incomingCallVm.dismiss()
+                            incomingCallVm.onIntent(IncomingCallIntent.Accept(call.id))
                             backStack.add(
                                 CallRoute(
                                     callId = call.id,
@@ -211,7 +212,7 @@ class MainActivity : ComponentActivity() {
                                 )
                             )
                         },
-                        onReject = { incomingCallVm.reject(call.id) },
+                        onReject = { incomingCallVm.onIntent(IncomingCallIntent.Reject(call.id)) },
                     )
                 }
 

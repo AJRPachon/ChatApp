@@ -49,7 +49,7 @@ fun PdfViewerScreen(
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    LaunchedEffect(url) { vm.loadPdf(url) }
+    LaunchedEffect(url) { vm.onIntent(PdfViewerIntent.LoadPdf(url)) }
 
     LaunchedEffect(vm) {
         vm.effect.collect { effect ->
@@ -81,7 +81,7 @@ fun PdfViewerScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { vm.sharePdf(url) }) {
+                    IconButton(onClick = { vm.onIntent(PdfViewerIntent.SharePdf(url)) }) {
                         Icon(Icons.Default.Share, contentDescription = "Share")
                     }
                 },

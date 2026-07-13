@@ -3,9 +3,7 @@ package com.ajrpachon.chatapp.ui.chat.gallery
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.data.local.dao.MessageDao
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 data class ChatMediaGalleryState(
     val images: List<String> = emptyList(),
@@ -14,16 +12,35 @@ data class ChatMediaGalleryState(
 
 sealed interface ChatMediaGalleryEffect
 
+sealed interface ChatMediaGalleryIntent {
+    data object Refresh : ChatMediaGalleryIntent
+}
+
 class ChatMediaGalleryViewModel(
     private val conversationId: String,
     private val messageDao: MessageDao,
 ) : BaseViewModel<ChatMediaGalleryState, ChatMediaGalleryEffect>(ChatMediaGalleryState()) {
 
-    val images: StateFlow<List<String>> = messageDao
-        .getImagesForConversation(conversationId)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    init {
+        loadMedia()
+    }
 
-    val videos: StateFlow<List<String>> = messageDao
-        .getVideosForConversation(conversationId)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    fun onIntent(intent: ChatMediaGalleryIntent) {
+        when (intent) {
+            is ChatMediaGalleryIntent.Refresh -> loadMedia()
+        }
+    }
+
+    private fun loadMedia() {
+        viewModelScope.launch {
+            messageDao.getImagesForConversation(conversationId).collect { images ->
+                updateState { it.copy(images = images) }
+            }
+        }
+        viewModelScope.launch {
+            messageDao.getVideosForConversation(conversationId).collect { videos ->
+                updateState { it.copy(videos = videos) }
+            }
+        }
+    }
 }
