@@ -1,6 +1,5 @@
 package com.ajrpachon.chatapp.domain.repository
 
-import android.content.Context
 import com.ajrpachon.chatapp.utils.IntegrityResult
 
 data class SessionInfo(val userId: String, val email: String?)
@@ -16,7 +15,7 @@ interface AuthRepository {
     suspend fun signInWithGoogle(idToken: String, rawNonce: String)
     suspend fun signOut()
     suspend fun signOutAll()
-    suspend fun checkIntegrity(context: Context): IntegrityResult
+    suspend fun checkIntegrity(): IntegrityResult
     // MFA
     suspend fun getMfaAssuranceLevel(): MfaAssuranceLevel?
     suspend fun getVerifiedTotpFactorId(): String?

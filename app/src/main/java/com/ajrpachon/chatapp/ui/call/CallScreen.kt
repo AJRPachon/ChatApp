@@ -149,7 +149,7 @@ private fun CallScreenContent(
     val context = LocalContext.current
     val vm: CallViewModel = koinViewModel(
         key = callId,
-        parameters = { parametersOf(callId, conversationId, roomName, callType, isOutgoing, isGroup) },
+        parameters = { parametersOf(CallArgs(callId, conversationId, roomName, callType, isOutgoing, isGroup)) },
     )
     val state by vm.state.collectAsStateWithLifecycle()
     val currentRoom by vm.roomFlow.collectAsStateWithLifecycle()

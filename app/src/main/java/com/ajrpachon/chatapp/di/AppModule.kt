@@ -7,6 +7,7 @@ import com.ajrpachon.chatapp.data.session.AndroidSessionManager
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.ui.applock.AppLockViewModel
 import com.ajrpachon.chatapp.ui.auth.AuthViewModel
+import com.ajrpachon.chatapp.ui.call.CallArgs
 import com.ajrpachon.chatapp.ui.call.CallViewModel
 import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
 import com.ajrpachon.chatapp.ui.chat.ChatArgs
@@ -27,6 +28,7 @@ import com.ajrpachon.chatapp.ui.profile.SessionAuditViewModel
 import com.ajrpachon.chatapp.ui.backup.BackupViewModel
 import com.ajrpachon.chatapp.ui.pdf.PdfViewerViewModel
 import com.ajrpachon.chatapp.ui.search.GlobalSearchViewModel
+import com.ajrpachon.chatapp.ui.status.StatusViewModel
 import com.ajrpachon.chatapp.service.PresenceManager
 import com.ajrpachon.chatapp.utils.ClipboardProtection
 import com.ajrpachon.chatapp.utils.LinkPreviewFetcher
@@ -42,6 +44,7 @@ import io.github.jan.supabase.storage.Storage
 import io.ktor.client.engine.okhttp.OkHttp
 import android.app.NotificationManager
 import android.content.Context
+import android.os.Environment
 import okhttp3.OkHttpClient
 import org.koin.android.ext.koin.androidApplication
 import org.koin.android.ext.koin.androidContext
@@ -96,8 +99,8 @@ val networkModule = module {
 }
 
 val viewModelModule = module {
-    // BuildConfig values not injectable â€” kept as lambda
-    viewModel { AuthViewModel(androidApplication(), get(), get(), get(), BuildConfig.GOOGLE_WEB_CLIENT_ID, get(), get()) }
+    // BuildConfig values not injectable — kept as lambda
+    viewModel { AuthViewModel(get(), get(), get(), get(), BuildConfig.GOOGLE_WEB_CLIENT_ID, get(), get()) }
 
     viewModelOf(::AppLockViewModel)
     viewModelOf(::ConversationListViewModel)
@@ -113,6 +116,7 @@ val viewModelModule = module {
     viewModelOf(::SessionAuditViewModel)
     viewModelOf(::BackupViewModel)
     viewModelOf(::GlobalSearchViewModel)
+    viewModelOf(::StatusViewModel)
     // ChatViewModel: Repositories only, no DAOs
     viewModel { params ->
         ChatViewModel(
@@ -141,6 +145,10 @@ val viewModelModule = module {
             aiAssistantRepository = get(),
             wallpaperRepository = get(),
             networkMonitor = get<com.ajrpachon.chatapp.utils.NetworkMonitor>(),
+            readUriBytesUseCase = get(),
+            getUriMetadataUseCase = get(),
+            audioRecorderRepository = get(),
+            exportConversationUseCase = get(),
         )
     }
     viewModelOf(::GroupInfoViewModel)
@@ -148,20 +156,16 @@ val viewModelModule = module {
     viewModelOf(::ChatMediaGalleryViewModel)
     viewModelOf(::PdfViewerViewModel)
 
-    // CallViewModel: BuildConfig.LIVEKIT_URL + androidApplication() not injectable â€” kept as lambda
+    // CallViewModel: BuildConfig.LIVEKIT_URL + runtime CallArgs — kept as lambda
     viewModel { params ->
         CallViewModel(
-            context = androidApplication(),
-            callId = params[0],
-            conversationId = params[1],
-            roomName = params[2],
-            callType = params[3],
-            isOutgoing = params[4],
-            isGroup = params[5],
+            args = params.get<CallArgs>(),
+            application = androidApplication(),
             callRepository = get(),
             getCurrentUserUseCase = get(),
             sendMessageUseCase = get(),
             livekitUrl = BuildConfig.LIVEKIT_URL,
+            recordingsDir = androidContext().getExternalFilesDir(Environment.DIRECTORY_MUSIC) ?: androidContext().filesDir,
         )
     }
 }
@@ -182,7 +186,8 @@ val utilsModule = module {
     }
     single { TranslationManager() }
     single { com.ajrpachon.chatapp.data.local.NotificationSoundRepository(androidContext()) }
-    single { com.ajrpachon.chatapp.utils.AudioTranscriber() }
+    single { com.ajrpachon.chatapp.utils.AudioTranscriber(androidContext()) }
+    single { androidx.credentials.CredentialManager.create(androidContext()) }
     single { com.ajrpachon.chatapp.data.local.ChatThemeRepository(androidContext()) }
     single { com.ajrpachon.chatapp.utils.NetworkMonitor(androidContext()) }
     single { com.ajrpachon.chatapp.utils.ContactSyncManager(androidContext().contentResolver) }
