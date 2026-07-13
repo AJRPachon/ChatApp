@@ -368,7 +368,7 @@ class ChatViewModel(
             is ChatIntent.FetchAndSendLocation -> fetchAndSendLocation()
             is ChatIntent.TranslateMessage -> translateMessage(intent.messageId, intent.text)
             is ChatIntent.DismissTranslation -> updateState { it.copy(translatedTexts = it.translatedTexts - intent.messageId) }
-            is ChatIntent.TranscribeAudio -> transcribeAudio(intent.context, intent.messageId)
+            is ChatIntent.TranscribeAudio -> transcribeAudio(intent.messageId)
             is ChatIntent.PinMessage -> pinMessage(intent.messageId)
             is ChatIntent.UnpinMessage -> unpinMessage(intent.messageId)
             is ChatIntent.SaveMessage -> viewModelScope.launch { catchResult { messageRepository.setSaved(intent.messageId, true) } }
@@ -931,7 +931,7 @@ class ChatViewModel(
         viewModelScope.launch { catchResult { messageRepository.setPinned(messageId, false) } }
     }
 
-    private fun transcribeAudio(context: Context, messageId: String) {
+    private fun transcribeAudio(messageId: String) {
         viewModelScope.launch {
             val result = catchResult { audioTranscriber.transcribeFromMic() }.getOrDefault("Transcripcion no disponible")
             updateState { s -> s.copy(audioTranscriptions = s.audioTranscriptions + (messageId to result)) }
