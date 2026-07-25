@@ -7,6 +7,7 @@ import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.StatusRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
+import com.ajrpachon.chatapp.domain.usecase.ReadUriAsBytesUseCase
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import com.ajrpachon.chatapp.util.sharedScheduler
 import io.mockk.coEvery
@@ -34,6 +35,7 @@ class StatusViewModelTest {
     private val statusRepository = mockk<StatusRepository>(relaxed = true)
     private val conversationRepository = mockk<ConversationRepository>(relaxed = true)
     private val getCurrentUserUseCase = mockk<GetCurrentUserUseCase>()
+    private val readUriAsBytes = mockk<ReadUriAsBytesUseCase>(relaxed = true)
 
     private val statusesFlow = MutableStateFlow<List<StatusBO>>(emptyList())
     private val conversationsFlow = MutableStateFlow<List<ConversationBO>>(emptyList())
@@ -55,7 +57,7 @@ class StatusViewModelTest {
         coEvery { statusRepository.syncStatuses(any()) } returns Unit
     }
 
-    private fun buildVm() = StatusViewModel(statusRepository, conversationRepository, getCurrentUserUseCase)
+    private fun buildVm() = StatusViewModel(statusRepository, conversationRepository, getCurrentUserUseCase, readUriAsBytes)
 
     // ── initial state ─────────────────────────────────────────────────────────
 

@@ -122,7 +122,7 @@ sealed interface ChatIntent {
     data class SendImages(val context: Context, val uris: List<Uri>) : ChatIntent
     data class SendFile(val context: Context, val uri: Uri) : ChatIntent
     data class SendVideo(val context: Context, val uri: Uri) : ChatIntent
-    data class StartRecording(val context: Context, val outputFilePath: String) : ChatIntent
+    data object StartRecording : ChatIntent
     data object StopRecording : ChatIntent
     data object DiscardAudio : ChatIntent
     data object SendAudio : ChatIntent
@@ -175,7 +175,7 @@ sealed interface ChatIntent {
     data class SetChatTheme(val theme: ChatTheme) : ChatIntent
     data object OpenThemePicker : ChatIntent
     data object DismissThemePicker : ChatIntent
-    data class ExportConversation(val context: Context) : ChatIntent
+    data object ExportConversation : ChatIntent
     data object ShowDisappearingModeSheet : ChatIntent
     data object DismissDisappearingModeSheet : ChatIntent
     // seconds: 0 = off, positive = duration in seconds
@@ -205,6 +205,8 @@ sealed interface ChatIntent {
     data class SendContact(val name: String, val phone: String) : ChatIntent
     data class ContactSelected(val uri: android.net.Uri) : ChatIntent
     data class RetryMessage(val messageId: String) : ChatIntent
+    data class CopyMessageContent(val content: String) : ChatIntent
+    data object FetchAndSendLocation : ChatIntent
     // Multi-forward
     data object ShowForwardSelectionDialog : ChatIntent
     data object DismissForwardSelectionDialog : ChatIntent

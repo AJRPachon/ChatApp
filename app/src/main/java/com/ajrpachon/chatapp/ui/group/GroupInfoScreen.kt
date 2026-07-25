@@ -33,7 +33,6 @@ import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ListItem
@@ -64,7 +63,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -319,7 +317,7 @@ fun GroupInfoScreen(
                     member = member,
                     isCurrentUser = member.userId == state.currentUserId,
                     isCurrentUserAdmin = state.isCurrentUserAdmin,
-                    isLastAdmin = state.isLastAdmin(member),
+                    isLastAdmin = member.userId == state.lastAdminId,
                     onRemove = { vm.onIntent(GroupInfoIntent.RemoveMember(member.userId)) },
                     onPromote = { vm.onIntent(GroupInfoIntent.PromoteMember(member.userId)) },
                     onDemote = { vm.onIntent(GroupInfoIntent.DemoteMember(member.userId)) },

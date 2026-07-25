@@ -9,8 +9,10 @@ import com.ajrpachon.chatapp.domain.usecase.GetDeviceContactsUseCase
 import com.ajrpachon.chatapp.domain.usecase.SearchUsersUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationResult
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationUseCase
+import android.app.Application
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import com.ajrpachon.chatapp.util.sharedScheduler
+import com.ajrpachon.chatapp.utils.ClipboardProtection
 import com.ajrpachon.chatapp.utils.ContactSyncManager
 import io.mockk.coEvery
 import io.mockk.every
@@ -40,6 +42,8 @@ class NewChatViewModelTest {
     private val userRepository = mockk<UserRepository>(relaxed = true)
     private val contactSyncManager = mockk<ContactSyncManager>(relaxed = true)
     private val getDeviceContactsUseCase = mockk<GetDeviceContactsUseCase>(relaxed = true)
+    private val application = mockk<Application>(relaxed = true)
+    private val clipboardProtection = mockk<ClipboardProtection>(relaxed = true)
 
     private val testUser = UserBO(
         id = "user1",
@@ -70,6 +74,8 @@ class NewChatViewModelTest {
     }
 
     private fun buildViewModel() = NewChatViewModel(
+        application = application,
+        clipboardProtection = clipboardProtection,
         getCurrentUserUseCase = getCurrentUserUseCase,
         searchUsersUseCase = searchUsersUseCase,
         sendInvitationUseCase = sendInvitationUseCase,

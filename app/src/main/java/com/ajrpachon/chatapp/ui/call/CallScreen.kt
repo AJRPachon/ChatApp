@@ -1,7 +1,6 @@
 package com.ajrpachon.chatapp.ui.call
 
 import android.app.Activity
-import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.content.pm.PackageManager
 import com.ajrpachon.chatapp.ui.common.CallPermissions
@@ -24,7 +23,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -43,7 +41,6 @@ import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.ScreenShare
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.StopScreenShare
@@ -82,7 +79,6 @@ import com.ajrpachon.chatapp.CallRoute
 import com.github.skydoves.navgraph.annotations.NavDestination
 import io.livekit.android.renderer.TextureViewRenderer
 import io.livekit.android.room.Room
-import io.livekit.android.room.track.LocalVideoTrack
 import io.livekit.android.room.track.VideoTrack
 import kotlin.math.roundToInt
 import org.koin.androidx.compose.koinViewModel
@@ -150,10 +146,10 @@ private fun CallScreenContent(
     val context = LocalContext.current
     val vm: CallViewModel = koinViewModel(
         key = callId,
-        parameters = { parametersOf(callId, conversationId, roomName, callType, isOutgoing, isGroup) },
+        parameters = { parametersOf(CallArgs(callId, conversationId, roomName, callType, isOutgoing, isGroup)) },
     )
     val state by vm.state.collectAsStateWithLifecycle()
-    val currentRoom by vm.roomFlow.collectAsStateWithLifecycle()
+    val currentRoom = state.room
 
     // Screen share MediaProjection launcher
     val screenShareLauncher = rememberLauncherForActivityResult(
@@ -175,8 +171,7 @@ private fun CallScreenContent(
         vm.effect.collect { effect ->
             when (effect) {
                 is CallEffect.RequestScreenShare -> {
-                    val mgr = context.getSystemService(MediaProjectionManager::class.java)
-                    screenShareLauncher.launch(mgr.createScreenCaptureIntent())
+                    screenShareLauncher.launch(vm.mediaProjectionManager.createScreenCaptureIntent())
                 }
                 is CallEffect.ShowRecordingSaved -> { /* recording saved — no UI needed here */ }
             }
@@ -392,7 +387,7 @@ private fun CallScreenContent(
 
             // Screen share toggle
             CallControlButton(
-                onClick = { vm.processIntent(CallIntent.ToggleScreenShare) },
+                onClick = { vm.onIntent(CallIntent.ToggleScreenShare) },
                 containerColor = if (state.isScreenSharing) Color(0xFFFF5722) else Color.White.copy(alpha = 0.2f),
                 iconTint = Color.White,
             ) {

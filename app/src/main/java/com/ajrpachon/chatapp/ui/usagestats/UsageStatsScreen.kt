@@ -36,10 +36,12 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.components.ChatAppTopBar
 import org.koin.androidx.compose.koinViewModel
 
@@ -49,7 +51,7 @@ fun UsageStatsScreen(onBack: () -> Unit) {
     val state by vm.state.collectAsStateWithLifecycle()
 
     Scaffold(
-        topBar = { ChatAppTopBar(title = "Estadísticas de uso", onBack = onBack) },
+        topBar = { ChatAppTopBar(title = stringResource(R.string.usagestats_title), onBack = onBack) },
     ) { innerPadding ->
         if (state.isLoading) {
             Box(
@@ -71,7 +73,7 @@ fun UsageStatsScreen(onBack: () -> Unit) {
             item { Spacer(Modifier.height(8.dp)) }
 
             item {
-                SectionTitle("Mensajes")
+                SectionTitle(stringResource(R.string.usagestats_section_messages))
             }
             item {
                 Row(
@@ -81,20 +83,20 @@ fun UsageStatsScreen(onBack: () -> Unit) {
                     StatCard(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.ChatBubble,
-                        label = "Enviados",
+                        label = stringResource(R.string.usagestats_sent),
                         value = state.totalMessagesSent.toString(),
                     )
                     StatCard(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.ChatBubble,
-                        label = "Recibidos",
+                        label = stringResource(R.string.usagestats_received),
                         value = state.totalMessagesReceived.toString(),
                     )
                 }
             }
 
             item {
-                SectionTitle("Llamadas")
+                SectionTitle(stringResource(R.string.usagestats_section_calls))
             }
             item {
                 Row(
@@ -104,20 +106,20 @@ fun UsageStatsScreen(onBack: () -> Unit) {
                     StatCard(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.Call,
-                        label = "Total llamadas",
+                        label = stringResource(R.string.usagestats_total_calls),
                         value = state.totalCalls.toString(),
                     )
                     StatCard(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.Timer,
-                        label = "Minutos",
+                        label = stringResource(R.string.usagestats_minutes),
                         value = state.totalCallMinutes.toString(),
                     )
                 }
             }
 
             item {
-                SectionTitle("Archivos multimedia")
+                SectionTitle(stringResource(R.string.usagestats_section_media))
             }
             item {
                 Row(
@@ -127,19 +129,19 @@ fun UsageStatsScreen(onBack: () -> Unit) {
                     StatCard(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.Image,
-                        label = "Imágenes",
+                        label = stringResource(R.string.usagestats_images),
                         value = state.totalImages.toString(),
                     )
                     StatCard(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.AudioFile,
-                        label = "Audios",
+                        label = stringResource(R.string.usagestats_audio),
                         value = state.totalAudio.toString(),
                     )
                     StatCard(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.VideoFile,
-                        label = "Videos",
+                        label = stringResource(R.string.usagestats_videos),
                         value = state.totalVideos.toString(),
                     )
                 }
@@ -147,20 +149,20 @@ fun UsageStatsScreen(onBack: () -> Unit) {
 
             if (state.mostActiveConvName.isNotBlank()) {
                 item {
-                    SectionTitle("Conversación más activa")
+                    SectionTitle(stringResource(R.string.usagestats_section_most_active_conv))
                 }
                 item {
                     StatCard(
                         modifier = Modifier.fillMaxWidth(),
                         icon = Icons.Default.Star,
-                        label = "Más activa",
+                        label = stringResource(R.string.usagestats_most_active),
                         value = state.mostActiveConvName,
                     )
                 }
             }
 
             item {
-                SectionTitle("Mensajes últimos 7 días")
+                SectionTitle(stringResource(R.string.usagestats_section_last_7_days))
             }
             item {
                 MessagesBarChart(

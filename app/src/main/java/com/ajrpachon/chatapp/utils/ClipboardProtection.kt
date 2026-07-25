@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.utils
 
+import android.app.Application
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -8,11 +9,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-object ClipboardProtection {
-    private const val CLEAR_DELAY_MS = 60_000L // 1 minute
+class ClipboardProtection(private val application: Application) {
+    private val clipboard: ClipboardManager =
+        application.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
 
-    fun copyWithTimeout(context: Context, label: String, text: String, scope: CoroutineScope) {
-        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    private companion object {
+        const val CLEAR_DELAY_MS = 60_000L // 1 minute
+    }
+
+    fun copyWithTimeout(label: String, text: String, scope: CoroutineScope) {
         clipboard.setPrimaryClip(ClipData.newPlainText(label, text))
         scope.launch(Dispatchers.Main) {
             delay(CLEAR_DELAY_MS)

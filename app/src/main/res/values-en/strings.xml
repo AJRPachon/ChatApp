@@ -105,4 +105,96 @@
     <string name="broadcast_contacts_count">%1$d contact(s)</string>
     <string name="broadcast_send_content_description">Broadcast</string>
     <string name="broadcast_delete_content_description">Delete</string>
+
+    <!-- NewChatScreen -->
+    <string name="newchat_share_invitation_title">Share invitation</string>
+    <string name="newchat_title">New chat</string>
+    <string name="newchat_scan_qr_code">Scan QR code</string>
+    <string name="newchat_scan_qr_prompt">Point at the contact\'s QR code</string>
+    <string name="newchat_search_placeholder">Search by username</string>
+    <string name="newchat_suggested_section">Suggested</string>
+    <string name="newchat_no_users_found">No user found with \"%1$s\"</string>
+    <string name="newchat_users_section">Users</string>
+    <string name="newchat_results_section">Results</string>
+    <string name="newchat_contacts_section">Contacts</string>
+    <string name="newchat_contacts_permission_denied">Contacts permission denied</string>
+    <string name="newchat_qr_not_recognized">QR code not recognized</string>
+    <string name="newchat_invite_friends_title">Invite your friends</string>
+    <string name="newchat_invite_friends_subtitle">Share your code so they can find you</string>
+    <string name="newchat_copy">Copy</string>
+    <string name="newchat_share">Share</string>
+    <string name="newchat_blocked">Blocked</string>
+    <string name="newchat_unblock_cd">Unblock</string>
+    <string name="newchat_invite_cd">Invite</string>
+    <string name="newchat_block_cd">Block</string>
+    <string name="newchat_invitation_sent">Invitation sent</string>
+    <string name="newchat_pending_response">Awaiting response</string>
+    <string name="newchat_accept_cd">Accept</string>
+    <string name="newchat_invite_contact_cd">Invite %1$s</string>
+
+    <!-- UserInfoScreen -->
+    <string name="userinfo_default_title">Profile</string>
+    <string name="userinfo_profile_photo_cd">%1$s\'s profile photo</string>
+    <string name="userinfo_tab_info">Info</string>
+    <string name="userinfo_tab_media">Media</string>
+    <string name="userinfo_no_additional_info">No additional info</string>
+    <string name="userinfo_no_media_shared">No media shared yet</string>
+    <string name="userinfo_view_shared_image_cd">View shared image</string>
+    <string name="userinfo_fullscreen_image_cd">Full-screen image</string>
+    <string name="userinfo_close_cd">Close</string>
+
+    <!-- StatusScreen -->
+    <string name="status_add_text_cd">Add text status</string>
+    <string name="status_add_image_cd">Add image status</string>
+    <string name="status_my_status">My status</string>
+    <string name="status_new_status_title">New status</string>
+    <string name="status_compose_placeholder">What\'s happening?</string>
+    <string name="status_publish">Post</string>
+    <string name="status_cancel">Cancel</string>
+    <string name="status_delete_cd">Delete status</string>
+    <string name="status_close_cd">Close</string>
+
+    <!-- PdfViewerScreen -->
+    <string name="pdf_share_chooser_title">Share PDF</string>
+    <string name="pdf_back_cd">Back</string>
+    <string name="pdf_share_cd">Share</string>
+    <string name="pdf_error_loading">Error loading PDF</string>
+
+    <!-- GlobalSearchScreen -->
+    <string name="search_placeholder">Search all chats</string>
+    <string name="search_back_cd">Back</string>
+    <string name="search_empty_hint">Type to search all your chats</string>
+    <string name="search_no_results">No results for \"%1$s\"</string>
+
+    <!-- UsageStatsScreen -->
+    <string name="usagestats_title">Usage statistics</string>
+    <string name="usagestats_section_messages">Messages</string>
+    <string name="usagestats_sent">Sent</string>
+    <string name="usagestats_received">Received</string>
+    <string name="usagestats_section_calls">Calls</string>
+    <string name="usagestats_total_calls">Total calls</string>
+    <string name="usagestats_minutes">Minutes</string>
+    <string name="usagestats_section_media">Media files</string>
+    <string name="usagestats_images">Images</string>
+    <string name="usagestats_audio">Audio</string>
+    <string name="usagestats_videos">Videos</string>
+    <string name="usagestats_section_most_active_conv">Most active conversation</string>
+    <string name="usagestats_most_active">Most active</string>
+    <string name="usagestats_section_last_7_days">Messages in the last 7 days</string>
+
+    <!-- AppLockScreen -->
+    <string name="applock_biometric_title">Unlock ChatApp</string>
+    <string name="applock_biometric_subtitle">Confirm your identity to continue</string>
+    <string name="applock_locked_title">ChatApp locked</string>
+    <string name="applock_locked_subtitle">Verify your identity to access</string>
+    <string name="applock_unlock_with_fingerprint">Unlock with fingerprint</string>
+
+    <!-- ChatMediaGalleryScreen -->
+    <string name="media_gallery_title">%1$s — Media</string>
+    <string name="media_gallery_back_cd">Back</string>
+    <string name="media_gallery_tab_images">Images</string>
+    <string name="media_gallery_tab_videos">Videos</string>
+    <string name="media_gallery_no_images">No shared images</string>
+    <string name="media_gallery_no_videos">No shared videos</string>
+    <string name="media_gallery_play_video_cd">Play video</string>
 </resources>

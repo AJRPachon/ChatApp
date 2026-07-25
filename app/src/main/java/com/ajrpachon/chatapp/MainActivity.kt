@@ -25,9 +25,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.utils.AppLogger
-import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
@@ -39,6 +37,7 @@ import com.ajrpachon.chatapp.utils.IntegrityChecker
 import com.ajrpachon.chatapp.utils.IntegrityResult
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.Alignment
+import com.ajrpachon.chatapp.ui.call.IncomingCallIntent
 import com.ajrpachon.chatapp.ui.call.IncomingCallScreen
 import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
@@ -186,7 +185,7 @@ class MainActivity : ComponentActivity() {
                 Box(modifier = Modifier.fillMaxSize()) {
                 NavDisplay(
                     backStack = backStack,
-                    onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
+                    onBack = { if (backStack.size > 1) backStack.removeLastOrNull() else finish() },
                     entryDecorators = listOf(
                         rememberSaveableStateHolderNavEntryDecorator(),
                         rememberViewModelStoreNavEntryDecorator(),
@@ -198,7 +197,7 @@ class MainActivity : ComponentActivity() {
                     IncomingCallScreen(
                         call = call,
                         onAccept = {
-                            incomingCallVm.dismiss()
+                            incomingCallVm.onIntent(IncomingCallIntent.Accept(call.id))
                             backStack.add(
                                 CallRoute(
                                     callId = call.id,
@@ -211,7 +210,7 @@ class MainActivity : ComponentActivity() {
                                 )
                             )
                         },
-                        onReject = { incomingCallVm.reject(call.id) },
+                        onReject = { incomingCallVm.onIntent(IncomingCallIntent.Reject(call.id)) },
                     )
                 }
 

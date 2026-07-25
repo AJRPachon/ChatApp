@@ -9,6 +9,7 @@ enum class ConversationFilter { ALL, UNREAD, GROUPS, DIRECT }
 data class ConversationListState(
     val conversations: List<ConversationBO> = emptyList(),
     val archivedConversations: List<ConversationBO> = emptyList(),
+    val filteredConversations: List<ConversationBO> = emptyList(),
     val isLoading: Boolean = true,
     val currentUserId: String? = null,
     val pendingInvitationsCount: Int = 0,
@@ -22,19 +23,7 @@ data class ConversationListState(
     val soundPickerConversationId: String? = null,
     val isOnline: Boolean = true,
     val themePreference: ThemePreference = ThemePreference.SYSTEM,
-) {
-    val filteredConversations: List<ConversationBO>
-        get() {
-            val bySearch = if (searchQuery.isBlank()) conversations
-            else conversations.filter { it.name.contains(searchQuery, ignoreCase = true) }
-            return when (selectedFilter) {
-                ConversationFilter.ALL -> bySearch
-                ConversationFilter.UNREAD -> bySearch.filter { it.unreadCount > 0 }
-                ConversationFilter.GROUPS -> bySearch.filter { it.isGroup }
-                ConversationFilter.DIRECT -> bySearch.filter { !it.isGroup }
-            }
-        }
-}
+)
 
 sealed interface ConversationListIntent {
     data class OpenConversation(val conversationId: String, val conversationName: String, val isGroup: Boolean) : ConversationListIntent

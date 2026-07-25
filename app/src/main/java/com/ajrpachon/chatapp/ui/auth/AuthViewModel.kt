@@ -1,11 +1,10 @@
 ﻿package com.ajrpachon.chatapp.ui.auth
-import com.ajrpachon.chatapp.utils.catchResult
 
-import android.app.Application
 import android.content.Context
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.NoCredentialException
+import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.domain.repository.AuthRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.SetUsernameUseCase
@@ -14,16 +13,16 @@ import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.IntegrityResult
 import com.ajrpachon.chatapp.utils.SessionGuard
+import com.ajrpachon.chatapp.utils.catchResult
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import java.security.MessageDigest
 import java.util.UUID
 
 class AuthViewModel(
-    private val application: Application,
+    private val credentialManager: CredentialManager,
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
     private val setUsernameUseCase: SetUsernameUseCase,
@@ -89,7 +88,6 @@ class AuthViewModel(
             val hashedNonce = MessageDigest.getInstance("SHA-256")
                 .digest(rawNonce.toByteArray())
                 .joinToString("") { "%02x".format(it) }
-            val credentialManager = CredentialManager.create(context)
             val oneTapResult = catchResult {
                 val request = GetCredentialRequest.Builder()
                     .addCredentialOption(
@@ -277,7 +275,7 @@ class AuthViewModel(
     }
 
     private suspend fun runIntegrityCheck() {
-        when (val result = authRepository.checkIntegrity(application)) {
+        when (val result = authRepository.checkIntegrity()) {
             is IntegrityResult.Passed -> AppLogger.d(TAG, "Integrity check passed")
             is IntegrityResult.Failed -> {
                 AppLogger.w(TAG, "Integrity check failed: ${result.reason}")
