@@ -18,8 +18,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.ajrpachon.chatapp.R
 
 /**
  * Non-dismissable blocking screen shown when Play Integrity check fails.
@@ -46,15 +48,14 @@ fun IntegrityBlockedScreen(onExit: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(24.dp))
             Text(
-                text = "Device not verified",
+                text = stringResource(R.string.auth_integrity_device_not_verified),
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onErrorContainer,
                 textAlign = TextAlign.Center,
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "Your device or this app installation could not be verified. " +
-                        "For your security, the app cannot continue.",
+                text = stringResource(R.string.auth_integrity_blocked_message),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onErrorContainer,
                 textAlign = TextAlign.Center,
@@ -67,7 +68,7 @@ fun IntegrityBlockedScreen(onExit: () -> Unit) {
                     contentColor = MaterialTheme.colorScheme.onError,
                 ),
             ) {
-                Text("Exit")
+                Text(stringResource(R.string.auth_integrity_exit))
             }
         }
     }
