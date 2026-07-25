@@ -107,6 +107,7 @@ fun GroupInfoScreen(
     val state by vm.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val shareIntentTitle = stringResource(R.string.group_share_intent_title)
 
     LaunchedEffect(conversationId) {
         vm.setGroupHeader(groupName, groupDescription, groupAvatarUrl)
@@ -126,7 +127,7 @@ fun GroupInfoScreen(
                     context.startActivity(
                         android.content.Intent.createChooser(
                             shareIntent,
-                            context.getString(R.string.group_share_intent_title),
+                            shareIntentTitle,
                         ),
                     )
                 }
