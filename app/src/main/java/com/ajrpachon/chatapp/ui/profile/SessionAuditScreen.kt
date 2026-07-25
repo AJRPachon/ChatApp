@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
@@ -178,26 +179,24 @@ private fun SessionCard(
                     MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(
-                        session.deviceInfo,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium,
-                    )
-                    if (session.isCurrent) {
-                        Badge(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                        ) {
-                            Text(
-                                stringResource(R.string.session_audit_this_device_badge),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.padding(horizontal = 4.dp),
-                            )
-                        }
+                Text(
+                    session.deviceInfo,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (session.isCurrent) {
+                    Badge(
+                        modifier = Modifier.padding(top = 2.dp, bottom = 2.dp),
+                        containerColor = MaterialTheme.colorScheme.primary,
+                    ) {
+                        Text(
+                            stringResource(R.string.session_audit_this_device_badge),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.padding(horizontal = 4.dp),
+                        )
                     }
                 }
                 Text(
