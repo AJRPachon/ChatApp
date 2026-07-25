@@ -37,11 +37,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.chat.gallery.ChatMediaGalleryViewModel
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -69,10 +71,10 @@ fun ChatMediaGalleryScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("$conversationName — Multimedia") },
+                title = { Text(stringResource(R.string.media_gallery_title, conversationName)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.media_gallery_back_cd))
                     }
                 },
             )
@@ -83,12 +85,12 @@ fun ChatMediaGalleryScreen(
                 Tab(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
-                    text = { Text("Imágenes") },
+                    text = { Text(stringResource(R.string.media_gallery_tab_images)) },
                 )
                 Tab(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
-                    text = { Text("Vídeos") },
+                    text = { Text(stringResource(R.string.media_gallery_tab_videos)) },
                 )
             }
 
@@ -127,7 +129,7 @@ private fun ImagesTab(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = "No hay imágenes compartidas",
+                    text = stringResource(R.string.media_gallery_no_images),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 12.dp),
@@ -168,7 +170,7 @@ private fun VideosTab(urls: List<String>) {
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = "No hay vídeos compartidos",
+                    text = stringResource(R.string.media_gallery_no_videos),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 12.dp),
@@ -197,7 +199,7 @@ private fun VideosTab(urls: List<String>) {
                     )
                     Icon(
                         Icons.Default.PlayCircle,
-                        contentDescription = "Reproducir vídeo",
+                        contentDescription = stringResource(R.string.media_gallery_play_video_cd),
                         modifier = Modifier.size(40.dp),
                         tint = Color.White.copy(alpha = 0.85f),
                     )

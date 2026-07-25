@@ -128,4 +128,201 @@
     <string name="invitations_top_bar_title">Invitations</string>
     <string name="invitations_no_pending">You have no pending invitations</string>
     <string name="invitations_username">@%1$s</string>
+
+    <!-- Conversations -->
+    <string name="conversations_notification_sound_title">Notification sound</string>
+    <string name="conversations_cancel">Cancel</string>
+    <string name="conversations_archived_title">Archived</string>
+    <string name="conversations_no_archived_chats">No archived chats</string>
+    <string name="conversations_top_bar_title">Chats</string>
+    <string name="conversations_theme_content_description">Theme</string>
+    <string name="conversations_theme_system">System</string>
+    <string name="conversations_theme_light">Light</string>
+    <string name="conversations_theme_dark">Dark</string>
+    <string name="conversations_search_content_description">Search</string>
+    <string name="conversations_archived_content_description">Archived</string>
+    <string name="conversations_profile_content_description">Profile</string>
+    <string name="conversations_invitations_content_description">Invitations</string>
+    <string name="conversations_new_group_content_description">New group</string>
+    <string name="conversations_new_chat_content_description">New chat</string>
+    <string name="conversations_filter_unread">Unread</string>
+    <string name="conversations_filter_groups">Groups</string>
+    <string name="conversations_filter_direct">1:1</string>
+    <string name="conversations_empty_title">No conversations yet</string>
+    <string name="conversations_empty_subtitle">Tap the button to start a chat</string>
+    <string name="conversations_archive_content_description">Archive</string>
+    <string name="conversations_archive_label">Archive</string>
+    <string name="conversations_unarchive_content_description">Unarchive</string>
+    <string name="conversations_no_messages">No messages</string>
+    <string name="conversations_photo_singular">📷 Photo</string>
+    <string name="conversations_photo_plural">📷 %1$d photos</string>
+    <string name="conversations_from_me_prefix">You: %1$s</string>
+    <string name="conversations_gif">GIF</string>
+    <string name="conversations_muted_content_description">Muted</string>
+    <string name="conversations_menu_mark_read">Turn on notifications</string>
+    <string name="conversations_menu_mute">Mute</string>
+    <string name="conversations_menu_clear_chat">Clear chat</string>
+    <string name="conversations_menu_notification_sound">Notification sound</string>
+    <string name="conversations_menu_leave_group">Leave group</string>
+    <string name="conversations_menu_delete">Delete</string>
+
+    <!-- Group -->
+    <string name="group_invite_link_title">Invite link</string>
+    <string name="group_copy">Copy</string>
+    <string name="group_share">Share</string>
+    <string name="group_info_title">Group info</string>
+    <string name="group_more_options">More options</string>
+    <string name="group_edit_group">Edit group</string>
+    <string name="group_leave_group">Leave group</string>
+    <string name="group_participants_count">%1$d participants</string>
+    <string name="group_add_member_content_description">Add member</string>
+    <string name="group_invite_link_headline">Invite link</string>
+    <string name="group_invite_link_supporting">Generate a link to join the group</string>
+    <string name="group_change_photo_content_description">Change photo</string>
+    <string name="group_you_suffix">%1$s (You)</string>
+    <string name="group_admin_badge">Admin</string>
+    <string name="group_username">@%1$s</string>
+    <string name="group_options_content_description">Options</string>
+    <string name="group_make_admin">Make admin</string>
+    <string name="group_remove_admin">Remove admin</string>
+    <string name="group_remove_from_group">Remove from group</string>
+    <string name="group_history_dialog_title">Message history</string>
+    <string name="group_history_dialog_message">Can %1$s see messages sent before joining the group?</string>
+    <string name="group_history_see">Yes, show history</string>
+    <string name="group_history_blank">No, empty history</string>
+    <string name="group_history_cancel">Cancel</string>
+    <string name="group_edit_dialog_title">Edit group</string>
+    <string name="group_name_label">Group name</string>
+    <string name="group_description_label">Description</string>
+    <string name="group_save">Save</string>
+    <string name="group_cancel">Cancel</string>
+    <string name="group_add_participant_title">Add participant</string>
+    <string name="group_search_placeholder">Search by name or username…</string>
+    <string name="group_no_results">No results</string>
+    <string name="group_share_intent_title">Share link</string>
+
+    <!-- Create Group -->
+    <string name="group_create_new_group_title">New group</string>
+    <string name="group_create_group_name_title">Group name</string>
+    <string name="group_create_remove_user_content_description">Remove</string>
+    <string name="group_create_search_people_placeholder">Search people…</string>
+    <string name="group_create_next_button">Next (%1$d selected)</string>
+    <string name="group_create_name_label">Group name</string>
+    <string name="group_create_description_label">Description (optional)</string>
+    <string name="group_create_button">Create group</string>
+
+    <!-- Broadcast -->
+    <string name="broadcast_new_list_title">New broadcast list</string>
+    <string name="broadcast_list_name_label">List name</string>
+    <string name="broadcast_search_contacts_label">Search contacts</string>
+    <string name="broadcast_username">@%1$s</string>
+    <string name="broadcast_selected_content_description">Selected</string>
+    <string name="broadcast_create_button">Create</string>
+    <string name="broadcast_cancel_button">Cancel</string>
+    <string name="broadcast_send_message_title">Broadcast message</string>
+    <string name="broadcast_send_summary">This will be sent to %1$d contact(s) from \"%2$s\"</string>
+    <string name="broadcast_message_label">Message</string>
+    <string name="broadcast_send_button">Send</string>
+    <string name="broadcast_error_title">Error</string>
+    <string name="broadcast_ok_button">OK</string>
+    <string name="broadcast_list_title">Broadcast lists</string>
+    <string name="broadcast_back_content_description">Back</string>
+    <string name="broadcast_new_list_content_description">New list</string>
+    <string name="broadcast_empty_title">No broadcast lists</string>
+    <string name="broadcast_empty_subtitle">Tap + to create a new one</string>
+    <string name="broadcast_contacts_count">%1$d contact(s)</string>
+    <string name="broadcast_send_content_description">Broadcast</string>
+    <string name="broadcast_delete_content_description">Delete</string>
+
+    <!-- NewChatScreen -->
+    <string name="newchat_share_invitation_title">Share invitation</string>
+    <string name="newchat_title">New chat</string>
+    <string name="newchat_scan_qr_code">Scan QR code</string>
+    <string name="newchat_scan_qr_prompt">Point at the contact\'s QR code</string>
+    <string name="newchat_search_placeholder">Search by username</string>
+    <string name="newchat_suggested_section">Suggested</string>
+    <string name="newchat_no_users_found">No user found with \"%1$s\"</string>
+    <string name="newchat_users_section">Users</string>
+    <string name="newchat_results_section">Results</string>
+    <string name="newchat_contacts_section">Contacts</string>
+    <string name="newchat_contacts_permission_denied">Contacts permission denied</string>
+    <string name="newchat_qr_not_recognized">QR code not recognized</string>
+    <string name="newchat_invite_friends_title">Invite your friends</string>
+    <string name="newchat_invite_friends_subtitle">Share your code so they can find you</string>
+    <string name="newchat_copy">Copy</string>
+    <string name="newchat_share">Share</string>
+    <string name="newchat_blocked">Blocked</string>
+    <string name="newchat_unblock_cd">Unblock</string>
+    <string name="newchat_invite_cd">Invite</string>
+    <string name="newchat_block_cd">Block</string>
+    <string name="newchat_invitation_sent">Invitation sent</string>
+    <string name="newchat_pending_response">Awaiting response</string>
+    <string name="newchat_accept_cd">Accept</string>
+    <string name="newchat_invite_contact_cd">Invite %1$s</string>
+
+    <!-- UserInfoScreen -->
+    <string name="userinfo_default_title">Profile</string>
+    <string name="userinfo_profile_photo_cd">%1$s\'s profile photo</string>
+    <string name="userinfo_tab_info">Info</string>
+    <string name="userinfo_tab_media">Media</string>
+    <string name="userinfo_no_additional_info">No additional info</string>
+    <string name="userinfo_no_media_shared">No media shared yet</string>
+    <string name="userinfo_view_shared_image_cd">View shared image</string>
+    <string name="userinfo_fullscreen_image_cd">Full-screen image</string>
+    <string name="userinfo_close_cd">Close</string>
+
+    <!-- StatusScreen -->
+    <string name="status_add_text_cd">Add text status</string>
+    <string name="status_add_image_cd">Add image status</string>
+    <string name="status_my_status">My status</string>
+    <string name="status_new_status_title">New status</string>
+    <string name="status_compose_placeholder">What\'s happening?</string>
+    <string name="status_publish">Post</string>
+    <string name="status_cancel">Cancel</string>
+    <string name="status_delete_cd">Delete status</string>
+    <string name="status_close_cd">Close</string>
+
+    <!-- PdfViewerScreen -->
+    <string name="pdf_share_chooser_title">Share PDF</string>
+    <string name="pdf_back_cd">Back</string>
+    <string name="pdf_share_cd">Share</string>
+    <string name="pdf_error_loading">Error loading PDF</string>
+
+    <!-- GlobalSearchScreen -->
+    <string name="search_placeholder">Search all chats</string>
+    <string name="search_back_cd">Back</string>
+    <string name="search_empty_hint">Type to search all your chats</string>
+    <string name="search_no_results">No results for \"%1$s\"</string>
+
+    <!-- UsageStatsScreen -->
+    <string name="usagestats_title">Usage statistics</string>
+    <string name="usagestats_section_messages">Messages</string>
+    <string name="usagestats_sent">Sent</string>
+    <string name="usagestats_received">Received</string>
+    <string name="usagestats_section_calls">Calls</string>
+    <string name="usagestats_total_calls">Total calls</string>
+    <string name="usagestats_minutes">Minutes</string>
+    <string name="usagestats_section_media">Media files</string>
+    <string name="usagestats_images">Images</string>
+    <string name="usagestats_audio">Audio</string>
+    <string name="usagestats_videos">Videos</string>
+    <string name="usagestats_section_most_active_conv">Most active conversation</string>
+    <string name="usagestats_most_active">Most active</string>
+    <string name="usagestats_section_last_7_days">Messages in the last 7 days</string>
+
+    <!-- AppLockScreen -->
+    <string name="applock_biometric_title">Unlock ChatApp</string>
+    <string name="applock_biometric_subtitle">Confirm your identity to continue</string>
+    <string name="applock_locked_title">ChatApp locked</string>
+    <string name="applock_locked_subtitle">Verify your identity to access</string>
+    <string name="applock_unlock_with_fingerprint">Unlock with fingerprint</string>
+
+    <!-- ChatMediaGalleryScreen -->
+    <string name="media_gallery_title">%1$s — Media</string>
+    <string name="media_gallery_back_cd">Back</string>
+    <string name="media_gallery_tab_images">Images</string>
+    <string name="media_gallery_tab_videos">Videos</string>
+    <string name="media_gallery_no_images">No shared images</string>
+    <string name="media_gallery_no_videos">No shared videos</string>
+    <string name="media_gallery_play_video_cd">Play video</string>
 </resources>
