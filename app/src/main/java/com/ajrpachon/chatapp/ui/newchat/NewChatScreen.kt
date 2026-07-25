@@ -54,9 +54,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.ui.common.ChatConstants
 import com.ajrpachon.chatapp.domain.model.UserRelationship
@@ -87,6 +89,9 @@ fun NewChatScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    val shareInvitationTitle = stringResource(R.string.newchat_share_invitation_title)
+    val qrNotRecognizedText = stringResource(R.string.newchat_qr_not_recognized)
+    val scanQrPromptText = stringResource(R.string.newchat_scan_qr_prompt)
 
     LaunchedEffect(Unit) {
         vm.effect.collect { effect ->
@@ -99,7 +104,7 @@ fun NewChatScreen(
                         type = "text/plain"
                         putExtra(Intent.EXTRA_TEXT, effect.text)
                     }
-                    context.startActivity(Intent.createChooser(shareIntent, "Compartir invitación"))
+                    context.startActivity(Intent.createChooser(shareIntent, shareInvitationTitle))
                 }
                 is NewChatEffect.InviteContact -> {
                     val smsIntent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:${effect.phoneNumber}")).apply {
@@ -129,7 +134,7 @@ fun NewChatScreen(
                 ?: return@rememberLauncherForActivityResult
             vm.onIntent(NewChatIntent.UserScannedByQr(userId))
         } else {
-            scope.launch { snackbarHostState.showSnackbar("Código QR no reconocido") }
+            scope.launch { snackbarHostState.showSnackbar(qrNotRecognizedText) }
         }
     }
 
@@ -145,14 +150,14 @@ fun NewChatScreen(
     Scaffold(
         topBar = {
             ChatAppTopBar(
-                title = "Nuevo chat",
+                title = stringResource(R.string.newchat_title),
                 onBack = onBack,
                 actions = {
                     IconButton(onClick = {
                         qrScanLauncher.launch(
                             ScanOptions().apply {
                                 setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-                                setPrompt("Apunta al código QR del contacto")
+                                setPrompt(scanQrPromptText)
                                 setBeepEnabled(false)
                                 setOrientationLocked(false)
                             }
@@ -160,7 +165,7 @@ fun NewChatScreen(
                     }) {
                         Icon(
                             Icons.Default.QrCodeScanner,
-                            contentDescription = "Escanear código QR",
+                            contentDescription = stringResource(R.string.newchat_scan_qr_code),
                             tint = MaterialTheme.colorScheme.onSurface,
                         )
                     }
@@ -177,7 +182,7 @@ fun NewChatScreen(
             ChatAppSearchField(
                 value = state.query,
                 onValueChange = { vm.onIntent(NewChatIntent.QueryChanged(it)) },
-                placeholder = "Buscar por username",
+                placeholder = stringResource(R.string.newchat_search_placeholder),
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
 
@@ -196,7 +201,7 @@ fun NewChatScreen(
                 // ── Sugeridos section ─────────────────────────────────────
                 if (state.isLoadingSuggested) {
                     item {
-                        SectionHeader("Sugeridos")
+                        SectionHeader(stringResource(R.string.newchat_suggested_section))
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -206,7 +211,7 @@ fun NewChatScreen(
                     }
                 } else if (state.suggestedContacts.isNotEmpty()) {
                     item {
-                        SectionHeader("Sugeridos")
+                        SectionHeader(stringResource(R.string.newchat_suggested_section))
                         LazyRow(
                             contentPadding = PaddingValues(horizontal = 16.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -238,7 +243,7 @@ fun NewChatScreen(
                 if (!state.isLoadingUsers && state.appUsers.isEmpty() && state.query.isNotBlank()) {
                     item {
                         Text(
-                            "No se encontró ningún usuario con \"${state.query}\"",
+                            stringResource(R.string.newchat_no_users_found, state.query),
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.outline,
@@ -248,7 +253,13 @@ fun NewChatScreen(
 
                 if (state.appUsers.isNotEmpty()) {
                     item {
-                        SectionHeader(if (state.query.isBlank()) "Usuarios" else "Resultados")
+                        SectionHeader(
+                            if (state.query.isBlank()) {
+                                stringResource(R.string.newchat_users_section)
+                            } else {
+                                stringResource(R.string.newchat_results_section)
+                            }
+                        )
                     }
                     items(state.appUsers, key = { it.id }) { user ->
                         AppUserItem(
@@ -264,7 +275,7 @@ fun NewChatScreen(
                 }
 
                 if (state.contacts.isNotEmpty()) {
-                    item { SectionHeader("Contactos") }
+                    item { SectionHeader(stringResource(R.string.newchat_contacts_section)) }
                     items(state.contacts, key = { it.phoneNumber }) { contact ->
                         ContactItem(
                             contact = contact,
@@ -279,7 +290,7 @@ fun NewChatScreen(
                 if (state.contactsPermissionDenied) {
                     item {
                         Text(
-                            "Permiso de contactos denegado",
+                            stringResource(R.string.newchat_contacts_permission_denied),
                             modifier = Modifier.padding(16.dp),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.outline,
@@ -320,12 +331,12 @@ private fun InviteCodeCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                "Invita a tus amigos",
+                stringResource(R.string.newchat_invite_friends_title),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
             )
             Text(
-                "Comparte tu código para que puedan encontrarte",
+                stringResource(R.string.newchat_invite_friends_subtitle),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.75f),
             )
@@ -340,12 +351,12 @@ private fun InviteCodeCard(
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ChatAppSecondaryButton(
-                    text = "Copiar",
+                    text = stringResource(R.string.newchat_copy),
                     onClick = onCopy,
                     leadingIcon = Icons.Default.ContentCopy,
                 )
                 ChatAppSecondaryButton(
-                    text = "Compartir",
+                    text = stringResource(R.string.newchat_share),
                     onClick = onShare,
                     leadingIcon = Icons.Default.Share,
                 )
@@ -377,38 +388,73 @@ private fun AppUserItem(
     ListItem(
         headlineContent = { Text(user.displayName) },
         supportingContent = {
-            if (isBlocked) Text("Bloqueado", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
-            else Text("@${user.username}")
+            if (isBlocked) {
+                Text(
+                    stringResource(R.string.newchat_blocked),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.labelSmall,
+                )
+            } else {
+                Text("@${user.username}")
+            }
         },
         trailingContent = {
             when {
                 isPending -> CircularProgressIndicator(modifier = Modifier.size(24.dp))
                 isBlocked ->
                     IconButton(onClick = onUnblock) {
-                        Icon(Icons.Default.LockOpen, contentDescription = "Desbloquear", tint = MaterialTheme.colorScheme.outline)
+                        Icon(
+                            Icons.Default.LockOpen,
+                            contentDescription = stringResource(R.string.newchat_unblock_cd),
+                            tint = MaterialTheme.colorScheme.outline,
+                        )
                     }
                 relationship == null || relationship == UserRelationship.NONE ->
                     Row {
                         IconButton(onClick = onAction) {
-                            Icon(Icons.Default.PersonAdd, contentDescription = "Invitar", tint = MaterialTheme.colorScheme.primary)
+                            Icon(
+                                Icons.Default.PersonAdd,
+                                contentDescription = stringResource(R.string.newchat_invite_cd),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
                         }
                         IconButton(onClick = onBlock) {
-                            Icon(Icons.Default.Block, contentDescription = "Bloquear", tint = MaterialTheme.colorScheme.error)
+                            Icon(
+                                Icons.Default.Block,
+                                contentDescription = stringResource(R.string.newchat_block_cd),
+                                tint = MaterialTheme.colorScheme.error,
+                            )
                         }
                     }
                 relationship == UserRelationship.PENDING_SENT ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("Invitación enviada", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                            Text("Pendiente de respuesta", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                            Text(
+                                stringResource(R.string.newchat_invitation_sent),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                            Text(
+                                stringResource(R.string.newchat_pending_response),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.outline,
+                            )
                         }
                         IconButton(onClick = onBlock) {
-                            Icon(Icons.Default.Block, contentDescription = "Bloquear", tint = MaterialTheme.colorScheme.error)
+                            Icon(
+                                Icons.Default.Block,
+                                contentDescription = stringResource(R.string.newchat_block_cd),
+                                tint = MaterialTheme.colorScheme.error,
+                            )
                         }
                     }
                 relationship == UserRelationship.PENDING_RECEIVED ->
                     IconButton(onClick = onAction) {
-                        Icon(Icons.Default.PersonAdd, contentDescription = "Aceptar", tint = MaterialTheme.colorScheme.tertiary)
+                        Icon(
+                            Icons.Default.PersonAdd,
+                            contentDescription = stringResource(R.string.newchat_accept_cd),
+                            tint = MaterialTheme.colorScheme.tertiary,
+                        )
                     }
                 isConnected -> null
             }
@@ -428,7 +474,7 @@ private fun ContactItem(contact: PhoneContact, onInvite: () -> Unit) {
             IconButton(onClick = onInvite) {
                 Icon(
                     Icons.Default.PersonAdd,
-                    contentDescription = "Invitar a ${contact.name}",
+                    contentDescription = stringResource(R.string.newchat_invite_contact_cd, contact.name),
                     tint = MaterialTheme.colorScheme.primary,
                 )
             }
