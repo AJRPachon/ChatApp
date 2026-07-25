@@ -1,0 +1,108 @@
+<resources>
+    <string name="app_name">ChatApp</string>
+
+    <!-- Conversations -->
+    <string name="conversations_notification_sound_title">Notification sound</string>
+    <string name="conversations_cancel">Cancel</string>
+    <string name="conversations_archived_title">Archived</string>
+    <string name="conversations_no_archived_chats">No archived chats</string>
+    <string name="conversations_top_bar_title">Chats</string>
+    <string name="conversations_theme_content_description">Theme</string>
+    <string name="conversations_theme_system">System</string>
+    <string name="conversations_theme_light">Light</string>
+    <string name="conversations_theme_dark">Dark</string>
+    <string name="conversations_search_content_description">Search</string>
+    <string name="conversations_archived_content_description">Archived</string>
+    <string name="conversations_profile_content_description">Profile</string>
+    <string name="conversations_invitations_content_description">Invitations</string>
+    <string name="conversations_new_group_content_description">New group</string>
+    <string name="conversations_new_chat_content_description">New chat</string>
+    <string name="conversations_filter_unread">Unread</string>
+    <string name="conversations_filter_groups">Groups</string>
+    <string name="conversations_filter_direct">1:1</string>
+    <string name="conversations_empty_title">No conversations yet</string>
+    <string name="conversations_empty_subtitle">Tap the button to start a chat</string>
+    <string name="conversations_archive_content_description">Archive</string>
+    <string name="conversations_archive_label">Archive</string>
+    <string name="conversations_unarchive_content_description">Unarchive</string>
+    <string name="conversations_no_messages">No messages</string>
+    <string name="conversations_photo_singular">📷 Photo</string>
+    <string name="conversations_photo_plural">📷 %1$d photos</string>
+    <string name="conversations_from_me_prefix">You: %1$s</string>
+    <string name="conversations_gif">GIF</string>
+    <string name="conversations_muted_content_description">Muted</string>
+    <string name="conversations_menu_mark_read">Turn on notifications</string>
+    <string name="conversations_menu_mute">Mute</string>
+    <string name="conversations_menu_clear_chat">Clear chat</string>
+    <string name="conversations_menu_notification_sound">Notification sound</string>
+    <string name="conversations_menu_leave_group">Leave group</string>
+    <string name="conversations_menu_delete">Delete</string>
+
+    <!-- Group -->
+    <string name="group_invite_link_title">Invite link</string>
+    <string name="group_copy">Copy</string>
+    <string name="group_share">Share</string>
+    <string name="group_info_title">Group info</string>
+    <string name="group_more_options">More options</string>
+    <string name="group_edit_group">Edit group</string>
+    <string name="group_leave_group">Leave group</string>
+    <string name="group_participants_count">%1$d participants</string>
+    <string name="group_add_member_content_description">Add member</string>
+    <string name="group_invite_link_headline">Invite link</string>
+    <string name="group_invite_link_supporting">Generate a link to join the group</string>
+    <string name="group_change_photo_content_description">Change photo</string>
+    <string name="group_you_suffix">%1$s (You)</string>
+    <string name="group_admin_badge">Admin</string>
+    <string name="group_username">@%1$s</string>
+    <string name="group_options_content_description">Options</string>
+    <string name="group_make_admin">Make admin</string>
+    <string name="group_remove_admin">Remove admin</string>
+    <string name="group_remove_from_group">Remove from group</string>
+    <string name="group_history_dialog_title">Message history</string>
+    <string name="group_history_dialog_message">Can %1$s see messages sent before joining the group?</string>
+    <string name="group_history_see">Yes, show history</string>
+    <string name="group_history_blank">No, empty history</string>
+    <string name="group_history_cancel">Cancel</string>
+    <string name="group_edit_dialog_title">Edit group</string>
+    <string name="group_name_label">Group name</string>
+    <string name="group_description_label">Description</string>
+    <string name="group_save">Save</string>
+    <string name="group_cancel">Cancel</string>
+    <string name="group_add_participant_title">Add participant</string>
+    <string name="group_search_placeholder">Search by name or username…</string>
+    <string name="group_no_results">No results</string>
+    <string name="group_share_intent_title">Share link</string>
+
+    <!-- Create Group -->
+    <string name="group_create_new_group_title">New group</string>
+    <string name="group_create_group_name_title">Group name</string>
+    <string name="group_create_remove_user_content_description">Remove</string>
+    <string name="group_create_search_people_placeholder">Search people…</string>
+    <string name="group_create_next_button">Next (%1$d selected)</string>
+    <string name="group_create_name_label">Group name</string>
+    <string name="group_create_description_label">Description (optional)</string>
+    <string name="group_create_button">Create group</string>
+
+    <!-- Broadcast -->
+    <string name="broadcast_new_list_title">New broadcast list</string>
+    <string name="broadcast_list_name_label">List name</string>
+    <string name="broadcast_search_contacts_label">Search contacts</string>
+    <string name="broadcast_username">@%1$s</string>
+    <string name="broadcast_selected_content_description">Selected</string>
+    <string name="broadcast_create_button">Create</string>
+    <string name="broadcast_cancel_button">Cancel</string>
+    <string name="broadcast_send_message_title">Broadcast message</string>
+    <string name="broadcast_send_summary">This will be sent to %1$d contact(s) from \"%2$s\"</string>
+    <string name="broadcast_message_label">Message</string>
+    <string name="broadcast_send_button">Send</string>
+    <string name="broadcast_error_title">Error</string>
+    <string name="broadcast_ok_button">OK</string>
+    <string name="broadcast_list_title">Broadcast lists</string>
+    <string name="broadcast_back_content_description">Back</string>
+    <string name="broadcast_new_list_content_description">New list</string>
+    <string name="broadcast_empty_title">No broadcast lists</string>
+    <string name="broadcast_empty_subtitle">Tap + to create a new one</string>
+    <string name="broadcast_contacts_count">%1$d contact(s)</string>
+    <string name="broadcast_send_content_description">Broadcast</string>
+    <string name="broadcast_delete_content_description">Delete</string>
+</resources>
