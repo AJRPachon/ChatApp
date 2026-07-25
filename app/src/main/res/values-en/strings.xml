@@ -300,7 +300,7 @@
     <string name="conversations_empty_title">No conversations yet</string>
     <string name="conversations_empty_subtitle">Tap the button to start a chat</string>
     <string name="conversations_archive_content_description">Archive</string>
-    <string name="conversations_archive_label">Archive</string>
+    <string name="conversations_chat_archived">Chat archived</string>
     <string name="conversations_unarchive_content_description">Unarchive</string>
     <string name="conversations_no_messages">No messages</string>
     <string name="conversations_photo_singular">📷 Photo</string>

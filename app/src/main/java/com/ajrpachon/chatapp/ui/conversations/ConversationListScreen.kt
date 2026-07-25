@@ -56,19 +56,23 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -79,6 +83,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
+import kotlinx.coroutines.launch
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.ThemePreference
@@ -122,6 +127,9 @@ fun ConversationListScreen(
     val state by vm.state.collectAsStateWithLifecycle()
     var menuConvId by remember { mutableStateOf<String?>(null) }
     val archivedSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    val chatArchivedMessage = stringResource(R.string.conversations_chat_archived)
 
     val themePreference = state.themePreference
     var showThemeMenu by remember { mutableStateOf(false) }
@@ -227,6 +235,11 @@ fun ConversationListScreen(
     }
 
     Scaffold(
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState) { data ->
+                Snackbar(snackbarData = data)
+            }
+        },
         topBar = {
             Column {
                 AnimatedVisibility(visible = !state.isOnline) {
@@ -470,7 +483,11 @@ fun ConversationListScreen(
                             vm.onIntent(ConversationListIntent.DeleteConversation(conv.id))
                         },
                         onArchive = {
+                            menuConvId = null
                             vm.onIntent(ConversationListIntent.ArchiveConversation(conv.id, true))
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar(chatArchivedMessage)
+                            }
                         },
                         onSoundPicker = {
                             menuConvId = null
@@ -527,18 +544,11 @@ private fun SwipeableConversationItem(
                     .padding(horizontal = 20.dp),
                 contentAlignment = Alignment.CenterEnd,
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Default.Archive,
-                        contentDescription = stringResource(R.string.conversations_archive_content_description),
-                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                    )
-                    Text(
-                        stringResource(R.string.conversations_archive_label),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer,
-                    )
-                }
+                Icon(
+                    Icons.Default.Archive,
+                    contentDescription = stringResource(R.string.conversations_archive_content_description),
+                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
             }
         },
     ) {
