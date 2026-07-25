@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DevicesOther
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
@@ -46,7 +45,6 @@ import java.util.Locale
 @Composable
 fun SessionAuditScreen(
     onBack: () -> Unit,
-    onSignedOut: () -> Unit,
 ) {
     val vm: SessionAuditViewModel = koinViewModel()
     val state by vm.state.collectAsStateWithLifecycle()

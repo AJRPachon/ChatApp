@@ -15,7 +15,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -59,7 +58,6 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.Forward
 import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.ContentCopy
@@ -74,13 +72,10 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.EmojiEmotions
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Add
@@ -89,14 +84,12 @@ import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.PushPin
-import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.HowToVote
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Wallpaper
@@ -177,10 +170,8 @@ import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.domain.model.CallBO
 import com.ajrpachon.chatapp.domain.model.ChatTheme
 import com.ajrpachon.chatapp.domain.model.ConversationBO
-import com.ajrpachon.chatapp.ui.common.ChatConstants
 import com.ajrpachon.chatapp.domain.model.MediaUrlValidator
 import com.ajrpachon.chatapp.domain.model.MessageBO
-import com.ajrpachon.chatapp.domain.model.MessageLimits
 import com.ajrpachon.chatapp.domain.model.StickerValidation
 import com.ajrpachon.chatapp.utils.LinkPreviewData
 import com.ajrpachon.chatapp.utils.LinkPreviewFetcher
@@ -194,7 +185,6 @@ import com.ajrpachon.chatapp.CallRoute
 import com.ajrpachon.chatapp.ChatRoute
 import com.ajrpachon.chatapp.GroupInfoRoute
 import com.ajrpachon.chatapp.UserInfoRoute
-import com.ajrpachon.chatapp.ui.components.ChatAppTextField
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
@@ -1537,7 +1527,6 @@ private fun VideoBubble(message: MessageBO, onReply: () -> Unit) {
     }
     val alignment = if (message.isFromMe) Alignment.CenterEnd else Alignment.CenterStart
     val context = LocalContext.current
-    var showPlayer by remember { mutableStateOf(false) }
 
     Box(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp)) {
         Column(
@@ -2074,8 +2063,6 @@ private fun MessageBubble(
         }
     }
 }
-
-private val LOCATION_MESSAGE_PREFIX = "ðŸ“ Mi ubicaciÃ³n: https://maps.google.com/?q="
 
 @Composable
 private fun LocationMessageCard(content: String, mapsUrl: String) {
