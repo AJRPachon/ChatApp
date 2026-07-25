@@ -235,7 +235,6 @@ fun StatusViewerScreen(
             .fillMaxSize()
             .background(Color(current.backgroundColor)),
     ) {
-        // Background image if present
         if (current.imageUrl != null) {
             AsyncImage(
                 model = current.imageUrl,
@@ -300,7 +299,6 @@ fun StatusViewerScreen(
             }
         }
 
-        // Text overlay
         if (!current.text.isNullOrBlank()) {
             Text(
                 text = current.text,

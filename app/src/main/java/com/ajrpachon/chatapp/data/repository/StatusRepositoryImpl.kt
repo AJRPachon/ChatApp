@@ -71,6 +71,4 @@ class StatusRepositoryImpl(
         remoteSource.deleteStatus(statusId)
         catchResult { statusDao.deleteExpired(0L) }
     }
-
-    // StatusDTO.toDBO() moved to data/mapper/StatusMapper.kt
 }
