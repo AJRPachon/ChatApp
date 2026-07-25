@@ -56,24 +56,33 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
+import kotlinx.coroutines.launch
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.ThemePreference
 import com.ajrpachon.chatapp.ui.common.ChatConstants
@@ -116,6 +125,8 @@ fun ConversationListScreen(
     val state by vm.state.collectAsStateWithLifecycle()
     var menuConvId by remember { mutableStateOf<String?>(null) }
     val archivedSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
     val themePreference = state.themePreference
     var showThemeMenu by remember { mutableStateOf(false) }
@@ -221,6 +232,11 @@ fun ConversationListScreen(
     }
 
     Scaffold(
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState) { data ->
+                Snackbar(snackbarData = data)
+            }
+        },
         topBar = {
             Column {
                 AnimatedVisibility(visible = !state.isOnline) {
@@ -466,6 +482,9 @@ fun ConversationListScreen(
                         onArchive = {
                             menuConvId = null
                             vm.onIntent(ConversationListIntent.ArchiveConversation(conv.id, true))
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Chat archivado")
+                            }
                         },
                         onSoundPicker = {
                             menuConvId = null
@@ -478,6 +497,7 @@ fun ConversationListScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SwipeableConversationItem(
     conversation: ConversationBO,
@@ -494,21 +514,56 @@ private fun SwipeableConversationItem(
     onArchive: () -> Unit,
     onSoundPicker: () -> Unit,
 ) {
-    ConversationItem(
-        conversation = conversation,
-        currentUserId = currentUserId,
-        draft = draft,
-        showMenu = showMenu,
-        onClick = onClick,
-        onLongClick = onLongClick,
-        onMenuDismiss = onMenuDismiss,
-        onMuteToggle = onMuteToggle,
-        onClearChat = onClearChat,
-        onLeaveGroup = onLeaveGroup,
-        onDelete = onDelete,
-        onArchive = onArchive,
-        onSoundPicker = onSoundPicker,
+    val dismissState = rememberSwipeToDismissBoxState(
+        positionalThreshold = { totalDistance -> totalDistance * 0.4f },
     )
+
+    LaunchedEffect(dismissState.currentValue) {
+        if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+            onArchive()
+            dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+        }
+    }
+
+    SwipeToDismissBox(
+        state = dismissState,
+        enableDismissFromStartToEnd = false,
+        enableDismissFromEndToStart = true,
+        backgroundContent = {
+            val color = when (dismissState.targetValue) {
+                SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.tertiaryContainer
+                else -> Color.Transparent
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(color)
+                    .padding(horizontal = 20.dp),
+                contentAlignment = Alignment.CenterEnd,
+            ) {
+                Icon(
+                    Icons.Default.Archive,
+                    contentDescription = "Archivar",
+                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+            }
+        },
+    ) {
+        ConversationItem(
+            conversation = conversation,
+            currentUserId = currentUserId,
+            draft = draft,
+            showMenu = showMenu,
+            onClick = onClick,
+            onLongClick = onLongClick,
+            onMenuDismiss = onMenuDismiss,
+            onMuteToggle = onMuteToggle,
+            onClearChat = onClearChat,
+            onLeaveGroup = onLeaveGroup,
+            onDelete = onDelete,
+            onSoundPicker = onSoundPicker,
+        )
+    }
 }
 
 @Composable
@@ -573,7 +628,6 @@ private fun ConversationItem(
     onClearChat: () -> Unit,
     onLeaveGroup: (() -> Unit)?,
     onDelete: () -> Unit,
-    onArchive: () -> Unit,
     onSoundPicker: () -> Unit,
 ) {
     val lastMsg = conversation.lastMessage
@@ -750,11 +804,6 @@ private fun ConversationItem(
                 text = { Text("Sonido de notificación") },
                 leadingIcon = { Icon(Icons.Default.NotificationsActive, contentDescription = null) },
                 onClick = onSoundPicker,
-            )
-            DropdownMenuItem(
-                text = { Text("Archivar") },
-                leadingIcon = { Icon(Icons.Default.Archive, contentDescription = null) },
-                onClick = onArchive,
             )
             if (onLeaveGroup != null) {
                 DropdownMenuItem(
