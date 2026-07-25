@@ -311,6 +311,7 @@
     <string name="conversations_menu_mute">Silenciar</string>
     <string name="conversations_menu_clear_chat">Vaciar chat</string>
     <string name="conversations_menu_notification_sound">Sonido de notificación</string>
+    <string name="conversations_menu_archive">Archivar</string>
     <string name="conversations_menu_leave_group">Salir del grupo</string>
     <string name="conversations_menu_delete">Eliminar</string>
 

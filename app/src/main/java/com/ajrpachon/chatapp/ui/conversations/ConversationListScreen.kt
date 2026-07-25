@@ -533,10 +533,8 @@ private fun SwipeableConversationItem(
         enableDismissFromStartToEnd = false,
         enableDismissFromEndToStart = true,
         backgroundContent = {
-            val color = when (dismissState.targetValue) {
-                SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.tertiaryContainer
-                else -> Color.Transparent
-            }
+            val isArchiving = dismissState.targetValue == SwipeToDismissBoxValue.EndToStart
+            val color = if (isArchiving) MaterialTheme.colorScheme.tertiaryContainer else Color.Transparent
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -544,11 +542,13 @@ private fun SwipeableConversationItem(
                     .padding(horizontal = 20.dp),
                 contentAlignment = Alignment.CenterEnd,
             ) {
-                Icon(
-                    Icons.Default.Archive,
-                    contentDescription = stringResource(R.string.conversations_archive_content_description),
-                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                )
+                if (isArchiving) {
+                    Icon(
+                        Icons.Default.Archive,
+                        contentDescription = stringResource(R.string.conversations_archive_content_description),
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                }
             }
         },
     ) {
@@ -564,6 +564,7 @@ private fun SwipeableConversationItem(
             onClearChat = onClearChat,
             onLeaveGroup = onLeaveGroup,
             onDelete = onDelete,
+            onArchive = onArchive,
             onSoundPicker = onSoundPicker,
         )
     }
@@ -631,6 +632,7 @@ private fun ConversationItem(
     onClearChat: () -> Unit,
     onLeaveGroup: (() -> Unit)?,
     onDelete: () -> Unit,
+    onArchive: () -> Unit,
     onSoundPicker: () -> Unit,
 ) {
     val lastMsg = conversation.lastMessage
@@ -822,6 +824,11 @@ private fun ConversationItem(
                 text = { Text(stringResource(R.string.conversations_menu_notification_sound)) },
                 leadingIcon = { Icon(Icons.Default.NotificationsActive, contentDescription = null) },
                 onClick = onSoundPicker,
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.conversations_menu_archive)) },
+                leadingIcon = { Icon(Icons.Default.Archive, contentDescription = null) },
+                onClick = onArchive,
             )
             if (onLeaveGroup != null) {
                 DropdownMenuItem(

@@ -311,6 +311,7 @@
     <string name="conversations_menu_mute">Mute</string>
     <string name="conversations_menu_clear_chat">Clear chat</string>
     <string name="conversations_menu_notification_sound">Notification sound</string>
+    <string name="conversations_menu_archive">Archive</string>
     <string name="conversations_menu_leave_group">Leave group</string>
     <string name="conversations_menu_delete">Delete</string>
 
