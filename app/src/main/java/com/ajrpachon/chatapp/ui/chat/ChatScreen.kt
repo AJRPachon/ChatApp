@@ -735,15 +735,6 @@ fun ChatScreen(
                         Column(modifier = Modifier.weight(1f)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(state.conversationTitle.ifBlank { "Chat" })
-                                if (!state.isGroup) {
-                                    Spacer(Modifier.width(4.dp))
-                                    Icon(
-                                        imageVector = Icons.Default.Lock,
-                                        contentDescription = "Cifrado extremo a extremo",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(12.dp),
-                                    )
-                                }
                                 if (state.disappearingModeSeconds > 0L) {
                                     Spacer(Modifier.width(4.dp))
                                     Icon(
