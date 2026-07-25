@@ -77,12 +77,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import kotlinx.coroutines.launch
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.ThemePreference
 import com.ajrpachon.chatapp.ui.common.ChatConstants
@@ -127,6 +129,7 @@ fun ConversationListScreen(
     val archivedSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+    val chatArchivedMessage = stringResource(R.string.conversations_chat_archived)
 
     val themePreference = state.themePreference
     var showThemeMenu by remember { mutableStateOf(false) }
@@ -143,7 +146,7 @@ fun ConversationListScreen(
     state.soundPickerConversationId?.let { convId ->
         AlertDialog(
             onDismissRequest = { vm.onIntent(ConversationListIntent.DismissSoundPicker) },
-            title = { Text("Sonido de notificación") },
+            title = { Text(stringResource(R.string.conversations_notification_sound_title)) },
             text = {
                 Column {
                     NotificationSound.entries.forEach { sound ->
@@ -171,7 +174,7 @@ fun ConversationListScreen(
             },
             confirmButton = {
                 TextButton(onClick = { vm.onIntent(ConversationListIntent.DismissSoundPicker) }) {
-                    Text("Cancelar")
+                    Text(stringResource(R.string.conversations_cancel))
                 }
             },
         )
@@ -184,7 +187,7 @@ fun ConversationListScreen(
             dragHandle = { BottomSheetDefaults.DragHandle() },
         ) {
             Text(
-                text = "Archivados",
+                text = stringResource(R.string.conversations_archived_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -205,7 +208,7 @@ fun ConversationListScreen(
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            "No hay chats archivados",
+                            stringResource(R.string.conversations_no_archived_chats),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -245,7 +248,7 @@ fun ConversationListScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "Chats",
+                        stringResource(R.string.conversations_top_bar_title),
                         fontWeight = FontWeight.Bold,
                     )
                 },
@@ -259,7 +262,7 @@ fun ConversationListScreen(
                                     ThemePreference.LIGHT -> Icons.Default.LightMode
                                     ThemePreference.SYSTEM -> Icons.Default.BrightnessAuto
                                 },
-                                contentDescription = "Tema",
+                                contentDescription = stringResource(R.string.conversations_theme_content_description),
                             )
                         }
                         DropdownMenu(
@@ -267,7 +270,7 @@ fun ConversationListScreen(
                             onDismissRequest = { showThemeMenu = false },
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Sistema") },
+                                text = { Text(stringResource(R.string.conversations_theme_system)) },
                                 leadingIcon = { Icon(Icons.Default.BrightnessAuto, contentDescription = null) },
                                 onClick = {
                                     vm.onIntent(ConversationListIntent.SetTheme(ThemePreference.SYSTEM))
@@ -275,7 +278,7 @@ fun ConversationListScreen(
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text("Claro") },
+                                text = { Text(stringResource(R.string.conversations_theme_light)) },
                                 leadingIcon = { Icon(Icons.Default.LightMode, contentDescription = null) },
                                 onClick = {
                                     vm.onIntent(ConversationListIntent.SetTheme(ThemePreference.LIGHT))
@@ -283,7 +286,7 @@ fun ConversationListScreen(
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text("Oscuro") },
+                                text = { Text(stringResource(R.string.conversations_theme_dark)) },
                                 leadingIcon = { Icon(Icons.Default.DarkMode, contentDescription = null) },
                                 onClick = {
                                     vm.onIntent(ConversationListIntent.SetTheme(ThemePreference.DARK))
@@ -293,7 +296,7 @@ fun ConversationListScreen(
                         }
                     }
                     IconButton(onClick = dropUnlessResumed { onGoToGlobalSearch() }) {
-                        Icon(Icons.Default.Search, contentDescription = "Buscar")
+                        Icon(Icons.Default.Search, contentDescription = stringResource(R.string.conversations_search_content_description))
                     }
                     IconButton(onClick = { vm.onIntent(ConversationListIntent.ShowArchivedSheet) }) {
                         BadgedBox(badge = {
@@ -301,13 +304,13 @@ fun ConversationListScreen(
                                 Badge { Text(state.archivedConversations.size.toString()) }
                             }
                         }) {
-                            Icon(Icons.Default.Inventory2, contentDescription = "Archivados")
+                            Icon(Icons.Default.Inventory2, contentDescription = stringResource(R.string.conversations_archived_content_description))
                         }
                     }
                     IconButton(onClick = dropUnlessResumed { onOpenProfile() }) {
                         Icon(
                             Icons.Default.Person,
-                            contentDescription = "Perfil",
+                            contentDescription = stringResource(R.string.conversations_profile_content_description),
                             modifier = Modifier
                                 .size(28.dp)
                                 .background(
@@ -324,7 +327,7 @@ fun ConversationListScreen(
                                 Badge { Text(state.pendingInvitationsCount.toString()) }
                             }
                         }) {
-                            Icon(Icons.Default.Notifications, contentDescription = "Invitaciones")
+                            Icon(Icons.Default.Notifications, contentDescription = stringResource(R.string.conversations_invitations_content_description))
                         }
                     }
                 },
@@ -344,14 +347,14 @@ fun ConversationListScreen(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                 ) {
-                    Icon(Icons.Default.Group, contentDescription = "Nuevo grupo")
+                    Icon(Icons.Default.Group, contentDescription = stringResource(R.string.conversations_new_group_content_description))
                 }
                 FloatingActionButton(
                     onClick = dropUnlessResumed { onNewChat() },
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                 ) {
-                    Icon(Icons.Default.Edit, contentDescription = "Nuevo chat")
+                    Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.conversations_new_chat_content_description))
                 }
             }
         },
@@ -382,7 +385,7 @@ fun ConversationListScreen(
                         FilterChip(
                             selected = state.selectedFilter == ConversationFilter.UNREAD,
                             onClick = { vm.onIntent(ConversationListIntent.SetFilter(ConversationFilter.UNREAD)) },
-                            label = { Text("No leídos") },
+                            label = { Text(stringResource(R.string.conversations_filter_unread)) },
                             leadingIcon = {
                                 Icon(
                                     imageVector = Icons.Default.FilterList,
@@ -395,7 +398,7 @@ fun ConversationListScreen(
                         FilterChip(
                             selected = state.selectedFilter == ConversationFilter.GROUPS,
                             onClick = { vm.onIntent(ConversationListIntent.SetFilter(ConversationFilter.GROUPS)) },
-                            label = { Text("Grupos") },
+                            label = { Text(stringResource(R.string.conversations_filter_groups)) },
                             leadingIcon = {
                                 Icon(
                                     imageVector = Icons.Default.Group,
@@ -408,7 +411,7 @@ fun ConversationListScreen(
                         FilterChip(
                             selected = state.selectedFilter == ConversationFilter.DIRECT,
                             onClick = { vm.onIntent(ConversationListIntent.SetFilter(ConversationFilter.DIRECT)) },
-                            label = { Text("1:1") },
+                            label = { Text(stringResource(R.string.conversations_filter_direct)) },
                             leadingIcon = {
                                 Icon(
                                     imageVector = Icons.Default.Person,
@@ -437,12 +440,12 @@ fun ConversationListScreen(
                                 )
                                 Spacer(Modifier.height(16.dp))
                                 Text(
-                                    "No hay conversaciones aún",
+                                    stringResource(R.string.conversations_empty_title),
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                                 Text(
-                                    "Toca el botón para empezar un chat",
+                                    stringResource(R.string.conversations_empty_subtitle),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.outline,
                                 )
@@ -483,7 +486,7 @@ fun ConversationListScreen(
                             menuConvId = null
                             vm.onIntent(ConversationListIntent.ArchiveConversation(conv.id, true))
                             coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Chat archivado")
+                                snackbarHostState.showSnackbar(chatArchivedMessage)
                             }
                         },
                         onSoundPicker = {
@@ -543,7 +546,7 @@ private fun SwipeableConversationItem(
             ) {
                 Icon(
                     Icons.Default.Archive,
-                    contentDescription = "Archivar",
+                    contentDescription = stringResource(R.string.conversations_archive_content_description),
                     tint = MaterialTheme.colorScheme.onTertiaryContainer,
                 )
             }
@@ -607,7 +610,7 @@ private fun ArchivedConversationItem(
         IconButton(onClick = onUnarchive) {
             Icon(
                 Icons.Default.Unarchive,
-                contentDescription = "Desarchivar",
+                contentDescription = stringResource(R.string.conversations_unarchive_content_description),
                 tint = MaterialTheme.colorScheme.primary,
             )
         }
@@ -709,10 +712,13 @@ private fun ConversationItem(
                                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                             )
                             conversation.trailingImageCount > 0 -> {
-                                val label = if (conversation.trailingImageCount == 1) "📷 Foto"
-                                else "📷 ${conversation.trailingImageCount} fotos"
+                                val label = if (conversation.trailingImageCount == 1) {
+                                    stringResource(R.string.conversations_photo_singular)
+                                } else {
+                                    stringResource(R.string.conversations_photo_plural, conversation.trailingImageCount)
+                                }
                                 Text(
-                                    text = if (fromMe) "Tú: $label" else label,
+                                    text = if (fromMe) stringResource(R.string.conversations_from_me_prefix, label) else label,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1,
@@ -720,20 +726,24 @@ private fun ConversationItem(
                                 )
                             }
                             lastMsg?.gifUrl != null -> Text(
-                                text = if (fromMe) "Tú: GIF" else "GIF",
+                                text = if (fromMe) {
+                                    stringResource(R.string.conversations_from_me_prefix, stringResource(R.string.conversations_gif))
+                                } else {
+                                    stringResource(R.string.conversations_gif)
+                                },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
                             )
                             lastMsg?.stickerUrl != null -> Text(
-                                text = if (fromMe) "Tú: ${lastMsg.stickerUrl}" else lastMsg.stickerUrl,
+                                text = if (fromMe) stringResource(R.string.conversations_from_me_prefix, lastMsg.stickerUrl) else lastMsg.stickerUrl,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
                             lastMsg != null -> Text(
-                                text = if (fromMe) "Tú: ${lastMsg.content}" else lastMsg.content,
+                                text = if (fromMe) stringResource(R.string.conversations_from_me_prefix, lastMsg.content) else lastMsg.content,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = if (hasUnread)
                                     MaterialTheme.colorScheme.onSurface
@@ -744,7 +754,7 @@ private fun ConversationItem(
                                 overflow = TextOverflow.Ellipsis,
                             )
                             else -> Text(
-                                "Sin mensajes",
+                                stringResource(R.string.conversations_no_messages),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.outline,
                             )
@@ -760,7 +770,7 @@ private fun ConversationItem(
                         if (conversation.isMuted) {
                             Icon(
                                 Icons.AutoMirrored.Filled.VolumeOff,
-                                contentDescription = "Silenciado",
+                                contentDescription = stringResource(R.string.conversations_muted_content_description),
                                 modifier = Modifier.size(14.dp),
                                 tint = MaterialTheme.colorScheme.outline,
                             )
@@ -786,7 +796,15 @@ private fun ConversationItem(
             onDismissRequest = onMenuDismiss,
         ) {
             DropdownMenuItem(
-                text = { Text(if (conversation.isMuted) "Activar notificaciones" else "Silenciar") },
+                text = {
+                    Text(
+                        if (conversation.isMuted) {
+                            stringResource(R.string.conversations_menu_mark_read)
+                        } else {
+                            stringResource(R.string.conversations_menu_mute)
+                        },
+                    )
+                },
                 leadingIcon = {
                     Icon(
                         if (conversation.isMuted) Icons.Default.NotificationsActive else Icons.Default.NotificationsOff,
@@ -796,24 +814,24 @@ private fun ConversationItem(
                 onClick = onMuteToggle,
             )
             DropdownMenuItem(
-                text = { Text("Vaciar chat") },
+                text = { Text(stringResource(R.string.conversations_menu_clear_chat)) },
                 leadingIcon = { Icon(Icons.Default.DeleteSweep, contentDescription = null) },
                 onClick = onClearChat,
             )
             DropdownMenuItem(
-                text = { Text("Sonido de notificación") },
+                text = { Text(stringResource(R.string.conversations_menu_notification_sound)) },
                 leadingIcon = { Icon(Icons.Default.NotificationsActive, contentDescription = null) },
                 onClick = onSoundPicker,
             )
             if (onLeaveGroup != null) {
                 DropdownMenuItem(
-                    text = { Text("Salir del grupo") },
+                    text = { Text(stringResource(R.string.conversations_menu_leave_group)) },
                     leadingIcon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null) },
                     onClick = onLeaveGroup,
                 )
             }
             DropdownMenuItem(
-                text = { Text("Eliminar", color = MaterialTheme.colorScheme.error) },
+                text = { Text(stringResource(R.string.conversations_menu_delete), color = MaterialTheme.colorScheme.error) },
                 leadingIcon = {
                     Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                 },
