@@ -23,7 +23,6 @@
     <string name="chat_delete_selected">Delete selected</string>
     <string name="chat_photo_of">Photo of %1$s</string>
     <string name="chat_title_default">Chat</string>
-    <string name="chat_e2e_encrypted">End-to-end encrypted</string>
     <string name="chat_disappearing_mode_active">Disappearing mode active</string>
     <string name="chat_back">Back</string>
     <string name="chat_group_voice_call">Group voice call</string>
