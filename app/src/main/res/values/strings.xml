@@ -1,6 +1,154 @@
 <resources>
     <string name="app_name">ChatApp</string>
 
+    <!-- Chat screen: dialogs and generic actions -->
+    <string name="chat_export_conversation">Exportar conversación</string>
+    <string name="chat_delete_messages_title">Eliminar mensajes</string>
+    <plurals name="chat_delete_messages_confirm">
+        <item quantity="one">¿Borrar %1$d mensaje?</item>
+        <item quantity="other">¿Borrar %1$d mensajes?</item>
+    </plurals>
+    <string name="chat_delete">Eliminar</string>
+    <string name="chat_cancel">Cancelar</string>
+    <string name="chat_incognito_mode">Modo incógnito</string>
+    <string name="chat_incognito_mode_description">En modo incógnito, los mensajes nuevos no se guardarán en este dispositivo. Los mensajes ya existentes permanecen. El servidor sigue procesando los mensajes normalmente. Este modo no es equivalente al cifrado de extremo a extremo.</string>
+    <string name="chat_incognito_confirm_activate">Entendido, activar</string>
+    <string name="chat_scheduled_messages">Mensajes programados</string>
+    <string name="chat_no_scheduled_messages">No hay mensajes programados</string>
+    <string name="chat_cancel_scheduled_message">Cancelar mensaje programado</string>
+    <string name="chat_incognito_banner">Modo incógnito — los mensajes no se guardan</string>
+    <string name="chat_cancel_selection">Cancelar selección</string>
+    <string name="chat_selected_count">%1$d seleccionados</string>
+    <string name="chat_forward_selected">Reenviar seleccionados</string>
+    <string name="chat_delete_selected">Eliminar seleccionados</string>
+    <string name="chat_photo_of">Foto de %1$s</string>
+    <string name="chat_title_default">Chat</string>
+    <string name="chat_disappearing_mode_active">Modo desaparición activo</string>
+    <string name="chat_back">Atrás</string>
+    <string name="chat_group_voice_call">Llamada grupal de voz</string>
+    <string name="chat_group_video_call">Videollamada grupal</string>
+    <string name="chat_voice_call">Llamada de voz</string>
+    <string name="chat_video_call">Videollamada</string>
+    <string name="chat_search_messages">Buscar mensajes</string>
+    <string name="chat_more_options">Más opciones</string>
+    <string name="chat_enable_notifications">Activar notificaciones</string>
+    <string name="chat_mute">Silenciar</string>
+    <string name="chat_chat_theme">Tema del chat</string>
+    <string name="chat_wallpaper">Fondo del chat</string>
+    <string name="chat_disappearing_mode">Modo desaparición</string>
+    <string name="chat_disable_incognito">Desactivar incógnito</string>
+    <string name="chat_shared_media">Multimedia compartida</string>
+    <string name="chat_group_info">Info del grupo</string>
+    <string name="chat_leave_group">Salir del grupo</string>
+    <string name="chat_editing_message">Editando mensaje</string>
+    <string name="chat_cancel_edit">Cancelar edición</string>
+    <string name="chat_typing_single">%1$s está escribiendo…</string>
+    <string name="chat_typing_multiple">%1$s están escribiendo…</string>
+    <string name="chat_scroll_to_bottom">Ir al final</string>
+
+    <!-- Call message bubble -->
+    <string name="chat_call_ended_duration">Finalizada · %1$s</string>
+    <string name="chat_call_missed">Perdida</string>
+    <string name="chat_call_rejected">Rechazada</string>
+    <string name="chat_call_no_answer">Sin respuesta</string>
+
+    <!-- File / video / sticker bubbles -->
+    <string name="chat_document_pdf_default">documento.pdf</string>
+    <string name="chat_view_pdf">Ver PDF</string>
+    <string name="chat_file_default">Archivo</string>
+    <string name="chat_video_content_description">Video</string>
+    <string name="chat_play">Reproducir</string>
+    <string name="chat_message_deleted">Este mensaje fue eliminado</string>
+
+    <!-- Message bubble -->
+    <string name="chat_image_content_description">Imagen</string>
+    <string name="chat_gif_content_description">GIF</string>
+    <string name="chat_react">Reaccionar</string>
+    <string name="chat_edit">Editar</string>
+    <string name="chat_remove_self_destruct">Quitar autodestrucción</string>
+    <string name="chat_ephemeral_message">Mensaje efímero</string>
+    <string name="chat_copy">Copiar</string>
+    <string name="chat_forward">Reenviar</string>
+    <string name="chat_edited_label">editado</string>
+    <string name="chat_pending_send">Pendiente de envío</string>
+    <string name="chat_send_error">Error al enviar</string>
+    <string name="chat_selected">Seleccionado</string>
+    <string name="chat_shared_location">Ubicación compartida</string>
+    <string name="chat_view_on_maps">Ver en Maps</string>
+    <string name="chat_read">Leído</string>
+    <string name="chat_sent">Enviado</string>
+    <string name="chat_photos_count">%1$d fotos</string>
+    <string name="chat_close">Cerrar</string>
+    <string name="chat_call_action">Llamar</string>
+
+    <!-- Expiry / mute / disappearing durations -->
+    <string name="chat_expiry_1_minute">1 minuto</string>
+    <string name="chat_1_hour">1 hora</string>
+    <string name="chat_24_hours">24 horas</string>
+    <string name="chat_7_days">7 días</string>
+    <string name="chat_ephemeral_message_desc">El mensaje se borrará localmente después de:</string>
+    <string name="chat_mute_notifications_title">Silenciar notificaciones</string>
+    <string name="chat_8_hours">8 horas</string>
+    <string name="chat_mute_always">Siempre</string>
+    <string name="chat_forward_to">Reenviar a…</string>
+    <string name="chat_no_other_conversations">No hay otras conversaciones</string>
+
+    <!-- Chat theme names -->
+    <string name="chat_theme_default">Predeterminado</string>
+    <string name="chat_theme_ocean">Océano</string>
+    <string name="chat_theme_sunset">Atardecer</string>
+    <string name="chat_theme_forest">Bosque</string>
+    <string name="chat_theme_lavender">Lavanda</string>
+    <string name="chat_theme_rose">Rosa</string>
+    <string name="chat_theme_midnight">Medianoche</string>
+
+    <!-- Disappearing mode sheet -->
+    <string name="chat_disabled">Desactivado</string>
+    <string name="chat_30_days">30 días</string>
+    <string name="chat_disappearing_mode_desc">Los nuevos mensajes desaparecerán automáticamente.</string>
+
+    <!-- Schedule dialog -->
+    <string name="chat_next">Siguiente</string>
+    <string name="chat_select_time">Seleccionar hora</string>
+    <string name="chat_schedule_action">Programar</string>
+
+    <!-- AI assistant -->
+    <string name="chat_ai_assistant">Asistente IA</string>
+    <string name="chat_summarize">Resumir</string>
+    <string name="chat_suggest_reply">Sugerir respuesta</string>
+    <string name="chat_ask_question_placeholder">Escribe una pregunta…</string>
+    <string name="chat_send_query">Enviar consulta</string>
+    <string name="chat_insert_in_message">Insertar en mensaje</string>
+
+    <!-- Create poll -->
+    <string name="chat_create_poll">Crear encuesta</string>
+    <string name="chat_question">Pregunta</string>
+    <string name="chat_option_number">Opción %1$d</string>
+    <string name="chat_remove_option">Eliminar opción</string>
+    <string name="chat_add_option">Añadir opción</string>
+
+    <!-- Pinned message banner -->
+    <string name="chat_pinned_message_count">Mensaje fijado (%1$d)</string>
+    <string name="chat_pinned_message">Mensaje fijado</string>
+    <string name="chat_attachment_placeholder">[Adjunto]</string>
+    <string name="chat_unpin">Desfijar</string>
+
+    <!-- Poll bubble -->
+    <string name="chat_poll">Encuesta</string>
+    <string name="chat_loading_poll">Cargando encuesta…</string>
+
+    <!-- Reaction details -->
+    <string name="chat_reactions_count">Reacciones (%1$d)</string>
+
+    <!-- Wallpaper picker -->
+    <string name="chat_wallpaper_default">Por defecto</string>
+    <string name="chat_wallpaper_light_blue">Azul claro</string>
+    <string name="chat_wallpaper_purple">Púrpura</string>
+    <string name="chat_wallpaper_green">Verde</string>
+    <string name="chat_wallpaper_yellow">Amarillo</string>
+    <string name="chat_wallpaper_pink">Rosa</string>
+    <string name="chat_wallpaper_dark">Oscuro</string>
+
     <!-- Auth -->
     <string name="auth_integrity_failed_message">Este dispositivo o instalación no es de confianza. Algunas funciones pueden estar restringidas.</string>
     <string name="auth_check_email_verification">Revisa tu correo para verificar tu cuenta</string>

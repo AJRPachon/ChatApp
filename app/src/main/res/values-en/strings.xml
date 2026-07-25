@@ -1,6 +1,154 @@
 <resources>
     <string name="app_name">ChatApp</string>
 
+    <!-- Chat screen: dialogs and generic actions -->
+    <string name="chat_export_conversation">Export conversation</string>
+    <string name="chat_delete_messages_title">Delete messages</string>
+    <plurals name="chat_delete_messages_confirm">
+        <item quantity="one">Delete %1$d message?</item>
+        <item quantity="other">Delete %1$d messages?</item>
+    </plurals>
+    <string name="chat_delete">Delete</string>
+    <string name="chat_cancel">Cancel</string>
+    <string name="chat_incognito_mode">Incognito mode</string>
+    <string name="chat_incognito_mode_description">In incognito mode, new messages won\'t be saved on this device. Existing messages remain. The server keeps processing messages normally. This mode is not equivalent to end-to-end encryption.</string>
+    <string name="chat_incognito_confirm_activate">Got it, activate</string>
+    <string name="chat_scheduled_messages">Scheduled messages</string>
+    <string name="chat_no_scheduled_messages">No scheduled messages</string>
+    <string name="chat_cancel_scheduled_message">Cancel scheduled message</string>
+    <string name="chat_incognito_banner">Incognito mode — messages are not saved</string>
+    <string name="chat_cancel_selection">Cancel selection</string>
+    <string name="chat_selected_count">%1$d selected</string>
+    <string name="chat_forward_selected">Forward selected</string>
+    <string name="chat_delete_selected">Delete selected</string>
+    <string name="chat_photo_of">Photo of %1$s</string>
+    <string name="chat_title_default">Chat</string>
+    <string name="chat_disappearing_mode_active">Disappearing mode active</string>
+    <string name="chat_back">Back</string>
+    <string name="chat_group_voice_call">Group voice call</string>
+    <string name="chat_group_video_call">Group video call</string>
+    <string name="chat_voice_call">Voice call</string>
+    <string name="chat_video_call">Video call</string>
+    <string name="chat_search_messages">Search messages</string>
+    <string name="chat_more_options">More options</string>
+    <string name="chat_enable_notifications">Enable notifications</string>
+    <string name="chat_mute">Mute</string>
+    <string name="chat_chat_theme">Chat theme</string>
+    <string name="chat_wallpaper">Chat wallpaper</string>
+    <string name="chat_disappearing_mode">Disappearing mode</string>
+    <string name="chat_disable_incognito">Disable incognito</string>
+    <string name="chat_shared_media">Shared media</string>
+    <string name="chat_group_info">Group info</string>
+    <string name="chat_leave_group">Leave group</string>
+    <string name="chat_editing_message">Editing message</string>
+    <string name="chat_cancel_edit">Cancel edit</string>
+    <string name="chat_typing_single">%1$s is typing…</string>
+    <string name="chat_typing_multiple">%1$s are typing…</string>
+    <string name="chat_scroll_to_bottom">Scroll to bottom</string>
+
+    <!-- Call message bubble -->
+    <string name="chat_call_ended_duration">Ended · %1$s</string>
+    <string name="chat_call_missed">Missed</string>
+    <string name="chat_call_rejected">Rejected</string>
+    <string name="chat_call_no_answer">No answer</string>
+
+    <!-- File / video / sticker bubbles -->
+    <string name="chat_document_pdf_default">document.pdf</string>
+    <string name="chat_view_pdf">View PDF</string>
+    <string name="chat_file_default">File</string>
+    <string name="chat_video_content_description">Video</string>
+    <string name="chat_play">Play</string>
+    <string name="chat_message_deleted">This message was deleted</string>
+
+    <!-- Message bubble -->
+    <string name="chat_image_content_description">Image</string>
+    <string name="chat_gif_content_description">GIF</string>
+    <string name="chat_react">React</string>
+    <string name="chat_edit">Edit</string>
+    <string name="chat_remove_self_destruct">Remove self-destruct</string>
+    <string name="chat_ephemeral_message">Ephemeral message</string>
+    <string name="chat_copy">Copy</string>
+    <string name="chat_forward">Forward</string>
+    <string name="chat_edited_label">edited</string>
+    <string name="chat_pending_send">Pending send</string>
+    <string name="chat_send_error">Send error</string>
+    <string name="chat_selected">Selected</string>
+    <string name="chat_shared_location">Shared location</string>
+    <string name="chat_view_on_maps">View on Maps</string>
+    <string name="chat_read">Read</string>
+    <string name="chat_sent">Sent</string>
+    <string name="chat_photos_count">%1$d photos</string>
+    <string name="chat_close">Close</string>
+    <string name="chat_call_action">Call</string>
+
+    <!-- Expiry / mute / disappearing durations -->
+    <string name="chat_expiry_1_minute">1 minute</string>
+    <string name="chat_1_hour">1 hour</string>
+    <string name="chat_24_hours">24 hours</string>
+    <string name="chat_7_days">7 days</string>
+    <string name="chat_ephemeral_message_desc">The message will be deleted locally after:</string>
+    <string name="chat_mute_notifications_title">Mute notifications</string>
+    <string name="chat_8_hours">8 hours</string>
+    <string name="chat_mute_always">Always</string>
+    <string name="chat_forward_to">Forward to…</string>
+    <string name="chat_no_other_conversations">No other conversations</string>
+
+    <!-- Chat theme names -->
+    <string name="chat_theme_default">Default</string>
+    <string name="chat_theme_ocean">Ocean</string>
+    <string name="chat_theme_sunset">Sunset</string>
+    <string name="chat_theme_forest">Forest</string>
+    <string name="chat_theme_lavender">Lavender</string>
+    <string name="chat_theme_rose">Rose</string>
+    <string name="chat_theme_midnight">Midnight</string>
+
+    <!-- Disappearing mode sheet -->
+    <string name="chat_disabled">Off</string>
+    <string name="chat_30_days">30 days</string>
+    <string name="chat_disappearing_mode_desc">New messages will disappear automatically.</string>
+
+    <!-- Schedule dialog -->
+    <string name="chat_next">Next</string>
+    <string name="chat_select_time">Select time</string>
+    <string name="chat_schedule_action">Schedule</string>
+
+    <!-- AI assistant -->
+    <string name="chat_ai_assistant">AI Assistant</string>
+    <string name="chat_summarize">Summarize</string>
+    <string name="chat_suggest_reply">Suggest reply</string>
+    <string name="chat_ask_question_placeholder">Type a question…</string>
+    <string name="chat_send_query">Send query</string>
+    <string name="chat_insert_in_message">Insert into message</string>
+
+    <!-- Create poll -->
+    <string name="chat_create_poll">Create poll</string>
+    <string name="chat_question">Question</string>
+    <string name="chat_option_number">Option %1$d</string>
+    <string name="chat_remove_option">Remove option</string>
+    <string name="chat_add_option">Add option</string>
+
+    <!-- Pinned message banner -->
+    <string name="chat_pinned_message_count">Pinned message (%1$d)</string>
+    <string name="chat_pinned_message">Pinned message</string>
+    <string name="chat_attachment_placeholder">[Attachment]</string>
+    <string name="chat_unpin">Unpin</string>
+
+    <!-- Poll bubble -->
+    <string name="chat_poll">Poll</string>
+    <string name="chat_loading_poll">Loading poll…</string>
+
+    <!-- Reaction details -->
+    <string name="chat_reactions_count">Reactions (%1$d)</string>
+
+    <!-- Wallpaper picker -->
+    <string name="chat_wallpaper_default">Default</string>
+    <string name="chat_wallpaper_light_blue">Light blue</string>
+    <string name="chat_wallpaper_purple">Purple</string>
+    <string name="chat_wallpaper_green">Green</string>
+    <string name="chat_wallpaper_yellow">Yellow</string>
+    <string name="chat_wallpaper_pink">Pink</string>
+    <string name="chat_wallpaper_dark">Dark</string>
+
     <!-- Auth -->
     <string name="auth_integrity_failed_message">This device or installation is not trusted. Some features may be restricted.</string>
     <string name="auth_check_email_verification">Check your email to verify your account</string>
