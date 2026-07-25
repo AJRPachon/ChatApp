@@ -32,10 +32,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ajrpachon.chatapp.R
 import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -62,7 +64,7 @@ fun GlobalSearchScreen(
                     OutlinedTextField(
                         value = state.query,
                         onValueChange = { vm.onIntent(GlobalSearchIntent.QueryChanged(it)) },
-                        placeholder = { Text("Buscar en todos los chats") },
+                        placeholder = { Text(stringResource(R.string.search_placeholder)) },
                         singleLine = true,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -71,7 +73,7 @@ fun GlobalSearchScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.search_back_cd))
                     }
                 },
             )
@@ -121,7 +123,7 @@ private fun EmptySearchHint() {
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Escribe para buscar en todos tus chats",
+            text = stringResource(R.string.search_empty_hint),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -135,7 +137,7 @@ private fun NoResultsState(query: String) {
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = "Sin resultados para \"$query\"",
+            text = stringResource(R.string.search_no_results, query),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

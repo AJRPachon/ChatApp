@@ -66,11 +66,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.GroupRole
 import com.ajrpachon.chatapp.domain.model.UserBO
@@ -103,6 +105,7 @@ fun GroupInfoScreen(
     val state by vm.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val shareIntentTitle = stringResource(R.string.group_share_intent_title)
 
     LaunchedEffect(conversationId) {
         vm.setGroupHeader(groupName, groupDescription, groupAvatarUrl)
@@ -119,7 +122,12 @@ fun GroupInfoScreen(
                         type = "text/plain"
                         putExtra(android.content.Intent.EXTRA_TEXT, effect.url)
                     }
-                    context.startActivity(android.content.Intent.createChooser(shareIntent, "Compartir enlace"))
+                    context.startActivity(
+                        android.content.Intent.createChooser(
+                            shareIntent,
+                            shareIntentTitle,
+                        ),
+                    )
                 }
             }
         }
@@ -181,7 +189,7 @@ fun GroupInfoScreen(
                     .navigationBarsPadding(),
             ) {
                 Text(
-                    "Enlace de invitación",
+                    stringResource(R.string.group_invite_link_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                 )
@@ -202,11 +210,11 @@ fun GroupInfoScreen(
                             vm.onIntent(GroupInfoIntent.DismissInviteLinkSheet)
                         },
                         modifier = Modifier.weight(1f),
-                    ) { Text("Copiar") }
+                    ) { Text(stringResource(R.string.group_copy)) }
                     Button(
                         onClick = { vm.onIntent(GroupInfoIntent.ShareInviteLink) },
                         modifier = Modifier.weight(1f),
-                    ) { Text("Compartir") }
+                    ) { Text(stringResource(R.string.group_share)) }
                 }
             }
         }
@@ -227,13 +235,13 @@ fun GroupInfoScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             ChatAppTopBar(
-                title = "Info del grupo",
+                title = stringResource(R.string.group_info_title),
                 onBack = onBack,
                 actions = {
                     var menuExpanded by remember { mutableStateOf(false) }
                     Box {
                         IconButton(onClick = { menuExpanded = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "Más opciones")
+                            Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.group_more_options))
                         }
                         DropdownMenu(
                             expanded = menuExpanded,
@@ -241,7 +249,7 @@ fun GroupInfoScreen(
                         ) {
                             if (state.isCurrentUserAdmin) {
                                 DropdownMenuItem(
-                                    text = { Text("Editar grupo") },
+                                    text = { Text(stringResource(R.string.group_edit_group)) },
                                     leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
                                     onClick = {
                                         menuExpanded = false
@@ -250,7 +258,7 @@ fun GroupInfoScreen(
                                 )
                             }
                             DropdownMenuItem(
-                                text = { Text("Salir del grupo", color = MaterialTheme.colorScheme.error) },
+                                text = { Text(stringResource(R.string.group_leave_group), color = MaterialTheme.colorScheme.error) },
                                 leadingIcon = {
                                     Icon(
                                         Icons.AutoMirrored.Filled.ExitToApp,
@@ -291,14 +299,14 @@ fun GroupInfoScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        "${state.members.size} participantes",
+                        stringResource(R.string.group_participants_count, state.members.size),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.weight(1f),
                     )
                     if (state.isCurrentUserAdmin) {
                         IconButton(onClick = { vm.onIntent(GroupInfoIntent.OpenAddMember) }) {
-                            Icon(Icons.Default.AddCircle, contentDescription = "Añadir miembro")
+                            Icon(Icons.Default.AddCircle, contentDescription = stringResource(R.string.group_add_member_content_description))
                         }
                     }
                 }
@@ -320,8 +328,8 @@ fun GroupInfoScreen(
                 item {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     ListItem(
-                        headlineContent = { Text("Enlace de invitación") },
-                        supportingContent = { Text("Generar enlace para unirse al grupo") },
+                        headlineContent = { Text(stringResource(R.string.group_invite_link_headline)) },
+                        supportingContent = { Text(stringResource(R.string.group_invite_link_supporting)) },
                         leadingContent = { Icon(Icons.Default.Link, contentDescription = null) },
                         modifier = Modifier.clickable { vm.onIntent(GroupInfoIntent.GenerateInviteLink) },
                     )
@@ -398,7 +406,7 @@ private fun GroupHeader(
                 ) {
                     Icon(
                         Icons.Default.CameraAlt,
-                        contentDescription = "Cambiar foto",
+                        contentDescription = stringResource(R.string.group_change_photo_content_description),
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(16.dp),
                     )
@@ -448,7 +456,11 @@ private fun MemberItem(
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = if (isCurrentUser) "${member.displayName} (Tú)" else member.displayName,
+                    text = if (isCurrentUser) {
+                        stringResource(R.string.group_you_suffix, member.displayName)
+                    } else {
+                        member.displayName
+                    },
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -459,7 +471,7 @@ private fun MemberItem(
                         color = MaterialTheme.colorScheme.primaryContainer,
                     ) {
                         Text(
-                            "Admin",
+                            stringResource(R.string.group_admin_badge),
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -469,7 +481,7 @@ private fun MemberItem(
             }
             if (member.username.isNotBlank()) {
                 Text(
-                    "@${member.username}",
+                    stringResource(R.string.group_username, member.username),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -479,7 +491,7 @@ private fun MemberItem(
         if (isCurrentUserAdmin && !isCurrentUser) {
             Box {
                 IconButton(onClick = { showMenu = true }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "Opciones")
+                    Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.group_options_content_description))
                 }
                 DropdownMenu(
                     expanded = showMenu,
@@ -487,19 +499,19 @@ private fun MemberItem(
                 ) {
                     if (member.role == GroupRole.MEMBER) {
                         DropdownMenuItem(
-                            text = { Text("Hacer admin") },
+                            text = { Text(stringResource(R.string.group_make_admin)) },
                             leadingIcon = { Icon(Icons.Default.AdminPanelSettings, contentDescription = null) },
                             onClick = { showMenu = false; onPromote() },
                         )
                     } else if (!isLastAdmin) {
                         DropdownMenuItem(
-                            text = { Text("Quitar admin") },
+                            text = { Text(stringResource(R.string.group_remove_admin)) },
                             leadingIcon = { Icon(Icons.Default.AdminPanelSettings, contentDescription = null) },
                             onClick = { showMenu = false; onDemote() },
                         )
                     }
                     DropdownMenuItem(
-                        text = { Text("Eliminar del grupo", color = MaterialTheme.colorScheme.error) },
+                        text = { Text(stringResource(R.string.group_remove_from_group), color = MaterialTheme.colorScheme.error) },
                         leadingIcon = {
                             Icon(Icons.Default.PersonRemove, contentDescription = null,
                                 tint = MaterialTheme.colorScheme.error)
@@ -521,19 +533,19 @@ private fun HistoryChoiceDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Historial de mensajes") },
+        title = { Text(stringResource(R.string.group_history_dialog_title)) },
         text = {
-            Text("¿Puede $userName ver los mensajes anteriores a su entrada al grupo?")
+            Text(stringResource(R.string.group_history_dialog_message, userName))
         },
         confirmButton = {
-            TextButton(onClick = onSeeHistory) { Text("Sí, ver historial") }
+            TextButton(onClick = onSeeHistory) { Text(stringResource(R.string.group_history_see)) }
         },
         dismissButton = {
             Column {
                 TextButton(onClick = onBlankHistory) {
-                    Text("No, historial vacío", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.group_history_blank), color = MaterialTheme.colorScheme.error)
                 }
-                TextButton(onClick = onDismiss) { Text("Cancelar") }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.group_history_cancel)) }
             }
         },
     )
@@ -550,18 +562,18 @@ private fun EditGroupDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Editar grupo") },
+        title = { Text(stringResource(R.string.group_edit_dialog_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 ChatAppTextField(
                     value = name,
                     onValueChange = onNameChange,
-                    label = "Nombre del grupo",
+                    label = stringResource(R.string.group_name_label),
                 )
                 ChatAppTextField(
                     value = description,
                     onValueChange = onDescChange,
-                    label = "Descripción",
+                    label = stringResource(R.string.group_description_label),
                     singleLine = false,
                     maxLines = 3,
                 )
@@ -569,11 +581,11 @@ private fun EditGroupDialog(
         },
         confirmButton = {
             TextButton(onClick = onSave, enabled = name.isNotBlank()) {
-                Text("Guardar")
+                Text(stringResource(R.string.group_save))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.group_cancel)) }
         },
     )
 }
@@ -588,7 +600,7 @@ private fun AddMemberSheet(
 ) {
     Column(modifier = modifier.imePadding()) {
         Text(
-            "Añadir participante",
+            stringResource(R.string.group_add_participant_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -596,13 +608,13 @@ private fun AddMemberSheet(
         ChatAppSearchField(
             value = query,
             onValueChange = onQueryChange,
-            placeholder = "Buscar por nombre o usuario…",
+            placeholder = stringResource(R.string.group_search_placeholder),
             modifier = Modifier.padding(horizontal = 16.dp),
         )
         Spacer(Modifier.height(8.dp))
         if (results.isEmpty() && query.isNotBlank()) {
             Text(
-                "Sin resultados",
+                stringResource(R.string.group_no_results),
                 modifier = Modifier.padding(16.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -624,7 +636,7 @@ private fun AddMemberSheet(
                 Column {
                     Text(user.displayName, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
                     if (user.username.isNotBlank()) {
-                        Text("@${user.username}", style = MaterialTheme.typography.bodySmall,
+                        Text(stringResource(R.string.group_username, user.username), style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }

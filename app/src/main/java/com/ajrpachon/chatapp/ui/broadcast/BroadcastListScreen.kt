@@ -46,9 +46,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ajrpachon.chatapp.R
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -74,20 +76,20 @@ fun BroadcastListScreen(
     if (state.showCreateDialog) {
         AlertDialog(
             onDismissRequest = { vm.onIntent(BroadcastListIntent.DismissCreateDialog) },
-            title = { Text("Nueva lista de difusión") },
+            title = { Text(stringResource(R.string.broadcast_new_list_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = state.newListName,
                         onValueChange = { vm.onIntent(BroadcastListIntent.NameChanged(it)) },
-                        label = { Text("Nombre de la lista") },
+                        label = { Text(stringResource(R.string.broadcast_list_name_label)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
                     OutlinedTextField(
                         value = state.searchQuery,
                         onValueChange = { vm.onIntent(BroadcastListIntent.SearchQueryChanged(it)) },
-                        label = { Text("Buscar contactos") },
+                        label = { Text(stringResource(R.string.broadcast_search_contacts_label)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -114,7 +116,7 @@ fun BroadcastListScreen(
                             val isSelected = user.id in state.selectedMemberIds
                             ListItem(
                                 headlineContent = { Text(user.displayName) },
-                                supportingContent = { Text("@${user.username}") },
+                                supportingContent = { Text(stringResource(R.string.broadcast_username, user.username)) },
                                 leadingContent = {
                                     Icon(
                                         Icons.Default.Person,
@@ -127,7 +129,7 @@ fun BroadcastListScreen(
                                     if (isSelected) {
                                         Icon(
                                             Icons.Default.CheckCircle,
-                                            contentDescription = "Seleccionado",
+                                            contentDescription = stringResource(R.string.broadcast_selected_content_description),
                                             tint = MaterialTheme.colorScheme.primary,
                                         )
                                     }
@@ -144,12 +146,12 @@ fun BroadcastListScreen(
                     enabled = !state.isCreating,
                 ) {
                     if (state.isCreating) CircularProgressIndicator(modifier = Modifier.size(16.dp))
-                    else Text("Crear")
+                    else Text(stringResource(R.string.broadcast_create_button))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { vm.onIntent(BroadcastListIntent.DismissCreateDialog) }) {
-                    Text("Cancelar")
+                    Text(stringResource(R.string.broadcast_cancel_button))
                 }
             },
         )
@@ -160,12 +162,12 @@ fun BroadcastListScreen(
         val listItem = state.lists.find { it.id == listId }
         AlertDialog(
             onDismissRequest = { vm.onIntent(BroadcastListIntent.DismissSendDialog) },
-            title = { Text("Difundir mensaje") },
+            title = { Text(stringResource(R.string.broadcast_send_message_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     listItem?.let {
                         Text(
-                            text = "Se enviará a ${it.members.size} contacto(s) de \"${it.name}\"",
+                            text = stringResource(R.string.broadcast_send_summary, it.members.size, it.name),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -173,7 +175,7 @@ fun BroadcastListScreen(
                     OutlinedTextField(
                         value = state.broadcastMessage,
                         onValueChange = { vm.onIntent(BroadcastListIntent.BroadcastMessageChanged(it)) },
-                        label = { Text("Mensaje") },
+                        label = { Text(stringResource(R.string.broadcast_message_label)) },
                         minLines = 3,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -188,13 +190,13 @@ fun BroadcastListScreen(
                     else {
                         Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("Enviar")
+                        Text(stringResource(R.string.broadcast_send_button))
                     }
                 }
             },
             dismissButton = {
                 TextButton(onClick = { vm.onIntent(BroadcastListIntent.DismissSendDialog) }) {
-                    Text("Cancelar")
+                    Text(stringResource(R.string.broadcast_cancel_button))
                 }
             },
         )
@@ -204,10 +206,10 @@ fun BroadcastListScreen(
     state.error?.let { error ->
         AlertDialog(
             onDismissRequest = { vm.onIntent(BroadcastListIntent.DismissError) },
-            title = { Text("Error") },
+            title = { Text(stringResource(R.string.broadcast_error_title)) },
             text = { Text(error) },
             confirmButton = {
-                TextButton(onClick = { vm.onIntent(BroadcastListIntent.DismissError) }) { Text("OK") }
+                TextButton(onClick = { vm.onIntent(BroadcastListIntent.DismissError) }) { Text(stringResource(R.string.broadcast_ok_button)) }
             },
         )
     }
@@ -216,17 +218,17 @@ fun BroadcastListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Listas de difusión", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.broadcast_list_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.broadcast_back_content_description))
                     }
                 },
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { vm.onIntent(BroadcastListIntent.OpenCreateDialog) }) {
-                Icon(Icons.Default.Add, contentDescription = "Nueva lista")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.broadcast_new_list_content_description))
             }
         },
     ) { innerPadding ->
@@ -253,12 +255,12 @@ fun BroadcastListScreen(
                     )
                     Spacer(Modifier.height(16.dp))
                     Text(
-                        "Sin listas de difusión",
+                        stringResource(R.string.broadcast_empty_title),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        "Toca + para crear una nueva",
+                        stringResource(R.string.broadcast_empty_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.outline,
                     )
@@ -275,7 +277,7 @@ fun BroadcastListScreen(
                             Text(item.name, fontWeight = FontWeight.SemiBold)
                         },
                         supportingContent = {
-                            Text("${item.members.size} contacto(s)")
+                            Text(stringResource(R.string.broadcast_contacts_count, item.members.size))
                         },
                         leadingContent = {
                             Icon(
@@ -289,14 +291,14 @@ fun BroadcastListScreen(
                                 IconButton(onClick = { vm.onIntent(BroadcastListIntent.OpenSendDialog(item.id)) }) {
                                     Icon(
                                         Icons.Default.Send,
-                                        contentDescription = "Difundir",
+                                        contentDescription = stringResource(R.string.broadcast_send_content_description),
                                         tint = MaterialTheme.colorScheme.primary,
                                     )
                                 }
                                 IconButton(onClick = { vm.onIntent(BroadcastListIntent.DeleteList(item.id)) }) {
                                     Icon(
                                         Icons.Default.Delete,
-                                        contentDescription = "Eliminar",
+                                        contentDescription = stringResource(R.string.broadcast_delete_content_description),
                                         tint = MaterialTheme.colorScheme.error,
                                     )
                                 }
