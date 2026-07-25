@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -70,10 +71,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
@@ -427,22 +430,27 @@ private fun SwipeableConversationItem(
         enableDismissFromStartToEnd = false,
         enableDismissFromEndToStart = true,
         backgroundContent = {
-            val isArchiving = dismissState.targetValue == SwipeToDismissBoxValue.EndToStart
-            val color = if (isArchiving) MaterialTheme.colorScheme.tertiaryContainer else Color.Transparent
+            val progress = if (dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart) {
+                dismissState.progress
+            } else {
+                0f
+            }
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(color)
+                    .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = progress))
                     .padding(horizontal = 20.dp),
                 contentAlignment = Alignment.CenterEnd,
             ) {
-                if (isArchiving) {
-                    Icon(
-                        Icons.Default.Archive,
-                        contentDescription = stringResource(R.string.conversations_archive_content_description),
-                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                    )
-                }
+                val slideOffsetPx = with(LocalDensity.current) { (48.dp * (1f - progress)).roundToPx() }
+                Icon(
+                    Icons.Default.Archive,
+                    contentDescription = stringResource(R.string.conversations_archive_content_description),
+                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                    modifier = Modifier
+                        .alpha(progress)
+                        .offset { IntOffset(slideOffsetPx, 0) },
+                )
             }
         },
     ) {
