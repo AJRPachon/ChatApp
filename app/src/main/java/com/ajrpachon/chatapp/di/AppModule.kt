@@ -4,13 +4,11 @@ import com.ajrpachon.chatapp.BuildConfig
 import com.ajrpachon.chatapp.data.local.ThemeRepository
 import com.ajrpachon.chatapp.data.local.buildChatDatabase
 import com.ajrpachon.chatapp.data.session.AndroidSessionManager
-import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.ui.applock.AppLockViewModel
 import com.ajrpachon.chatapp.ui.auth.AuthViewModel
 import com.ajrpachon.chatapp.ui.call.CallArgs
 import com.ajrpachon.chatapp.ui.call.CallViewModel
 import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
-import com.ajrpachon.chatapp.ui.chat.ChatArgs
 import com.ajrpachon.chatapp.ui.chat.gallery.ChatMediaGalleryViewModel
 import com.ajrpachon.chatapp.ui.chat.ChatViewModel
 import com.ajrpachon.chatapp.ui.chat.StickerPackViewModel
@@ -21,7 +19,6 @@ import com.ajrpachon.chatapp.ui.invitations.InvitationsViewModel
 import com.ajrpachon.chatapp.ui.newchat.NewChatViewModel
 import com.ajrpachon.chatapp.ui.profile.ProfileViewModel
 import com.ajrpachon.chatapp.ui.userinfo.UserInfoViewModel
-import com.ajrpachon.chatapp.ui.saved.SavedMessagesViewModel
 import com.ajrpachon.chatapp.ui.broadcast.BroadcastListViewModel
 import com.ajrpachon.chatapp.ui.usagestats.UsageStatsViewModel
 import com.ajrpachon.chatapp.ui.profile.SessionAuditViewModel
@@ -51,7 +48,6 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.androidx.viewmodel.dsl.viewModelOf
 import org.koin.dsl.module
-import org.koin.dsl.onClose
 
 val databaseModule = module {
     single { buildChatDatabase(androidContext()) }
@@ -109,7 +105,6 @@ val viewModelModule = module {
     viewModelOf(::ProfileViewModel)
     viewModelOf(::IncomingCallViewModel)
     viewModelOf(::CreateGroupViewModel)
-    viewModelOf(::SavedMessagesViewModel)
     viewModelOf(::StickerPackViewModel)
     viewModelOf(::BroadcastListViewModel)
     viewModelOf(::UsageStatsViewModel)

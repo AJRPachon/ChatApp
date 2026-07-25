@@ -18,11 +18,8 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import com.ajrpachon.chatapp.data.local.AppLockRepository
 import com.ajrpachon.chatapp.data.local.ChatThemeRepository
 import com.ajrpachon.chatapp.domain.model.ChatTheme
-import com.ajrpachon.chatapp.data.local.dao.ConversationDao
-import com.ajrpachon.chatapp.data.local.dao.MessageDao
 import com.ajrpachon.chatapp.domain.repository.AiAssistantRepository
 import com.ajrpachon.chatapp.domain.repository.ContactRepository
 import com.ajrpachon.chatapp.domain.repository.DraftRepository
@@ -360,7 +357,7 @@ class ChatViewModel(
             is ChatIntent.DeleteSelectedMessages -> deleteSelectedMessages()
             is ChatIntent.ShowForwardDialog -> showForwardDialog(intent.message)
             is ChatIntent.DismissForwardDialog -> updateState { it.copy(showForwardDialog = false, forwardingMessage = null, forwardableConversations = emptyList()) }
-            is ChatIntent.ForwardMessage -> forwardMessage(intent.messageId, intent.targetConversationId)
+            is ChatIntent.ForwardMessage -> forwardMessage(intent.targetConversationId)
             is ChatIntent.ShowForwardSelectionDialog -> showForwardSelectionDialog()
             is ChatIntent.DismissForwardSelectionDialog -> updateState { it.copy(showForwardSelectionDialog = false, forwardableConversations = emptyList()) }
             is ChatIntent.ForwardSelectedMessages -> forwardSelectedMessages(intent.targetConversationId)
@@ -815,7 +812,7 @@ class ChatViewModel(
         }
     }
 
-    private fun forwardMessage(messageId: String, targetConversationId: String) {
+    private fun forwardMessage(targetConversationId: String) {
         val uid = currentUserId ?: return
         val message = state.value.forwardingMessage ?: return
         updateState { it.copy(showForwardDialog = false, forwardingMessage = null, forwardableConversations = emptyList()) }

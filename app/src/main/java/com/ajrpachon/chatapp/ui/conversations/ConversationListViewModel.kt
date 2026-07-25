@@ -2,7 +2,6 @@ package com.ajrpachon.chatapp.ui.conversations
 
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.data.local.ThemeRepository
-import com.ajrpachon.chatapp.domain.model.ThemePreference
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.DraftRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase

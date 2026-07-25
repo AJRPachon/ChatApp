@@ -4,7 +4,6 @@ import com.ajrpachon.chatapp.utils.catchResult
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.model.GroupRole
-import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.utils.AppConstants
@@ -79,7 +78,7 @@ class GroupInfoViewModel(
             is GroupInfoIntent.NameChanged -> updateState { it.copy(groupName = intent.name) }
             is GroupInfoIntent.DescriptionChanged -> updateState { it.copy(groupDescription = intent.description) }
             GroupInfoIntent.SaveGroupInfo -> saveGroupInfo()
-            is GroupInfoIntent.PickAvatar -> pickAvatar(intent.bytes, intent.mimeType)
+            is GroupInfoIntent.PickAvatar -> pickAvatar(intent.bytes)
             is GroupInfoIntent.RemoveMember -> removeMember(intent.userId)
             is GroupInfoIntent.PromoteMember -> changeRole(intent.userId, promote = true)
             is GroupInfoIntent.DemoteMember -> changeRole(intent.userId, promote = false)
@@ -116,7 +115,7 @@ class GroupInfoViewModel(
         }
     }
 
-    private fun pickAvatar(bytes: ByteArray, mimeType: String) {
+    private fun pickAvatar(bytes: ByteArray) {
         viewModelScope.launch {
             updateState { it.copy(isSaving = true) }
             catchResult {

@@ -87,8 +87,6 @@ import com.ajrpachon.chatapp.ui.components.ChatAppAvatar
 import com.ajrpachon.chatapp.ui.components.ConversationListSkeleton
 import com.ajrpachon.chatapp.ui.components.OfflineBanner
 import com.ajrpachon.chatapp.ui.status.StatusBar
-import kotlin.time.Instant
-import kotlinx.coroutines.launch
 import com.github.skydoves.navgraph.annotations.NavDestination
 import com.github.skydoves.navgraph.annotations.NavEdge
 import com.ajrpachon.chatapp.ChatRoute
