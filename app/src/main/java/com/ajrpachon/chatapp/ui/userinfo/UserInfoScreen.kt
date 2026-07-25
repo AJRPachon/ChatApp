@@ -44,6 +44,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -51,6 +52,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.UserInfoRoute
 import com.ajrpachon.chatapp.ui.components.ChatAppTopBar
 import com.github.skydoves.navgraph.annotations.NavDestination
@@ -68,7 +70,7 @@ fun UserInfoScreen(
 
     Scaffold(
         topBar = {
-            ChatAppTopBar(title = state.displayName.ifBlank { "Perfil" }, onBack = onBack)
+            ChatAppTopBar(title = state.displayName.ifBlank { stringResource(R.string.userinfo_default_title) }, onBack = onBack)
         },
     ) { innerPadding ->
         if (state.isLoading) {
@@ -91,7 +93,7 @@ fun UserInfoScreen(
             if (state.avatarUrl != null) {
                 AsyncImage(
                     model = state.avatarUrl,
-                    contentDescription = "Foto de perfil de ${state.displayName}",
+                    contentDescription = stringResource(R.string.userinfo_profile_photo_cd, state.displayName),
                     modifier = Modifier.size(100.dp).clip(CircleShape),
                     contentScale = ContentScale.Crop,
                 )
@@ -136,12 +138,12 @@ fun UserInfoScreen(
                 Tab(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
-                    text = { Text("Info") },
+                    text = { Text(stringResource(R.string.userinfo_tab_info)) },
                 )
                 Tab(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
-                    text = { Text("Media") },
+                    text = { Text(stringResource(R.string.userinfo_tab_media)) },
                 )
             }
 
@@ -160,7 +162,7 @@ private fun InfoTab() {
         contentAlignment = Alignment.TopCenter,
     ) {
         Text(
-            text = "No additional info",
+            text = stringResource(R.string.userinfo_no_additional_info),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 32.dp),
@@ -178,7 +180,7 @@ fun MediaGalleryTab(mediaUrls: List<String>) {
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "No media shared yet",
+                text = stringResource(R.string.userinfo_no_media_shared),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -193,7 +195,7 @@ fun MediaGalleryTab(mediaUrls: List<String>) {
             items(mediaUrls, key = { it }) { url ->
                 AsyncImage(
                     model = url,
-                    contentDescription = "Ver imagen compartida",
+                    contentDescription = stringResource(R.string.userinfo_view_shared_image_cd),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .aspectRatio(1f)
@@ -231,7 +233,7 @@ private fun MediaFullScreenViewer(
         ) {
             AsyncImage(
                 model = url,
-                contentDescription = "Imagen en pantalla completa",
+                contentDescription = stringResource(R.string.userinfo_fullscreen_image_cd),
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .fillMaxSize()
@@ -262,7 +264,7 @@ private fun MediaFullScreenViewer(
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "Close",
+                    contentDescription = stringResource(R.string.userinfo_close_cd),
                     tint = Color.White,
                 )
             }
