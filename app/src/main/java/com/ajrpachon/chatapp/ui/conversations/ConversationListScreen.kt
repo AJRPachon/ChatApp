@@ -22,7 +22,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Delete
@@ -540,16 +539,8 @@ private fun SwipeableConversationItem(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(color)
-                    .padding(horizontal = 20.dp),
-                contentAlignment = Alignment.CenterEnd,
-            ) {
-                Icon(
-                    Icons.Default.Archive,
-                    contentDescription = stringResource(R.string.conversations_archive_content_description),
-                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                )
-            }
+                    .background(color),
+            )
         },
     ) {
         ConversationItem(
