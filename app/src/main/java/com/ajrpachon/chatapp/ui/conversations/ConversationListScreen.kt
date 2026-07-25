@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Delete
@@ -532,15 +533,23 @@ private fun SwipeableConversationItem(
         enableDismissFromStartToEnd = false,
         enableDismissFromEndToStart = true,
         backgroundContent = {
-            val color = when (dismissState.targetValue) {
-                SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.tertiaryContainer
-                else -> Color.Transparent
-            }
+            val isArchiving = dismissState.targetValue == SwipeToDismissBoxValue.EndToStart
+            val color = if (isArchiving) MaterialTheme.colorScheme.tertiaryContainer else Color.Transparent
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(color),
-            )
+                    .background(color)
+                    .padding(horizontal = 20.dp),
+                contentAlignment = Alignment.CenterEnd,
+            ) {
+                if (isArchiving) {
+                    Icon(
+                        Icons.Default.Archive,
+                        contentDescription = stringResource(R.string.conversations_archive_content_description),
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                }
+            }
         },
     ) {
         ConversationItem(
@@ -555,6 +564,7 @@ private fun SwipeableConversationItem(
             onClearChat = onClearChat,
             onLeaveGroup = onLeaveGroup,
             onDelete = onDelete,
+            onArchive = onArchive,
             onSoundPicker = onSoundPicker,
         )
     }
@@ -622,6 +632,7 @@ private fun ConversationItem(
     onClearChat: () -> Unit,
     onLeaveGroup: (() -> Unit)?,
     onDelete: () -> Unit,
+    onArchive: () -> Unit,
     onSoundPicker: () -> Unit,
 ) {
     val lastMsg = conversation.lastMessage
@@ -813,6 +824,11 @@ private fun ConversationItem(
                 text = { Text(stringResource(R.string.conversations_menu_notification_sound)) },
                 leadingIcon = { Icon(Icons.Default.NotificationsActive, contentDescription = null) },
                 onClick = onSoundPicker,
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.conversations_menu_archive)) },
+                leadingIcon = { Icon(Icons.Default.Archive, contentDescription = null) },
+                onClick = onArchive,
             )
             if (onLeaveGroup != null) {
                 DropdownMenuItem(
