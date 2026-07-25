@@ -187,7 +187,7 @@ class MainActivity : ComponentActivity() {
                 Box(modifier = Modifier.fillMaxSize()) {
                 NavDisplay(
                     backStack = backStack,
-                    onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
+                    onBack = { if (backStack.size > 1) backStack.removeLastOrNull() else finish() },
                     entryDecorators = listOf(
                         rememberSaveableStateHolderNavEntryDecorator(),
                         rememberViewModelStoreNavEntryDecorator(),
