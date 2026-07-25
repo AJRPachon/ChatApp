@@ -21,8 +21,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.InvitationBO
 import com.ajrpachon.chatapp.ui.components.ChatAppAcceptRejectRow
 import com.ajrpachon.chatapp.ui.components.ChatAppTopBar
@@ -55,7 +57,7 @@ fun InvitationsScreen(
 
     Scaffold(
         topBar = {
-            ChatAppTopBar(title = "Invitaciones", onBack = onBack)
+            ChatAppTopBar(title = stringResource(R.string.invitations_top_bar_title), onBack = onBack)
         },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { innerPadding ->
@@ -66,7 +68,7 @@ fun InvitationsScreen(
                 Modifier.fillMaxSize().padding(innerPadding),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("No tienes invitaciones pendientes", style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(R.string.invitations_no_pending), style = MaterialTheme.typography.bodyLarge)
             }
 
             else -> LazyColumn(
@@ -102,7 +104,7 @@ private fun InvitationItem(
             style = MaterialTheme.typography.titleMedium,
         )
         Text(
-            text = "@${invitation.sender.username}",
+            text = stringResource(R.string.invitations_username, invitation.sender.username),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

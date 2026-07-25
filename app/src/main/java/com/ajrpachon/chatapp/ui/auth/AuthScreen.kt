@@ -63,7 +63,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.components.ChatAppOutlinedButton
 import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
 import com.ajrpachon.chatapp.ui.components.ChatAppTextField
@@ -81,6 +83,8 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
     val state by vm.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val integrityFailedMessage = stringResource(R.string.auth_integrity_failed_message)
+    val checkEmailVerificationMessage = stringResource(R.string.auth_check_email_verification)
 
     LaunchedEffect(Unit) {
         vm.effect.collect { effect ->
@@ -94,7 +98,7 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
                 }
                 is AuthEffect.IntegrityFailed -> {
                     snackbar.showSnackbar(
-                        message = "Este dispositivo o instalación no es de confianza. Algunas funciones pueden estar restringidas.",
+                        message = integrityFailedMessage,
                         duration = SnackbarDuration.Long,
                     )
                 }
@@ -111,7 +115,7 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
 
     LaunchedEffect(state.showEmailVerification) {
         if (state.showEmailVerification) {
-            snackbar.showSnackbar("Revisa tu correo para verificar tu cuenta")
+            snackbar.showSnackbar(checkEmailVerificationMessage)
             vm.onIntent(AuthIntent.DismissEmailVerification)
         }
     }
@@ -207,13 +211,13 @@ private fun LoginContent(
                 }
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    "ChatApp",
+                    stringResource(R.string.auth_app_name),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    "Conecta con tus amigos",
+                    stringResource(R.string.auth_tagline),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -233,7 +237,7 @@ private fun LoginContent(
 
                 // ── Social buttons ─────────────────────────────────────────────
                 ChatAppOutlinedButton(
-                    text = "Continuar con Google",
+                    text = stringResource(R.string.auth_continue_with_google),
                     onClick = onGoogleSignIn,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -247,7 +251,7 @@ private fun LoginContent(
                 ) {
                     HorizontalDivider(modifier = Modifier.weight(1f))
                     Text(
-                        "o continúa con email",
+                        stringResource(R.string.auth_or_continue_with_email),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.outline,
                     )
@@ -271,7 +275,7 @@ private fun LoginContent(
                             onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_IN)) },
                         ) {
                             Text(
-                                "Iniciar sesión",
+                                stringResource(R.string.auth_sign_in_tab),
                                 modifier = Modifier.padding(vertical = 10.dp),
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = if (isSignIn) FontWeight.SemiBold else FontWeight.Normal,
@@ -287,7 +291,7 @@ private fun LoginContent(
                             onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_UP)) },
                         ) {
                             Text(
-                                "Registrarse",
+                                stringResource(R.string.auth_sign_up_tab),
                                 modifier = Modifier.padding(vertical = 10.dp),
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = if (!isSignIn) FontWeight.SemiBold else FontWeight.Normal,
@@ -326,7 +330,7 @@ private fun EmailPasswordForm(
     ChatAppTextField(
         value = state.emailInput,
         onValueChange = { onIntent(AuthIntent.EmailChanged(it)) },
-        label = "Correo electrónico",
+        label = stringResource(R.string.auth_email_label),
         leadingIcon = Icons.Default.Email,
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Email,
@@ -340,13 +344,17 @@ private fun EmailPasswordForm(
     ChatAppTextField(
         value = state.passwordInput,
         onValueChange = { onIntent(AuthIntent.PasswordChanged(it)) },
-        label = "Contraseña",
+        label = stringResource(R.string.auth_password_label),
         leadingIcon = Icons.Default.Lock,
         trailingIcon = {
             IconButton(onClick = { showPassword = !showPassword }) {
                 Icon(
                     if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                    contentDescription = if (showPassword) "Ocultar" else "Mostrar",
+                    contentDescription = if (showPassword) {
+                        stringResource(R.string.auth_hide_password)
+                    } else {
+                        stringResource(R.string.auth_show_password)
+                    },
                 )
             }
         },
@@ -371,13 +379,17 @@ private fun EmailPasswordForm(
             ChatAppTextField(
                 value = state.confirmPasswordInput,
                 onValueChange = { onIntent(AuthIntent.ConfirmPasswordChanged(it)) },
-                label = "Confirmar contraseña",
+                label = stringResource(R.string.auth_confirm_password_label),
                 leadingIcon = Icons.Default.Lock,
                 trailingIcon = {
                     IconButton(onClick = { showConfirm = !showConfirm }) {
                         Icon(
                             if (showConfirm) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = if (showConfirm) "Ocultar" else "Mostrar",
+                            contentDescription = if (showConfirm) {
+                                stringResource(R.string.auth_hide_password)
+                            } else {
+                                stringResource(R.string.auth_show_password)
+                            },
                         )
                     }
                 },
@@ -398,7 +410,11 @@ private fun EmailPasswordForm(
     Spacer(Modifier.height(16.dp))
 
     ChatAppPrimaryButton(
-        text = if (isSignUp) "Crear cuenta" else "Iniciar sesión",
+        text = if (isSignUp) {
+            stringResource(R.string.auth_create_account)
+        } else {
+            stringResource(R.string.auth_sign_in_button)
+        },
         onClick = {
             keyboard?.hide()
             if (isSignUp) onIntent(AuthIntent.SignUpWithEmail) else onIntent(AuthIntent.SignInWithEmail)
@@ -413,14 +429,14 @@ private fun EmailPasswordForm(
                 onClick = { onIntent(AuthIntent.SwitchToRegister) },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("¿No tienes cuenta? Regístrate aquí")
+                Text(stringResource(R.string.auth_no_account_register_here))
             }
         } else {
             TextButton(
                 onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_UP)) },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("¿No tienes cuenta? Regístrate")
+                Text(stringResource(R.string.auth_no_account_register))
             }
         }
     } else {
@@ -428,7 +444,7 @@ private fun EmailPasswordForm(
             onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_IN)) },
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("¿Ya tienes cuenta? Inicia sesión")
+            Text(stringResource(R.string.auth_have_account_sign_in))
         }
     }
 }
@@ -458,13 +474,13 @@ private fun MfaChallengeContent(
         )
         Spacer(Modifier.height(16.dp))
         Text(
-            "Verificación en dos pasos",
+            stringResource(R.string.auth_mfa_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            "Introduce el código de 6 dígitos de tu aplicación de autenticación",
+            stringResource(R.string.auth_mfa_description),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -473,7 +489,7 @@ private fun MfaChallengeContent(
         ChatAppTextField(
             value = code,
             onValueChange = { if (it.length <= 6) onCodeChange(it) },
-            label = "Código TOTP",
+            label = stringResource(R.string.auth_totp_code_label),
             leadingIcon = Icons.Default.Lock,
             isError = error != null,
             supportingText = error,
@@ -491,7 +507,7 @@ private fun MfaChallengeContent(
             CircularProgressIndicator()
         } else {
             ChatAppPrimaryButton(
-                text = "Verificar",
+                text = stringResource(R.string.auth_verify_button),
                 onClick = {
                     keyboard?.hide()
                     onVerify()
@@ -516,10 +532,10 @@ private fun UsernameSetupContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(32.dp),
     ) {
-        Text("Elige tu nombre de usuario", style = MaterialTheme.typography.headlineSmall)
+        Text(stringResource(R.string.auth_choose_username_title), style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(8.dp))
         Text(
-            text = "3-20 caracteres, minúsculas, dígitos o guiones bajos",
+            text = stringResource(R.string.auth_username_hint),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -527,13 +543,13 @@ private fun UsernameSetupContent(
         ChatAppTextField(
             value = username,
             onValueChange = onUsernameChange,
-            label = "@usuario",
+            label = stringResource(R.string.auth_username_label),
             isError = error != null,
             supportingText = error,
         )
         Spacer(Modifier.height(16.dp))
         ChatAppPrimaryButton(
-            text = "Confirmar",
+            text = stringResource(R.string.auth_confirm_button),
             onClick = onConfirm,
             enabled = username.length >= 3,
             modifier = Modifier.fillMaxWidth(),

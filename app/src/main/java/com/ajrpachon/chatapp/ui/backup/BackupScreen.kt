@@ -29,8 +29,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
 import com.ajrpachon.chatapp.ui.components.ChatAppSecondaryButton
 import com.ajrpachon.chatapp.ui.components.ChatAppTopBar
@@ -54,11 +56,11 @@ fun BackupScreen(
     if (state.error != null) {
         AlertDialog(
             onDismissRequest = { vm.onIntent(BackupIntent.DismissError) },
-            title = { Text("Error") },
+            title = { Text(stringResource(R.string.backup_error_title)) },
             text = { Text(state.error.orEmpty()) },
             confirmButton = {
                 TextButton(onClick = { vm.onIntent(BackupIntent.DismissError) }) {
-                    Text("Aceptar")
+                    Text(stringResource(R.string.backup_accept))
                 }
             },
         )
@@ -67,7 +69,7 @@ fun BackupScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            ChatAppTopBar(title = "Copia de seguridad", onBack = onBack)
+            ChatAppTopBar(title = stringResource(R.string.backup_top_bar_title), onBack = onBack)
         },
     ) { innerPadding ->
         Column(
@@ -92,7 +94,7 @@ fun BackupScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text(
-                        "Última copia de seguridad",
+                        stringResource(R.string.backup_last_backup_title),
                         style = MaterialTheme.typography.titleMedium,
                     )
                     HorizontalDivider()
@@ -102,7 +104,7 @@ fun BackupScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
                             Text(
-                                "Fecha",
+                                stringResource(R.string.backup_date_label),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -117,19 +119,19 @@ fun BackupScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
                                 Text(
-                                    "Tamaño",
+                                    stringResource(R.string.backup_size_label),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                                 Text(
-                                    "${state.backupSizeMb} MB",
+                                    stringResource(R.string.backup_size_mb, state.backupSizeMb.toString()),
                                     style = MaterialTheme.typography.bodyMedium,
                                 )
                             }
                         }
                     } else {
                         Text(
-                            "Sin copias de seguridad en Google Drive",
+                            stringResource(R.string.backup_no_backups),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -138,8 +140,7 @@ fun BackupScreen(
             }
 
             Text(
-                "Los mensajes se guardan como un archivo JSON en tu Google Drive personal. " +
-                    "Solo tú puedes acceder a este archivo.",
+                stringResource(R.string.backup_disclaimer),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -154,13 +155,13 @@ fun BackupScreen(
                 ) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp))
                     Text(
-                        "Creando copia de seguridad…",
+                        stringResource(R.string.backup_creating_backup),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
             } else {
                 ChatAppPrimaryButton(
-                    text = "Hacer copia",
+                    text = stringResource(R.string.backup_make_backup_button),
                     onClick = { vm.onIntent(BackupIntent.StartBackup) },
                     leadingIcon = Icons.Default.CloudUpload,
                     enabled = !state.isRestoring,
@@ -176,13 +177,13 @@ fun BackupScreen(
                 ) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp))
                     Text(
-                        "Restaurando mensajes…",
+                        stringResource(R.string.backup_restoring_messages),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
             } else {
                 ChatAppSecondaryButton(
-                    text = "Restaurar",
+                    text = stringResource(R.string.backup_restore_button),
                     onClick = { vm.onIntent(BackupIntent.StartRestore) },
                     leadingIcon = Icons.Default.CloudDownload,
                     enabled = !state.isBackingUp,

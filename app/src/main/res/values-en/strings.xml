@@ -1,0 +1,131 @@
+<resources>
+    <string name="app_name">ChatApp</string>
+
+    <!-- Auth -->
+    <string name="auth_integrity_failed_message">This device or installation is not trusted. Some features may be restricted.</string>
+    <string name="auth_check_email_verification">Check your email to verify your account</string>
+    <string name="auth_app_name">ChatApp</string>
+    <string name="auth_tagline">Connect with your friends</string>
+    <string name="auth_continue_with_google">Continue with Google</string>
+    <string name="auth_or_continue_with_email">or continue with email</string>
+    <string name="auth_sign_in_tab">Sign in</string>
+    <string name="auth_sign_up_tab">Sign up</string>
+    <string name="auth_email_label">Email</string>
+    <string name="auth_password_label">Password</string>
+    <string name="auth_hide_password">Hide</string>
+    <string name="auth_show_password">Show</string>
+    <string name="auth_confirm_password_label">Confirm password</string>
+    <string name="auth_create_account">Create account</string>
+    <string name="auth_sign_in_button">Sign in</string>
+    <string name="auth_no_account_register_here">Don\'t have an account? Sign up here</string>
+    <string name="auth_no_account_register">Don\'t have an account? Sign up</string>
+    <string name="auth_have_account_sign_in">Already have an account? Sign in</string>
+    <string name="auth_mfa_title">Two-step verification</string>
+    <string name="auth_mfa_description">Enter the 6-digit code from your authenticator app</string>
+    <string name="auth_totp_code_label">TOTP code</string>
+    <string name="auth_verify_button">Verify</string>
+    <string name="auth_choose_username_title">Choose your username</string>
+    <string name="auth_username_hint">3-20 characters, lowercase letters, digits or underscores</string>
+    <string name="auth_username_label">@username</string>
+    <string name="auth_confirm_button">Confirm</string>
+
+    <!-- Integrity blocked -->
+    <string name="auth_integrity_device_not_verified">Device not verified</string>
+    <string name="auth_integrity_blocked_message">Your device or this app installation could not be verified. For your security, the app cannot continue.</string>
+    <string name="auth_integrity_exit">Exit</string>
+
+    <!-- Profile -->
+    <string name="profile_top_bar_title">Profile</string>
+    <string name="profile_my_qr_code_title">My QR code</string>
+    <string name="profile_my_qr_code_description">Share this code so others can add you as a contact</string>
+    <string name="profile_qr_code_content_description">QR code</string>
+    <string name="profile_2fa_setup_title">Set up two-step verification</string>
+    <string name="profile_2fa_setup_instructions">Scan the QR code or manually enter this key in your authenticator app (Google Authenticator, Authy, etc.):</string>
+    <string name="profile_2fa_confirm_instructions">Once set up, enter the 6-digit code to confirm:</string>
+    <string name="profile_totp_code_label">TOTP code</string>
+    <string name="profile_verify_and_activate">Verify and activate</string>
+    <string name="profile_sign_out_all_dialog_title">Sign out on all devices</string>
+    <string name="profile_sign_out_all_dialog_text">This will sign you out on all devices where you\'re logged in. Continue?</string>
+    <string name="profile_sign_out_all_confirm">Sign out all sessions</string>
+    <string name="profile_cancel">Cancel</string>
+    <string name="profile_avatar_content_description">Avatar</string>
+    <string name="profile_change_photo_content_description">Change photo</string>
+    <string name="profile_display_name_label">Display name</string>
+    <string name="profile_username_display">@%1$s</string>
+    <string name="profile_show_online_status_title">Show online status</string>
+    <string name="profile_show_online_status_description">Others can see when you\'re active</string>
+    <string name="profile_appearance_title">Appearance</string>
+    <string name="profile_theme_system">System</string>
+    <string name="profile_theme_light">Light</string>
+    <string name="profile_theme_dark">Dark</string>
+    <string name="profile_my_qr_code_button">My QR code</string>
+    <string name="profile_app_lock_title">App lock</string>
+    <string name="profile_app_lock_description">Require fingerprint to open the app</string>
+    <string name="profile_2fa_title">Two-step verification</string>
+    <string name="profile_2fa_active">Active</string>
+    <string name="profile_2fa_inactive">Inactive</string>
+    <string name="profile_2fa_deactivate">Deactivate</string>
+    <string name="profile_2fa_activate">Activate</string>
+    <string name="profile_backup_title">Backup</string>
+    <string name="profile_backup_description">Save and restore messages in Google Drive</string>
+    <string name="profile_sessions_title">Active sessions</string>
+    <string name="profile_sessions_description">View and manage connected devices</string>
+    <string name="profile_sign_out">Sign out</string>
+    <string name="profile_sign_out_all_devices">Sign out on all devices</string>
+
+    <!-- Session Audit -->
+    <string name="session_audit_revoked_success">Session closed successfully</string>
+    <string name="session_audit_top_bar_title">Active sessions</string>
+    <string name="session_audit_back_content_description">Back</string>
+    <string name="session_audit_close_all_others">Close all others</string>
+    <string name="session_audit_no_active_sessions">No active sessions</string>
+    <string name="session_audit_connected_devices">Your connected devices</string>
+    <string name="session_audit_this_device_badge">This device</string>
+    <string name="session_audit_last_active">Last active: %1$s</string>
+    <string name="session_audit_close_session_content_description">Close session</string>
+
+    <!-- Backup -->
+    <string name="backup_error_title">Error</string>
+    <string name="backup_accept">Accept</string>
+    <string name="backup_top_bar_title">Backup</string>
+    <string name="backup_last_backup_title">Last backup</string>
+    <string name="backup_date_label">Date</string>
+    <string name="backup_size_label">Size</string>
+    <string name="backup_size_mb">%1$s MB</string>
+    <string name="backup_no_backups">No backups in Google Drive</string>
+    <string name="backup_disclaimer">Messages are saved as a JSON file in your personal Google Drive. Only you can access this file.</string>
+    <string name="backup_creating_backup">Creating backup…</string>
+    <string name="backup_make_backup_button">Back up</string>
+    <string name="backup_restoring_messages">Restoring messages…</string>
+    <string name="backup_restore_button">Restore</string>
+
+    <!-- Call -->
+    <string name="call_requesting_permissions">Requesting permissions...</string>
+    <string name="call_screen_sharing_active">Sharing screen</string>
+    <string name="call_connecting">Connecting...</string>
+    <string name="call_ringing">Calling...</string>
+    <string name="call_ended">Call ended</string>
+    <string name="call_generic_error">Call error</string>
+    <string name="call_mic_content_description">Microphone</string>
+    <string name="call_camera_content_description">Camera</string>
+    <string name="call_flip_camera_content_description">Flip camera</string>
+    <string name="call_blur_background_content_description">Blur background</string>
+    <string name="call_share_screen_content_description">Share screen</string>
+    <string name="call_hang_up_content_description">Hang up</string>
+    <string name="call_in_call_chat_content_description">In-call chat</string>
+    <string name="call_message_placeholder">Message...</string>
+    <string name="call_send_content_description">Send</string>
+
+    <!-- Incoming call -->
+    <string name="incoming_call_video_incoming">Incoming video call</string>
+    <string name="incoming_call_voice_incoming">Incoming voice call</string>
+    <string name="incoming_call_reject_content_description">Reject</string>
+    <string name="incoming_call_accept_content_description">Accept</string>
+    <string name="incoming_call_reject_label">Reject</string>
+    <string name="incoming_call_accept_label">Accept</string>
+
+    <!-- Invitations -->
+    <string name="invitations_top_bar_title">Invitations</string>
+    <string name="invitations_no_pending">You have no pending invitations</string>
+    <string name="invitations_username">@%1$s</string>
+</resources>
