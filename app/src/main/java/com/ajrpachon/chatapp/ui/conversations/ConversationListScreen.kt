@@ -53,14 +53,11 @@ import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -348,7 +345,7 @@ fun ConversationListScreen(
                     }
                 }
                 items(state.conversations, key = { it.id }) { conv ->
-                    SwipeableConversationItem(
+                    ConversationItem(
                         conversation = conv,
                         currentUserId = state.currentUserId,
                         draft = state.drafts[conv.id],
@@ -391,76 +388,6 @@ fun ConversationListScreen(
                 }
             }
         }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SwipeableConversationItem(
-    conversation: ConversationBO,
-    currentUserId: String?,
-    draft: String? = null,
-    showMenu: Boolean,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit,
-    onMenuDismiss: () -> Unit,
-    onMuteToggle: () -> Unit,
-    onClearChat: () -> Unit,
-    onLeaveGroup: (() -> Unit)?,
-    onDelete: () -> Unit,
-    onArchive: () -> Unit,
-    onSoundPicker: () -> Unit,
-) {
-    val dismissState = rememberSwipeToDismissBoxState(
-        positionalThreshold = { totalDistance -> totalDistance * 0.4f },
-    )
-
-    LaunchedEffect(dismissState.currentValue) {
-        if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
-            onArchive()
-            dismissState.snapTo(SwipeToDismissBoxValue.Settled)
-        }
-    }
-
-    SwipeToDismissBox(
-        state = dismissState,
-        enableDismissFromStartToEnd = false,
-        enableDismissFromEndToStart = true,
-        backgroundContent = {
-            val isArchiving = dismissState.targetValue == SwipeToDismissBoxValue.EndToStart
-            val color = if (isArchiving) MaterialTheme.colorScheme.tertiaryContainer else Color.Transparent
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(color)
-                    .padding(horizontal = 20.dp),
-                contentAlignment = Alignment.CenterEnd,
-            ) {
-                if (isArchiving) {
-                    Icon(
-                        Icons.Default.Archive,
-                        contentDescription = stringResource(R.string.conversations_archive_content_description),
-                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                    )
-                }
-            }
-        },
-    ) {
-        ConversationItem(
-            conversation = conversation,
-            currentUserId = currentUserId,
-            draft = draft,
-            showMenu = showMenu,
-            onClick = onClick,
-            onLongClick = onLongClick,
-            onMenuDismiss = onMenuDismiss,
-            onMuteToggle = onMuteToggle,
-            onClearChat = onClearChat,
-            onLeaveGroup = onLeaveGroup,
-            onDelete = onDelete,
-            onArchive = onArchive,
-            onSoundPicker = onSoundPicker,
-        )
     }
 }
 

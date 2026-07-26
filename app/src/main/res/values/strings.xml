@@ -298,7 +298,6 @@
     <string name="conversations_filter_direct">1:1</string>
     <string name="conversations_empty_title">No hay conversaciones aún</string>
     <string name="conversations_empty_subtitle">Toca el botón para empezar un chat</string>
-    <string name="conversations_archive_content_description">Archivar</string>
     <string name="conversations_chat_archived">Chat archivado</string>
     <string name="conversations_unarchive_content_description">Desarchivar</string>
     <string name="conversations_no_messages">Sin mensajes</string>
