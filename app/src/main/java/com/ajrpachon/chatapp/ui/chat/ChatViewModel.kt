@@ -626,14 +626,12 @@ class ChatViewModel(
                         val replyForImage = if (index == 0) reply else null
                         sendMessageUseCase(conversationId, userId, "", imageUrl,
                             replyToId = replyForImage?.id, replyToContent = replyForImage?.replySnippet(), replyToSenderName = replyForImage?.senderName,
-                        )
-                    }.onSuccess { sendResult ->
+                        ).getOrThrow()
+                    }.onSuccess { message ->
                         if (showBatchPlaceholder) {
-                            sendResult.onSuccess { message ->
-                                updateState { it.copy(suppressedImageMessageIds = it.suppressedImageMessageIds + message.id) }
-                            }
+                            updateState { it.copy(suppressedImageMessageIds = it.suppressedImageMessageIds + message.id) }
                         }
-                    }.onFailure { e -> updateState { it.copy(error = e.message ?: "Error uploading image") } }
+                    }.onFailure { e -> AppLogger.e(TAG, "sendImages failed", e); updateState { it.copy(error = e.message ?: "Error uploading image") } }
                 } else {
                     AppLogger.e(TAG, "sendImages: openInputStream returned null for $uri")
                     updateState { it.copy(error = "No se pudo leer la imagen") }
@@ -735,7 +733,7 @@ class ChatViewModel(
                 sendMessageUseCase(conversationId, userId, "", fileUrl = fileUrl, fileName = displayName,
                     fileSize = fileSize, fileMimeType = mimeType,
                     replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
-                )
+                ).getOrThrow()
             }.onFailure { e -> AppLogger.e(TAG, "sendFile failed", e); updateState { it.copy(error = e.message ?: "Error al enviar el archivo") } }
             updateState { it.copy(isUploadingFile = false) }
         }
@@ -760,7 +758,7 @@ class ChatViewModel(
                 val videoUrl = messageRepository.uploadVideo(conversationId, bytes)
                 sendMessageUseCase(conversationId, userId, "", videoUrl = videoUrl,
                     replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
-                )
+                ).getOrThrow()
             }.onFailure { e -> AppLogger.e(TAG, "sendVideo failed", e); updateState { it.copy(error = e.message ?: "Error al enviar el video") } }
             updateState { it.copy(isUploadingFile = false) }
         }
