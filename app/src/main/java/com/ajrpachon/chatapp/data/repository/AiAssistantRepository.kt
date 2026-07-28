@@ -3,7 +3,9 @@ package com.ajrpachon.chatapp.data.repository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.functions.functions
 import io.ktor.client.call.body
-import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -16,27 +18,40 @@ private data class AiRequest(
 @Serializable
 private data class AiResponse(val result: String)
 
+// The Functions plugin's builder-lambda invoke() overload calls Ktor's raw setBody(), which has
+// no content converter registered for arbitrary types in this client and fails at runtime with
+// "Fail to prepare request body for sending". The invoke(function, body, headers) overload uses
+// Supabase's own serializer.encode() instead, which works reliably -- but per its own docs it
+// requires the JSON content-type header to be set explicitly.
+private val jsonHeaders = Headers.build { append(HttpHeaders.ContentType, ContentType.Application.Json.toString()) }
+
 class AiAssistantRepository(private val supabaseClient: SupabaseClient) :
     com.ajrpachon.chatapp.domain.repository.AiAssistantRepository {
 
     override suspend fun summarize(messageSnippets: List<String>): Result<String> = runCatching {
-        val response = supabaseClient.functions.invoke("ai-assistant") {
-            setBody(AiRequest(action = "summarize", messages = messageSnippets))
-        }
+        val response = supabaseClient.functions.invoke(
+            "ai-assistant",
+            AiRequest(action = "summarize", messages = messageSnippets),
+            headers = jsonHeaders,
+        )
         response.body<AiResponse>().result
     }
 
     override suspend fun suggestReply(lastMessage: String): Result<String> = runCatching {
-        val response = supabaseClient.functions.invoke("ai-assistant") {
-            setBody(AiRequest(action = "suggest", messages = listOf(lastMessage)))
-        }
+        val response = supabaseClient.functions.invoke(
+            "ai-assistant",
+            AiRequest(action = "suggest", messages = listOf(lastMessage)),
+            headers = jsonHeaders,
+        )
         response.body<AiResponse>().result
     }
 
     override suspend fun freeform(prompt: String): Result<String> = runCatching {
-        val response = supabaseClient.functions.invoke("ai-assistant") {
-            setBody(AiRequest(action = "freeform", prompt = prompt))
-        }
+        val response = supabaseClient.functions.invoke(
+            "ai-assistant",
+            AiRequest(action = "freeform", prompt = prompt),
+            headers = jsonHeaders,
+        )
         response.body<AiResponse>().result
     }
 }
