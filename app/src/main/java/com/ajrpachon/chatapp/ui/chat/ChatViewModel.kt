@@ -592,21 +592,37 @@ class ChatViewModel(
         val reply = state.value.replyingTo
         viewModelScope.launch {
             sendEffect(ChatEffect.ScrollToBottom)
-            updateState { it.copy(isUploadingImage = true, replyingTo = null) }
-            for ((index, uri) in uris.withIndex()) {
+            updateState { it.copy(replyingTo = null) }
+            val sizedUris = uris.map { uri ->
+                val size = catchResult {
+                    withContext(Dispatchers.IO) {
+                        context.contentResolver.openAssetFileDescriptor(uri, "r")?.use { it.length }
+                    }
+                }.getOrNull()?.takeIf { it >= 0 } ?: 0L
+                uri to size
+            }
+            val totalBytes = sizedUris.sumOf { it.second }
+            updateState {
+                it.copy(mediaUploadProgress = MediaUploadProgress(totalCount = sizedUris.size, completedCount = 0, totalBytes = totalBytes))
+            }
+            for ((index, sizedUri) in sizedUris.withIndex()) {
+                val uri = sizedUri.first
                 val bytes = catchResult {
                     withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { stream -> stream.readBytes() } }
-                }.getOrNull() ?: continue
-                catchResult {
-                    val mimeType = context.contentResolver.getType(uri) ?: "image/jpeg"
-                    val imageUrl = messageRepository.uploadImage(conversationId, bytes, mimeType)
-                    val replyForImage = if (index == 0) reply else null
-                    sendMessageUseCase(conversationId, userId, "", imageUrl,
-                        replyToId = replyForImage?.id, replyToContent = replyForImage?.replySnippet(), replyToSenderName = replyForImage?.senderName,
-                    )
-                }.onFailure { e -> updateState { it.copy(error = e.message ?: "Error uploading image") } }
+                }.getOrNull()
+                if (bytes != null) {
+                    catchResult {
+                        val mimeType = context.contentResolver.getType(uri) ?: "image/jpeg"
+                        val imageUrl = messageRepository.uploadImage(conversationId, bytes, mimeType)
+                        val replyForImage = if (index == 0) reply else null
+                        sendMessageUseCase(conversationId, userId, "", imageUrl,
+                            replyToId = replyForImage?.id, replyToContent = replyForImage?.replySnippet(), replyToSenderName = replyForImage?.senderName,
+                        )
+                    }.onFailure { e -> updateState { it.copy(error = e.message ?: "Error uploading image") } }
+                }
+                updateState { it.copy(mediaUploadProgress = it.mediaUploadProgress?.copy(completedCount = index + 1)) }
             }
-            updateState { it.copy(isUploadingImage = false) }
+            updateState { it.copy(mediaUploadProgress = null) }
         }
     }
 

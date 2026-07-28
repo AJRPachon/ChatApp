@@ -35,6 +35,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -66,6 +67,7 @@ internal fun NormalInputBar(
     inputText: String,
     isSending: Boolean,
     isUploadingImage: Boolean,
+    mediaUploadProgress: MediaUploadProgress? = null,
     onTextChange: (String) -> Unit,
     onSend: () -> Unit,
     onGallery: () -> Unit,
@@ -80,10 +82,29 @@ internal fun NormalInputBar(
     onAi: () -> Unit = {},
     onCreatePoll: () -> Unit = {},
 ) {
-    val busy = isUploadingImage || isSending
+    val busy = isUploadingImage || isSending || mediaUploadProgress != null
     var showAttachSheet by rememberSaveable { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
+
+    if (mediaUploadProgress != null) {
+        val remaining = mediaUploadProgress.totalCount - mediaUploadProgress.completedCount
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+            Text(
+                text = "Subiendo $remaining de ${mediaUploadProgress.totalCount} · ${formatFileSize(mediaUploadProgress.totalBytes)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            LinearProgressIndicator(
+                progress = {
+                    if (mediaUploadProgress.totalCount == 0) 0f
+                    else mediaUploadProgress.completedCount / mediaUploadProgress.totalCount.toFloat()
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
 
     Row(
         modifier = Modifier
@@ -113,7 +134,9 @@ internal fun NormalInputBar(
             supportingText = if (inputText.length >= MessageLimits.MAX_CONTENT_LENGTH - 100)
                 "${inputText.length}/${MessageLimits.MAX_CONTENT_LENGTH}" else null,
         )
-        if (isUploadingImage) {
+        if (mediaUploadProgress != null) {
+            Spacer(modifier = Modifier.size(40.dp))
+        } else if (isUploadingImage) {
             CircularProgressIndicator(modifier = Modifier.size(40.dp).padding(8.dp))
         } else if (inputText.isNotBlank()) {
             Box(
@@ -134,9 +157,6 @@ internal fun NormalInputBar(
                 )
             }
         } else {
-            IconButton(onClick = onAi, enabled = !busy) {
-                Icon(Icons.Default.SmartToy, contentDescription = "Asistente IA")
-            }
             IconButton(onClick = onMic, enabled = !busy) {
                 Icon(Icons.Default.Mic, contentDescription = "Grabar audio")
             }
