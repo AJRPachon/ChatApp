@@ -161,6 +161,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -2668,7 +2669,12 @@ private fun ContactBubble(
                 enabled = relationship != UserRelationship.PENDING_SENT,
                 modifier = Modifier.weight(1f),
             ) {
-                Text(primaryLabel, style = MaterialTheme.typography.labelMedium)
+                Text(
+                    primaryLabel,
+                    style = MaterialTheme.typography.labelMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
             TextButton(
                 onClick = {
@@ -2681,7 +2687,12 @@ private fun ContactBubble(
                 },
                 modifier = Modifier.weight(1f),
             ) {
-                Text(stringResource(R.string.chat_contact_add_to_contacts), style = MaterialTheme.typography.labelMedium)
+                Text(
+                    stringResource(R.string.chat_contact_add_to_contacts),
+                    style = MaterialTheme.typography.labelMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
         }
     }
