@@ -17,6 +17,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -74,6 +75,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Delete
@@ -759,6 +761,10 @@ fun ChatScreen(
                                     text = state.conversationTitle.ifBlank { stringResource(R.string.chat_title_default) },
                                     style = MaterialTheme.typography.titleSmall,
                                     maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier
+                                        .weight(1f, fill = false)
+                                        .basicMarquee(iterations = 1),
                                 )
                                 if (state.disappearingModeSeconds > 0L) {
                                     Spacer(Modifier.width(4.dp))
@@ -813,16 +819,16 @@ fun ChatScreen(
                             }
                         }
                     }
-                    var menuExpanded by remember { mutableStateOf(false) }
-                    Box {
-                        IconButton(onClick = { menuExpanded = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.chat_more_options))
-                        }
-                        DropdownMenu(
-                            expanded = menuExpanded,
-                            onDismissRequest = { menuExpanded = false },
-                        ) {
-                            if (state.isGroup || state.otherUserId != null) {
+                    if (state.isGroup || state.otherUserId != null) {
+                        var callMenuExpanded by remember { mutableStateOf(false) }
+                        Box {
+                            IconButton(onClick = { callMenuExpanded = true }) {
+                                Icon(Icons.Default.Call, contentDescription = stringResource(R.string.chat_call))
+                            }
+                            DropdownMenu(
+                                expanded = callMenuExpanded,
+                                onDismissRequest = { callMenuExpanded = false },
+                            ) {
                                 DropdownMenuItem(
                                     text = {
                                         Text(
@@ -832,7 +838,7 @@ fun ChatScreen(
                                     },
                                     leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null) },
                                     onClick = {
-                                        menuExpanded = false
+                                        callMenuExpanded = false
                                         vm.onIntent(ChatIntent.StartCall("audio"))
                                     },
                                 )
@@ -845,11 +851,22 @@ fun ChatScreen(
                                     },
                                     leadingIcon = { Icon(Icons.Default.Videocam, contentDescription = null) },
                                     onClick = {
-                                        menuExpanded = false
+                                        callMenuExpanded = false
                                         vm.onIntent(ChatIntent.StartCall("video"))
                                     },
                                 )
                             }
+                        }
+                    }
+                    var menuExpanded by remember { mutableStateOf(false) }
+                    Box {
+                        IconButton(onClick = { menuExpanded = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.chat_more_options))
+                        }
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false },
+                        ) {
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.chat_search_messages)) },
                                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
@@ -2604,6 +2621,38 @@ private fun ImageViewerDialog(
 }
 
 @Composable
+private fun ContactHeader(name: String, phone: String) {
+    Row(
+        modifier = Modifier.padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(40.dp),
+        ) {
+            Icon(
+                Icons.Default.Person,
+                contentDescription = null,
+                modifier = Modifier.padding(8.dp),
+                tint = MaterialTheme.colorScheme.onPrimary,
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            if (phone.isNotBlank()) {
+                Text(
+                    phone,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun ContactBubble(
     name: String,
     phone: String,
@@ -2628,34 +2677,7 @@ private fun ContactBubble(
             else MaterialTheme.colorScheme.surfaceVariant,
         ),
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(40.dp),
-            ) {
-                Icon(
-                    Icons.Default.Person,
-                    contentDescription = null,
-                    modifier = Modifier.padding(8.dp),
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                )
-            }
-            Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                if (phone.isNotBlank()) {
-                    Text(
-                        phone,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        }
+        ContactHeader(name, phone)
         HorizontalDivider()
         Row(modifier = Modifier.fillMaxWidth()) {
             val relationship = lookup?.relationship

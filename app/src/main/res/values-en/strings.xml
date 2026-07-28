@@ -27,6 +27,7 @@
     <string name="chat_back">Back</string>
     <string name="chat_group_voice_call">Group voice call</string>
     <string name="chat_group_video_call">Group video call</string>
+    <string name="chat_call">Call</string>
     <string name="chat_voice_call">Voice call</string>
     <string name="chat_video_call">Video call</string>
     <string name="chat_search_messages">Search messages</string>

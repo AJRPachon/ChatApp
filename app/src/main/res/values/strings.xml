@@ -27,6 +27,7 @@
     <string name="chat_back">Atrás</string>
     <string name="chat_group_voice_call">Llamada grupal de voz</string>
     <string name="chat_group_video_call">Videollamada grupal</string>
+    <string name="chat_call">Llamar</string>
     <string name="chat_voice_call">Llamada de voz</string>
     <string name="chat_video_call">Videollamada</string>
     <string name="chat_search_messages">Buscar mensajes</string>
