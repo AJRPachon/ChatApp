@@ -75,7 +75,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.PhoneInTalk
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Delete
@@ -823,7 +823,7 @@ fun ChatScreen(
                         var callMenuExpanded by remember { mutableStateOf(false) }
                         Box {
                             IconButton(onClick = { callMenuExpanded = true }) {
-                                Icon(Icons.Default.Call, contentDescription = stringResource(R.string.chat_call))
+                                Icon(Icons.Default.PhoneInTalk, contentDescription = stringResource(R.string.chat_call))
                             }
                             DropdownMenu(
                                 expanded = callMenuExpanded,
