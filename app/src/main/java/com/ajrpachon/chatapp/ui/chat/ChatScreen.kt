@@ -1136,17 +1136,24 @@ fun ChatScreen(
                     start = 16.dp,
                     end = 16.dp,
                 ),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                // No verticalArrangement spacing here on purpose: hidden items (suppressed
+                // in-flight batch messages, isInsideGroup images) render nothing but still
+                // occupy a slot for key stability. Arrangement.spacedBy adds its gap between
+                // every pair of items regardless of their rendered height, so N hidden items
+                // would stack N gaps of empty space. Spacing is applied per-item below instead,
+                // only on items that actually render content.
             ) {
                 // reverseLayout=true → the first item in this content lambda sits at the visual
                 // bottom (newest). Rendering the placeholder here keeps it "below" real messages
                 // without needing negative indices into the paging data.
                 if (state.pendingImageUris.isNotEmpty()) {
                     item(key = "pending-image-batch") {
-                        PendingImageBatchBubble(
-                            uris = state.pendingImageUris,
-                            progress = state.mediaUploadProgress,
-                        )
+                        Box(Modifier.padding(top = 8.dp)) {
+                            PendingImageBatchBubble(
+                                uris = state.pendingImageUris,
+                                progress = state.mediaUploadProgress,
+                            )
+                        }
                     }
                 }
                 items(
@@ -1172,6 +1179,7 @@ fun ChatScreen(
                         && prevMessage.senderId == message.senderId
 
                     if (!isInsideGroup) {
+                    Box(Modifier.padding(top = 8.dp)) {
                         val isImageGroupStart = message.imageUrl != null && message.audioUrl == null
                         if (isImageGroupStart) {
                             // Collect consecutive images from the same sender starting at this index.
@@ -1253,6 +1261,7 @@ fun ChatScreen(
                                 onCopy = { vm.onIntent(ChatIntent.CopyMessageContent(it)) },
                             )
                         }
+                    }
                     }
                     // isInsideGroup → render nothing; slot still exists for key stability + paging trigger
                 }
