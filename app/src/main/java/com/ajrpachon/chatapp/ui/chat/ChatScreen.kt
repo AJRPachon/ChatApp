@@ -400,6 +400,14 @@ fun ChatScreen(
         }
     }
 
+    val contactPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            contactPickerLauncher.launch(null)
+        }
+    }
+
     if (showViewer && viewerUrls.isNotEmpty()) {
         ImageViewerDialog(
             imageUrls = viewerUrls,
@@ -1081,7 +1089,13 @@ fun ChatScreen(
                                 else -> locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                             }
                         },
-                        onContact = { contactPickerLauncher.launch(null) },
+                        onContact = {
+                            when {
+                                ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS)
+                                        == PackageManager.PERMISSION_GRANTED -> contactPickerLauncher.launch(null)
+                                else -> contactPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+                            }
+                        },
                         onSchedule = { vm.onIntent(ChatIntent.OpenScheduleDialog) },
                         onAi = { vm.onIntent(ChatIntent.OpenAiSheet) },
                         onCreatePoll = { vm.onIntent(ChatIntent.OpenCreatePollSheet) },
