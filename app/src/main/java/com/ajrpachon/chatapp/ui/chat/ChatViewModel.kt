@@ -634,6 +634,9 @@ class ChatViewModel(
                             }
                         }
                     }.onFailure { e -> updateState { it.copy(error = e.message ?: "Error uploading image") } }
+                } else {
+                    AppLogger.e(TAG, "sendImages: openInputStream returned null for $uri")
+                    updateState { it.copy(error = "No se pudo leer la imagen") }
                 }
                 updateState { it.copy(mediaUploadProgress = it.mediaUploadProgress?.copy(completedCount = index + 1)) }
             }
@@ -726,13 +729,14 @@ class ChatViewModel(
                     val idx = cursor.getColumnIndex(OpenableColumns.SIZE)
                     cursor.moveToFirst(); if (idx >= 0) cursor.getLong(idx) else null
                 }
-                val bytes = withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { stream -> stream.readBytes() } } ?: return@catchResult
+                val bytes = withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { stream -> stream.readBytes() } }
+                    ?: error("No se pudo leer el archivo")
                 val fileUrl = messageRepository.uploadFile(conversationId, bytes, displayName, mimeType)
                 sendMessageUseCase(conversationId, userId, "", fileUrl = fileUrl, fileName = displayName,
                     fileSize = fileSize, fileMimeType = mimeType,
                     replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
                 )
-            }.onFailure { e -> updateState { it.copy(error = e.message ?: "Error al enviar el archivo") } }
+            }.onFailure { e -> AppLogger.e(TAG, "sendFile failed", e); updateState { it.copy(error = e.message ?: "Error al enviar el archivo") } }
             updateState { it.copy(isUploadingFile = false) }
         }
     }
@@ -751,12 +755,13 @@ class ChatViewModel(
                 check(fileSize == null || fileSize <= UploadLimits.VIDEO_MAX_BYTES) {
                     "El video supera el tamaño máximo permitido (50 MB)"
                 }
-                val bytes = withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { stream -> stream.readBytes() } } ?: return@catchResult
+                val bytes = withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { stream -> stream.readBytes() } }
+                    ?: error("No se pudo leer el video")
                 val videoUrl = messageRepository.uploadVideo(conversationId, bytes)
                 sendMessageUseCase(conversationId, userId, "", videoUrl = videoUrl,
                     replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
                 )
-            }.onFailure { e -> updateState { it.copy(error = e.message ?: "Error al enviar el video") } }
+            }.onFailure { e -> AppLogger.e(TAG, "sendVideo failed", e); updateState { it.copy(error = e.message ?: "Error al enviar el video") } }
             updateState { it.copy(isUploadingFile = false) }
         }
     }
