@@ -149,6 +149,15 @@ class CallViewModel(
             livekitRoom.connect(livekitUrl, token)
             AppLogger.d(TAG, "joinCall: connected, remoteParticipants=${livekitRoom.remoteParticipants.size}")
 
+            // For incoming calls: accept immediately after connecting to LiveKit so the DB
+            // status is updated even if subsequent track publishing fails. This ensures the
+            // caller knows the receiver has joined the room before audio is enabled.
+            if (!isOutgoing) {
+                AppLogger.d(TAG, "joinCall: accepting call callId=$callId")
+                catchResult { callRepository.acceptCall(callId) }
+                    .onFailure { e -> AppLogger.e(TAG, "joinCall: acceptCall FAILED (non-fatal)", e) }
+            }
+
             val newPhase = if (isOutgoing) CallPhase.RINGING else CallPhase.ACTIVE
             updateState { it.copy(phase = newPhase) }
             if (!isOutgoing) startDurationTimer()
@@ -163,10 +172,21 @@ class CallViewModel(
                 }
             }
 
-            livekitRoom.localParticipant.setMicrophoneEnabled(true)
+            // Enable microphone — wrapped separately so that audio hardware errors (e.g.
+            // AudioRecord already in use, RECORD_AUDIO denied after navigation) do NOT kill
+            // the LiveKit connection. The call can still proceed (visually connected) and the
+            // user can toggle the mic from the UI to retry.
+            // NOTE: LIVEKIT_URL in local.properties must be reachable from the emulator.
+            // wss://chatapp-8ff7ks6x.livekit.cloud is a public cloud URL and is accessible
+            // from Android emulators through the host machine's network.
+            catchResult { livekitRoom.localParticipant.setMicrophoneEnabled(true) }
+                .onSuccess { AppLogger.d(TAG, "joinCall: microphone enabled") }
+                .onFailure { e -> AppLogger.e(TAG, "joinCall: setMicrophoneEnabled FAILED (non-fatal) — call connected but no local audio", e) }
 
             if (callType == "video") {
-                livekitRoom.localParticipant.setCameraEnabled(true)
+                catchResult { livekitRoom.localParticipant.setCameraEnabled(true) }
+                    .onSuccess { AppLogger.d(TAG, "joinCall: camera enabled") }
+                    .onFailure { e -> AppLogger.e(TAG, "joinCall: setCameraEnabled FAILED (non-fatal)", e) }
             }
 
             if (livekitRoom.remoteParticipants.isNotEmpty() && state.value.phase != CallPhase.ACTIVE) {
@@ -184,11 +204,6 @@ class CallViewModel(
 
             // Populate participants list with anyone already in the room at connect time.
             rebuildParticipants()
-
-            if (!isOutgoing) {
-                AppLogger.d(TAG, "joinCall: accepting call callId=$callId")
-                callRepository.acceptCall(callId)
-            }
 
         }.onFailure { e ->
             AppLogger.e(TAG, "joinCall: FAILED", e)
