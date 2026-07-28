@@ -8,5 +8,5 @@ ALTER TABLE messages ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN NOT NULL DEFAUL
 CREATE POLICY "sender can delete own message"
     ON messages FOR UPDATE
     TO authenticated
-    USING (auth.uid()::text = sender_id)
-    WITH CHECK (auth.uid()::text = sender_id);
+    USING (auth.uid() = sender_id)
+    WITH CHECK (auth.uid() = sender_id);
