@@ -20,11 +20,17 @@ data class AudioState(
     val transcription: String? = null,
 )
 
+data class MediaUploadProgress(
+    val totalCount: Int,
+    val completedCount: Int,
+    val totalBytes: Long,
+)
+
 data class ChatState(
     val inputText: String = "",
     val isSending: Boolean = false,
-    val isUploadingImage: Boolean = false,
     val isUploadingFile: Boolean = false,
+    val mediaUploadProgress: MediaUploadProgress? = null,
     val currentUserId: String? = null,
     val conversationTitle: String = "",
     val error: String? = null,

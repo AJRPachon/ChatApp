@@ -604,7 +604,6 @@ fun ChatScreen(
             aiSuggestion = state.aiSuggestion,
             isAiLoading = state.isAiLoading,
             onDismiss = { vm.onIntent(ChatIntent.DismissAiSheet) },
-            onSummarize = { vm.onIntent(ChatIntent.AiSummarize) },
             onSuggestReply = { vm.onIntent(ChatIntent.AiSuggestReply) },
             onFreeform = { prompt -> vm.onIntent(ChatIntent.AiFreeform(prompt)) },
             onInsert = { vm.onIntent(ChatIntent.InsertAiSuggestion) },
@@ -742,38 +741,29 @@ fun ChatScreen(
                         Spacer(Modifier.width(10.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(state.conversationTitle.ifBlank { stringResource(R.string.chat_title_default) })
+                                Text(
+                                    text = state.conversationTitle.ifBlank { stringResource(R.string.chat_title_default) },
+                                    style = MaterialTheme.typography.titleSmall,
+                                    maxLines = 1,
+                                )
                                 if (state.disappearingModeSeconds > 0L) {
                                     Spacer(Modifier.width(4.dp))
                                     Icon(
                                         imageVector = Icons.Default.Timer,
                                         contentDescription = stringResource(R.string.chat_disappearing_mode_active),
                                         tint = MaterialTheme.colorScheme.tertiary,
-                                        modifier = Modifier.size(12.dp),
-                                    )
-                                    Spacer(Modifier.width(2.dp))
-                                    Text(
-                                        text = state.disappearingDurationLabel,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.tertiary,
+                                        modifier = Modifier.size(11.dp),
                                     )
                                 }
                             }
-                            state.presenceText?.let { presence ->
+                            val secondaryLine = state.presenceText ?: state.subtitleText
+                            secondaryLine?.let { line ->
+                                val isActive = state.isOtherUserOnline || state.onlineMemberCount > 0
                                 Text(
-                                    text = presence,
+                                    text = line,
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = if (state.isOtherUserOnline)
-                                        androidx.compose.ui.graphics.Color(0xFF4CAF50)
-                                    else
-                                        MaterialTheme.colorScheme.outline,
-                                )
-                            }
-                            state.subtitleText?.let { subtitle ->
-                                Text(
-                                    text = subtitle,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = if (state.onlineMemberCount > 0)
+                                    maxLines = 1,
+                                    color = if (isActive)
                                         androidx.compose.ui.graphics.Color(0xFF4CAF50)
                                     else
                                         MaterialTheme.colorScheme.outline,
@@ -788,21 +778,6 @@ fun ChatScreen(
                     }
                 },
                 actions = {
-                    if (state.isGroup) {
-                        IconButton(onClick = { vm.onIntent(ChatIntent.StartCall("audio")) }) {
-                            Icon(Icons.Default.Phone, contentDescription = stringResource(R.string.chat_group_voice_call))
-                        }
-                        IconButton(onClick = { vm.onIntent(ChatIntent.StartCall("video")) }) {
-                            Icon(Icons.Default.Videocam, contentDescription = stringResource(R.string.chat_group_video_call))
-                        }
-                    } else if (state.otherUserId != null) {
-                        IconButton(onClick = { vm.onIntent(ChatIntent.StartCall("audio")) }) {
-                            Icon(Icons.Default.Phone, contentDescription = stringResource(R.string.chat_voice_call))
-                        }
-                        IconButton(onClick = { vm.onIntent(ChatIntent.StartCall("video")) }) {
-                            Icon(Icons.Default.Videocam, contentDescription = stringResource(R.string.chat_video_call))
-                        }
-                    }
                     if (state.scheduledMessageCount > 0) {
                         Box {
                             IconButton(onClick = { vm.onIntent(ChatIntent.ShowScheduledSheet) }) {
@@ -824,9 +799,6 @@ fun ChatScreen(
                             }
                         }
                     }
-                    IconButton(onClick = { vm.onIntent(ChatIntent.OpenSearch) }) {
-                        Icon(Icons.Default.Search, contentDescription = stringResource(R.string.chat_search_messages))
-                    }
                     var menuExpanded by remember { mutableStateOf(false) }
                     Box {
                         IconButton(onClick = { menuExpanded = true }) {
@@ -836,6 +808,42 @@ fun ChatScreen(
                             expanded = menuExpanded,
                             onDismissRequest = { menuExpanded = false },
                         ) {
+                            if (state.isGroup || state.otherUserId != null) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            if (state.isGroup) stringResource(R.string.chat_group_voice_call)
+                                            else stringResource(R.string.chat_voice_call)
+                                        )
+                                    },
+                                    leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null) },
+                                    onClick = {
+                                        menuExpanded = false
+                                        vm.onIntent(ChatIntent.StartCall("audio"))
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            if (state.isGroup) stringResource(R.string.chat_group_video_call)
+                                            else stringResource(R.string.chat_video_call)
+                                        )
+                                    },
+                                    leadingIcon = { Icon(Icons.Default.Videocam, contentDescription = null) },
+                                    onClick = {
+                                        menuExpanded = false
+                                        vm.onIntent(ChatIntent.StartCall("video"))
+                                    },
+                                )
+                            }
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.chat_search_messages)) },
+                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                                onClick = {
+                                    menuExpanded = false
+                                    vm.onIntent(ChatIntent.OpenSearch)
+                                },
+                            )
                             DropdownMenuItem(
                                 text = {
                                     Text(if (state.isMuted) stringResource(R.string.chat_enable_notifications) else stringResource(R.string.chat_mute))
@@ -853,15 +861,6 @@ fun ChatScreen(
                                     } else {
                                         vm.onIntent(ChatIntent.ShowMuteDialog)
                                     }
-                                },
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.chat_summarize)) },
-                                leadingIcon = { Icon(Icons.Default.Info, contentDescription = null) },
-                                onClick = {
-                                    menuExpanded = false
-                                    vm.onIntent(ChatIntent.OpenAiSheet)
-                                    vm.onIntent(ChatIntent.AiSummarize)
                                 },
                             )
                             DropdownMenuItem(
@@ -1039,7 +1038,8 @@ fun ChatScreen(
                     else -> NormalInputBar(
                         inputText = state.inputText,
                         isSending = state.isSending,
-                        isUploadingImage = state.isUploadingImage || state.isUploadingFile,
+                        isUploadingImage = state.isUploadingFile,
+                        mediaUploadProgress = state.mediaUploadProgress,
                         onTextChange = { vm.onIntent(ChatIntent.InputChanged(it)) },
                         onSend = { vm.onIntent(ChatIntent.Send) },
                         onGallery = {
@@ -1524,7 +1524,7 @@ private fun GenericFileBubble(message: MessageBO, onReply: () -> Unit) {
     }
 }
 
-private fun formatFileSize(bytes: Long): String {
+internal fun formatFileSize(bytes: Long): String {
     return when {
         bytes >= 1_048_576 -> "%.1f MB".format(bytes / 1_048_576.0)
         bytes >= 1_024 -> "%.1f KB".format(bytes / 1_024.0)
@@ -2911,7 +2911,6 @@ private fun AiAssistantSheet(
     aiSuggestion: String?,
     isAiLoading: Boolean,
     onDismiss: () -> Unit,
-    onSummarize: () -> Unit,
     onSuggestReply: () -> Unit,
     onFreeform: (String) -> Unit,
     onInsert: () -> Unit,
@@ -2940,11 +2939,6 @@ private fun AiAssistantSheet(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                androidx.compose.material3.SuggestionChip(
-                    onClick = onSummarize,
-                    label = { Text(stringResource(R.string.chat_summarize)) },
-                    enabled = !isAiLoading,
-                )
                 androidx.compose.material3.SuggestionChip(
                     onClick = onSuggestReply,
                     label = { Text(stringResource(R.string.chat_suggest_reply)) },
