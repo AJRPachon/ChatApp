@@ -3367,6 +3367,12 @@ private fun PollBubble(
                     options.forEach { option ->
                         val isSelected = userVotes.any { it.optionId == option.id }
                         val fraction = option.voteCount.toFloat() / totalVotes.toFloat()
+                        // Animate width instead of snapping so re-votes read as a smooth transition.
+                        val animatedFraction by animateFloatAsState(
+                            targetValue = fraction,
+                            animationSpec = tween(durationMillis = 300),
+                            label = "pollOptionFraction",
+                        )
                         Column(modifier = Modifier.padding(bottom = 6.dp)) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -3407,7 +3413,7 @@ private fun PollBubble(
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .fillMaxWidth(fraction)
+                                        .fillMaxWidth(animatedFraction)
                                         .fillMaxHeight()
                                         .background(MaterialTheme.colorScheme.primary),
                                 )
