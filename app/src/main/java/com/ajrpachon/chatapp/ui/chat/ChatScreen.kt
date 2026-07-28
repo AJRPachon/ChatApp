@@ -1124,16 +1124,34 @@ fun ChatScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                // reverseLayout=true → the first item in this content lambda sits at the visual
+                // bottom (newest). Rendering the placeholder here keeps it "below" real messages
+                // without needing negative indices into the paging data.
+                if (state.pendingImageUris.isNotEmpty()) {
+                    item(key = "pending-image-batch") {
+                        PendingImageBatchBubble(
+                            uris = state.pendingImageUris,
+                            progress = state.mediaUploadProgress,
+                        )
+                    }
+                }
                 items(
                     count = lazyPagingItems.itemCount,
                     key = lazyPagingItems.itemKey { it.id },
                 ) { index ->
                     val message = lazyPagingItems[index] ?: return@items
+                    // Messages from the batch currently rendered by the placeholder above are
+                    // hidden here to avoid a duplicate/jumping bubble while uploads are in flight.
+                    if (message.id in state.suppressedImageMessageIds) return@items
 
                     // Determine if this item is already covered by a group rendered at a lower index.
                     // With reverseLayout=true and DESC order, index 0 = newest (bottom).
                     // Index i-1 was composed before i, so it's already in the snapshot.
-                    val prevMessage = if (index > 0) lazyPagingItems[index - 1] else null
+                    // Skip back over any suppressed (in-flight batch) messages so an older, already
+                    // finished group isn't mistakenly treated as continuing into the new batch.
+                    var prevIndex = index - 1
+                    while (prevIndex >= 0 && lazyPagingItems[prevIndex]?.id in state.suppressedImageMessageIds) prevIndex--
+                    val prevMessage = if (prevIndex >= 0) lazyPagingItems[prevIndex] else null
                     val isInsideGroup = prevMessage != null
                         && message.imageUrl != null && message.audioUrl == null
                         && prevMessage.imageUrl != null && prevMessage.audioUrl == null
@@ -1149,6 +1167,7 @@ fun ChatScreen(
                             var j = index + 1
                             while (j < lazyPagingItems.itemCount) {
                                 val next = lazyPagingItems[j] ?: break
+                                if (next.id in state.suppressedImageMessageIds) break
                                 if (next.imageUrl != null && next.audioUrl == null && next.senderId == message.senderId) {
                                     group.add(next)
                                     j++
@@ -2159,6 +2178,70 @@ private fun ReadReceiptIcon(isRead: Boolean) {
 
 
 // ── ImageGroupBubble ──────────────────────────────────────────────────────────
+
+// Placeholder shown while a multi-image batch (>2 photos) uploads, mirroring ImageGroupBubble's
+// layout exactly (same 2-cell grid + overlay) so there is no shape/size change when the real,
+// server-backed group replaces it once the batch finishes — that's what removes the visible jump.
+@Composable
+private fun PendingImageBatchBubble(
+    uris: List<Uri>,
+    progress: MediaUploadProgress?,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.End,
+    ) {
+        Row(
+            modifier = Modifier
+                .widthIn(max = 260.dp)
+                .clip(RoundedCornerShape(12.dp)),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            AsyncImage(
+                model = uris[0],
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(150.dp),
+            )
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(150.dp),
+            ) {
+                AsyncImage(
+                    model = uris[1],
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.55f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(28.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp,
+                        )
+                        Text(
+                            text = "${progress?.completedCount ?: 0}/${progress?.totalCount ?: uris.size}",
+                            color = Color.White,
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun ImageGroupBubble(

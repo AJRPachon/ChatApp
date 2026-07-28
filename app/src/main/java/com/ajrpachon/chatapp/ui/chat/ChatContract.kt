@@ -31,6 +31,13 @@ data class ChatState(
     val isSending: Boolean = false,
     val isUploadingFile: Boolean = false,
     val mediaUploadProgress: MediaUploadProgress? = null,
+    // Local URIs for the in-flight image batch, so the placeholder bubble can render
+    // thumbnails instantly (from device storage) without waiting on network uploads.
+    val pendingImageUris: List<Uri> = emptyList(),
+    // Ids of messages created by the current in-flight batch; hidden from the normal
+    // paging-based grouping until the whole batch finishes, so only the stable
+    // placeholder bubble is visible mid-upload instead of a growing/jumping bubble.
+    val suppressedImageMessageIds: Set<String> = emptySet(),
     val currentUserId: String? = null,
     val conversationTitle: String = "",
     val error: String? = null,
