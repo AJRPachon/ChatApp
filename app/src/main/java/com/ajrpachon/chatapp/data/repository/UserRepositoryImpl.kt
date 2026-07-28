@@ -95,6 +95,16 @@ class UserRepositoryImpl(
         return url
     }
 
+    override suspend fun findUserByPhone(phone: String): UserBO? {
+        val target = phone.normalizePhoneDigits()
+        if (target.isBlank()) return null
+        return remoteSource.getProfilesWithPhone()
+            .firstOrNull { it.phone?.normalizePhoneDigits() == target }
+            ?.toBO()
+    }
+
+    private fun String.normalizePhoneDigits(): String = filter { it.isDigit() }
+
     private fun UserBO.toDBO(isCurrentUser: Boolean = false) =
         com.ajrpachon.chatapp.data.local.entity.UserDBO(
             id = id,

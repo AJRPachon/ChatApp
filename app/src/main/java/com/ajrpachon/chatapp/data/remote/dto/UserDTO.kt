@@ -13,4 +13,5 @@ data class UserDTO(
     @SerialName("public_key") val publicKey: String? = null,
     @SerialName("last_seen") val lastSeen: String? = null,
     @SerialName("show_online_status") val showOnlineStatus: Boolean = true,
+    @SerialName("phone") val phone: String? = null,
 )

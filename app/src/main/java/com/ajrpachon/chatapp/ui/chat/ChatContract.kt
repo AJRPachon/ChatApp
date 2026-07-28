@@ -10,6 +10,19 @@ import com.ajrpachon.chatapp.domain.model.ScheduledMessage
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.MessageBO
+import com.ajrpachon.chatapp.domain.model.UserBO
+import com.ajrpachon.chatapp.domain.model.UserRelationship
+
+/**
+ * Relationship of the current user to whoever owns a shared contact card's phone number.
+ * Keyed by phone (not by ChatState.otherUserId) because the contact card can appear in
+ * group chats where otherUserId is null/irrelevant to the card's own contact.
+ */
+data class ContactPhoneLookup(
+    val resolvedUser: UserBO? = null,
+    val relationship: UserRelationship? = null,
+    val isLoading: Boolean = false,
+)
 
 data class AudioState(
     val isRecording: Boolean = false,
@@ -89,6 +102,8 @@ data class ChatState(
     val onlineMemberCount: Int = 0,
     val groupMemberCount: Int = 0,
     val isOnline: Boolean = true,
+    // Contact-card relationship lookups, keyed by phone (see ContactPhoneLookup doc).
+    val contactPhoneLookups: Map<String, ContactPhoneLookup> = emptyMap(),
 ) {
     val isMultiSelectActive: Boolean get() = selectedMessageIds.isNotEmpty()
     val latestPinnedMessage: MessageBO? get() = pinnedMessages.firstOrNull()
@@ -210,6 +225,9 @@ sealed interface ChatIntent {
     // Multi-forward
     data object ShowForwardSelectionDialog : ChatIntent
     data object DismissForwardSelectionDialog : ChatIntent
+    // Contact card actions
+    data class CheckContactRelationship(val phone: String) : ChatIntent
+    data class ContactCardPrimaryAction(val phone: String) : ChatIntent
 }
 
 sealed interface ChatEffect {
@@ -218,4 +236,6 @@ sealed interface ChatEffect {
     data object NavigateBack : ChatEffect
     data class ShowSnackbar(val message: String) : ChatEffect
     data class ShowShareSheet(val uri: android.net.Uri) : ChatEffect
+    data class NavigateToConversation(val conversationId: String, val otherUserName: String) : ChatEffect
+    data class InviteContact(val phoneNumber: String, val text: String) : ChatEffect
 }

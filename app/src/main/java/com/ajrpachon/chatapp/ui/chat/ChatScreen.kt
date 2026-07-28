@@ -176,6 +176,7 @@ import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.MediaUrlValidator
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.StickerValidation
+import com.ajrpachon.chatapp.domain.model.UserRelationship
 import com.ajrpachon.chatapp.utils.LinkPreviewData
 import com.ajrpachon.chatapp.utils.LinkPreviewFetcher
 import kotlinx.coroutines.delay
@@ -211,6 +212,7 @@ fun ChatScreen(
     onUserInfo: (userId: String) -> Unit = {},
     onOpenPdf: (url: String, filename: String) -> Unit = { _, _ -> },
     onOpenMediaGallery: () -> Unit = {},
+    onNavigateToConversation: (conversationId: String, otherUserName: String) -> Unit = { _, _ -> },
 ) {
     val vm: ChatViewModel = koinViewModel(key = conversationId, parameters = { parametersOf(ChatArgs(conversationId, otherUserName)) })
     val state by vm.state.collectAsStateWithLifecycle()
@@ -275,6 +277,14 @@ fun ChatScreen(
                         addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     }
                     context.startActivity(android.content.Intent.createChooser(shareIntent, exportConversationLabel))
+                }
+                is ChatEffect.NavigateToConversation -> onNavigateToConversation(effect.conversationId, effect.otherUserName)
+                is ChatEffect.InviteContact -> {
+                    val smsIntent = android.content.Intent(
+                        android.content.Intent.ACTION_SENDTO,
+                        android.net.Uri.parse("smsto:${effect.phoneNumber}"),
+                    ).apply { putExtra("sms_body", effect.text) }
+                    context.startActivity(smsIntent)
                 }
             }
         }
@@ -1188,6 +1198,9 @@ fun ChatScreen(
                                     onVote = { optionId -> vm.onIntent(ChatIntent.VotePoll(message.content.removePrefix("poll:"), optionId)) },
                                     onRetryMessage = { vm.onIntent(ChatIntent.RetryMessage(it)) },
                                     onCopy = { vm.onIntent(ChatIntent.CopyMessageContent(it)) },
+                                    contactPhoneLookups = state.contactPhoneLookups,
+                                    onCheckContactRelationship = { vm.onIntent(ChatIntent.CheckContactRelationship(it)) },
+                                    onContactCardPrimaryAction = { vm.onIntent(ChatIntent.ContactCardPrimaryAction(it)) },
                                 )
                             }
                         } else {
@@ -1218,6 +1231,9 @@ fun ChatScreen(
                                 onShowReactionDetails = { reactionDetailMessageId = message.id },
                                 onRetryMessage = { vm.onIntent(ChatIntent.RetryMessage(it)) },
                                 onCopy = { vm.onIntent(ChatIntent.CopyMessageContent(it)) },
+                                contactPhoneLookups = state.contactPhoneLookups,
+                                onCheckContactRelationship = { vm.onIntent(ChatIntent.CheckContactRelationship(it)) },
+                                onContactCardPrimaryAction = { vm.onIntent(ChatIntent.ContactCardPrimaryAction(it)) },
                             )
                         }
                     }
@@ -1713,6 +1729,9 @@ private fun MessageBubble(
     onShowReactionDetails: () -> Unit = {},
     onRetryMessage: (String) -> Unit = {},
     onCopy: (String) -> Unit = {},
+    contactPhoneLookups: Map<String, ContactPhoneLookup> = emptyMap(),
+    onCheckContactRelationship: (String) -> Unit = {},
+    onContactCardPrimaryAction: (String) -> Unit = {},
 ) {
     if (message.isDeleted) {
         DeletedMessageBubble(message)
@@ -1735,6 +1754,9 @@ private fun MessageBubble(
                 name = contactName,
                 phone = contactPhone ?: "",
                 isFromMe = message.isFromMe,
+                lookup = contactPhoneLookups[contactPhone ?: ""],
+                onCheckRelationship = onCheckContactRelationship,
+                onPrimaryAction = onContactCardPrimaryAction,
             )
         }
         return
@@ -2437,8 +2459,23 @@ private fun ImageViewerDialog(
 }
 
 @Composable
-private fun ContactBubble(name: String, phone: String, isFromMe: Boolean) {
+private fun ContactBubble(
+    name: String,
+    phone: String,
+    isFromMe: Boolean,
+    lookup: ContactPhoneLookup? = null,
+    onCheckRelationship: (String) -> Unit = {},
+    onPrimaryAction: (String) -> Unit = {},
+) {
     val context = androidx.compose.ui.platform.LocalContext.current
+
+    // Relationship is resolved from the shared contact's own phone-derived identity, not
+    // ChatState.otherUserId, since this bubble renders identically in group chats where
+    // otherUserId is null/irrelevant to who this specific contact card belongs to.
+    LaunchedEffect(phone) {
+        if (phone.isNotBlank()) onCheckRelationship(phone)
+    }
+
     Card(
         modifier = Modifier.widthIn(max = 280.dp),
         colors = CardDefaults.cardColors(
@@ -2475,17 +2512,33 @@ private fun ContactBubble(name: String, phone: String, isFromMe: Boolean) {
             }
         }
         HorizontalDivider()
-        TextButton(
-            onClick = {
-                val dialIntent = android.content.Intent(
-                    android.content.Intent.ACTION_DIAL,
-                    android.net.Uri.parse("tel:$phone"),
-                )
-                context.startActivity(dialIntent)
-            },
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(R.string.chat_call_action), style = MaterialTheme.typography.labelMedium)
+        Row(modifier = Modifier.fillMaxWidth()) {
+            val relationship = lookup?.relationship
+            val primaryLabel = when (relationship) {
+                UserRelationship.CONNECTED -> stringResource(R.string.chat_contact_send_message)
+                UserRelationship.PENDING_SENT -> stringResource(R.string.chat_contact_invitation_sent)
+                else -> stringResource(R.string.chat_contact_send_invitation)
+            }
+            TextButton(
+                onClick = { onPrimaryAction(phone) },
+                enabled = relationship != UserRelationship.PENDING_SENT,
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(primaryLabel, style = MaterialTheme.typography.labelMedium)
+            }
+            TextButton(
+                onClick = {
+                    val insertIntent = android.content.Intent(android.content.Intent.ACTION_INSERT).apply {
+                        type = android.provider.ContactsContract.Contacts.CONTENT_TYPE
+                        putExtra(android.provider.ContactsContract.Intents.Insert.NAME, name)
+                        putExtra(android.provider.ContactsContract.Intents.Insert.PHONE, phone)
+                    }
+                    context.startActivity(insertIntent)
+                },
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(stringResource(R.string.chat_contact_add_to_contacts), style = MaterialTheme.typography.labelMedium)
+            }
         }
     }
 }

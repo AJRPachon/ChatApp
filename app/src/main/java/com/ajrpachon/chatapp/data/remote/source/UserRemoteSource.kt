@@ -97,6 +97,15 @@ class UserRemoteSource(private val supabase: SupabaseClient) {
     }
 
 
+    // Phone formatting varies per source (spaces/dashes/+), so we fetch profiles and let the
+    // caller normalize+compare rather than relying on Postgrest equality on the raw value.
+    suspend fun getProfilesWithPhone(): List<UserDTO> = runCatching {
+        supabase.postgrest["profiles"]
+            .select()
+            .decodeList<UserDTO>()
+            .filter { !it.phone.isNullOrBlank() }
+    }.getOrDefault(emptyList())
+
     suspend fun getProfileOrThrow(userId: String): UserDTO? =
         supabase.postgrest["profiles"]
             .select { filter { eq("id", userId) } }
