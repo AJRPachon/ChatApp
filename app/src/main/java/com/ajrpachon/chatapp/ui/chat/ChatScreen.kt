@@ -1352,19 +1352,10 @@ fun ChatScreen(
 
 // ── MessageBubble ─────────────────────────────────────────────────────────────
 
-// Shared by every special bubble type (call/contact/file/video/poll) so a chosen chat theme's
-// bubbleColor applies consistently to "my" messages, not just plain text bubbles.
-@Composable
-private fun resolvedBubbleColor(isFromMe: Boolean, outgoingBubbleColor: Color): Color = when {
-    !isFromMe -> MaterialTheme.colorScheme.surfaceVariant
-    outgoingBubbleColor != Color.Unspecified -> outgoingBubbleColor
-    else -> MaterialTheme.colorScheme.primaryContainer
-}
-
 // ── CallMessageBubble ─────────────────────────────────────────────────────────
 
 @Composable
-private fun CallMessageBubble(message: MessageBO, outgoingBubbleColor: Color = Color.Unspecified) {
+private fun CallMessageBubble(message: MessageBO) {
     val timeText = remember(message.createdAt) {
         val local = message.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
         "%02d:%02d".format(local.hour, local.minute)
@@ -1396,7 +1387,7 @@ private fun CallMessageBubble(message: MessageBO, outgoingBubbleColor: Color = C
     ) {
         Surface(
             shape = RoundedCornerShape(12.dp),
-            color = resolvedBubbleColor(message.isFromMe, outgoingBubbleColor),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -1439,13 +1430,12 @@ private fun FileBubble(
     message: MessageBO,
     onReply: () -> Unit,
     onOpenPdf: (url: String, filename: String) -> Unit = { _, _ -> },
-    outgoingBubbleColor: Color = Color.Unspecified,
 ) {
     val isPdf = message.fileUrl?.endsWith(".pdf", ignoreCase = true) == true
     if (isPdf) {
-        PdfFileCard(message = message, onReply = onReply, onOpenPdf = onOpenPdf, outgoingBubbleColor = outgoingBubbleColor)
+        PdfFileCard(message = message, onReply = onReply, onOpenPdf = onOpenPdf)
     } else {
-        GenericFileBubble(message = message, onReply = onReply, outgoingBubbleColor = outgoingBubbleColor)
+        GenericFileBubble(message = message, onReply = onReply)
     }
 }
 
@@ -1454,13 +1444,12 @@ private fun PdfFileCard(
     message: MessageBO,
     onReply: () -> Unit,
     onOpenPdf: (url: String, filename: String) -> Unit,
-    outgoingBubbleColor: Color = Color.Unspecified,
 ) {
     val timeText = remember(message.createdAt) {
         val local = message.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
         "%02d:%02d".format(local.hour, local.minute)
     }
-    val bubbleColor = resolvedBubbleColor(message.isFromMe, outgoingBubbleColor)
+    val bubbleColor = MaterialTheme.colorScheme.surfaceContainerHighest
     val alignment = if (message.isFromMe) Alignment.CenterEnd else Alignment.CenterStart
     val documentPdfDefault = stringResource(R.string.chat_document_pdf_default)
 
@@ -1529,12 +1518,12 @@ private fun PdfFileCard(
 }
 
 @Composable
-private fun GenericFileBubble(message: MessageBO, onReply: () -> Unit, outgoingBubbleColor: Color = Color.Unspecified) {
+private fun GenericFileBubble(message: MessageBO, onReply: () -> Unit) {
     val timeText = remember(message.createdAt) {
         val local = message.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
         "%02d:%02d".format(local.hour, local.minute)
     }
-    val bubbleColor = resolvedBubbleColor(message.isFromMe, outgoingBubbleColor)
+    val bubbleColor = MaterialTheme.colorScheme.surfaceContainerHighest
     val alignment = if (message.isFromMe) Alignment.CenterEnd else Alignment.CenterStart
     val context = LocalContext.current
 
@@ -1604,7 +1593,7 @@ internal fun formatFileSize(bytes: Long): String {
 // ── VideoBubble ───────────────────────────────────────────────────────────────
 
 @Composable
-private fun VideoBubble(message: MessageBO, onReply: () -> Unit, outgoingBubbleColor: Color = Color.Unspecified) {
+private fun VideoBubble(message: MessageBO, onReply: () -> Unit) {
     val timeText = remember(message.createdAt) {
         val local = message.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
         "%02d:%02d".format(local.hour, local.minute)
@@ -1619,7 +1608,7 @@ private fun VideoBubble(message: MessageBO, onReply: () -> Unit, outgoingBubbleC
         ) {
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = resolvedBubbleColor(message.isFromMe, outgoingBubbleColor),
+                color = MaterialTheme.colorScheme.inversePrimary,
                 modifier = Modifier.widthIn(max = 240.dp).combinedClickable(
                     onClick = {
                         val uri = android.net.Uri.parse(message.videoUrl)
@@ -1805,7 +1794,7 @@ private fun MessageBubble(
         return
     }
     if (message.isCallMessage) {
-        CallMessageBubble(message, outgoingBubbleColor)
+        CallMessageBubble(message)
         return
     }
     if (message.stickerUrl != null) {
@@ -1820,21 +1809,19 @@ private fun MessageBubble(
             ContactBubble(
                 name = contactName,
                 phone = contactPhone ?: "",
-                isFromMe = message.isFromMe,
                 lookup = contactPhoneLookups[contactPhone ?: ""],
                 onCheckRelationship = onCheckContactRelationship,
                 onPrimaryAction = onContactCardPrimaryAction,
-                outgoingBubbleColor = outgoingBubbleColor,
             )
         }
         return
     }
     if (message.fileUrl != null) {
-        FileBubble(message, onReply, onOpenPdf, outgoingBubbleColor)
+        FileBubble(message, onReply, onOpenPdf)
         return
     }
     if (message.videoUrl != null) {
-        VideoBubble(message, onReply, outgoingBubbleColor)
+        VideoBubble(message, onReply)
         return
     }
     if (message.content.startsWith("poll:")) {
@@ -1846,7 +1833,6 @@ private fun MessageBubble(
             pollRepository = pollRepository,
             currentUserId = currentUserId,
             onVote = { optionId -> onVote?.invoke(optionId) },
-            outgoingBubbleColor = outgoingBubbleColor,
         )
         return
     }
@@ -2662,11 +2648,9 @@ private fun ContactHeader(name: String, phone: String) {
 private fun ContactBubble(
     name: String,
     phone: String,
-    isFromMe: Boolean,
     lookup: ContactPhoneLookup? = null,
     onCheckRelationship: (String) -> Unit = {},
     onPrimaryAction: (String) -> Unit = {},
-    outgoingBubbleColor: Color = Color.Unspecified,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
 
@@ -2680,7 +2664,7 @@ private fun ContactBubble(
     Card(
         modifier = Modifier.widthIn(max = 280.dp),
         colors = CardDefaults.cardColors(
-            containerColor = resolvedBubbleColor(isFromMe, outgoingBubbleColor),
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
         ),
     ) {
         ContactHeader(name, phone)
@@ -3346,7 +3330,6 @@ private fun PollBubble(
     pollRepository: PollRepository,
     currentUserId: String?,
     onVote: (optionId: String) -> Unit,
-    outgoingBubbleColor: Color = Color.Unspecified,
 ) {
     val poll by pollRepository.observePollById(pollId).collectAsState(initial = null)
     val options by pollRepository.observeOptionsByPollId(pollId).collectAsState(initial = emptyList())
@@ -3362,7 +3345,7 @@ private fun PollBubble(
     ) {
         Card(
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = resolvedBubbleColor(isFromMe, outgoingBubbleColor)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
             modifier = Modifier.widthIn(min = 220.dp, max = 300.dp),
         ) {
             Column(modifier = Modifier.padding(12.dp)) {
