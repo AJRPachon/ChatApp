@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.WindowInsets
@@ -99,11 +100,11 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Switch
 import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.graphics.StrokeCap
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.repository.PollRepository
 import com.ajrpachon.chatapp.service.ActiveChatTracker
@@ -617,7 +618,9 @@ fun ChatScreen(
         ) {
             CreatePollSheetContent(
                 onDismiss = { vm.onIntent(ChatIntent.DismissCreatePollSheet) },
-                onCreate = { question, options -> vm.onIntent(ChatIntent.CreatePoll(question, options)) },
+                onCreate = { question, options, allowMultiple ->
+                    vm.onIntent(ChatIntent.CreatePoll(question, options, allowMultiple))
+                },
             )
         }
     }
@@ -3104,10 +3107,11 @@ private fun AiAssistantSheet(
 @Composable
 private fun CreatePollSheetContent(
     onDismiss: () -> Unit,
-    onCreate: (question: String, options: List<String>) -> Unit,
+    onCreate: (question: String, options: List<String>, allowMultiple: Boolean) -> Unit,
 ) {
     var question by remember { mutableStateOf("") }
     var options by remember { mutableStateOf(listOf("", "")) }
+    var allowMultiple by remember { mutableStateOf(false) }
 
     val isValid = question.isNotBlank() && options.count { it.isNotBlank() } >= 2
 
@@ -3170,8 +3174,20 @@ private fun CreatePollSheetContent(
             }
         }
 
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(
+                text = stringResource(R.string.chat_poll_allow_multiple),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f),
+            )
+            Switch(checked = allowMultiple, onCheckedChange = { allowMultiple = it })
+        }
+
         androidx.compose.material3.Button(
-            onClick = { onCreate(question, options.filter { it.isNotBlank() }); onDismiss() },
+            onClick = { onCreate(question, options.filter { it.isNotBlank() }, allowMultiple); onDismiss() },
             enabled = isValid,
             modifier = Modifier.fillMaxWidth(),
         ) { Text(stringResource(R.string.chat_create_poll)) }
@@ -3236,7 +3252,7 @@ private fun PollBubble(
 ) {
     val poll by pollRepository.observePollById(pollId).collectAsState(initial = null)
     val options by pollRepository.observeOptionsByPollId(pollId).collectAsState(initial = emptyList())
-    val userVote by pollRepository.observeVote(pollId, currentUserId ?: "").collectAsState(initial = null)
+    val userVotes by pollRepository.observeVotes(pollId, currentUserId ?: "").collectAsState(initial = emptyList())
 
     val alignment = if (isFromMe) Alignment.End else Alignment.Start
 
@@ -3289,19 +3305,28 @@ private fun PollBubble(
                     val totalVotes = options.sumOf { it.voteCount }.coerceAtLeast(1)
 
                     // Options
+                    val allowMultiple = safePoll.allowMultiple
                     options.forEach { option ->
-                        val isSelected = userVote?.optionId == option.id
+                        val isSelected = userVotes.any { it.optionId == option.id }
                         val fraction = option.voteCount.toFloat() / totalVotes.toFloat()
                         Column(modifier = Modifier.padding(bottom = 6.dp)) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
-                                RadioButton(
-                                    selected = isSelected,
-                                    onClick = { if (userVote == null) onVote(option.id) },
-                                    modifier = Modifier.size(20.dp),
-                                )
+                                if (allowMultiple) {
+                                    Checkbox(
+                                        checked = isSelected,
+                                        onCheckedChange = { onVote(option.id) },
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                } else {
+                                    RadioButton(
+                                        selected = isSelected,
+                                        onClick = { onVote(option.id) },
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                }
                                 Spacer(Modifier.width(6.dp))
                                 Text(
                                     text = option.text,
@@ -3315,14 +3340,20 @@ private fun PollBubble(
                                     color = MaterialTheme.colorScheme.outline,
                                 )
                             }
-                            LinearProgressIndicator(
-                                progress = { fraction },
+                            Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(4.dp)
-                                    .padding(start = 26.dp),
-                                strokeCap = StrokeCap.Round,
-                            )
+                                    .padding(start = 26.dp)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth(fraction)
+                                        .fillMaxHeight()
+                                        .background(MaterialTheme.colorScheme.primary),
+                                )
+                            }
                         }
                     }
                 }

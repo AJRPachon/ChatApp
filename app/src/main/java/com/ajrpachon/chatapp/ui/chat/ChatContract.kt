@@ -183,7 +183,7 @@ sealed interface ChatIntent {
     data class UnsaveMessage(val messageId: String) : ChatIntent
     data object OpenCreatePollSheet : ChatIntent
     data object DismissCreatePollSheet : ChatIntent
-    data class CreatePoll(val question: String, val options: List<String>) : ChatIntent
+    data class CreatePoll(val question: String, val options: List<String>, val allowMultiple: Boolean = false) : ChatIntent
     data class VotePoll(val pollId: String, val optionId: String) : ChatIntent
     data class SetChatTheme(val theme: ChatTheme) : ChatIntent
     data object OpenThemePicker : ChatIntent

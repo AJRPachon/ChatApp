@@ -373,7 +373,7 @@ class ChatViewModel(
             is ChatIntent.UnsaveMessage -> viewModelScope.launch { catchResult { messageRepository.setSaved(intent.messageId, false) } }
             is ChatIntent.OpenCreatePollSheet -> updateState { it.copy(showCreatePollSheet = true) }
             is ChatIntent.DismissCreatePollSheet -> updateState { it.copy(showCreatePollSheet = false) }
-            is ChatIntent.CreatePoll -> createPoll(intent.question, intent.options)
+            is ChatIntent.CreatePoll -> createPoll(intent.question, intent.options, intent.allowMultiple)
             is ChatIntent.VotePoll -> votePoll(intent.pollId, intent.optionId)
             is ChatIntent.SetChatTheme -> setChatTheme(intent.theme)
             is ChatIntent.OpenThemePicker -> updateState { it.copy(showThemePicker = true) }
@@ -898,7 +898,7 @@ class ChatViewModel(
         }
     }
 
-    private fun createPoll(question: String, options: List<String>) {
+    private fun createPoll(question: String, options: List<String>, allowMultiple: Boolean) {
         val userId = state.value.currentUserId ?: return
         updateState { it.copy(showCreatePollSheet = false) }
         viewModelScope.launch {
@@ -908,6 +908,7 @@ class ChatViewModel(
                     question = question,
                     createdBy = userId,
                     options = options,
+                    allowMultiple = allowMultiple,
                 )
                 sendMessageUseCase(conversationId, userId, "poll:$pollId")
             }.onFailure { e -> AppLogger.e(TAG, "createPoll failed", e); updateState { it.copy(error = "No se pudo crear la encuesta") } }
