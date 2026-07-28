@@ -209,12 +209,20 @@ internal fun NormalInputBar(
                         onAi()
                     }
                 },
+                isScheduleEnabled = inputText.isNotBlank(),
             )
         }
     }
 }
 
 // ── Attachment bottom sheet ───────────────────────────────────────────────────
+
+private data class AttachmentOption(
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val label: String,
+    val action: () -> Unit,
+    val enabled: Boolean = true,
+)
 
 @Composable
 internal fun AttachmentBottomSheet(
@@ -228,18 +236,19 @@ internal fun AttachmentBottomSheet(
     onContact: () -> Unit = {},
     onSchedule: () -> Unit = {},
     onAi: () -> Unit = {},
+    isScheduleEnabled: Boolean = true,
 ) {
     val options = listOf(
-        Triple(Icons.Default.AddPhotoAlternate, "Galería", onGallery),
-        Triple(Icons.Default.CameraAlt, "Cámara", onCamera),
-        Triple(Icons.Default.AttachFile, "Archivo", onFile),
-        Triple(Icons.Default.Videocam, "Video", onVideo),
-        Triple(Icons.Default.EmojiEmotions, "Stickers", onSticker),
-        Triple(Icons.Default.LocationOn, "Ubicación", onLocation),
-        Triple(Icons.Default.CheckCircle, "Encuesta", onCreatePoll),
-        Triple(Icons.Default.Contacts, "Contacto", onContact),
-        Triple(Icons.Default.Schedule, "Programar", onSchedule),
-        Triple(Icons.Default.SmartToy, "IA", onAi),
+        AttachmentOption(Icons.Default.AddPhotoAlternate, "Galería", onGallery),
+        AttachmentOption(Icons.Default.CameraAlt, "Cámara", onCamera),
+        AttachmentOption(Icons.Default.AttachFile, "Archivo", onFile),
+        AttachmentOption(Icons.Default.Videocam, "Video", onVideo),
+        AttachmentOption(Icons.Default.EmojiEmotions, "Stickers", onSticker),
+        AttachmentOption(Icons.Default.LocationOn, "Ubicación", onLocation),
+        AttachmentOption(Icons.Default.CheckCircle, "Encuesta", onCreatePoll),
+        AttachmentOption(Icons.Default.Contacts, "Contacto", onContact),
+        AttachmentOption(Icons.Default.Schedule, "Programar", onSchedule, enabled = isScheduleEnabled),
+        AttachmentOption(Icons.Default.SmartToy, "IA", onAi),
     )
 
     Column(
@@ -261,33 +270,34 @@ internal fun AttachmentBottomSheet(
                     .padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
-                rowOptions.forEach { (icon, label, action) ->
+                rowOptions.forEach { option ->
+                    val contentAlpha = if (option.enabled) 1f else 0.4f
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
                             .weight(1f)
-                            .clickable(onClick = action)
+                            .clickable(enabled = option.enabled, onClick = option.action)
                             .padding(vertical = 12.dp),
                     ) {
                         Box(
                             modifier = Modifier
                                 .size(64.dp)
                                 .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer),
+                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = contentAlpha)),
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(
-                                imageVector = icon,
-                                contentDescription = label,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                imageVector = option.icon,
+                                contentDescription = option.label,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = contentAlpha),
                                 modifier = Modifier.size(32.dp),
                             )
                         }
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            text = label,
+                            text = option.label,
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             textAlign = TextAlign.Center,
