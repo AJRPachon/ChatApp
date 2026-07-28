@@ -80,6 +80,10 @@
     <string name="chat_photos_count">%1$d fotos</string>
     <string name="chat_close">Cerrar</string>
     <string name="chat_call_action">Llamar</string>
+    <string name="chat_contact_send_invitation">Enviar invitación</string>
+    <string name="chat_contact_send_message">Enviar mensaje</string>
+    <string name="chat_contact_invitation_sent">Invitación enviada</string>
+    <string name="chat_contact_add_to_contacts">Agregar a contactos</string>
 
     <!-- Expiry / mute / disappearing durations -->
     <string name="chat_expiry_1_minute">1 minuto</string>

@@ -154,6 +154,9 @@ fun chatNavEntry(
                     )
                 )
             },
+            onNavigateToConversation = { id, name ->
+                backStack.add(ChatRoute(id, name))
+            },
         )
     }
 

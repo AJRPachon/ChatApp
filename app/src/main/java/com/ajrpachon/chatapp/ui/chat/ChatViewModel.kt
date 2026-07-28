@@ -37,8 +37,11 @@ import com.ajrpachon.chatapp.domain.repository.ReactionRepository
 import com.ajrpachon.chatapp.domain.repository.ScheduledMessageRepository
 import com.ajrpachon.chatapp.domain.repository.TypingRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
+import com.ajrpachon.chatapp.domain.model.UserRelationship
 import com.ajrpachon.chatapp.domain.usecase.GetGroupMembersUseCase
 import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
+import com.ajrpachon.chatapp.domain.usecase.SendInvitationResult
+import com.ajrpachon.chatapp.domain.usecase.SendInvitationUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import com.ajrpachon.chatapp.utils.AppLogger
@@ -95,6 +98,7 @@ class ChatViewModel(
     private val aiAssistantRepository: AiAssistantRepository,
     private val wallpaperRepository: WallpaperRepository,
     private val networkMonitor: NetworkMonitor,
+    private val sendInvitationUseCase: SendInvitationUseCase,
 ) : BaseViewModel<ChatState, ChatEffect>(ChatState()) {
 
     private val conversationId = args.conversationId
@@ -408,6 +412,72 @@ class ChatViewModel(
             is ChatIntent.SendContact -> sendContact(intent.name, intent.phone)
             is ChatIntent.ContactSelected -> handleContactSelected(intent.uri)
             is ChatIntent.RetryMessage -> enqueueMessageRetry()
+            is ChatIntent.CheckContactRelationship -> checkContactRelationship(intent.phone)
+            is ChatIntent.ContactCardPrimaryAction -> contactCardPrimaryAction(intent.phone)
+        }
+    }
+
+    private fun checkContactRelationship(phone: String) {
+        if (phone.isBlank() || state.value.contactPhoneLookups.containsKey(phone)) return
+        val currentId = currentUserId ?: return
+        updateState {
+            it.copy(contactPhoneLookups = it.contactPhoneLookups + (phone to ContactPhoneLookup(isLoading = true)))
+        }
+        viewModelScope.launch {
+            val lookup = catchResult {
+                val user = userRepository.findUserByPhone(phone)
+                val relationship = user?.let { sendInvitationUseCase.checkRelationship(currentId, it.id) }
+                ContactPhoneLookup(resolvedUser = user, relationship = relationship)
+            }.getOrDefault(ContactPhoneLookup())
+            updateState { it.copy(contactPhoneLookups = it.contactPhoneLookups + (phone to lookup)) }
+        }
+    }
+
+    private fun contactCardPrimaryAction(phone: String) {
+        val lookup = state.value.contactPhoneLookups[phone]
+        val resolvedUser = lookup?.resolvedUser
+        if (resolvedUser == null) {
+            val text = "¡Únete a ChatApp y hablamos! 💬"
+            viewModelScope.launch { sendEffect(ChatEffect.InviteContact(phone, text)) }
+            return
+        }
+        viewModelScope.launch {
+            when (val result = sendInvitationUseCase(resolvedUser)) {
+                is SendInvitationResult.Sent -> {
+                    updateState {
+                        it.copy(contactPhoneLookups = it.contactPhoneLookups + (phone to lookup.copy(relationship = UserRelationship.PENDING_SENT)))
+                    }
+                    sendEffect(ChatEffect.ShowSnackbar("¡Invitación enviada!"))
+                }
+                is SendInvitationResult.AlreadySent -> {
+                    updateState {
+                        it.copy(contactPhoneLookups = it.contactPhoneLookups + (phone to lookup.copy(relationship = UserRelationship.PENDING_SENT)))
+                    }
+                    sendEffect(ChatEffect.ShowSnackbar("Invitación enviada · Pendiente de respuesta"))
+                }
+                is SendInvitationResult.PendingReceived -> {
+                    updateState {
+                        it.copy(contactPhoneLookups = it.contactPhoneLookups + (phone to lookup.copy(relationship = UserRelationship.PENDING_RECEIVED)))
+                    }
+                    sendEffect(ChatEffect.ShowSnackbar("Ya tienes una invitación pendiente de esta persona"))
+                }
+                is SendInvitationResult.NavigateToChat -> {
+                    updateState {
+                        it.copy(contactPhoneLookups = it.contactPhoneLookups + (phone to lookup.copy(relationship = UserRelationship.CONNECTED)))
+                    }
+                    sendEffect(ChatEffect.NavigateToConversation(result.conversationId, result.name))
+                }
+                is SendInvitationResult.Blocked -> {
+                    updateState {
+                        it.copy(contactPhoneLookups = it.contactPhoneLookups + (phone to lookup.copy(relationship = UserRelationship.BLOCKED)))
+                    }
+                    sendEffect(ChatEffect.ShowSnackbar("No puedes enviar una invitación a este contacto"))
+                }
+                is SendInvitationResult.Failure -> {
+                    AppLogger.e(TAG, "contactCardPrimaryAction failed: ${result.message}")
+                    sendEffect(ChatEffect.ShowSnackbar(result.message))
+                }
+            }
         }
     }
 
