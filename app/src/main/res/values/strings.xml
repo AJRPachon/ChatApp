@@ -311,6 +311,8 @@
     <string name="conversations_photo_plural">📷 %1$d fotos</string>
     <string name="conversations_from_me_prefix">Tú: %1$s</string>
     <string name="conversations_gif">GIF</string>
+    <string name="conversations_poll">📊 Encuesta</string>
+    <string name="conversations_contact">👤 Contacto</string>
     <string name="conversations_muted_content_description">Silenciado</string>
     <string name="conversations_menu_mark_read">Activar notificaciones</string>
     <string name="conversations_menu_mute">Silenciar</string>

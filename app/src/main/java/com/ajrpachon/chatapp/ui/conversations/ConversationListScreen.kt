@@ -420,8 +420,13 @@ private fun ArchivedConversationItem(
                 overflow = TextOverflow.Ellipsis,
             )
             conversation.lastMessage?.let { msg ->
+                val previewText = when {
+                    msg.content.startsWith("poll:") -> stringResource(R.string.conversations_poll)
+                    msg.content.startsWith("contact:") -> stringResource(R.string.conversations_contact)
+                    else -> msg.content
+                }
                 Text(
-                    text = msg.content,
+                    text = previewText,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -564,6 +569,26 @@ private fun ConversationItem(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
+                            )
+                            lastMsg?.content?.startsWith("poll:") == true -> Text(
+                                text = if (fromMe) {
+                                    stringResource(R.string.conversations_from_me_prefix, stringResource(R.string.conversations_poll))
+                                } else {
+                                    stringResource(R.string.conversations_poll)
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                            )
+                            lastMsg?.content?.startsWith("contact:") == true -> Text(
+                                text = if (fromMe) {
+                                    stringResource(R.string.conversations_from_me_prefix, stringResource(R.string.conversations_contact))
+                                } else {
+                                    stringResource(R.string.conversations_contact)
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
                             )
                             lastMsg != null -> Text(
                                 text = if (fromMe) stringResource(R.string.conversations_from_me_prefix, lastMsg.content) else lastMsg.content,
