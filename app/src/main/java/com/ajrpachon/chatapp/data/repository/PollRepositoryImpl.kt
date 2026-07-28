@@ -20,6 +20,7 @@ class PollRepositoryImpl(
         question: String,
         createdBy: String,
         options: List<String>,
+        allowMultiple: Boolean,
     ): String {
         val pollId = UUID.randomUUID().toString()
         localDataSource.insertPoll(
@@ -29,6 +30,7 @@ class PollRepositoryImpl(
                 question = question,
                 createdBy = createdBy,
                 createdAt = System.currentTimeMillis(),
+                allowMultiple = allowMultiple,
             )
         )
         localDataSource.insertOptions(
@@ -49,7 +51,7 @@ class PollRepositoryImpl(
 
     override fun observePollById(pollId: String): Flow<PollBO?> =
         localDataSource.observePollById(pollId).map { dbo ->
-            dbo?.let { PollBO(it.id, it.conversationId, it.question, it.createdBy, it.createdAt) }
+            dbo?.let { PollBO(it.id, it.conversationId, it.question, it.createdBy, it.createdAt, it.allowMultiple) }
         }
 
     override fun observeOptionsByPollId(pollId: String): Flow<List<PollOptionBO>> =
@@ -57,8 +59,8 @@ class PollRepositoryImpl(
             list.map { PollOptionBO(it.id, it.pollId, it.text, it.voteCount) }
         }
 
-    override fun observeVote(pollId: String, userId: String): Flow<PollVoteBO?> =
-        localDataSource.observeVote(pollId, userId).map { dbo ->
-            dbo?.let { PollVoteBO(it.pollId, it.userId, it.optionId) }
+    override fun observeVotes(pollId: String, userId: String): Flow<List<PollVoteBO>> =
+        localDataSource.observeVotes(pollId, userId).map { list ->
+            list.map { PollVoteBO(it.pollId, it.userId, it.optionId) }
         }
 }

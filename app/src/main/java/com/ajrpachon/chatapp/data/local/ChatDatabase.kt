@@ -63,7 +63,7 @@ import com.ajrpachon.chatapp.data.local.entity.UserDBO
         SessionDBO::class,
         ScheduledMessageDBO::class,
     ],
-    version = 34,
+    version = 35,
     exportSchema = true,
 )
 abstract class ChatDatabase : RoomDatabase() {

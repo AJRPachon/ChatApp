@@ -127,6 +127,7 @@
     <string name="chat_option_number">Opción %1$d</string>
     <string name="chat_remove_option">Eliminar opción</string>
     <string name="chat_add_option">Añadir opción</string>
+    <string name="chat_poll_allow_multiple">Permitir múltiples respuestas</string>
 
     <!-- Pinned message banner -->
     <string name="chat_pinned_message_count">Mensaje fijado (%1$d)</string>

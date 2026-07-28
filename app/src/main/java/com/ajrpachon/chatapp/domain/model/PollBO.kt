@@ -6,6 +6,7 @@ data class PollBO(
     val question: String,
     val createdBy: String,
     val createdAt: Long,
+    val allowMultiple: Boolean = false,
 )
 
 data class PollOptionBO(
