@@ -119,6 +119,7 @@
     <string name="chat_ask_question_placeholder">Escribe una pregunta…</string>
     <string name="chat_send_query">Enviar consulta</string>
     <string name="chat_insert_in_message">Insertar en mensaje</string>
+    <string name="chat_ai_demo_notice">IA (demo) — respuesta de ejemplo</string>
 
     <!-- Create poll -->
     <string name="chat_create_poll">Crear encuesta</string>

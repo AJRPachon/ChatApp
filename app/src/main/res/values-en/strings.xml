@@ -119,6 +119,7 @@
     <string name="chat_ask_question_placeholder">Type a question…</string>
     <string name="chat_send_query">Send query</string>
     <string name="chat_insert_in_message">Insert into message</string>
+    <string name="chat_ai_demo_notice">AI (demo) — sample response</string>
 
     <!-- Create poll -->
     <string name="chat_create_poll">Create poll</string>
