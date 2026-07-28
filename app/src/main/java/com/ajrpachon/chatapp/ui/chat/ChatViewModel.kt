@@ -967,8 +967,11 @@ class ChatViewModel(
 
     private fun scheduleMessage(scheduledAt: Long) {
         val text = state.value.inputText.trim()
-        val userId = state.value.currentUserId ?: return
-        if (text.isBlank()) return
+        val userId = state.value.currentUserId
+        if (userId == null || text.isBlank()) {
+            updateState { it.copy(showScheduleDialog = false, error = "Escribe un mensaje antes de programarlo") }
+            return
+        }
         updateState { it.copy(showScheduleDialog = false, inputText = "", scheduledAtMs = scheduledAt) }
         draftSaveJob?.cancel()
         viewModelScope.launch {
