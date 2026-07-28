@@ -474,7 +474,7 @@ class ChatViewModel(
         viewModelScope.launch {
             sendEffect(ChatEffect.ScrollToBottom)
             updateState { it.copy(replyingTo = null) }
-            sendMessageUseCase(conversationId, userId, "Mi ubicacion: $mapsUrl",
+            sendMessageUseCase(conversationId, userId, "📍 Mi ubicación: $mapsUrl",
                 replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
             ).onFailure { e -> updateState { it.copy(error = e.message ?: "Error") } }
         }

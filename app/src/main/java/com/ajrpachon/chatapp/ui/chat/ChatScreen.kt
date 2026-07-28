@@ -848,6 +848,15 @@ fun ChatScreen(
                                 },
                             )
                             DropdownMenuItem(
+                                text = { Text(stringResource(R.string.chat_summarize)) },
+                                leadingIcon = { Icon(Icons.Default.Info, contentDescription = null) },
+                                onClick = {
+                                    menuExpanded = false
+                                    vm.onIntent(ChatIntent.OpenAiSheet)
+                                    vm.onIntent(ChatIntent.AiSummarize)
+                                },
+                            )
+                            DropdownMenuItem(
                                 text = { Text(stringResource(R.string.chat_chat_theme)) },
                                 leadingIcon = { Icon(Icons.Default.Palette, contentDescription = null) },
                                 onClick = {
@@ -1872,10 +1881,7 @@ private fun MessageBubble(
                             } else null
                         }
                         if (locationUrl != null) {
-                            LocationMessageCard(
-                                content = message.content,
-                                mapsUrl = locationUrl,
-                            )
+                            LocationMessageCard(mapsUrl = locationUrl)
                         }
                         Box(
                             modifier = Modifier.combinedClickable(
@@ -2056,44 +2062,82 @@ private fun MessageBubble(
     }
 }
 
+private fun openLocationInMaps(context: android.content.Context, mapsUrl: String, latLng: Pair<Double, Double>?) {
+    val gmmIntent = latLng?.let { (lat, lng) ->
+        android.content.Intent(
+            android.content.Intent.ACTION_VIEW,
+            android.net.Uri.parse("geo:$lat,$lng?q=$lat,$lng"),
+        ).apply {
+            setPackage("com.google.android.apps.maps")
+            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+    }
+    val opened = gmmIntent != null && runCatching { context.startActivity(gmmIntent) }.isSuccess
+    if (!opened) {
+        val fallback = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(mapsUrl)).apply {
+            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        runCatching { context.startActivity(fallback) }
+    }
+}
+
 @Composable
-private fun LocationMessageCard(content: String, mapsUrl: String) {
+private fun LocationMessageCard(mapsUrl: String) {
     val context = LocalContext.current
+    val latLng = remember(mapsUrl) {
+        runCatching {
+            val query = android.net.Uri.parse(mapsUrl).getQueryParameter("q") ?: return@runCatching null
+            val (lat, lng) = query.split(",").map { it.trim().toDouble() }
+            lat to lng
+        }.getOrNull()
+    }
+    val staticMapUrl = remember(latLng) {
+        latLng?.let { (lat, lng) ->
+            "https://staticmap.openstreetmap.de/staticmap.php?center=$lat,$lng&zoom=15&size=320x160&markers=$lat,$lng,red-pushpin"
+        }
+    }
     androidx.compose.material3.Surface(
         shape = RoundedCornerShape(8.dp),
         color = MaterialTheme.colorScheme.surfaceVariant,
         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
         modifier = Modifier
             .widthIn(min = 160.dp, max = 240.dp)
-            .clickable {
-                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(mapsUrl)).apply {
-                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                runCatching { context.startActivity(intent) }
-            },
+            .clickable { openLocationInMaps(context, mapsUrl, latLng) },
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Default.LocationOn,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(24.dp),
-            )
-            Column {
-                Text(
-                    text = stringResource(R.string.chat_shared_location),
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.SemiBold,
+        Column {
+            if (staticMapUrl != null) {
+                AsyncImage(
+                    model = staticMapUrl,
+                    contentDescription = stringResource(R.string.chat_shared_location),
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp),
                 )
-                Text(
-                    text = stringResource(R.string.chat_view_on_maps),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
+            }
+            Row(
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.LocationOn,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(24.dp),
                 )
+                Column {
+                    Text(
+                        text = stringResource(R.string.chat_shared_location),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = stringResource(R.string.chat_view_on_maps),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
         }
     }
