@@ -46,6 +46,7 @@ import com.ajrpachon.chatapp.utils.AudioTranscriber
 import com.ajrpachon.chatapp.utils.ClipboardProtection
 import com.ajrpachon.chatapp.utils.NetworkMonitor
 import com.ajrpachon.chatapp.utils.TranslationManager
+import com.ajrpachon.chatapp.utils.UploadLimits
 import com.ajrpachon.chatapp.utils.catchResult
 import com.ajrpachon.chatapp.worker.MessageRetryWorker
 import com.ajrpachon.chatapp.worker.ScheduledMessageWorker
@@ -713,6 +714,13 @@ class ChatViewModel(
             sendEffect(ChatEffect.ScrollToBottom)
             updateState { it.copy(isUploadingFile = true, replyingTo = null) }
             catchResult {
+                val fileSize = context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                    val idx = cursor.getColumnIndex(OpenableColumns.SIZE)
+                    cursor.moveToFirst(); if (idx >= 0) cursor.getLong(idx) else null
+                }
+                check(fileSize == null || fileSize <= UploadLimits.VIDEO_MAX_BYTES) {
+                    "El video supera el tamaño máximo permitido (50 MB)"
+                }
                 val bytes = withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { stream -> stream.readBytes() } } ?: return@catchResult
                 val videoUrl = messageRepository.uploadVideo(conversationId, bytes)
                 sendMessageUseCase(conversationId, userId, "", videoUrl = videoUrl,
