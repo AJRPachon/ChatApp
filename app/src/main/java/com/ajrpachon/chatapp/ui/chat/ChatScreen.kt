@@ -848,6 +848,15 @@ fun ChatScreen(
                                 },
                             )
                             DropdownMenuItem(
+                                text = { Text(stringResource(R.string.chat_summarize)) },
+                                leadingIcon = { Icon(Icons.Default.Info, contentDescription = null) },
+                                onClick = {
+                                    menuExpanded = false
+                                    vm.onIntent(ChatIntent.OpenAiSheet)
+                                    vm.onIntent(ChatIntent.AiSummarize)
+                                },
+                            )
+                            DropdownMenuItem(
                                 text = { Text(stringResource(R.string.chat_chat_theme)) },
                                 leadingIcon = { Icon(Icons.Default.Palette, contentDescription = null) },
                                 onClick = {
@@ -2059,6 +2068,18 @@ private fun MessageBubble(
 @Composable
 private fun LocationMessageCard(content: String, mapsUrl: String) {
     val context = LocalContext.current
+    val latLng = remember(mapsUrl) {
+        runCatching {
+            val query = android.net.Uri.parse(mapsUrl).getQueryParameter("q") ?: return@runCatching null
+            val (lat, lng) = query.split(",").map { it.trim().toDouble() }
+            lat to lng
+        }.getOrNull()
+    }
+    val staticMapUrl = remember(latLng) {
+        latLng?.let { (lat, lng) ->
+            "https://staticmap.openstreetmap.de/staticmap.php?center=$lat,$lng&zoom=15&size=320x160&markers=$lat,$lng,red-pushpin"
+        }
+    }
     androidx.compose.material3.Surface(
         shape = RoundedCornerShape(8.dp),
         color = MaterialTheme.colorScheme.surfaceVariant,
