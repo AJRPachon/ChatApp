@@ -3075,6 +3075,11 @@ private fun AiAssistantSheet(
 
             // Result area
             if (aiSuggestion != null) {
+                Text(
+                    text = stringResource(R.string.chat_ai_demo_notice),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline,
+                )
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()

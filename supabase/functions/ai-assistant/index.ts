@@ -23,23 +23,19 @@ serve(async (req: Request) => {
 
     switch (action) {
       case "summarize": {
-        const count = messages?.length ?? 0;
+        // `result` is inserted verbatim into the chat input on the client (InsertAiSuggestion),
+        // so it must contain only the usable text — no "[Mock] ..." label describing it.
         result =
-          `[Mock] Resumen de los últimos ${count} mensajes: ` +
           "Los participantes discutieron varios temas. " +
           "Se mencionaron puntos importantes sobre el proyecto y se acordaron próximos pasos.";
         break;
       }
       case "suggest": {
-        const lastMsg = messages?.[messages.length - 1] ?? "";
-        result =
-          `[Mock] Sugerencia de respuesta al mensaje "${lastMsg.slice(0, 60)}...": ` +
-          "Entendido, me parece bien. ¿Podemos coordinar los detalles más tarde?";
+        result = "Entendido, me parece bien. ¿Podemos coordinar los detalles más tarde?";
         break;
       }
       case "freeform": {
         result =
-          `[Mock] Respuesta a tu consulta "${(prompt ?? "").slice(0, 60)}": ` +
           "Esta es una respuesta de ejemplo del asistente de IA. " +
           "Cuando configures credenciales reales, aquí aparecerá la respuesta del modelo.";
         break;
