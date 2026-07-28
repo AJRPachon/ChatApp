@@ -98,9 +98,7 @@ class UserRepositoryImpl(
     override suspend fun findUserByPhone(phone: String): UserBO? {
         val target = phone.normalizePhoneDigits()
         if (target.isBlank()) return null
-        return remoteSource.getProfilesWithPhone()
-            .firstOrNull { it.phone?.normalizePhoneDigits() == target }
-            ?.toBO()
+        return remoteSource.getProfileByPhone(target)?.toBO()
     }
 
     private fun String.normalizePhoneDigits(): String = filter { it.isDigit() }
