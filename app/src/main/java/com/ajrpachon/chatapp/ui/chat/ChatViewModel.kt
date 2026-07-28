@@ -603,8 +603,16 @@ class ChatViewModel(
                 uri to size
             }
             val totalBytes = sizedUris.sumOf { it.second }
+            // Only smooth batches that would render as ImageGroupBubble (>2 images) — that's
+            // where the per-message paging updates cause the reported bubble-shape jumping.
+            // Single/double sends already render fine as each message lands.
+            val showBatchPlaceholder = sizedUris.size > 2
             updateState {
-                it.copy(mediaUploadProgress = MediaUploadProgress(totalCount = sizedUris.size, completedCount = 0, totalBytes = totalBytes))
+                it.copy(
+                    mediaUploadProgress = MediaUploadProgress(totalCount = sizedUris.size, completedCount = 0, totalBytes = totalBytes),
+                    pendingImageUris = if (showBatchPlaceholder) sizedUris.map { sized -> sized.first } else emptyList(),
+                    suppressedImageMessageIds = emptySet(),
+                )
             }
             for ((index, sizedUri) in sizedUris.withIndex()) {
                 val uri = sizedUri.first
@@ -619,11 +627,17 @@ class ChatViewModel(
                         sendMessageUseCase(conversationId, userId, "", imageUrl,
                             replyToId = replyForImage?.id, replyToContent = replyForImage?.replySnippet(), replyToSenderName = replyForImage?.senderName,
                         )
+                    }.onSuccess { sendResult ->
+                        if (showBatchPlaceholder) {
+                            sendResult.onSuccess { message ->
+                                updateState { it.copy(suppressedImageMessageIds = it.suppressedImageMessageIds + message.id) }
+                            }
+                        }
                     }.onFailure { e -> updateState { it.copy(error = e.message ?: "Error uploading image") } }
                 }
                 updateState { it.copy(mediaUploadProgress = it.mediaUploadProgress?.copy(completedCount = index + 1)) }
             }
-            updateState { it.copy(mediaUploadProgress = null) }
+            updateState { it.copy(mediaUploadProgress = null, pendingImageUris = emptyList(), suppressedImageMessageIds = emptySet()) }
         }
     }
 
