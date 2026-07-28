@@ -441,7 +441,7 @@ class ChatViewModel(
             updateState { it.copy(replyingTo = null) }
             sendMessageUseCase(conversationId, userId, content,
                 replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
-            ).onFailure { e -> updateState { it.copy(error = e.message ?: "Error al enviar el contacto") } }
+            ).onFailure { e -> AppLogger.e(TAG, "sendContact failed", e); updateState { it.copy(error = e.message ?: "Error al enviar el contacto") } }
         }
     }
 
