@@ -101,7 +101,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.RadioButton
@@ -1352,11 +1351,6 @@ fun ChatScreen(
 // Audio components extracted to ChatAudioComponents.kt
 
 // ── MessageBubble ─────────────────────────────────────────────────────────────
-
-// Fixed (not theme-derived) background shared by the poll and contact-card bubbles. Chosen
-// deliberately saturated so the hardcoded Color.White text/icons used throughout both bubbles
-// stay legible regardless of the app's light/dark theme.
-private val specialBubbleBlue = Color(0xFF1565C0)
 
 // ── CallMessageBubble ─────────────────────────────────────────────────────────
 
@@ -2626,24 +2620,24 @@ private fun ContactHeader(name: String, phone: String) {
     ) {
         Surface(
             shape = CircleShape,
-            color = Color.White.copy(alpha = 0.2f),
+            color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(40.dp),
         ) {
             Icon(
                 Icons.Default.Person,
                 contentDescription = null,
                 modifier = Modifier.padding(8.dp),
-                tint = Color.White,
+                tint = MaterialTheme.colorScheme.onPrimary,
             )
         }
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = Color.White)
+            Text(name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
             if (phone.isNotBlank()) {
                 Text(
                     phone,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.75f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -2670,12 +2664,11 @@ private fun ContactBubble(
     Card(
         modifier = Modifier.widthIn(max = 280.dp),
         colors = CardDefaults.cardColors(
-            containerColor = specialBubbleBlue,
-            contentColor = Color.White,
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
         ),
     ) {
         ContactHeader(name, phone)
-        HorizontalDivider(color = Color.White.copy(alpha = 0.25f))
+        HorizontalDivider()
         Row(modifier = Modifier.fillMaxWidth()) {
             val relationship = lookup?.relationship
             val primaryLabel = when (relationship) {
@@ -2686,10 +2679,6 @@ private fun ContactBubble(
             TextButton(
                 onClick = { onPrimaryAction(phone) },
                 enabled = relationship != UserRelationship.PENDING_SENT,
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = Color.White,
-                    disabledContentColor = Color.White.copy(alpha = 0.5f),
-                ),
                 modifier = Modifier.weight(1f),
             ) {
                 Text(
@@ -2708,7 +2697,6 @@ private fun ContactBubble(
                     }
                     context.startActivity(insertIntent)
                 },
-                colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
                 modifier = Modifier.weight(1f),
             ) {
                 Text(
@@ -3357,7 +3345,7 @@ private fun PollBubble(
     ) {
         Card(
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = specialBubbleBlue, contentColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
             modifier = Modifier.widthIn(min = 220.dp, max = 300.dp),
         ) {
             Column(modifier = Modifier.padding(12.dp)) {
@@ -3369,14 +3357,14 @@ private fun PollBubble(
                     Icon(
                         imageVector = Icons.Default.HowToVote,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(16.dp),
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
                         text = stringResource(R.string.chat_poll),
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
 
@@ -3384,7 +3372,7 @@ private fun PollBubble(
                     Text(
                         text = stringResource(R.string.chat_loading_poll),
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.75f),
+                        color = MaterialTheme.colorScheme.outline,
                     )
                 } else {
                     // Question
@@ -3437,7 +3425,7 @@ private fun PollBubble(
                                 Text(
                                     text = "${option.voteCount}",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = Color.White.copy(alpha = 0.75f),
+                                    color = MaterialTheme.colorScheme.outline,
                                 )
                             }
                             Box(
@@ -3445,13 +3433,13 @@ private fun PollBubble(
                                     .fillMaxWidth()
                                     .height(4.dp)
                                     .padding(start = 26.dp)
-                                    .background(Color.White.copy(alpha = 0.3f)),
+                                    .background(MaterialTheme.colorScheme.surfaceVariant),
                             ) {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth(animatedFraction)
                                         .fillMaxHeight()
-                                        .background(Color.White),
+                                        .background(MaterialTheme.colorScheme.primary),
                                 )
                             }
                         }
