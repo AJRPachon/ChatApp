@@ -2670,6 +2670,12 @@ private fun ContactBubble(
         if (phone.isNotBlank()) onCheckRelationship(phone)
     }
 
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 2.dp),
+        horizontalArrangement = if (isFromMe) Arrangement.End else Arrangement.Start,
+    ) {
     Card(
         modifier = Modifier.widthIn(max = 280.dp),
         colors = CardDefaults.cardColors(
@@ -2717,6 +2723,7 @@ private fun ContactBubble(
                 )
             }
         }
+    }
     }
 }
 
