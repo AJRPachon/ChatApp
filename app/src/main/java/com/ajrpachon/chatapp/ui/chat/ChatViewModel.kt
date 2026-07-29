@@ -729,7 +729,7 @@ class ChatViewModel(
             val startMs = System.currentTimeMillis()
             recordingTimerJob = viewModelScope.launch {
                 while (true) {
-                    delay(100)
+                    delay(50)
                     val elapsed = System.currentTimeMillis() - startMs
                     val amp = catchResult { (recorder?.maxAmplitude ?: 0).toFloat() / 32767f }.getOrDefault(0f)
                     updateState { s ->

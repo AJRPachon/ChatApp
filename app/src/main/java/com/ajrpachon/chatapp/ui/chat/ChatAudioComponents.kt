@@ -90,19 +90,25 @@ internal fun RecordingBar(
                 .weight(1f)
                 .height(36.dp),
         ) {
-            val barW = 4.dp.toPx()
-            val gap = 3.dp.toPx()
+            val barW = 2.dp.toPx()
+            val gap = 1.5.dp.toPx()
             val step = barW + gap
             val minH = 4.dp.toPx()
             val maxH = size.height
-            amplitudeHistory.forEachIndexed { i, amp ->
+            // More/thinner bars, right-anchored: the newest sample always lands at the right
+            // edge and older ones scroll off the left, instead of clipping the newest bar once
+            // the fixed-size history overflows the canvas.
+            val maxBars = (size.width / step).toInt().coerceAtLeast(1)
+            val visible = amplitudeHistory.takeLast(maxBars)
+            val startX = size.width - visible.size * step
+            visible.forEachIndexed { i, amp ->
                 val h = (minH + amp * (maxH - minH)).coerceIn(minH, maxH)
                 val top = (maxH - h) / 2f
                 drawRoundRect(
                     color = barColor,
-                    topLeft = Offset(i * step, top),
+                    topLeft = Offset(startX + i * step, top),
                     size = Size(barW, h),
-                    cornerRadius = CornerRadius(2.dp.toPx()),
+                    cornerRadius = CornerRadius(1.dp.toPx()),
                 )
             }
         }
