@@ -1057,11 +1057,12 @@ fun ChatScreen(
                 when {
                     audioState.isRecording -> RecordingBar(
                         durationMs = audioState.recordingDurationMs,
-                        amplitudeHistory = audioState.amplitudeHistory,
+                        amplitudeHistory = audioState.amplitudeHistory.takeLast(30),
                         onStop = { vm.onIntent(ChatIntent.StopRecording) },
                     )
                     audioState.pendingFilePath != null -> AudioPreviewBar(
                         filePath = audioState.pendingFilePath,
+                        amplitudeHistory = audioState.amplitudeHistory,
                         isUploading = audioState.isUploading,
                         onDiscard = { vm.onIntent(ChatIntent.DiscardAudio) },
                         onSend = { vm.onIntent(ChatIntent.SendAudio) },

@@ -42,6 +42,21 @@ import kotlinx.coroutines.delay
 
 // ── Audio helpers ─────────────────────────────────────────────────────────────
 
+/** Downsamples a variable-length amplitude history into a fixed number of bars by averaging
+ *  each bucket, so a real recording's waveform always renders at a consistent bar count. */
+private fun resampleToBars(samples: List<Float>, barCount: Int): List<Float> {
+    if (samples.size <= barCount) {
+        return samples + List(barCount - samples.size) { samples.lastOrNull() ?: 0f }
+    }
+    val bucketSize = samples.size.toFloat() / barCount
+    return List(barCount) { i ->
+        val start = (i * bucketSize).toInt()
+        val end = ((i + 1) * bucketSize).toInt().coerceAtLeast(start + 1).coerceAtMost(samples.size)
+        val bucket = samples.subList(start, end)
+        (bucket.average().toFloat() * 3f).coerceIn(0.2f, 1f)
+    }
+}
+
 /** Formats a millisecond duration as `m:ss` (e.g. `1:05`). */
 internal fun formatAudioDuration(ms: Int): String {
     val total = (ms / 1000).coerceAtLeast(0)
@@ -112,6 +127,7 @@ internal fun RecordingBar(
 @Composable
 internal fun AudioPreviewBar(
     filePath: String,
+    amplitudeHistory: List<Float>,
     isUploading: Boolean,
     onDiscard: () -> Unit,
     onSend: () -> Unit,
@@ -124,6 +140,7 @@ internal fun AudioPreviewBar(
     ) {
         LocalAudioPlayer(
             filePath = filePath,
+            amplitudeHistory = amplitudeHistory,
             modifier = Modifier.weight(1f),
         )
         IconButton(onClick = onDiscard, enabled = !isUploading) {
@@ -142,7 +159,7 @@ internal fun AudioPreviewBar(
 // ── Audio players ─────────────────────────────────────────────────────────────
 
 @Composable
-internal fun LocalAudioPlayer(filePath: String, modifier: Modifier = Modifier) {
+internal fun LocalAudioPlayer(filePath: String, amplitudeHistory: List<Float> = emptyList(), modifier: Modifier = Modifier) {
     var isPrepared by remember { mutableStateOf(false) }
     var isPlaying by remember { mutableStateOf(false) }
     var currentMs by remember { mutableStateOf(0) }
@@ -183,6 +200,7 @@ internal fun LocalAudioPlayer(filePath: String, modifier: Modifier = Modifier) {
             else { mp.start(); isPlaying = true }
         },
         waveformSeed = filePath.hashCode(),
+        realWaveform = amplitudeHistory,
         playbackSpeed = playbackSpeed,
         onSpeedChange = { speed ->
             playbackSpeed = speed
@@ -254,6 +272,7 @@ internal fun AudioPlayerRow(
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
     waveformSeed: Int = 0,
+    realWaveform: List<Float> = emptyList(),
     playbackSpeed: Float = 1f,
     onSpeedChange: (Float) -> Unit = {},
 ) {
@@ -261,10 +280,15 @@ internal fun AudioPlayerRow(
     val inactiveColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
     val progress = if (durationMs > 0) currentMs.toFloat() / durationMs else 0f
 
-    // Generate deterministic bar heights from seed (32 bars)
-    val bars = remember(waveformSeed) {
-        val rng = java.util.Random(waveformSeed.toLong())
-        List(32) { 0.2f + rng.nextFloat() * 0.8f }
+    // Use the actual recorded amplitude data when available (resampled to a fixed bar count so
+    // it draws the same regardless of recording length); fall back to a seeded random waveform
+    // only when we have no real data (e.g. audio received from someone else).
+    val bars = remember(waveformSeed, realWaveform) {
+        if (realWaveform.isNotEmpty()) resampleToBars(realWaveform, barCount = 32)
+        else {
+            val rng = java.util.Random(waveformSeed.toLong())
+            List(32) { 0.2f + rng.nextFloat() * 0.8f }
+        }
     }
 
     val speedSteps = listOf(1f, 1.5f, 2f)

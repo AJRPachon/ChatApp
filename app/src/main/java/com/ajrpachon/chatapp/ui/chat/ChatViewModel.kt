@@ -733,7 +733,9 @@ class ChatViewModel(
                     val elapsed = System.currentTimeMillis() - startMs
                     val amp = catchResult { (recorder?.maxAmplitude ?: 0).toFloat() / 32767f }.getOrDefault(0f)
                     updateState { s ->
-                        val newHistory = (s.audioState.amplitudeHistory + amp).takeLast(30)
+                        // Keep the full history (not just a recent window) so the post-recording
+                        // preview waveform can reflect the whole recording, not just its tail.
+                        val newHistory = s.audioState.amplitudeHistory + amp
                         s.copy(audioState = s.audioState.copy(recordingDurationMs = elapsed, amplitudeHistory = newHistory))
                     }
                 }
