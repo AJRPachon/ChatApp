@@ -1974,7 +1974,9 @@ private fun MessageBubble(
                                 onLongClick = { showMsgMenu = true },
                             ),
                         ) {
-                            Text(text = message.content, style = MaterialTheme.typography.bodyMedium)
+                            if (locationUrl == null) {
+                                Text(text = message.content, style = MaterialTheme.typography.bodyMedium)
+                            }
                             DropdownMenu(expanded = showMsgMenu, onDismissRequest = { showMsgMenu = false }) {
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.chat_react)) },
