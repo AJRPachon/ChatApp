@@ -40,6 +40,7 @@ Proyecto personal para poner en práctica lo aprendido en desarrollo Android nat
 | | Funcionalidad |
 |---|---|
 | 💬 | Chat individual y grupal con **texto, imágenes, audio, GIFs y stickers** |
+| 🎙️ | **Grabación de audio con forma de onda en vivo** — la barra de grabación muestra la amplitud real mientras hablas, y la vista previa posterior reproduce esa misma forma de onda (no una aleatoria) |
 | 🎬 | **Mensajes de vídeo** — graba y envía clips directamente desde la cámara |
 | 📍 | **Compartir ubicación** — envía tu posición con enlace a Google Maps |
 | 📎 | **Adjuntos agrupados** — botón `+` con galería, cámara, archivo, vídeo y sticker; micrófono separado |
