@@ -17,7 +17,7 @@ import kotlin.coroutines.resume
  * Note: [SpeechRecognizer] must be created and used on the main thread.
  * [transcribeFromMic] handles this internally via [Dispatchers.Main].
  */
-class AudioTranscriber {
+class AudioTranscriber(private val context: Context) {
 
     /**
      * Starts a live SpeechRecognizer session and returns the best transcription result.
@@ -25,7 +25,7 @@ class AudioTranscriber {
      *
      * Must be called from any dispatcher — switches to Main internally.
      */
-    suspend fun transcribeFromMic(context: Context): String = withContext(Dispatchers.Main) {
+    suspend fun transcribeFromMic(): String = withContext(Dispatchers.Main) {
         if (!SpeechRecognizer.isRecognitionAvailable(context)) {
             return@withContext "Transcripción no disponible"
         }

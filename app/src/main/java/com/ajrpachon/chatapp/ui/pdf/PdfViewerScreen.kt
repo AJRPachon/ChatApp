@@ -34,8 +34,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ajrpachon.chatapp.R
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,7 +51,9 @@ fun PdfViewerScreen(
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    LaunchedEffect(url) { vm.loadPdf(url) }
+    val shareChooserTitle = stringResource(R.string.pdf_share_chooser_title)
+
+    LaunchedEffect(url) { vm.onIntent(PdfViewerIntent.LoadPdf(url)) }
 
     LaunchedEffect(vm) {
         vm.effect.collect { effect ->
@@ -59,7 +63,7 @@ fun PdfViewerScreen(
                         type = "application/pdf"
                         putExtra(Intent.EXTRA_TEXT, effect.url)
                     }
-                    context.startActivity(Intent.createChooser(shareIntent, "Share PDF"))
+                    context.startActivity(Intent.createChooser(shareIntent, shareChooserTitle))
                 }
             }
         }
@@ -77,12 +81,12 @@ fun PdfViewerScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.pdf_back_cd))
                     }
                 },
                 actions = {
-                    IconButton(onClick = { vm.sharePdf(url) }) {
-                        Icon(Icons.Default.Share, contentDescription = "Share")
+                    IconButton(onClick = { vm.onIntent(PdfViewerIntent.SharePdf(url)) }) {
+                        Icon(Icons.Default.Share, contentDescription = stringResource(R.string.pdf_share_cd))
                     }
                 },
             )
@@ -108,7 +112,7 @@ fun PdfViewerScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = state.error ?: "Error loading PDF",
+                        text = state.error ?: stringResource(R.string.pdf_error_loading),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodyMedium,
                     )

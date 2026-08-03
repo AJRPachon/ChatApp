@@ -15,6 +15,7 @@ interface PollRepository {
         question: String,
         createdBy: String,
         options: List<String>,
+        allowMultiple: Boolean = false,
     ): String
 
     /** Records a vote by [userId] for [optionId] in [pollId]. */
@@ -22,5 +23,5 @@ interface PollRepository {
 
     fun observePollById(pollId: String): Flow<PollBO?>
     fun observeOptionsByPollId(pollId: String): Flow<List<PollOptionBO>>
-    fun observeVote(pollId: String, userId: String): Flow<PollVoteBO?>
+    fun observeVotes(pollId: String, userId: String): Flow<List<PollVoteBO>>
 }

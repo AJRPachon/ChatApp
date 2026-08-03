@@ -23,12 +23,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
 import org.koin.androidx.compose.koinViewModel
 
@@ -37,6 +39,8 @@ fun AppLockScreen(onUnlocked: () -> Unit) {
     val vm: AppLockViewModel = koinViewModel()
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val biometricTitle = stringResource(R.string.applock_biometric_title)
+    val biometricSubtitle = stringResource(R.string.applock_biometric_subtitle)
 
     // The actual BiometricPrompt must run in the screen (needs FragmentActivity + executor).
     // The ViewModel emits Effect.LaunchBiometric; callbacks dispatch intents back to the VM.
@@ -64,8 +68,8 @@ fun AppLockScreen(onUnlocked: () -> Unit) {
 
         val prompt = BiometricPrompt(activity, executor, callback)
         val info = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Desbloquear ChatApp")
-            .setSubtitle("Confirma tu identidad para continuar")
+            .setTitle(biometricTitle)
+            .setSubtitle(biometricSubtitle)
             .setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
             .build()
 
@@ -108,7 +112,7 @@ fun AppLockScreen(onUnlocked: () -> Unit) {
         Spacer(Modifier.height(24.dp))
 
         Text(
-            text = "ChatApp bloqueada",
+            text = stringResource(R.string.applock_locked_title),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.Center,
@@ -117,7 +121,7 @@ fun AppLockScreen(onUnlocked: () -> Unit) {
         Spacer(Modifier.height(8.dp))
 
         Text(
-            text = "Verifica tu identidad para acceder",
+            text = stringResource(R.string.applock_locked_subtitle),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.outline,
             textAlign = TextAlign.Center,
@@ -126,7 +130,7 @@ fun AppLockScreen(onUnlocked: () -> Unit) {
         Spacer(Modifier.height(40.dp))
 
         ChatAppPrimaryButton(
-            text = "Desbloquear con huella",
+            text = stringResource(R.string.applock_unlock_with_fingerprint),
             onClick = { vm.requestBiometric() },
             leadingIcon = Icons.Default.Fingerprint,
         )

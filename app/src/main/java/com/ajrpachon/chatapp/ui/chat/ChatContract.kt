@@ -10,6 +10,19 @@ import com.ajrpachon.chatapp.domain.model.ScheduledMessage
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.MessageBO
+import com.ajrpachon.chatapp.domain.model.UserBO
+import com.ajrpachon.chatapp.domain.model.UserRelationship
+
+/**
+ * Relationship of the current user to whoever owns a shared contact card's phone number.
+ * Keyed by phone (not by ChatState.otherUserId) because the contact card can appear in
+ * group chats where otherUserId is null/irrelevant to the card's own contact.
+ */
+data class ContactPhoneLookup(
+    val resolvedUser: UserBO? = null,
+    val relationship: UserRelationship? = null,
+    val isLoading: Boolean = false,
+)
 
 data class AudioState(
     val isRecording: Boolean = false,
@@ -20,11 +33,24 @@ data class AudioState(
     val transcription: String? = null,
 )
 
+data class MediaUploadProgress(
+    val totalCount: Int,
+    val completedCount: Int,
+    val totalBytes: Long,
+)
+
 data class ChatState(
     val inputText: String = "",
     val isSending: Boolean = false,
-    val isUploadingImage: Boolean = false,
     val isUploadingFile: Boolean = false,
+    val mediaUploadProgress: MediaUploadProgress? = null,
+    // Local URIs for the in-flight image batch, so the placeholder bubble can render
+    // thumbnails instantly (from device storage) without waiting on network uploads.
+    val pendingImageUris: List<Uri> = emptyList(),
+    // Ids of messages created by the current in-flight batch; hidden from the normal
+    // paging-based grouping until the whole batch finishes, so only the stable
+    // placeholder bubble is visible mid-upload instead of a growing/jumping bubble.
+    val suppressedImageMessageIds: Set<String> = emptySet(),
     val currentUserId: String? = null,
     val conversationTitle: String = "",
     val error: String? = null,
@@ -89,6 +115,8 @@ data class ChatState(
     val onlineMemberCount: Int = 0,
     val groupMemberCount: Int = 0,
     val isOnline: Boolean = true,
+    // Contact-card relationship lookups, keyed by phone (see ContactPhoneLookup doc).
+    val contactPhoneLookups: Map<String, ContactPhoneLookup> = emptyMap(),
 ) {
     val isMultiSelectActive: Boolean get() = selectedMessageIds.isNotEmpty()
     val latestPinnedMessage: MessageBO? get() = pinnedMessages.firstOrNull()
@@ -122,7 +150,7 @@ sealed interface ChatIntent {
     data class SendImages(val context: Context, val uris: List<Uri>) : ChatIntent
     data class SendFile(val context: Context, val uri: Uri) : ChatIntent
     data class SendVideo(val context: Context, val uri: Uri) : ChatIntent
-    data class StartRecording(val context: Context, val outputFilePath: String) : ChatIntent
+    data object StartRecording : ChatIntent
     data object StopRecording : ChatIntent
     data object DiscardAudio : ChatIntent
     data object SendAudio : ChatIntent
@@ -170,12 +198,12 @@ sealed interface ChatIntent {
     data class UnsaveMessage(val messageId: String) : ChatIntent
     data object OpenCreatePollSheet : ChatIntent
     data object DismissCreatePollSheet : ChatIntent
-    data class CreatePoll(val question: String, val options: List<String>) : ChatIntent
+    data class CreatePoll(val question: String, val options: List<String>, val allowMultiple: Boolean = false) : ChatIntent
     data class VotePoll(val pollId: String, val optionId: String) : ChatIntent
     data class SetChatTheme(val theme: ChatTheme) : ChatIntent
     data object OpenThemePicker : ChatIntent
     data object DismissThemePicker : ChatIntent
-    data class ExportConversation(val context: Context) : ChatIntent
+    data object ExportConversation : ChatIntent
     data object ShowDisappearingModeSheet : ChatIntent
     data object DismissDisappearingModeSheet : ChatIntent
     // seconds: 0 = off, positive = duration in seconds
@@ -205,9 +233,14 @@ sealed interface ChatIntent {
     data class SendContact(val name: String, val phone: String) : ChatIntent
     data class ContactSelected(val uri: android.net.Uri) : ChatIntent
     data class RetryMessage(val messageId: String) : ChatIntent
+    data class CopyMessageContent(val content: String) : ChatIntent
+    data object FetchAndSendLocation : ChatIntent
     // Multi-forward
     data object ShowForwardSelectionDialog : ChatIntent
     data object DismissForwardSelectionDialog : ChatIntent
+    // Contact card actions
+    data class CheckContactRelationship(val phone: String) : ChatIntent
+    data class ContactCardPrimaryAction(val phone: String) : ChatIntent
 }
 
 sealed interface ChatEffect {
@@ -216,4 +249,6 @@ sealed interface ChatEffect {
     data object NavigateBack : ChatEffect
     data class ShowSnackbar(val message: String) : ChatEffect
     data class ShowShareSheet(val uri: android.net.Uri) : ChatEffect
+    data class NavigateToConversation(val conversationId: String, val otherUserName: String) : ChatEffect
+    data class InviteContact(val phoneNumber: String, val text: String) : ChatEffect
 }

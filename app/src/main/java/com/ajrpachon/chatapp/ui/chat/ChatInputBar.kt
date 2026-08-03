@@ -35,6 +35,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -49,6 +50,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ajrpachon.chatapp.domain.model.MessageBO
@@ -65,6 +67,7 @@ internal fun NormalInputBar(
     inputText: String,
     isSending: Boolean,
     isUploadingImage: Boolean,
+    mediaUploadProgress: MediaUploadProgress? = null,
     onTextChange: (String) -> Unit,
     onSend: () -> Unit,
     onGallery: () -> Unit,
@@ -79,10 +82,29 @@ internal fun NormalInputBar(
     onAi: () -> Unit = {},
     onCreatePoll: () -> Unit = {},
 ) {
-    val busy = isUploadingImage || isSending
+    val busy = isUploadingImage || isSending || mediaUploadProgress != null
     var showAttachSheet by rememberSaveable { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
+
+    if (mediaUploadProgress != null) {
+        val remaining = mediaUploadProgress.totalCount - mediaUploadProgress.completedCount
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+            Text(
+                text = "Subiendo $remaining de ${mediaUploadProgress.totalCount} · ${formatFileSize(mediaUploadProgress.totalBytes)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            LinearProgressIndicator(
+                progress = {
+                    if (mediaUploadProgress.totalCount == 0) 0f
+                    else mediaUploadProgress.completedCount / mediaUploadProgress.totalCount.toFloat()
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
 
     Row(
         modifier = Modifier
@@ -112,7 +134,9 @@ internal fun NormalInputBar(
             supportingText = if (inputText.length >= MessageLimits.MAX_CONTENT_LENGTH - 100)
                 "${inputText.length}/${MessageLimits.MAX_CONTENT_LENGTH}" else null,
         )
-        if (isUploadingImage) {
+        if (mediaUploadProgress != null) {
+            Spacer(modifier = Modifier.size(40.dp))
+        } else if (isUploadingImage) {
             CircularProgressIndicator(modifier = Modifier.size(40.dp).padding(8.dp))
         } else if (inputText.isNotBlank()) {
             Box(
@@ -133,9 +157,6 @@ internal fun NormalInputBar(
                 )
             }
         } else {
-            IconButton(onClick = onAi, enabled = !busy) {
-                Icon(Icons.Default.SmartToy, contentDescription = "Asistente IA")
-            }
             IconButton(onClick = onMic, enabled = !busy) {
                 Icon(Icons.Default.Mic, contentDescription = "Grabar audio")
             }
@@ -208,12 +229,20 @@ internal fun NormalInputBar(
                         onAi()
                     }
                 },
+                isScheduleEnabled = inputText.isNotBlank(),
             )
         }
     }
 }
 
 // ── Attachment bottom sheet ───────────────────────────────────────────────────
+
+private data class AttachmentOption(
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val label: String,
+    val action: () -> Unit,
+    val enabled: Boolean = true,
+)
 
 @Composable
 internal fun AttachmentBottomSheet(
@@ -227,18 +256,19 @@ internal fun AttachmentBottomSheet(
     onContact: () -> Unit = {},
     onSchedule: () -> Unit = {},
     onAi: () -> Unit = {},
+    isScheduleEnabled: Boolean = true,
 ) {
     val options = listOf(
-        Triple(Icons.Default.AddPhotoAlternate, "Galería", onGallery),
-        Triple(Icons.Default.CameraAlt, "Cámara", onCamera),
-        Triple(Icons.Default.AttachFile, "Archivo", onFile),
-        Triple(Icons.Default.Videocam, "Video", onVideo),
-        Triple(Icons.Default.EmojiEmotions, "Stickers", onSticker),
-        Triple(Icons.Default.LocationOn, "Ubicación", onLocation),
-        Triple(Icons.Default.CheckCircle, "Encuesta", onCreatePoll),
-        Triple(Icons.Default.Contacts, "Contacto", onContact),
-        Triple(Icons.Default.Schedule, "Programar", onSchedule),
-        Triple(Icons.Default.SmartToy, "IA", onAi),
+        AttachmentOption(Icons.Default.AddPhotoAlternate, "Galería", onGallery),
+        AttachmentOption(Icons.Default.CameraAlt, "Cámara", onCamera),
+        AttachmentOption(Icons.Default.AttachFile, "Archivo", onFile),
+        AttachmentOption(Icons.Default.Videocam, "Video", onVideo),
+        AttachmentOption(Icons.Default.EmojiEmotions, "Stickers", onSticker),
+        AttachmentOption(Icons.Default.LocationOn, "Ubicación", onLocation),
+        AttachmentOption(Icons.Default.CheckCircle, "Encuesta", onCreatePoll),
+        AttachmentOption(Icons.Default.Contacts, "Contacto", onContact),
+        AttachmentOption(Icons.Default.Schedule, "Programar", onSchedule, enabled = isScheduleEnabled),
+        AttachmentOption(Icons.Default.SmartToy, "IA", onAi),
     )
 
     Column(
@@ -252,40 +282,51 @@ internal fun AttachmentBottomSheet(
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
         )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-        ) {
-            options.forEach { (icon, label, action) ->
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable(onClick = action)
-                        .padding(vertical = 12.dp),
-                ) {
-                    Box(
+        val columnsPerRow = 4
+        options.chunked(columnsPerRow).forEach { rowOptions ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+            ) {
+                rowOptions.forEach { option ->
+                    val contentAlpha = if (option.enabled) 1f else 0.4f
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
-                            .size(56.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer),
-                        contentAlignment = Alignment.Center,
+                            .weight(1f)
+                            .clickable(enabled = option.enabled, onClick = option.action)
+                            .padding(vertical = 12.dp),
                     ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = label,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(28.dp),
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = contentAlpha)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = option.icon,
+                                contentDescription = option.label,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = contentAlpha),
+                                modifier = Modifier.size(32.dp),
+                            )
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = option.label,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center,
                         )
                     }
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
+                }
+                // Pad the last row with empty spacers so items stay left-aligned in a 4-column grid
+                repeat(columnsPerRow - rowOptions.size) {
+                    Spacer(modifier = Modifier.weight(1f))
                 }
             }
         }

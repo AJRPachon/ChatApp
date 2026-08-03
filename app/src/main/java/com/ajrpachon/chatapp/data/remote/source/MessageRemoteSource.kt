@@ -82,7 +82,10 @@ class MessageRemoteSource(private val supabase: SupabaseClient) {
     }
 
     fun observeMessageUpdates(conversationId: String): Flow<MessageDTO> = channelFlow {
-        val channel = supabase.channel("messages:updates:$conversationId")
+        // Topic includes a random suffix so concurrent subscribers for the same
+        // conversation (e.g. ChatScreen + UserInfoScreen open at once) each get
+        // their own channel instance instead of colliding on an already-joined one.
+        val channel = supabase.channel("messages:updates:$conversationId:${java.util.UUID.randomUUID()}")
         channel.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
             table = "messages"
         }.onEach { action ->
@@ -116,7 +119,10 @@ class MessageRemoteSource(private val supabase: SupabaseClient) {
     // Cleanup via withContext(NonCancellable) ensures unsubscribe + removeChannel complete
     // synchronously before the flow terminates, preventing reuse of a stale joined channel.
     fun observeNewMessages(conversationId: String): Flow<MessageDTO> = channelFlow {
-        val channel = supabase.channel("messages:$conversationId")
+        // Topic includes a random suffix so concurrent subscribers for the same
+        // conversation (e.g. ChatScreen + UserInfoScreen open at once) each get
+        // their own channel instance instead of colliding on an already-joined one.
+        val channel = supabase.channel("messages:${conversationId}:${java.util.UUID.randomUUID()}")
         channel.postgresChangeFlow<PostgresAction.Insert>(schema = "public") {
             table = "messages"
         }.onEach { action ->

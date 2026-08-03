@@ -45,12 +45,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.StatusBO
 import com.ajrpachon.chatapp.ui.components.ChatAppAvatar
 import kotlinx.coroutines.delay
@@ -66,12 +67,11 @@ fun StatusBar(
     vm: StatusViewModel = koinViewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
 
     val imageLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri ->
-        uri?.let { vm.onIntent(StatusIntent.PostImageStatus(context, it)) }
+        uri?.let { vm.onIntent(StatusIntent.PostImageStatus(it)) }
     }
 
     Column(modifier = modifier) {
@@ -127,7 +127,7 @@ private fun AddStatusButton(
             ) {
                 Icon(
                     Icons.Default.Add,
-                    contentDescription = "Add text status",
+                    contentDescription = stringResource(R.string.status_add_text_cd),
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }
@@ -141,13 +141,13 @@ private fun AddStatusButton(
             ) {
                 Icon(
                     Icons.Default.Image,
-                    contentDescription = "Add image status",
+                    contentDescription = stringResource(R.string.status_add_image_cd),
                     tint = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
             }
         }
         Spacer(Modifier.height(4.dp))
-        Text("Mi estado", style = MaterialTheme.typography.labelSmall)
+        Text(stringResource(R.string.status_my_status), style = MaterialTheme.typography.labelSmall)
     }
 }
 
@@ -191,21 +191,21 @@ private fun ComposeStatusDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Nuevo estado") },
+        title = { Text(stringResource(R.string.status_new_status_title)) },
         text = {
             OutlinedTextField(
                 value = text,
                 onValueChange = onTextChange,
-                placeholder = { Text("¿Qué está pasando?") },
+                placeholder = { Text(stringResource(R.string.status_compose_placeholder)) },
                 maxLines = 4,
                 modifier = Modifier.fillMaxWidth(),
             )
         },
         confirmButton = {
-            TextButton(onClick = onPost, enabled = text.isNotBlank()) { Text("Publicar") }
+            TextButton(onClick = onPost, enabled = text.isNotBlank()) { Text(stringResource(R.string.status_publish)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.status_cancel)) }
         },
     )
 }
@@ -237,7 +237,6 @@ fun StatusViewerScreen(
             .fillMaxSize()
             .background(Color(current.backgroundColor)),
     ) {
-        // Background image if present
         if (current.imageUrl != null) {
             AsyncImage(
                 model = current.imageUrl,
@@ -294,15 +293,14 @@ fun StatusViewerScreen(
             )
             if (current.isFromMe) {
                 IconButton(onClick = { onDelete(current.id) }) {
-                    Icon(Icons.Default.Delete, contentDescription = "Eliminar estado", tint = Color.White)
+                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.status_delete_cd), tint = Color.White)
                 }
             }
             IconButton(onClick = onClose) {
-                Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White)
+                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.status_close_cd), tint = Color.White)
             }
         }
 
-        // Text overlay
         if (!current.text.isNullOrBlank()) {
             Text(
                 text = current.text,

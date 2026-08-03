@@ -154,6 +154,9 @@ fun chatNavEntry(
                     )
                 )
             },
+            onNavigateToConversation = { id, name ->
+                backStack.add(ChatRoute(id, name))
+            },
         )
     }
 
@@ -260,10 +263,6 @@ fun profileNavEntry(
     is SessionAuditRoute -> NavEntry(key) {
         SessionAuditScreen(
             onBack = dropUnlessResumed { backStack.removeLastOrNull() },
-            onSignedOut = {
-                backStack.clear()
-                backStack.add(AuthRoute)
-            },
         )
     }
 

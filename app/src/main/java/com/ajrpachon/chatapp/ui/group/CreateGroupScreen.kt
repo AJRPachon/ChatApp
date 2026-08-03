@@ -22,8 +22,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
@@ -38,9 +36,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.ui.components.ChatAppAvatar
 import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
@@ -85,7 +85,11 @@ fun CreateGroupScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             ChatAppTopBar(
-                title = if (state.step == CreateGroupStep.SELECT_MEMBERS) "Nuevo grupo" else "Nombre del grupo",
+                title = if (state.step == CreateGroupStep.SELECT_MEMBERS) {
+                    stringResource(R.string.group_create_new_group_title)
+                } else {
+                    stringResource(R.string.group_create_group_name_title)
+                },
                 onBack = { vm.onIntent(CreateGroupIntent.Back) },
             )
         },
@@ -127,7 +131,7 @@ private fun SelectMembersStep(
                         onClick = { onIntent(CreateGroupIntent.ToggleUser(user)) },
                         label = { Text(user.displayName) },
                         trailingIcon = {
-                            Icon(Icons.Default.Close, contentDescription = "Quitar", modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.group_create_remove_user_content_description), modifier = Modifier.size(16.dp))
                         },
                     )
                 }
@@ -137,7 +141,7 @@ private fun SelectMembersStep(
         ChatAppSearchField(
             value = state.query,
             onValueChange = { onIntent(CreateGroupIntent.QueryChanged(it)) },
-            placeholder = "Buscar personas…",
+            placeholder = stringResource(R.string.group_create_search_people_placeholder),
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         )
 
@@ -152,7 +156,7 @@ private fun SelectMembersStep(
         }
 
         ChatAppPrimaryButton(
-            text = "Siguiente (${state.selectedUsers.size} seleccionados)",
+            text = stringResource(R.string.group_create_next_button, state.selectedUsers.size),
             onClick = { onIntent(CreateGroupIntent.Next) },
             enabled = state.selectedUsers.isNotEmpty(),
             modifier = Modifier
@@ -178,7 +182,7 @@ private fun SetGroupInfoStep(
         ChatAppTextField(
             value = state.groupName,
             onValueChange = { onIntent(CreateGroupIntent.NameChanged(it)) },
-            label = "Nombre del grupo",
+            label = stringResource(R.string.group_create_name_label),
         )
 
         Spacer(Modifier.height(12.dp))
@@ -186,7 +190,7 @@ private fun SetGroupInfoStep(
         ChatAppTextField(
             value = state.groupDescription,
             onValueChange = { onIntent(CreateGroupIntent.DescriptionChanged(it)) },
-            label = "Descripción (opcional)",
+            label = stringResource(R.string.group_create_description_label),
             singleLine = false,
             maxLines = 3,
         )
@@ -194,7 +198,7 @@ private fun SetGroupInfoStep(
         Spacer(Modifier.weight(1f))
 
         ChatAppPrimaryButton(
-            text = "Crear grupo",
+            text = stringResource(R.string.group_create_button),
             onClick = { onIntent(CreateGroupIntent.Create) },
             enabled = state.groupName.isNotBlank() && !state.isLoading,
             isLoading = state.isLoading,
@@ -240,7 +244,7 @@ private fun UserSearchItem(
             Text(user.displayName, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
             if (user.username.isNotBlank()) {
                 Text(
-                    "@${user.username}",
+                    stringResource(R.string.group_username, user.username),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

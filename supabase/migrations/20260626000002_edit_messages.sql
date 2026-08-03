@@ -6,5 +6,5 @@ ALTER TABLE messages ADD COLUMN IF NOT EXISTS edited_at TIMESTAMPTZ;
 CREATE POLICY "sender can edit own message"
     ON messages FOR UPDATE
     TO authenticated
-    USING (auth.uid()::text = sender_id)
-    WITH CHECK (auth.uid()::text = sender_id);
+    USING (auth.uid() = sender_id)
+    WITH CHECK (auth.uid() = sender_id);

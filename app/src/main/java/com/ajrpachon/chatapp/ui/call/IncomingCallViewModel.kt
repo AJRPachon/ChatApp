@@ -82,6 +82,14 @@ class IncomingCallViewModel(
         }
     }
 
+    fun onIntent(intent: IncomingCallIntent) {
+        when (intent) {
+            is IncomingCallIntent.Dismiss -> dismiss()
+            is IncomingCallIntent.Reject -> reject(intent.callId)
+            is IncomingCallIntent.Accept -> dismiss()
+        }
+    }
+
     fun dismiss() {
         AppLogger.d(TAG, "dismiss: called")
         statusJob?.cancel()

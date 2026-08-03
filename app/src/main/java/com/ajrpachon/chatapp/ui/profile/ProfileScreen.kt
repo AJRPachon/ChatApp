@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -61,11 +60,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.ThemePreference
 import com.ajrpachon.chatapp.ui.components.ChatAppDestructiveButton
 import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
@@ -114,19 +115,19 @@ fun ProfileScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(
-                    "Mi código QR",
+                    stringResource(R.string.profile_my_qr_code_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
-                    "Comparte este código para que otros puedan añadirte como contacto",
+                    stringResource(R.string.profile_my_qr_code_description),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.outline,
                 )
                 if (qrBitmap != null) {
                     Image(
                         bitmap = qrBitmap.asImageBitmap(),
-                        contentDescription = "Código QR",
+                        contentDescription = stringResource(R.string.profile_qr_code_content_description),
                         modifier = Modifier.size(220.dp),
                     )
                 }
@@ -156,7 +157,7 @@ fun ProfileScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
-                    "Configurar verificación en dos pasos",
+                    stringResource(R.string.profile_2fa_setup_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold,
                     textAlign = TextAlign.Center,
@@ -170,7 +171,7 @@ fun ProfileScreen(
                 val secret = state.twoFactor.secret
                 if (secret != null) {
                     Text(
-                        "Escanea el código QR o introduce manualmente esta clave en tu aplicación de autenticación (Google Authenticator, Authy, etc.):",
+                        stringResource(R.string.profile_2fa_setup_instructions),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -190,7 +191,7 @@ fun ProfileScreen(
                     }
                 }
                 Text(
-                    "Una vez configurada, introduce el código de 6 dígitos para confirmar:",
+                    stringResource(R.string.profile_2fa_confirm_instructions),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -198,7 +199,7 @@ fun ProfileScreen(
                 ChatAppTextField(
                     value = verifyCode,
                     onValueChange = { if (it.length <= 6) verifyCode = it },
-                    label = "Código TOTP",
+                    label = stringResource(R.string.profile_totp_code_label),
                     isError = state.twoFactor.verifyError != null,
                     supportingText = state.twoFactor.verifyError,
                     keyboardOptions = KeyboardOptions(
@@ -223,7 +224,7 @@ fun ProfileScreen(
                     CircularProgressIndicator()
                 } else {
                     ChatAppPrimaryButton(
-                        text = "Verificar y activar",
+                        text = stringResource(R.string.profile_verify_and_activate),
                         onClick = {
                             keyboard?.hide()
                             vm.onIntent(ProfileIntent.Verify2FACode(verifyCode))
@@ -248,17 +249,17 @@ fun ProfileScreen(
     if (showSignOutAllDialog) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { showSignOutAllDialog = false },
-            title = { androidx.compose.material3.Text("Cerrar sesión en todos los dispositivos") },
-            text = { androidx.compose.material3.Text("Esto cerrará la sesión en todos los dispositivos donde hayas iniciado sesión. ¿Continuar?") },
+            title = { androidx.compose.material3.Text(stringResource(R.string.profile_sign_out_all_dialog_title)) },
+            text = { androidx.compose.material3.Text(stringResource(R.string.profile_sign_out_all_dialog_text)) },
             confirmButton = {
                 androidx.compose.material3.TextButton(onClick = {
                     showSignOutAllDialog = false
                     vm.signOutAll()
-                }) { androidx.compose.material3.Text("Cerrar todas las sesiones") }
+                }) { androidx.compose.material3.Text(stringResource(R.string.profile_sign_out_all_confirm)) }
             },
             dismissButton = {
                 androidx.compose.material3.TextButton(onClick = { showSignOutAllDialog = false }) {
-                    androidx.compose.material3.Text("Cancelar")
+                    androidx.compose.material3.Text(stringResource(R.string.profile_cancel))
                 }
             },
         )
@@ -281,7 +282,7 @@ fun ProfileScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            ChatAppTopBar(title = "Perfil", onBack = onBack)
+            ChatAppTopBar(title = stringResource(R.string.profile_top_bar_title), onBack = onBack)
         },
     ) { innerPadding ->
         Column(
@@ -310,7 +311,7 @@ fun ProfileScreen(
                     if (state.avatarUrl != null) {
                         AsyncImage(
                             model = state.avatarUrl,
-                            contentDescription = "Avatar",
+                            contentDescription = stringResource(R.string.profile_avatar_content_description),
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize(),
                         )
@@ -342,7 +343,7 @@ fun ProfileScreen(
                 ) {
                     Icon(
                         Icons.Default.AddAPhoto,
-                        contentDescription = "Cambiar foto",
+                        contentDescription = stringResource(R.string.profile_change_photo_content_description),
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(16.dp),
                     )
@@ -355,7 +356,7 @@ fun ProfileScreen(
             ChatAppTextField(
                 value = state.editingDisplayName,
                 onValueChange = { vm.onIntent(ProfileIntent.EditDisplayName(it)) },
-                label = "Nombre de display",
+                label = stringResource(R.string.profile_display_name_label),
                 enabled = !state.isSavingDisplayName,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Text,
@@ -371,7 +372,7 @@ fun ProfileScreen(
                 CircularProgressIndicator(modifier = Modifier.size(20.dp))
             }
             Text(
-                "@${state.username}",
+                stringResource(R.string.profile_username_display, state.username),
                 style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace),
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -394,11 +395,11 @@ fun ProfileScreen(
             ) {
                 Column {
                     Text(
-                        "Mostrar en línea",
+                        stringResource(R.string.profile_show_online_status_title),
                         style = MaterialTheme.typography.bodyLarge,
                     )
                     Text(
-                        "Los demás pueden ver cuándo estás activo",
+                        stringResource(R.string.profile_show_online_status_description),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline,
                     )
@@ -418,7 +419,7 @@ fun ProfileScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
-                    "Apariencia",
+                    stringResource(R.string.profile_appearance_title),
                     style = MaterialTheme.typography.bodyLarge,
                 )
                 ThemeSelector(
@@ -431,7 +432,7 @@ fun ProfileScreen(
             HorizontalDivider()
 
             ChatAppSecondaryButton(
-                text = "Mi código QR",
+                text = stringResource(R.string.profile_my_qr_code_button),
                 onClick = { showQrSheet = true },
                 leadingIcon = Icons.Default.QrCode,
                 modifier = Modifier.fillMaxWidth(),
@@ -457,11 +458,11 @@ fun ProfileScreen(
                     )
                     Column {
                         Text(
-                            "Bloqueo de la app",
+                            stringResource(R.string.profile_app_lock_title),
                             style = MaterialTheme.typography.bodyLarge,
                         )
                         Text(
-                            "Requiere huella al abrir la app",
+                            stringResource(R.string.profile_app_lock_description),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.outline,
                         )
@@ -483,11 +484,15 @@ fun ProfileScreen(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        "Verificación en dos pasos",
+                        stringResource(R.string.profile_2fa_title),
                         style = MaterialTheme.typography.bodyLarge,
                     )
                     Text(
-                        if (state.twoFactor.isEnrolled) "Activa" else "Inactiva",
+                        if (state.twoFactor.isEnrolled) {
+                            stringResource(R.string.profile_2fa_active)
+                        } else {
+                            stringResource(R.string.profile_2fa_inactive)
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = if (state.twoFactor.isEnrolled)
                             MaterialTheme.colorScheme.primary
@@ -499,12 +504,12 @@ fun ProfileScreen(
                     CircularProgressIndicator(modifier = Modifier.size(24.dp))
                 } else if (state.twoFactor.isEnrolled) {
                     ChatAppDestructiveButton(
-                        text = "Desactivar",
+                        text = stringResource(R.string.profile_2fa_deactivate),
                         onClick = { vm.onIntent(ProfileIntent.Disable2FA) },
                     )
                 } else {
                     ChatAppSecondaryButton(
-                        text = "Activar",
+                        text = stringResource(R.string.profile_2fa_activate),
                         onClick = { vm.onIntent(ProfileIntent.Enroll2FA) },
                         leadingIcon = Icons.Default.Shield,
                     )
@@ -529,11 +534,11 @@ fun ProfileScreen(
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        "Copia de seguridad",
+                        stringResource(R.string.profile_backup_title),
                         style = MaterialTheme.typography.bodyLarge,
                     )
                     Text(
-                        "Guarda y restaura mensajes en Google Drive",
+                        stringResource(R.string.profile_backup_description),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline,
                     )
@@ -557,11 +562,11 @@ fun ProfileScreen(
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        "Sesiones activas",
+                        stringResource(R.string.profile_sessions_title),
                         style = MaterialTheme.typography.bodyLarge,
                     )
                     Text(
-                        "Ver y administrar dispositivos conectados",
+                        stringResource(R.string.profile_sessions_description),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline,
                     )
@@ -571,14 +576,14 @@ fun ProfileScreen(
             Spacer(Modifier.weight(1f))
 
             ChatAppDestructiveButton(
-                text = "Cerrar sesión",
+                text = stringResource(R.string.profile_sign_out),
                 onClick = { vm.signOut() },
                 leadingIcon = Icons.AutoMirrored.Filled.Logout,
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.size(8.dp))
             ChatAppDestructiveButton(
-                text = "Cerrar sesión en todos los dispositivos",
+                text = stringResource(R.string.profile_sign_out_all_devices),
                 onClick = { vm.requestSignOutAll() },
                 leadingIcon = Icons.AutoMirrored.Filled.Logout,
                 modifier = Modifier
@@ -596,9 +601,9 @@ private fun ThemeSelector(
     modifier: Modifier = Modifier,
 ) {
     val options = listOf(
-        ThemePreference.SYSTEM to "Sistema",
-        ThemePreference.LIGHT to "Claro",
-        ThemePreference.DARK to "Oscuro",
+        ThemePreference.SYSTEM to stringResource(R.string.profile_theme_system),
+        ThemePreference.LIGHT to stringResource(R.string.profile_theme_light),
+        ThemePreference.DARK to stringResource(R.string.profile_theme_dark),
     )
     Row(
         modifier = modifier,

@@ -32,6 +32,25 @@ class UserInfoViewModel(
         }
     }
 
+    fun onIntent(intent: UserInfoIntent) {
+        when (intent) {
+            is UserInfoIntent.Refresh -> {
+                viewModelScope.launch {
+                    val user = catchResult { userRepository.getUserById(userId) }.getOrNull()
+                    updateState {
+                        it.copy(
+                            displayName = user?.displayName ?: "",
+                            username = user?.username ?: "",
+                            avatarUrl = user?.avatarUrl,
+                            isLoading = false,
+                        )
+                    }
+                    loadMedia()
+                }
+            }
+        }
+    }
+
     private fun loadMedia() {
         viewModelScope.launch {
             val currentUserId = userRepository.getCurrentUserId() ?: return@launch

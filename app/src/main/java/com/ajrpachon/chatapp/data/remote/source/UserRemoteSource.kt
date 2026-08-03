@@ -97,6 +97,15 @@ class UserRemoteSource(private val supabase: SupabaseClient) {
     }
 
 
+    // normalizedPhone must already be digits-only (see UserRepositoryImpl.normalizePhoneDigits) —
+    // callers are expected to store/query the phone column in that normalized form so this can
+    // filter server-side via eq() instead of fetching every profile to compare client-side.
+    suspend fun getProfileByPhone(normalizedPhone: String): UserDTO? = runCatching {
+        supabase.postgrest["profiles"]
+            .select { filter { eq("phone", normalizedPhone) } }
+            .decodeSingleOrNull<UserDTO>()
+    }.getOrNull()
+
     suspend fun getProfileOrThrow(userId: String): UserDTO? =
         supabase.postgrest["profiles"]
             .select { filter { eq("id", userId) } }

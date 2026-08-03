@@ -20,12 +20,15 @@ import com.ajrpachon.chatapp.domain.repository.DraftRepository
 import com.ajrpachon.chatapp.domain.repository.IncognitoRepository
 import com.ajrpachon.chatapp.domain.repository.PollRepository
 import com.ajrpachon.chatapp.domain.repository.WallpaperRepository
+import android.app.Application
 import com.ajrpachon.chatapp.utils.AudioTranscriber
+import com.ajrpachon.chatapp.utils.ClipboardProtection
 import com.ajrpachon.chatapp.utils.NetworkMonitor
 import com.ajrpachon.chatapp.utils.TranslationManager
 import androidx.work.WorkManager
 import com.ajrpachon.chatapp.domain.usecase.GetGroupMembersUseCase
 import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
+import com.ajrpachon.chatapp.domain.usecase.SendInvitationUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import io.mockk.coEvery
@@ -74,6 +77,9 @@ class ChatViewModelTest {
     private val wallpaperRepository = mockk<WallpaperRepository>(relaxed = true)
     private val contactRepository = mockk<ContactRepository>(relaxed = true)
     private val networkMonitor = mockk<NetworkMonitor>(relaxed = true)
+    private val sendInvitationUseCase = mockk<SendInvitationUseCase>(relaxed = true)
+    private val application = mockk<Application>(relaxed = true)
+    private val clipboardProtection = mockk<ClipboardProtection>(relaxed = true)
 
     private val membersFlow = MutableStateFlow<List<GroupMemberBO>>(emptyList())
 
@@ -128,6 +134,8 @@ class ChatViewModelTest {
     private fun buildViewModel(conversationId: String = "conv1"): ChatViewModel =
         ChatViewModel(
             args = ChatArgs(conversationId = conversationId, otherUserName = "Test Group"),
+            application = application,
+            clipboardProtection = clipboardProtection,
             sendMessageUseCase = sendMessageUseCase,
             messageRepository = messageRepository,
             callRepository = callRepository,
@@ -150,6 +158,7 @@ class ChatViewModelTest {
             aiAssistantRepository = aiAssistantRepository,
             wallpaperRepository = wallpaperRepository,
             networkMonitor = networkMonitor,
+            sendInvitationUseCase = sendInvitationUseCase,
         )
 
     // ── isCurrentUserMember ───────────────────────────────────────────────────

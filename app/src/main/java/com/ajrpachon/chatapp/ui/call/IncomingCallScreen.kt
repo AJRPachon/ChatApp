@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -24,8 +23,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.CallBO
 import com.ajrpachon.chatapp.domain.model.CallType
 
@@ -46,7 +47,11 @@ fun IncomingCallScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
-                text = if (call.type == CallType.VIDEO) "Videollamada entrante" else "Llamada de voz entrante",
+                text = if (call.type == CallType.VIDEO) {
+                    stringResource(R.string.incoming_call_video_incoming)
+                } else {
+                    stringResource(R.string.incoming_call_voice_incoming)
+                },
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color.White.copy(alpha = 0.7f),
             )
@@ -85,13 +90,13 @@ fun IncomingCallScreen(
                     ) {
                         Icon(
                             Icons.Default.PhoneDisabled,
-                            contentDescription = "Rechazar",
+                            contentDescription = stringResource(R.string.incoming_call_reject_content_description),
                             tint = Color.White,
                         )
                     }
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Rechazar",
+                        stringResource(R.string.incoming_call_reject_label),
                         color = Color.White.copy(alpha = 0.7f),
                         style = MaterialTheme.typography.labelMedium,
                     )
@@ -107,13 +112,13 @@ fun IncomingCallScreen(
                     ) {
                         Icon(
                             if (call.type == CallType.VIDEO) Icons.Default.Videocam else Icons.Default.Phone,
-                            contentDescription = "Aceptar",
+                            contentDescription = stringResource(R.string.incoming_call_accept_content_description),
                             tint = Color.White,
                         )
                     }
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Aceptar",
+                        stringResource(R.string.incoming_call_accept_label),
                         color = Color.White.copy(alpha = 0.7f),
                         style = MaterialTheme.typography.labelMedium,
                     )

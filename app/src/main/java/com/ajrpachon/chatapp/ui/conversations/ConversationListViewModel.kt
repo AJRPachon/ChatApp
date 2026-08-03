@@ -1,10 +1,9 @@
 package com.ajrpachon.chatapp.ui.conversations
 
 import androidx.lifecycle.viewModelScope
-import com.ajrpachon.chatapp.data.local.DraftRepository
 import com.ajrpachon.chatapp.data.local.ThemeRepository
-import com.ajrpachon.chatapp.domain.model.ThemePreference
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
+import com.ajrpachon.chatapp.domain.repository.DraftRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
 import com.ajrpachon.chatapp.domain.usecase.ObserveConversationsUseCase
@@ -65,7 +64,13 @@ class ConversationListViewModel(
                     }
                     launch {
                         observeConversationsUseCase(user.id).collect { convs ->
-                            updateState { it.copy(conversations = sortedConversations(convs, state.value.sortByUnread)) }
+                            updateState { current ->
+                                val sorted = sortedConversations(convs, current.sortByUnread)
+                                current.copy(
+                                    conversations = sorted,
+                                    filteredConversations = applyFilter(sorted, current.searchQuery, current.selectedFilter),
+                                )
+                            }
                         }
                     }
                     launch {
@@ -111,23 +116,40 @@ class ConversationListViewModel(
             is ConversationListIntent.ToggleSortByUnread -> {
                 updateState { current ->
                     val newSort = !current.sortByUnread
+                    val sorted = sortedConversations(current.conversations, newSort)
                     current.copy(
                         sortByUnread = newSort,
-                        conversations = sortedConversations(current.conversations, newSort),
+                        conversations = sorted,
+                        filteredConversations = applyFilter(sorted, current.searchQuery, current.selectedFilter),
                     )
                 }
             }
             is ConversationListIntent.SetFilter ->
                 updateState { current ->
                     val newFilter = if (current.selectedFilter == intent.filter) ConversationFilter.ALL else intent.filter
-                    current.copy(selectedFilter = newFilter)
+                    current.copy(
+                        selectedFilter = newFilter,
+                        filteredConversations = applyFilter(current.conversations, current.searchQuery, newFilter),
+                    )
                 }
             is ConversationListIntent.SearchQueryChanged ->
-                updateState { it.copy(searchQuery = intent.query) }
+                updateState { current ->
+                    current.copy(
+                        searchQuery = intent.query,
+                        filteredConversations = applyFilter(current.conversations, intent.query, current.selectedFilter),
+                    )
+                }
             is ConversationListIntent.ToggleSearch ->
                 updateState { current ->
-                    if (current.isSearchActive) current.copy(isSearchActive = false, searchQuery = "")
-                    else current.copy(isSearchActive = true)
+                    if (current.isSearchActive) {
+                        current.copy(
+                            isSearchActive = false,
+                            searchQuery = "",
+                            filteredConversations = applyFilter(current.conversations, "", current.selectedFilter),
+                        )
+                    } else {
+                        current.copy(isSearchActive = true)
+                    }
                 }
             is ConversationListIntent.ArchiveConversation ->
                 viewModelScope.launch {
@@ -153,6 +175,21 @@ class ConversationListViewModel(
                     catchResult { themeRepository.set(intent.theme) }
                         .onFailure { e -> updateState { it.copy(error = e.message) } }
                 }
+        }
+    }
+
+    private fun applyFilter(
+        convs: List<com.ajrpachon.chatapp.domain.model.ConversationBO>,
+        searchQuery: String,
+        filter: ConversationFilter,
+    ): List<com.ajrpachon.chatapp.domain.model.ConversationBO> {
+        val bySearch = if (searchQuery.isBlank()) convs
+        else convs.filter { it.name.contains(searchQuery, ignoreCase = true) }
+        return when (filter) {
+            ConversationFilter.ALL -> bySearch
+            ConversationFilter.UNREAD -> bySearch.filter { it.unreadCount > 0 }
+            ConversationFilter.GROUPS -> bySearch.filter { it.isGroup }
+            ConversationFilter.DIRECT -> bySearch.filter { !it.isGroup }
         }
     }
 

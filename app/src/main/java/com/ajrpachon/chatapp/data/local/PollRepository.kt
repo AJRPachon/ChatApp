@@ -17,14 +17,14 @@ class PollRepository(private val pollDao: PollDao) {
 
     suspend fun getOptions(pollId: String): List<PollOptionDBO> = pollDao.getOptions(pollId)
 
-    suspend fun getVote(pollId: String, userId: String): PollVoteDBO? =
-        pollDao.getVote(pollId, userId)
+    suspend fun getVotes(pollId: String, userId: String): List<PollVoteDBO> =
+        pollDao.getVotes(pollId, userId)
 
     suspend fun vote(pollId: String, userId: String, optionId: String) =
         pollDao.vote(pollId, userId, optionId)
 
-    fun observeVote(pollId: String, userId: String): Flow<PollVoteDBO?> =
-        pollDao.observeVote(pollId, userId)
+    fun observeVotes(pollId: String, userId: String): Flow<List<PollVoteDBO>> =
+        pollDao.observeVotes(pollId, userId)
 
     fun observePollById(pollId: String): Flow<PollDBO?> =
         pollDao.observePollById(pollId)

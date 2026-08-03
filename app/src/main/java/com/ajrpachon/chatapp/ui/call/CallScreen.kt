@@ -1,7 +1,6 @@
 package com.ajrpachon.chatapp.ui.call
 
 import android.app.Activity
-import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.content.pm.PackageManager
 import com.ajrpachon.chatapp.ui.common.CallPermissions
@@ -24,7 +23,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -43,7 +41,6 @@ import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.ScreenShare
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.StopScreenShare
@@ -71,6 +68,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.IntOffset
@@ -79,10 +77,10 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.CallRoute
+import com.ajrpachon.chatapp.R
 import com.github.skydoves.navgraph.annotations.NavDestination
 import io.livekit.android.renderer.TextureViewRenderer
 import io.livekit.android.room.Room
-import io.livekit.android.room.track.LocalVideoTrack
 import io.livekit.android.room.track.VideoTrack
 import kotlin.math.roundToInt
 import org.koin.androidx.compose.koinViewModel
@@ -127,7 +125,7 @@ fun CallScreen(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 CircularProgressIndicator(color = Color.White)
                 Spacer(Modifier.height(16.dp))
-                Text("Solicitando permisos...", color = Color.White.copy(alpha = 0.7f))
+                Text(stringResource(R.string.call_requesting_permissions), color = Color.White.copy(alpha = 0.7f))
             }
         }
         return
@@ -150,10 +148,10 @@ private fun CallScreenContent(
     val context = LocalContext.current
     val vm: CallViewModel = koinViewModel(
         key = callId,
-        parameters = { parametersOf(callId, conversationId, roomName, callType, isOutgoing, isGroup) },
+        parameters = { parametersOf(CallArgs(callId, conversationId, roomName, callType, isOutgoing, isGroup)) },
     )
     val state by vm.state.collectAsStateWithLifecycle()
-    val currentRoom by vm.roomFlow.collectAsStateWithLifecycle()
+    val currentRoom = state.room
 
     // Screen share MediaProjection launcher
     val screenShareLauncher = rememberLauncherForActivityResult(
@@ -175,8 +173,7 @@ private fun CallScreenContent(
         vm.effect.collect { effect ->
             when (effect) {
                 is CallEffect.RequestScreenShare -> {
-                    val mgr = context.getSystemService(MediaProjectionManager::class.java)
-                    screenShareLauncher.launch(mgr.createScreenCaptureIntent())
+                    screenShareLauncher.launch(vm.mediaProjectionManager.createScreenCaptureIntent())
                 }
                 is CallEffect.ShowRecordingSaved -> { /* recording saved — no UI needed here */ }
             }
@@ -269,7 +266,7 @@ private fun CallScreenContent(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Icon(Icons.Default.ScreenShare, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-                Text("Compartiendo pantalla", color = Color.White, style = MaterialTheme.typography.labelMedium)
+                Text(stringResource(R.string.call_screen_sharing_active), color = Color.White, style = MaterialTheme.typography.labelMedium)
             }
         }
 
@@ -308,10 +305,10 @@ private fun CallScreenContent(
                 CallPhase.CONNECTING -> {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                     Spacer(Modifier.height(8.dp))
-                    Text("Conectando...", color = Color.White.copy(alpha = 0.7f))
+                    Text(stringResource(R.string.call_connecting), color = Color.White.copy(alpha = 0.7f))
                 }
                 CallPhase.RINGING -> Text(
-                    "Llamando...",
+                    stringResource(R.string.call_ringing),
                     color = Color.White.copy(alpha = 0.7f),
                     style = MaterialTheme.typography.bodyLarge,
                 )
@@ -321,12 +318,12 @@ private fun CallScreenContent(
                     style = MaterialTheme.typography.bodyLarge,
                 )
                 CallPhase.ENDED -> Text(
-                    "Llamada terminada",
+                    stringResource(R.string.call_ended),
                     color = Color.White.copy(alpha = 0.7f),
                     style = MaterialTheme.typography.bodyLarge,
                 )
                 CallPhase.ERROR -> Text(
-                    state.error ?: "Error en la llamada",
+                    state.error ?: stringResource(R.string.call_generic_error),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium,
                 )
@@ -349,7 +346,7 @@ private fun CallScreenContent(
             ) {
                 Icon(
                     imageVector = if (state.isMicMuted) Icons.Default.MicOff else Icons.Default.Mic,
-                    contentDescription = "Micrófono",
+                    contentDescription = stringResource(R.string.call_mic_content_description),
                 )
             }
 
@@ -362,7 +359,7 @@ private fun CallScreenContent(
                 ) {
                     Icon(
                         imageVector = if (state.isCameraOff) Icons.Default.VideocamOff else Icons.Default.Videocam,
-                        contentDescription = "Cámara",
+                        contentDescription = stringResource(R.string.call_camera_content_description),
                     )
                 }
                 // Switch front/back camera (only when camera is active)
@@ -372,7 +369,7 @@ private fun CallScreenContent(
                         containerColor = Color.White.copy(alpha = 0.2f),
                         iconTint = Color.White,
                     ) {
-                        Icon(Icons.Default.Cameraswitch, contentDescription = "Voltear cámara")
+                        Icon(Icons.Default.Cameraswitch, contentDescription = stringResource(R.string.call_flip_camera_content_description))
                     }
                     // Background blur toggle (API 31+)
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -383,7 +380,7 @@ private fun CallScreenContent(
                         ) {
                             Icon(
                                 imageVector = if (state.isBackgroundBlurred) Icons.Default.BlurOn else Icons.Default.BlurOff,
-                                contentDescription = "Fondo borroso",
+                                contentDescription = stringResource(R.string.call_blur_background_content_description),
                             )
                         }
                     }
@@ -392,13 +389,13 @@ private fun CallScreenContent(
 
             // Screen share toggle
             CallControlButton(
-                onClick = { vm.processIntent(CallIntent.ToggleScreenShare) },
+                onClick = { vm.onIntent(CallIntent.ToggleScreenShare) },
                 containerColor = if (state.isScreenSharing) Color(0xFFFF5722) else Color.White.copy(alpha = 0.2f),
                 iconTint = Color.White,
             ) {
                 Icon(
                     imageVector = if (state.isScreenSharing) Icons.Default.StopScreenShare else Icons.Default.ScreenShare,
-                    contentDescription = "Compartir pantalla",
+                    contentDescription = stringResource(R.string.call_share_screen_content_description),
                 )
             }
 
@@ -409,7 +406,7 @@ private fun CallScreenContent(
                 iconTint = Color.White,
                 size = 64.dp,
             ) {
-                Icon(Icons.Default.CallEnd, contentDescription = "Colgar")
+                Icon(Icons.Default.CallEnd, contentDescription = stringResource(R.string.call_hang_up_content_description))
             }
         }
 
@@ -425,7 +422,7 @@ private fun CallScreenContent(
                     shape = CircleShape,
                 ),
         ) {
-            Icon(Icons.Default.Chat, contentDescription = "Chat en llamada", tint = Color.White)
+            Icon(Icons.Default.Chat, contentDescription = stringResource(R.string.call_in_call_chat_content_description), tint = Color.White)
         }
 
         // In-call chat panel
@@ -571,7 +568,7 @@ private fun InCallChatPanel(
                 value = text,
                 onValueChange = { text = it },
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("Mensaje...", color = Color.White.copy(alpha = 0.5f)) },
+                placeholder = { Text(stringResource(R.string.call_message_placeholder), color = Color.White.copy(alpha = 0.5f)) },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = Color.White,
                     unfocusedTextColor = Color.White,
@@ -589,7 +586,7 @@ private fun InCallChatPanel(
                     if (text.isNotBlank()) { onSend(text.trim()); text = "" }
                 },
             ) {
-                Icon(Icons.Default.Send, contentDescription = "Enviar", tint = Color.White)
+                Icon(Icons.Default.Send, contentDescription = stringResource(R.string.call_send_content_description), tint = Color.White)
             }
         }
     }

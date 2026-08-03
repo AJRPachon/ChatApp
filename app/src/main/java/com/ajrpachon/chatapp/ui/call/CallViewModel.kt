@@ -1,10 +1,12 @@
 package com.ajrpachon.chatapp.ui.call
 import com.ajrpachon.chatapp.utils.catchResult
 
-import android.content.Context
+import android.app.Application
 import android.content.Intent
 import android.media.MediaRecorder
+import android.media.projection.MediaProjectionManager
 import android.os.Build
+import java.io.File
 import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
@@ -24,8 +26,6 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -35,22 +35,33 @@ import kotlinx.coroutines.withTimeout
 
 private const val MISSED_CALL_TIMEOUT_MS = 20_000L
 
+data class CallArgs(
+    val callId: String,
+    val conversationId: String,
+    val roomName: String,
+    val callType: String,
+    val isOutgoing: Boolean,
+    val isGroup: Boolean,
+)
+
 class CallViewModel(
-    private val context: Context,
-    private val callId: String,
-    private val conversationId: String,
-    private val roomName: String,
-    private val callType: String,
-    private val isOutgoing: Boolean,
-    private val isGroup: Boolean,
+    private val args: CallArgs,
+    private val application: Application,
     private val callRepository: CallRepository,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val sendMessageUseCase: SendMessageUseCase,
     private val livekitUrl: String,
+    private val recordingsDir: File,
 ) : BaseViewModel<CallState, CallEffect>(CallState()) {
+    private val callId get() = args.callId
+    private val conversationId get() = args.conversationId
+    private val roomName get() = args.roomName
+    private val callType get() = args.callType
+    private val isOutgoing get() = args.isOutgoing
+    private val isGroup get() = args.isGroup
 
-    private val _roomFlow = MutableStateFlow<Room?>(null)
-    val roomFlow = _roomFlow.asStateFlow()
+    val mediaProjectionManager: MediaProjectionManager =
+        application.getSystemService(MediaProjectionManager::class.java)
 
     private var room: Room? = null
     private var durationJob: Job? = null
@@ -116,9 +127,9 @@ class CallViewModel(
             AppLogger.d(TAG, "joinCall: userId=${user.id} roomName=$roomName livekitUrl=$livekitUrl")
             val token = callRepository.fetchLivekitToken(roomName, user.id)
 
-            val livekitRoom = LiveKit.create(context)
+            val livekitRoom = LiveKit.create(application)
             room = livekitRoom
-            _roomFlow.value = livekitRoom
+            updateState { it.copy(room = livekitRoom) }
 
             viewModelScope.launch {
                 livekitRoom.events.events.collect { event -> handleRoomEvent(event) }
@@ -138,6 +149,15 @@ class CallViewModel(
             livekitRoom.connect(livekitUrl, token)
             AppLogger.d(TAG, "joinCall: connected, remoteParticipants=${livekitRoom.remoteParticipants.size}")
 
+            // For incoming calls: accept immediately after connecting to LiveKit so the DB
+            // status is updated even if subsequent track publishing fails. This ensures the
+            // caller knows the receiver has joined the room before audio is enabled.
+            if (!isOutgoing) {
+                AppLogger.d(TAG, "joinCall: accepting call callId=$callId")
+                catchResult { callRepository.acceptCall(callId) }
+                    .onFailure { e -> AppLogger.e(TAG, "joinCall: acceptCall FAILED (non-fatal)", e) }
+            }
+
             val newPhase = if (isOutgoing) CallPhase.RINGING else CallPhase.ACTIVE
             updateState { it.copy(phase = newPhase) }
             if (!isOutgoing) startDurationTimer()
@@ -152,10 +172,21 @@ class CallViewModel(
                 }
             }
 
-            livekitRoom.localParticipant.setMicrophoneEnabled(true)
+            // Enable microphone — wrapped separately so that audio hardware errors (e.g.
+            // AudioRecord already in use, RECORD_AUDIO denied after navigation) do NOT kill
+            // the LiveKit connection. The call can still proceed (visually connected) and the
+            // user can toggle the mic from the UI to retry.
+            // NOTE: LIVEKIT_URL in local.properties must be reachable from the emulator.
+            // wss://chatapp-8ff7ks6x.livekit.cloud is a public cloud URL and is accessible
+            // from Android emulators through the host machine's network.
+            catchResult { livekitRoom.localParticipant.setMicrophoneEnabled(true) }
+                .onSuccess { AppLogger.d(TAG, "joinCall: microphone enabled") }
+                .onFailure { e -> AppLogger.e(TAG, "joinCall: setMicrophoneEnabled FAILED (non-fatal) — call connected but no local audio", e) }
 
             if (callType == "video") {
-                livekitRoom.localParticipant.setCameraEnabled(true)
+                catchResult { livekitRoom.localParticipant.setCameraEnabled(true) }
+                    .onSuccess { AppLogger.d(TAG, "joinCall: camera enabled") }
+                    .onFailure { e -> AppLogger.e(TAG, "joinCall: setCameraEnabled FAILED (non-fatal)", e) }
             }
 
             if (livekitRoom.remoteParticipants.isNotEmpty() && state.value.phase != CallPhase.ACTIVE) {
@@ -173,11 +204,6 @@ class CallViewModel(
 
             // Populate participants list with anyone already in the room at connect time.
             rebuildParticipants()
-
-            if (!isOutgoing) {
-                AppLogger.d(TAG, "joinCall: accepting call callId=$callId")
-                callRepository.acceptCall(callId)
-            }
 
         }.onFailure { e ->
             AppLogger.e(TAG, "joinCall: FAILED", e)
@@ -342,7 +368,7 @@ class CallViewModel(
         updateState { it.copy(isBackgroundBlurred = !it.isBackgroundBlurred) }
     }
 
-    fun processIntent(intent: CallIntent) {
+    fun onIntent(intent: CallIntent) {
         when (intent) {
             is CallIntent.ToggleScreenShare -> {
                 if (state.value.isScreenSharing) {
@@ -368,11 +394,10 @@ class CallViewModel(
 
     private fun startRecording() {
         catchResult {
-            val dir = context.getExternalFilesDir("recordings")
-            dir?.mkdirs()
-            val file = java.io.File(dir, "$callId.m4a")
+            recordingsDir.mkdirs()
+            val file = File(recordingsDir, "$callId.m4a")
             val recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                MediaRecorder(context)
+                MediaRecorder(application)
             } else {
                 @Suppress("DEPRECATION")
                 MediaRecorder()
