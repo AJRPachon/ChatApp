@@ -1353,6 +1353,82 @@ fun ChatScreen(
 
 // ── MessageBubble ─────────────────────────────────────────────────────────────
 
+// ── ReplySelectContainer ──────────────────────────────────────────────────────
+// Wraps a non-text bubble (call, sticker, contact, file, video, poll) so it gets the same
+// swipe-left-to-reply and long-press-to-select behavior as the plain text bubble, instead of
+// each bubble type implementing (or missing) its own ad-hoc gesture handling.
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun ReplySelectContainer(
+    isFromMe: Boolean,
+    isSelected: Boolean,
+    isMultiSelectActive: Boolean,
+    onToggleSelect: () -> Unit,
+    onReply: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    val swipeOffset = remember { Animatable(0f) }
+    val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
+    val swipeThreshold = remember(density) { with(density) { 72.dp.toPx() } }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = { if (isMultiSelectActive) onToggleSelect() },
+                onLongClick = { onToggleSelect() },
+            )
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures(
+                    onDragEnd = {
+                        if (!isMultiSelectActive && swipeOffset.value >= swipeThreshold) onReply()
+                        scope.launch { swipeOffset.animateTo(0f, spring(stiffness = 400f)) }
+                    },
+                    onDragCancel = {
+                        scope.launch { swipeOffset.animateTo(0f, spring(stiffness = 400f)) }
+                    },
+                    onHorizontalDrag = { _, dragAmount ->
+                        scope.launch {
+                            swipeOffset.snapTo((swipeOffset.value + dragAmount).coerceIn(0f, swipeThreshold * 1.3f))
+                        }
+                    },
+                )
+            },
+    ) {
+        val iconAlpha = (swipeOffset.value / swipeThreshold).coerceIn(0f, 1f)
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.Reply,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .padding(start = 4.dp)
+                .alpha(iconAlpha),
+        )
+        Box(modifier = Modifier.graphicsLayer { translationX = swipeOffset.value }) {
+            content()
+        }
+        if (isSelected) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)),
+            )
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = stringResource(R.string.chat_selected),
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .align(if (isFromMe) Alignment.TopEnd else Alignment.TopStart)
+                    .padding(4.dp)
+                    .size(20.dp),
+            )
+        }
+    }
+}
+
 // ── CallMessageBubble ─────────────────────────────────────────────────────────
 
 @Composable
@@ -1430,21 +1506,19 @@ private fun CallMessageBubble(message: MessageBO) {
 @Composable
 private fun FileBubble(
     message: MessageBO,
-    onReply: () -> Unit,
     onOpenPdf: (url: String, filename: String) -> Unit = { _, _ -> },
 ) {
     val isPdf = message.fileUrl?.endsWith(".pdf", ignoreCase = true) == true
     if (isPdf) {
-        PdfFileCard(message = message, onReply = onReply, onOpenPdf = onOpenPdf)
+        PdfFileCard(message = message, onOpenPdf = onOpenPdf)
     } else {
-        GenericFileBubble(message = message, onReply = onReply)
+        GenericFileBubble(message = message)
     }
 }
 
 @Composable
 private fun PdfFileCard(
     message: MessageBO,
-    onReply: () -> Unit,
     onOpenPdf: (url: String, filename: String) -> Unit,
 ) {
     val timeText = remember(message.createdAt) {
@@ -1462,8 +1536,7 @@ private fun PdfFileCard(
         Surface(
             shape = RoundedCornerShape(12.dp),
             color = bubbleColor,
-            modifier = Modifier.align(alignment).widthIn(max = 280.dp)
-                .combinedClickable(onClick = {}, onLongClick = onReply),
+            modifier = Modifier.align(alignment).widthIn(max = 280.dp),
         ) {
             Column(modifier = Modifier.padding(10.dp)) {
                 Row(
@@ -1523,7 +1596,7 @@ private fun PdfFileCard(
 }
 
 @Composable
-private fun GenericFileBubble(message: MessageBO, onReply: () -> Unit) {
+private fun GenericFileBubble(message: MessageBO) {
     val timeText = remember(message.createdAt) {
         val local = message.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
         "%02d:%02d".format(local.hour, local.minute)
@@ -1540,18 +1613,15 @@ private fun GenericFileBubble(message: MessageBO, onReply: () -> Unit) {
             shape = RoundedCornerShape(12.dp),
             color = bubbleColor,
             modifier = Modifier.align(alignment).widthIn(max = 280.dp)
-                .combinedClickable(
-                    onClick = {
-                        message.fileUrl?.let { url ->
-                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                                data = android.net.Uri.parse(url)
-                                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                            }
-                            runCatching { context.startActivity(intent) }
+                .clickable {
+                    message.fileUrl?.let { url ->
+                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                            data = android.net.Uri.parse(url)
+                            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                         }
-                    },
-                    onLongClick = onReply,
-                ),
+                        runCatching { context.startActivity(intent) }
+                    }
+                },
         ) {
             Row(
                 modifier = Modifier.padding(10.dp),
@@ -1601,7 +1671,7 @@ internal fun formatFileSize(bytes: Long): String {
 // ── VideoBubble ───────────────────────────────────────────────────────────────
 
 @Composable
-private fun VideoBubble(message: MessageBO, onReply: () -> Unit) {
+private fun VideoBubble(message: MessageBO) {
     val timeText = remember(message.createdAt) {
         val local = message.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
         "%02d:%02d".format(local.hour, local.minute)
@@ -1617,17 +1687,14 @@ private fun VideoBubble(message: MessageBO, onReply: () -> Unit) {
             Surface(
                 shape = RoundedCornerShape(12.dp),
                 color = if (message.isFromMe) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                modifier = Modifier.widthIn(max = 240.dp).combinedClickable(
-                    onClick = {
-                        val uri = android.net.Uri.parse(message.videoUrl)
-                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                            setDataAndType(uri, "video/*")
-                            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                        }
-                        runCatching { context.startActivity(intent) }
-                    },
-                    onLongClick = onReply,
-                ),
+                modifier = Modifier.widthIn(max = 240.dp).clickable {
+                    val uri = android.net.Uri.parse(message.videoUrl)
+                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                        setDataAndType(uri, "video/*")
+                        addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    runCatching { context.startActivity(intent) }
+                },
             ) {
                 Box(
                     modifier = Modifier
@@ -1670,62 +1737,26 @@ private fun VideoBubble(message: MessageBO, onReply: () -> Unit) {
 // ── StickerBubble ──────────────────────────────────────────────────────────────
 
 @Composable
-private fun StickerBubble(message: MessageBO, onReply: () -> Unit) {
+private fun StickerBubble(message: MessageBO) {
     val timeText = remember(message.createdAt) {
         val local = message.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
         "%02d:%02d".format(local.hour, local.minute)
     }
-    val swipeOffset = remember { Animatable(0f) }
-    val scope = rememberCoroutineScope()
-    val density = LocalDensity.current
-    val swipeThreshold = remember(density) { with(density) { 72.dp.toPx() } }
-
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .pointerInput(Unit) {
-                detectHorizontalDragGestures(
-                    onDragEnd = {
-                        if (swipeOffset.value >= swipeThreshold) onReply()
-                        scope.launch { swipeOffset.animateTo(0f, spring(stiffness = 400f)) }
-                    },
-                    onDragCancel = {
-                        scope.launch { swipeOffset.animateTo(0f, spring(stiffness = 400f)) }
-                    },
-                    onHorizontalDrag = { _, dragAmount ->
-                        scope.launch {
-                            swipeOffset.snapTo((swipeOffset.value + dragAmount).coerceIn(0f, swipeThreshold * 1.3f))
-                        }
-                    },
-                )
-            },
+            .padding(horizontal = 4.dp, vertical = 2.dp),
+        horizontalAlignment = if (message.isFromMe) Alignment.End else Alignment.Start,
     ) {
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.Reply,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .align(Alignment.CenterStart)
-                .padding(start = 4.dp)
-                .alpha((swipeOffset.value / swipeThreshold).coerceIn(0f, 1f)),
-        )
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .graphicsLayer { translationX = swipeOffset.value }
-                .padding(horizontal = 4.dp, vertical = 2.dp),
-            horizontalAlignment = if (message.isFromMe) Alignment.End else Alignment.Start,
-        ) {
-            val sticker = StickerValidation.sanitize(message.stickerUrl)
-            if (sticker != null) {
-                Text(text = sticker, fontSize = 64.sp)
-            }
-            Text(
-                text = timeText,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-            )
+        val sticker = StickerValidation.sanitize(message.stickerUrl)
+        if (sticker != null) {
+            Text(text = sticker, fontSize = 64.sp)
         }
+        Text(
+            text = timeText,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+        )
     }
 }
 
@@ -1802,11 +1833,15 @@ private fun MessageBubble(
         return
     }
     if (message.isCallMessage) {
-        CallMessageBubble(message)
+        ReplySelectContainer(message.isFromMe, isSelected, isMultiSelectActive, onToggleSelect, onReply) {
+            CallMessageBubble(message)
+        }
         return
     }
     if (message.stickerUrl != null) {
-        StickerBubble(message, onReply)
+        ReplySelectContainer(message.isFromMe, isSelected, isMultiSelectActive, onToggleSelect, onReply) {
+            StickerBubble(message)
+        }
         return
     }
     if (message.content.startsWith("contact:{")) {
@@ -1814,35 +1849,43 @@ private fun MessageBubble(
         val contactName = runCatching { org.json.JSONObject(json).getString("name") }.getOrNull()
         val contactPhone = runCatching { org.json.JSONObject(json).optString("phone", "") }.getOrNull()
         if (contactName != null) {
-            ContactBubble(
-                name = contactName,
-                phone = contactPhone ?: "",
-                isFromMe = message.isFromMe,
-                lookup = contactPhoneLookups[contactPhone ?: ""],
-                onCheckRelationship = onCheckContactRelationship,
-                onPrimaryAction = onContactCardPrimaryAction,
-            )
+            ReplySelectContainer(message.isFromMe, isSelected, isMultiSelectActive, onToggleSelect, onReply) {
+                ContactBubble(
+                    name = contactName,
+                    phone = contactPhone ?: "",
+                    isFromMe = message.isFromMe,
+                    lookup = contactPhoneLookups[contactPhone ?: ""],
+                    onCheckRelationship = onCheckContactRelationship,
+                    onPrimaryAction = onContactCardPrimaryAction,
+                )
+            }
         }
         return
     }
     if (message.fileUrl != null) {
-        FileBubble(message, onReply, onOpenPdf)
+        ReplySelectContainer(message.isFromMe, isSelected, isMultiSelectActive, onToggleSelect, onReply) {
+            FileBubble(message, onOpenPdf)
+        }
         return
     }
     if (message.videoUrl != null) {
-        VideoBubble(message, onReply)
+        ReplySelectContainer(message.isFromMe, isSelected, isMultiSelectActive, onToggleSelect, onReply) {
+            VideoBubble(message)
+        }
         return
     }
     if (message.content.startsWith("poll:")) {
         val pollId = remember(message.content) { message.content.removePrefix("poll:") }
         val pollRepository: PollRepository = koinInject()
-        PollBubble(
-            pollId = pollId,
-            isFromMe = message.isFromMe,
-            pollRepository = pollRepository,
-            currentUserId = currentUserId,
-            onVote = { optionId -> onVote?.invoke(optionId) },
-        )
+        ReplySelectContainer(message.isFromMe, isSelected, isMultiSelectActive, onToggleSelect, onReply) {
+            PollBubble(
+                pollId = pollId,
+                isFromMe = message.isFromMe,
+                pollRepository = pollRepository,
+                currentUserId = currentUserId,
+                onVote = { optionId -> onVote?.invoke(optionId) },
+            )
+        }
         return
     }
     val timeText = remember(message.createdAt) {
