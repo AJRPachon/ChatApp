@@ -106,9 +106,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Switch
-import androidx.compose.runtime.collectAsState
 import com.ajrpachon.chatapp.R
-import com.ajrpachon.chatapp.domain.repository.PollRepository
 import com.ajrpachon.chatapp.service.ActiveChatTracker
 import com.ajrpachon.chatapp.ui.components.ChatMessagesSkeleton
 import com.ajrpachon.chatapp.ui.components.OfflineBanner
@@ -179,10 +177,10 @@ import com.ajrpachon.chatapp.domain.model.ChatTheme
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.MediaUrlValidator
 import com.ajrpachon.chatapp.domain.model.MessageBO
+import com.ajrpachon.chatapp.domain.model.PollOptionBO
 import com.ajrpachon.chatapp.domain.model.StickerValidation
 import com.ajrpachon.chatapp.domain.model.UserRelationship
 import com.ajrpachon.chatapp.utils.LinkPreviewData
-import com.ajrpachon.chatapp.utils.LinkPreviewFetcher
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
@@ -194,7 +192,6 @@ import com.ajrpachon.chatapp.ChatRoute
 import com.ajrpachon.chatapp.GroupInfoRoute
 import com.ajrpachon.chatapp.UserInfoRoute
 import org.koin.androidx.compose.koinViewModel
-import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 import java.io.File
 
@@ -1264,6 +1261,10 @@ fun ChatScreen(
                                     contactPhoneLookups = state.contactPhoneLookups,
                                     onCheckContactRelationship = { vm.onIntent(ChatIntent.CheckContactRelationship(it)) },
                                     onContactCardPrimaryAction = { vm.onIntent(ChatIntent.ContactCardPrimaryAction(it)) },
+                                    pollUiStates = state.pollUiStates,
+                                    onObservePoll = { pollId -> vm.onIntent(ChatIntent.ObservePoll(pollId)) },
+                                    linkPreviews = state.linkPreviews,
+                                    onDetectedUrl = { url -> vm.onIntent(ChatIntent.DetectedUrlChanged(url)) },
                                 )
                             }
                         } else {
@@ -1297,6 +1298,10 @@ fun ChatScreen(
                                 contactPhoneLookups = state.contactPhoneLookups,
                                 onCheckContactRelationship = { vm.onIntent(ChatIntent.CheckContactRelationship(it)) },
                                 onContactCardPrimaryAction = { vm.onIntent(ChatIntent.ContactCardPrimaryAction(it)) },
+                                pollUiStates = state.pollUiStates,
+                                onObservePoll = { pollId -> vm.onIntent(ChatIntent.ObservePoll(pollId)) },
+                                linkPreviews = state.linkPreviews,
+                                onDetectedUrl = { url -> vm.onIntent(ChatIntent.DetectedUrlChanged(url)) },
                             )
                         }
                     }
@@ -1827,6 +1832,10 @@ private fun MessageBubble(
     contactPhoneLookups: Map<String, ContactPhoneLookup> = emptyMap(),
     onCheckContactRelationship: (String) -> Unit = {},
     onContactCardPrimaryAction: (String) -> Unit = {},
+    pollUiStates: Map<String, PollUiState> = emptyMap(),
+    onObservePoll: (String) -> Unit = {},
+    linkPreviews: Map<String, LinkPreviewData?> = emptyMap(),
+    onDetectedUrl: (String) -> Unit = {},
 ) {
     if (message.isDeleted) {
         DeletedMessageBubble(message)
@@ -1876,14 +1885,13 @@ private fun MessageBubble(
     }
     if (message.content.startsWith("poll:")) {
         val pollId = remember(message.content) { message.content.removePrefix("poll:") }
-        val pollRepository: PollRepository = koinInject()
         ReplySelectContainer(message.isFromMe, isSelected, isMultiSelectActive, onToggleSelect, onReply) {
             PollBubble(
                 pollId = pollId,
                 isFromMe = message.isFromMe,
-                pollRepository = pollRepository,
-                currentUserId = currentUserId,
+                pollUiState = pollUiStates[pollId],
                 onVote = { optionId -> onVote?.invoke(optionId) },
+                onObserve = onObservePoll,
             )
         }
         return
@@ -2081,14 +2089,11 @@ private fun MessageBubble(
                             if (matcher.find()) matcher.group() else null
                         }
                         if (detectedUrl != null) {
-                            val fetcher: LinkPreviewFetcher = koinInject()
-                            var previewData by remember(detectedUrl) { mutableStateOf<LinkPreviewData?>(null) }
-                            LaunchedEffect(detectedUrl) {
-                                previewData = fetcher.fetchLinkPreview(detectedUrl)
-                            }
+                            LaunchedEffect(detectedUrl) { onDetectedUrl(detectedUrl) }
+                            val previewData = linkPreviews[detectedUrl]
                             if (previewData != null) {
                                 Spacer(Modifier.height(6.dp))
-                                LinkPreviewCard(data = previewData ?: return@Column)
+                                LinkPreviewCard(data = previewData)
                             }
                         }
                     }
@@ -3390,13 +3395,14 @@ private fun PinnedMessageBanner(
 private fun PollBubble(
     pollId: String,
     isFromMe: Boolean,
-    pollRepository: PollRepository,
-    currentUserId: String?,
+    pollUiState: PollUiState?,
     onVote: (optionId: String) -> Unit,
+    onObserve: (String) -> Unit,
 ) {
-    val poll by pollRepository.observePollById(pollId).collectAsState(initial = null)
-    val options by pollRepository.observeOptionsByPollId(pollId).collectAsState(initial = emptyList())
-    val userVotes by pollRepository.observeVotes(pollId, currentUserId ?: "").collectAsState(initial = emptyList())
+    LaunchedEffect(pollId) { onObserve(pollId) }
+    val poll = pollUiState?.poll
+    val options = pollUiState?.options ?: emptyList()
+    val userVotes = pollUiState?.userVotes ?: emptyList()
 
     val alignment = if (isFromMe) Alignment.End else Alignment.Start
 
@@ -3451,63 +3457,79 @@ private fun PollBubble(
                     // Options
                     val allowMultiple = safePoll.allowMultiple
                     options.forEach { option ->
-                        val isSelected = userVotes.any { it.optionId == option.id }
-                        val fraction = option.voteCount.toFloat() / totalVotes.toFloat()
-                        // Animate width instead of snapping so re-votes read as a smooth transition.
-                        val animatedFraction by animateFloatAsState(
-                            targetValue = fraction,
-                            animationSpec = tween(durationMillis = 300),
-                            label = "pollOptionFraction",
+                        PollOptionRow(
+                            option = option,
+                            isSelected = userVotes.any { it.optionId == option.id },
+                            allowMultiple = allowMultiple,
+                            totalVotes = totalVotes,
+                            onVote = { onVote(option.id) },
                         )
-                        Column(modifier = Modifier.padding(bottom = 6.dp)) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                if (allowMultiple) {
-                                    Checkbox(
-                                        checked = isSelected,
-                                        onCheckedChange = { onVote(option.id) },
-                                        modifier = Modifier.size(20.dp),
-                                    )
-                                } else {
-                                    RadioButton(
-                                        selected = isSelected,
-                                        onClick = { onVote(option.id) },
-                                        modifier = Modifier.size(20.dp),
-                                    )
-                                }
-                                Spacer(Modifier.width(6.dp))
-                                Text(
-                                    text = option.text,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Text(
-                                    text = "${option.voteCount}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.outline,
-                                )
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(4.dp)
-                                    .padding(start = 26.dp)
-                                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth(animatedFraction)
-                                        .fillMaxHeight()
-                                        .background(MaterialTheme.colorScheme.primary),
-                                )
-                            }
-                        }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun PollOptionRow(
+    option: PollOptionBO,
+    isSelected: Boolean,
+    allowMultiple: Boolean,
+    totalVotes: Int,
+    onVote: () -> Unit,
+) {
+    val fraction = option.voteCount.toFloat() / totalVotes.toFloat()
+    // Animate width instead of snapping so re-votes read as a smooth transition.
+    val animatedFraction by animateFloatAsState(
+        targetValue = fraction,
+        animationSpec = tween(durationMillis = 300),
+        label = "pollOptionFraction",
+    )
+    Column(modifier = Modifier.padding(bottom = 6.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            if (allowMultiple) {
+                Checkbox(
+                    checked = isSelected,
+                    onCheckedChange = { onVote() },
+                    modifier = Modifier.size(20.dp),
+                )
+            } else {
+                RadioButton(
+                    selected = isSelected,
+                    onClick = onVote,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = option.text,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.weight(1f),
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(
+                text = "${option.voteCount}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline,
+            )
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .padding(start = 26.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(animatedFraction)
+                    .fillMaxHeight()
+                    .background(MaterialTheme.colorScheme.primary),
+            )
         }
     }
 }
