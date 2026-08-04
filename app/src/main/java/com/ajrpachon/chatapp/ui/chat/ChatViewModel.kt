@@ -8,7 +8,6 @@ import android.media.MediaRecorder
 import android.net.Uri
 import android.os.Build
 import android.provider.OpenableColumns
-import androidx.core.content.FileProvider
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
@@ -38,6 +37,7 @@ import com.ajrpachon.chatapp.domain.repository.ScheduledMessageRepository
 import com.ajrpachon.chatapp.domain.repository.TypingRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.model.UserRelationship
+import com.ajrpachon.chatapp.domain.usecase.ExportConversationUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetGroupMembersUseCase
 import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationResult
@@ -99,6 +99,7 @@ class ChatViewModel(
     private val wallpaperRepository: WallpaperRepository,
     private val networkMonitor: NetworkMonitor,
     private val sendInvitationUseCase: SendInvitationUseCase,
+    private val exportConversationUseCase: ExportConversationUseCase,
 ) : BaseViewModel<ChatState, ChatEffect>(ChatState()) {
 
     private val conversationId = args.conversationId
@@ -999,33 +1000,9 @@ class ChatViewModel(
         val uid = currentUserId ?: return
         viewModelScope.launch {
             updateState { it.copy(isExporting = true) }
-            catchResult {
-                val messages = withContext(Dispatchers.IO) { messageRepository.getAllMessages(conversationId, uid) }
-                val formatter = java.text.SimpleDateFormat("HH:mm dd/MM/yyyy", java.util.Locale.getDefault())
-                val text = buildString {
-                    for (msg in messages) {
-                        if (msg.isDeleted) continue
-                        val date = formatter.format(java.util.Date(msg.createdAt.toEpochMilliseconds()))
-                        val line = when {
-                            msg.content.isNotBlank() -> "[$date] ${msg.senderName}: ${msg.content}"
-                            msg.imageUrl != null -> "[$date] ${msg.senderName}: [Imagen]"
-                            msg.audioUrl != null -> "[$date] ${msg.senderName}: [Audio]"
-                            msg.gifUrl != null -> "[$date] ${msg.senderName}: [GIF]"
-                            msg.stickerUrl != null -> "[$date] ${msg.senderName}: [Sticker]"
-                            msg.fileUrl != null -> "[$date] ${msg.senderName}: [Archivo: ${msg.fileName ?: ""}]"
-                            msg.videoUrl != null -> "[$date] ${msg.senderName}: [Video]"
-                            else -> continue
-                        }
-                        appendLine(line)
-                    }
-                }
-                val f = withContext(Dispatchers.IO) {
-                    val outFile = java.io.File(application.cacheDir, "chat_$conversationId.txt")
-                    java.io.FileOutputStream(outFile).use { it.write(text.toByteArray()) }
-                    outFile
-                }
-                sendEffect(ChatEffect.ShowShareSheet(FileProvider.getUriForFile(application, "${application.packageName}.fileprovider", f)))
-            }.onFailure { sendEffect(ChatEffect.ShowSnackbar("No se pudo exportar")) }
+            exportConversationUseCase(conversationId, uid)
+                .onSuccess { uri -> sendEffect(ChatEffect.ShowShareSheet(uri)) }
+                .onFailure { sendEffect(ChatEffect.ShowSnackbar("No se pudo exportar")) }
             updateState { it.copy(isExporting = false) }
         }
     }
