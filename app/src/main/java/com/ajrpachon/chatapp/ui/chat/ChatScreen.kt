@@ -177,6 +177,7 @@ import com.ajrpachon.chatapp.domain.model.ChatTheme
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.MediaUrlValidator
 import com.ajrpachon.chatapp.domain.model.MessageBO
+import com.ajrpachon.chatapp.domain.model.PollOptionBO
 import com.ajrpachon.chatapp.domain.model.StickerValidation
 import com.ajrpachon.chatapp.domain.model.UserRelationship
 import com.ajrpachon.chatapp.utils.LinkPreviewData
@@ -3456,63 +3457,79 @@ private fun PollBubble(
                     // Options
                     val allowMultiple = safePoll.allowMultiple
                     options.forEach { option ->
-                        val isSelected = userVotes.any { it.optionId == option.id }
-                        val fraction = option.voteCount.toFloat() / totalVotes.toFloat()
-                        // Animate width instead of snapping so re-votes read as a smooth transition.
-                        val animatedFraction by animateFloatAsState(
-                            targetValue = fraction,
-                            animationSpec = tween(durationMillis = 300),
-                            label = "pollOptionFraction",
+                        PollOptionRow(
+                            option = option,
+                            isSelected = userVotes.any { it.optionId == option.id },
+                            allowMultiple = allowMultiple,
+                            totalVotes = totalVotes,
+                            onVote = { onVote(option.id) },
                         )
-                        Column(modifier = Modifier.padding(bottom = 6.dp)) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                if (allowMultiple) {
-                                    Checkbox(
-                                        checked = isSelected,
-                                        onCheckedChange = { onVote(option.id) },
-                                        modifier = Modifier.size(20.dp),
-                                    )
-                                } else {
-                                    RadioButton(
-                                        selected = isSelected,
-                                        onClick = { onVote(option.id) },
-                                        modifier = Modifier.size(20.dp),
-                                    )
-                                }
-                                Spacer(Modifier.width(6.dp))
-                                Text(
-                                    text = option.text,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Text(
-                                    text = "${option.voteCount}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.outline,
-                                )
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(4.dp)
-                                    .padding(start = 26.dp)
-                                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth(animatedFraction)
-                                        .fillMaxHeight()
-                                        .background(MaterialTheme.colorScheme.primary),
-                                )
-                            }
-                        }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun PollOptionRow(
+    option: PollOptionBO,
+    isSelected: Boolean,
+    allowMultiple: Boolean,
+    totalVotes: Int,
+    onVote: () -> Unit,
+) {
+    val fraction = option.voteCount.toFloat() / totalVotes.toFloat()
+    // Animate width instead of snapping so re-votes read as a smooth transition.
+    val animatedFraction by animateFloatAsState(
+        targetValue = fraction,
+        animationSpec = tween(durationMillis = 300),
+        label = "pollOptionFraction",
+    )
+    Column(modifier = Modifier.padding(bottom = 6.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            if (allowMultiple) {
+                Checkbox(
+                    checked = isSelected,
+                    onCheckedChange = { onVote() },
+                    modifier = Modifier.size(20.dp),
+                )
+            } else {
+                RadioButton(
+                    selected = isSelected,
+                    onClick = onVote,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = option.text,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.weight(1f),
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(
+                text = "${option.voteCount}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline,
+            )
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .padding(start = 26.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(animatedFraction)
+                    .fillMaxHeight()
+                    .background(MaterialTheme.colorScheme.primary),
+            )
         }
     }
 }
