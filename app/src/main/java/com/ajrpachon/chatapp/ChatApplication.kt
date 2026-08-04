@@ -14,6 +14,7 @@ import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
 import okio.Path.Companion.toOkioPath
 import com.ajrpachon.chatapp.di.appModules
+import com.ajrpachon.chatapp.ui.chat.GiphyClientHolder
 import com.ajrpachon.chatapp.utils.GiphyKeyManager
 import com.ajrpachon.chatapp.utils.OkHttpProvider
 import org.koin.android.ext.koin.androidContext
@@ -30,6 +31,15 @@ class ChatApplication : Application(), SingletonImageLoader.Factory {
             androidContext(this@ChatApplication)
             modules(appModules)
         }
+    }
+
+    override fun onTerminate() {
+        // GiphyClientHolder is a process-wide singleton reused across every GIF picker
+        // opening, so it must NOT be closed when the picker closes. onTerminate() is only
+        // called by the emulator (never on real devices), but it's the best-effort hook we
+        // have to release the underlying OkHttp connection pool for this shared client.
+        GiphyClientHolder.close()
+        super.onTerminate()
     }
 
     private fun enableStrictMode() {
