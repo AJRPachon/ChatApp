@@ -165,7 +165,8 @@ val viewModelModule = module {
 val utilsModule = module {
     single { ClipboardProtection(androidApplication()) }
     single { SessionGuard(androidContext()) }
-    // TODO: Call presenceManager.close() on Koin scope teardown when Koin 4.x onClose DSL is stable
+    // PresenceManager.close() is called from ConversationListViewModel.onCleared(), its sole
+    // start()-caller; see ConversationListViewModel for rationale.
     single { PresenceManager(get()) }
     single { LinkPreviewFetcher() }
     single { com.ajrpachon.chatapp.data.local.AppLockRepository(androidContext()) }
