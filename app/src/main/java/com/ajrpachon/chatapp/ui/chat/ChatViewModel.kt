@@ -1001,7 +1001,7 @@ class ChatViewModel(
         viewModelScope.launch {
             updateState { it.copy(isExporting = true) }
             exportConversationUseCase(conversationId, uid)
-                .onSuccess { uri -> sendEffect(ChatEffect.ShowShareSheet(uri)) }
+                .onSuccess { uriString -> sendEffect(ChatEffect.ShowShareSheet(Uri.parse(uriString))) }
                 .onFailure { sendEffect(ChatEffect.ShowSnackbar("No se pudo exportar")) }
             updateState { it.copy(isExporting = false) }
         }
