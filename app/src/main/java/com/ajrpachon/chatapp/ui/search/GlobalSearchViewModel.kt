@@ -13,24 +13,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
-data class GlobalSearchResultItem(
-    val messageId: String,
-    val conversationId: String,
-    val conversationName: String,
-    val content: String,
-    val createdAtMs: Long,
-)
-
-data class GlobalSearchState(
-    val query: String = "",
-    val results: List<GlobalSearchResultItem> = emptyList(),
-    val isLoading: Boolean = false,
-)
-
-sealed class GlobalSearchIntent {
-    data class QueryChanged(val query: String) : GlobalSearchIntent()
-}
-
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class GlobalSearchViewModel(
     private val messageRepository: MessageRepository,
