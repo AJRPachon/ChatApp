@@ -75,7 +75,7 @@ class StatusViewModel(
         viewModelScope.launch {
             updateState { it.copy(isLoading = true) }
             catchResult {
-                val bytes = readUriAsBytes(uri)
+                val bytes = readUriAsBytes(uri.toString())
                 statusRepository.postImageStatus(bytes, null)
             }.onFailure { e -> updateState { it.copy(error = e.message) } }
             updateState { it.copy(isLoading = false) }

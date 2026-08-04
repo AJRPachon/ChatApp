@@ -35,8 +35,8 @@ class ContactRepositoryImpl(
         return contacts.distinctBy { it.phoneNumber }
     }
 
-    override suspend fun getContactByUri(uri: Uri): ContactBO? {
-        val (name, contactId) = readNameAndId(uri) ?: return null
+    override suspend fun getContactByUri(uri: String): ContactBO? {
+        val (name, contactId) = readNameAndId(Uri.parse(uri)) ?: return null
         val phone = if (contactId != null) readPhoneNumber(contactId) else ""
         return if (name.isNotBlank() || phone.isNotBlank()) ContactBO(name, phone) else null
     }

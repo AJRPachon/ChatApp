@@ -48,7 +48,9 @@ import com.ajrpachon.chatapp.domain.usecase.BlockUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetCacheFileUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetDeviceContactsUseCase
 import com.ajrpachon.chatapp.domain.usecase.CreateGroupUseCase
+import com.ajrpachon.chatapp.domain.usecase.ExportConversationUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
+import com.ajrpachon.chatapp.domain.usecase.GetUriMetadataUseCase
 import com.ajrpachon.chatapp.domain.usecase.ReadUriAsBytesUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetGroupMembersUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetOrCreateConversationUseCase
@@ -103,6 +105,15 @@ val repositoryModule = module {
     single<com.ajrpachon.chatapp.domain.repository.AudioRecorderRepository> {
         com.ajrpachon.chatapp.data.repository.AudioRecorderRepositoryImpl(androidContext())
     }
+    single<com.ajrpachon.chatapp.domain.repository.UriContentReader> {
+        com.ajrpachon.chatapp.data.repository.UriContentReaderImpl(androidContext().contentResolver)
+    }
+    single<com.ajrpachon.chatapp.domain.repository.ConversationFileExporter> {
+        com.ajrpachon.chatapp.data.repository.ConversationFileExporterImpl(
+            context = androidContext(),
+            fileProviderAuthority = "${androidContext().packageName}.fileprovider",
+        )
+    }
 }
 
 val useCaseModule = module {
@@ -126,15 +137,9 @@ val useCaseModule = module {
     factoryOf(::BlockUserUseCase)
     factoryOf(::GetDeviceContactsUseCase)
     single { GetCacheFileUseCase(androidContext().cacheDir) }
-    single { ReadUriAsBytesUseCase(androidContext().contentResolver) }
-    factory { com.ajrpachon.chatapp.domain.usecase.GetUriMetadataUseCase(androidContext().contentResolver) }
-    factory {
-        com.ajrpachon.chatapp.domain.usecase.ExportConversationUseCase(
-            messageRepository = get(),
-            context = androidContext(),
-            fileProviderAuthority = "${androidContext().packageName}.fileprovider",
-        )
-    }
+    factoryOf(::ReadUriAsBytesUseCase)
+    factoryOf(::GetUriMetadataUseCase)
+    factoryOf(::ExportConversationUseCase)
 }
 
 val sharedModules = listOf(remoteModule, repositoryModule, useCaseModule)

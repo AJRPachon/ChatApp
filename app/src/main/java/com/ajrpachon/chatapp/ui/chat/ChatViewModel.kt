@@ -492,7 +492,7 @@ class ChatViewModel(
     private fun handleContactSelected(uri: android.net.Uri) {
         viewModelScope.launch {
             catchResult {
-                val contact = contactRepository.getContactByUri(uri)
+                val contact = contactRepository.getContactByUri(uri.toString())
                 if (contact != null) {
                     sendContact(contact.name, contact.phoneNumber)
                 }
