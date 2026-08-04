@@ -4,7 +4,10 @@ import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.GroupRole
 import com.ajrpachon.chatapp.domain.model.MessageBO
+import com.ajrpachon.chatapp.domain.model.PollBO
+import com.ajrpachon.chatapp.domain.model.PollOptionBO
 import com.ajrpachon.chatapp.domain.model.UserBO
+import com.ajrpachon.chatapp.utils.LinkPreviewData
 import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
@@ -23,6 +26,7 @@ import com.ajrpachon.chatapp.domain.repository.WallpaperRepository
 import android.app.Application
 import com.ajrpachon.chatapp.utils.AudioTranscriber
 import com.ajrpachon.chatapp.utils.ClipboardProtection
+import com.ajrpachon.chatapp.utils.LinkPreviewFetcher
 import com.ajrpachon.chatapp.utils.NetworkMonitor
 import com.ajrpachon.chatapp.utils.TranslationManager
 import androidx.work.WorkManager
@@ -36,6 +40,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -82,6 +87,7 @@ class ChatViewModelTest {
     private val application = mockk<Application>(relaxed = true)
     private val clipboardProtection = mockk<ClipboardProtection>(relaxed = true)
     private val exportConversationUseCase = mockk<ExportConversationUseCase>(relaxed = true)
+    private val linkPreviewFetcher = mockk<LinkPreviewFetcher>(relaxed = true)
 
     private val membersFlow = MutableStateFlow<List<GroupMemberBO>>(emptyList())
 
@@ -162,6 +168,7 @@ class ChatViewModelTest {
             networkMonitor = networkMonitor,
             sendInvitationUseCase = sendInvitationUseCase,
             exportConversationUseCase = exportConversationUseCase,
+            linkPreviewFetcher = linkPreviewFetcher,
         )
 
     // ── isCurrentUserMember ───────────────────────────────────────────────────
@@ -395,6 +402,56 @@ class ChatViewModelTest {
         vm.onIntent(ChatIntent.DismissForwardDialog)
         assertFalse(vm.state.value.showForwardDialog)
         assertNull(vm.state.value.forwardingMessage)
+    }
+
+    // ── Polls ─────────────────────────────────────────────────────────────────
+
+    @Test
+    fun `ObservePoll populates pollUiStates from pollRepository flows`() = runTest(sharedScheduler) {
+        val poll = PollBO(id = "poll1", conversationId = "conv1", question = "Q?", createdBy = "user1", createdAt = 0L)
+        val options = listOf(PollOptionBO(id = "opt1", pollId = "poll1", text = "A", voteCount = 2))
+        every { pollRepository.observePollById("poll1") } returns flowOf(poll)
+        every { pollRepository.observeOptionsByPollId("poll1") } returns flowOf(options)
+        every { pollRepository.observeVotes("poll1", "user1") } returns flowOf(emptyList())
+
+        val vm = buildViewModel()
+        advanceUntilIdle()
+        vm.onIntent(ChatIntent.ObservePoll("poll1"))
+        advanceUntilIdle()
+
+        val pollUiState = vm.state.value.pollUiStates["poll1"]
+        assertEquals(poll, pollUiState?.poll)
+        assertEquals(options, pollUiState?.options)
+    }
+
+    @Test
+    fun `ObservePoll for the same pollId only subscribes once`() = runTest(sharedScheduler) {
+        every { pollRepository.observePollById("poll1") } returns flowOf(null)
+        every { pollRepository.observeOptionsByPollId("poll1") } returns flowOf(emptyList())
+        every { pollRepository.observeVotes("poll1", "user1") } returns flowOf(emptyList())
+
+        val vm = buildViewModel()
+        advanceUntilIdle()
+        vm.onIntent(ChatIntent.ObservePoll("poll1"))
+        vm.onIntent(ChatIntent.ObservePoll("poll1"))
+        advanceUntilIdle()
+
+        verify(exactly = 1) { pollRepository.observePollById("poll1") }
+    }
+
+    // ── Link previews ─────────────────────────────────────────────────────────
+
+    @Test
+    fun `DetectedUrlChanged stores fetched preview in linkPreviews`() = runTest(sharedScheduler) {
+        val preview = LinkPreviewData(title = "Title", description = null, imageUrl = null, url = "https://example.com")
+        coEvery { linkPreviewFetcher.fetchLinkPreview("https://example.com") } returns preview
+
+        val vm = buildViewModel()
+        advanceUntilIdle()
+        vm.onIntent(ChatIntent.DetectedUrlChanged("https://example.com"))
+        advanceUntilIdle()
+
+        assertEquals(preview, vm.state.value.linkPreviews["https://example.com"])
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

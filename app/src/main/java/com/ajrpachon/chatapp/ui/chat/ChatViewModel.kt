@@ -47,6 +47,7 @@ import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.AudioTranscriber
 import com.ajrpachon.chatapp.utils.ClipboardProtection
+import com.ajrpachon.chatapp.utils.LinkPreviewFetcher
 import com.ajrpachon.chatapp.utils.NetworkMonitor
 import com.ajrpachon.chatapp.utils.TranslationManager
 import com.ajrpachon.chatapp.utils.UploadLimits
@@ -100,6 +101,7 @@ class ChatViewModel(
     private val networkMonitor: NetworkMonitor,
     private val sendInvitationUseCase: SendInvitationUseCase,
     private val exportConversationUseCase: ExportConversationUseCase,
+    private val linkPreviewFetcher: LinkPreviewFetcher,
 ) : BaseViewModel<ChatState, ChatEffect>(ChatState()) {
 
     private val conversationId = args.conversationId
@@ -129,6 +131,8 @@ class ChatViewModel(
     private var draftSaveJob: Job? = null
     private val memberOnlineStatuses = MutableStateFlow<Map<String, Boolean>>(emptyMap())
     private var memberObserveJob: Job? = null
+    private val observedPollIds = mutableSetOf<String>()
+    private val requestedLinkPreviewUrls = mutableSetOf<String>()
 
     init {
         viewModelScope.launch {
@@ -415,6 +419,8 @@ class ChatViewModel(
             is ChatIntent.RetryMessage -> enqueueMessageRetry()
             is ChatIntent.CheckContactRelationship -> checkContactRelationship(intent.phone)
             is ChatIntent.ContactCardPrimaryAction -> contactCardPrimaryAction(intent.phone)
+            is ChatIntent.ObservePoll -> observePoll(intent.pollId)
+            is ChatIntent.DetectedUrlChanged -> fetchLinkPreview(intent.url)
         }
     }
 
@@ -479,6 +485,60 @@ class ChatViewModel(
                     sendEffect(ChatEffect.ShowSnackbar(result.message))
                 }
             }
+        }
+    }
+
+    /**
+     * Starts observing a poll's question/options/current-user-vote, keeping
+     * [ChatState.pollUiStates] up to date. Called from PollBubble (via intent)
+     * the first time a `poll:<id>` message is rendered — idempotent per pollId
+     * for the lifetime of this ViewModel.
+     */
+    private fun observePoll(pollId: String) {
+        if (!observedPollIds.add(pollId)) return
+        viewModelScope.launch {
+            catchResult {
+                pollRepository.observePollById(pollId).collect { poll ->
+                    updateState { s ->
+                        val current = s.pollUiStates[pollId] ?: PollUiState()
+                        s.copy(pollUiStates = s.pollUiStates + (pollId to current.copy(poll = poll)))
+                    }
+                }
+            }
+        }
+        viewModelScope.launch {
+            catchResult {
+                pollRepository.observeOptionsByPollId(pollId).collect { options ->
+                    updateState { s ->
+                        val current = s.pollUiStates[pollId] ?: PollUiState()
+                        s.copy(pollUiStates = s.pollUiStates + (pollId to current.copy(options = options)))
+                    }
+                }
+            }
+        }
+        val uid = currentUserId ?: return
+        viewModelScope.launch {
+            catchResult {
+                pollRepository.observeVotes(pollId, uid).collect { votes ->
+                    updateState { s ->
+                        val current = s.pollUiStates[pollId] ?: PollUiState()
+                        s.copy(pollUiStates = s.pollUiStates + (pollId to current.copy(userVotes = votes)))
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Fetches (and caches in state) the link preview for a URL detected in a plain-text
+     * message. [LinkPreviewFetcher] has its own in-memory cache, so re-triggering for the
+     * same URL is cheap, but [requestedLinkPreviewUrls] avoids launching duplicate coroutines.
+     */
+    private fun fetchLinkPreview(url: String) {
+        if (!requestedLinkPreviewUrls.add(url)) return
+        viewModelScope.launch {
+            val preview = catchResult { linkPreviewFetcher.fetchLinkPreview(url) }.getOrNull()
+            updateState { it.copy(linkPreviews = it.linkPreviews + (url to preview)) }
         }
     }
 

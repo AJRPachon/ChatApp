@@ -142,6 +142,7 @@ val viewModelModule = module {
             networkMonitor = get<com.ajrpachon.chatapp.utils.NetworkMonitor>(),
             sendInvitationUseCase = get(),
             exportConversationUseCase = get(),
+            linkPreviewFetcher = get(),
         )
     }
     viewModelOf(::GroupInfoViewModel)

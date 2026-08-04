@@ -12,6 +12,10 @@ import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.model.UserRelationship
+import com.ajrpachon.chatapp.domain.model.PollBO
+import com.ajrpachon.chatapp.domain.model.PollOptionBO
+import com.ajrpachon.chatapp.domain.model.PollVoteBO
+import com.ajrpachon.chatapp.utils.LinkPreviewData
 
 /**
  * Relationship of the current user to whoever owns a shared contact card's phone number.
@@ -22,6 +26,13 @@ data class ContactPhoneLookup(
     val resolvedUser: UserBO? = null,
     val relationship: UserRelationship? = null,
     val isLoading: Boolean = false,
+)
+
+/** Poll data + the current user's vote(s), kept in [ChatState.pollUiStates] keyed by pollId. */
+data class PollUiState(
+    val poll: PollBO? = null,
+    val options: List<PollOptionBO> = emptyList(),
+    val userVotes: List<PollVoteBO> = emptyList(),
 )
 
 data class AudioState(
@@ -117,6 +128,10 @@ data class ChatState(
     val isOnline: Boolean = true,
     // Contact-card relationship lookups, keyed by phone (see ContactPhoneLookup doc).
     val contactPhoneLookups: Map<String, ContactPhoneLookup> = emptyMap(),
+    // Polls: pollId → poll/options/vote, populated on demand via ChatIntent.ObservePoll
+    val pollUiStates: Map<String, PollUiState> = emptyMap(),
+    // Link previews: detected URL → fetched preview (null while loading or not found)
+    val linkPreviews: Map<String, LinkPreviewData?> = emptyMap(),
 ) {
     val isMultiSelectActive: Boolean get() = selectedMessageIds.isNotEmpty()
     val latestPinnedMessage: MessageBO? get() = pinnedMessages.firstOrNull()
@@ -241,6 +256,10 @@ sealed interface ChatIntent {
     // Contact card actions
     data class CheckContactRelationship(val phone: String) : ChatIntent
     data class ContactCardPrimaryAction(val phone: String) : ChatIntent
+    // Polls: rendered lazily by PollBubble; tells the ViewModel to start observing this poll
+    data class ObservePoll(val pollId: String) : ChatIntent
+    // Link previews: notifies the ViewModel a URL was detected in a message so it can fetch a preview
+    data class DetectedUrlChanged(val url: String) : ChatIntent
 }
 
 sealed interface ChatEffect {
