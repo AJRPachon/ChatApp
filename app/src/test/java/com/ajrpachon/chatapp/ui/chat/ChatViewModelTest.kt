@@ -26,6 +26,7 @@ import com.ajrpachon.chatapp.utils.ClipboardProtection
 import com.ajrpachon.chatapp.utils.NetworkMonitor
 import com.ajrpachon.chatapp.utils.TranslationManager
 import androidx.work.WorkManager
+import com.ajrpachon.chatapp.domain.usecase.ExportConversationUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetGroupMembersUseCase
 import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationUseCase
@@ -80,6 +81,7 @@ class ChatViewModelTest {
     private val sendInvitationUseCase = mockk<SendInvitationUseCase>(relaxed = true)
     private val application = mockk<Application>(relaxed = true)
     private val clipboardProtection = mockk<ClipboardProtection>(relaxed = true)
+    private val exportConversationUseCase = mockk<ExportConversationUseCase>(relaxed = true)
 
     private val membersFlow = MutableStateFlow<List<GroupMemberBO>>(emptyList())
 
@@ -159,6 +161,7 @@ class ChatViewModelTest {
             wallpaperRepository = wallpaperRepository,
             networkMonitor = networkMonitor,
             sendInvitationUseCase = sendInvitationUseCase,
+            exportConversationUseCase = exportConversationUseCase,
         )
 
     // ── isCurrentUserMember ───────────────────────────────────────────────────

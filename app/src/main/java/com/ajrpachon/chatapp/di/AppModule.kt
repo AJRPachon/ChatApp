@@ -141,6 +141,7 @@ val viewModelModule = module {
             wallpaperRepository = get(),
             networkMonitor = get<com.ajrpachon.chatapp.utils.NetworkMonitor>(),
             sendInvitationUseCase = get(),
+            exportConversationUseCase = get(),
         )
     }
     viewModelOf(::GroupInfoViewModel)
