@@ -2011,6 +2011,9 @@ private fun MessageBubble(
                             senderAvatarUrl = message.senderAvatarUrl,
                             senderInitial = message.senderName.firstOrNull()?.uppercase() ?: "?",
                             sentTime = timeText,
+                            isFromMe = message.isFromMe,
+                            sendStatus = message.sendStatus,
+                            isRead = message.isRead,
                         )
                     }
                     if (message.content.isNotBlank()) {
@@ -2122,33 +2125,16 @@ private fun MessageBubble(
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                             )
                         }
-                        // Audio messages show their send time inside the audio row instead
-                        // (bottom-right of the waveform), so skip it here.
+                        // Audio messages show their send time (and status icon) inside the
+                        // audio row instead (bottom-right of the waveform), so skip it here.
                         if (message.audioUrl == null) {
                             Text(
                                 text = timeText,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                             )
-                        }
-                        if (message.isFromMe) {
-                            when (message.sendStatus) {
-                                com.ajrpachon.chatapp.domain.model.SendStatus.PENDING ->
-                                    Icon(
-                                        imageVector = androidx.compose.material.icons.Icons.Default.Schedule,
-                                        contentDescription = stringResource(R.string.chat_pending_send),
-                                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                                        modifier = Modifier.size(12.dp),
-                                    )
-                                com.ajrpachon.chatapp.domain.model.SendStatus.FAILED ->
-                                    Icon(
-                                        imageVector = Icons.Default.Warning,
-                                        contentDescription = stringResource(R.string.chat_send_error),
-                                        tint = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.size(12.dp),
-                                    )
-                                com.ajrpachon.chatapp.domain.model.SendStatus.SENT ->
-                                    ReadReceiptIcon(isRead = message.isRead)
+                            if (message.isFromMe) {
+                                SendStatusIcon(sendStatus = message.sendStatus, isRead = message.isRead)
                             }
                         }
                     }
@@ -2290,7 +2276,7 @@ private fun LocationMessageCard(mapsUrl: String) {
 }
 
 @Composable
-private fun ReadReceiptIcon(isRead: Boolean) {
+internal fun ReadReceiptIcon(isRead: Boolean) {
     Icon(
         imageVector = if (isRead) Icons.Default.DoneAll else Icons.Default.Done,
         contentDescription = if (isRead) stringResource(R.string.chat_read) else stringResource(R.string.chat_sent),
@@ -2300,6 +2286,29 @@ private fun ReadReceiptIcon(isRead: Boolean) {
         else
             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
     )
+}
+
+/** Pending/failed/sent-or-read status icon shown next to a sent message's time. */
+@Composable
+internal fun SendStatusIcon(sendStatus: com.ajrpachon.chatapp.domain.model.SendStatus, isRead: Boolean) {
+    when (sendStatus) {
+        com.ajrpachon.chatapp.domain.model.SendStatus.PENDING ->
+            Icon(
+                imageVector = androidx.compose.material.icons.Icons.Default.Schedule,
+                contentDescription = stringResource(R.string.chat_pending_send),
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                modifier = Modifier.size(12.dp),
+            )
+        com.ajrpachon.chatapp.domain.model.SendStatus.FAILED ->
+            Icon(
+                imageVector = Icons.Default.Warning,
+                contentDescription = stringResource(R.string.chat_send_error),
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(12.dp),
+            )
+        com.ajrpachon.chatapp.domain.model.SendStatus.SENT ->
+            ReadReceiptIcon(isRead = isRead)
+    }
 }
 
 

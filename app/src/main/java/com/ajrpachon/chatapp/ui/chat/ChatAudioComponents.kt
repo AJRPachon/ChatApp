@@ -1,10 +1,8 @@
 package com.ajrpachon.chatapp.ui.chat
 
 import android.media.MediaPlayer
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,7 +40,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -224,6 +221,9 @@ internal fun RemoteAudioPlayer(
     senderAvatarUrl: String? = null,
     senderInitial: String = "?",
     sentTime: String? = null,
+    isFromMe: Boolean = false,
+    sendStatus: com.ajrpachon.chatapp.domain.model.SendStatus? = null,
+    isRead: Boolean = false,
 ) {
     var isPrepared by remember { mutableStateOf(false) }
     var isPlaying by remember { mutableStateOf(false) }
@@ -266,6 +266,9 @@ internal fun RemoteAudioPlayer(
         senderAvatarUrl = senderAvatarUrl,
         senderInitial = senderInitial,
         sentTime = sentTime,
+        isFromMe = isFromMe,
+        sendStatus = sendStatus,
+        isRead = isRead,
     )
 }
 
@@ -283,6 +286,9 @@ internal fun AudioPlayerRow(
     senderAvatarUrl: String? = null,
     senderInitial: String = "?",
     sentTime: String? = null,
+    isFromMe: Boolean = false,
+    sendStatus: com.ajrpachon.chatapp.domain.model.SendStatus? = null,
+    isRead: Boolean = false,
 ) {
     val activeColor = MaterialTheme.colorScheme.primary
     val inactiveColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
@@ -303,13 +309,22 @@ internal fun AudioPlayerRow(
         modifier = modifier.widthIn(min = 160.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // The sender avatar sits on the "inner" edge of the bubble: before the play button for
+        // messages I sent (bubble is right-aligned), after everything for messages I received.
+        if (isFromMe) {
+            AudioSenderAvatar(
+                avatarUrl = senderAvatarUrl,
+                initial = senderInitial,
+                modifier = Modifier.padding(end = 4.dp),
+            )
+        }
         IconButton(onClick = onToggle, enabled = isPrepared) {
             Icon(
                 imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                 contentDescription = if (isPlaying) "Pausar" else "Reproducir",
             )
         }
-        Column(modifier = Modifier.weight(1f).padding(end = 4.dp)) {
+        Column(modifier = Modifier.weight(1f).padding(end = if (isFromMe) 0.dp else 4.dp)) {
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -335,62 +350,83 @@ internal fun AudioPlayerRow(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = formatAudioDuration(if (currentMs > 0) currentMs else durationMs),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 )
-                // Message send time, right-aligned under the end of the waveform.
-                if (sentTime != null) {
-                    Text(
-                        text = sentTime,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    )
+                // Message send time (+ status icon if it's mine), under the end of the waveform.
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (sentTime != null) {
+                        Text(
+                            text = sentTime,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        )
+                    }
+                    if (isFromMe && sendStatus != null) {
+                        Spacer(Modifier.width(2.dp))
+                        SendStatusIcon(sendStatus = sendStatus, isRead = isRead)
+                    }
                 }
             }
         }
-        AudioSenderAvatar(
-            avatarUrl = senderAvatarUrl,
-            initial = senderInitial,
-            isPlaying = isPlaying,
-            modifier = Modifier.padding(start = 4.dp),
-        )
+        if (!isFromMe) {
+            AudioSenderAvatar(
+                avatarUrl = senderAvatarUrl,
+                initial = senderInitial,
+                modifier = Modifier.padding(start = 4.dp),
+            )
+        }
     }
 }
 
-/** Sender avatar shown at the trailing end of the audio row, in place of the old speed toggle.
- *  Gets a highlighted ring while the audio is playing. */
+/** Sender avatar shown at the inner edge of the audio row (in place of the old speed toggle),
+ *  badged with a small mic icon, matching the reference voice-message design. */
 @Composable
 private fun AudioSenderAvatar(
     avatarUrl: String?,
     initial: String,
-    isPlaying: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val ringColor = if (isPlaying) MaterialTheme.colorScheme.primary else Color.Transparent
-    Box(
-        modifier = modifier
-            .size(32.dp)
-            .border(BorderStroke(2.dp, ringColor), CircleShape)
-            .padding(2.dp)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.primaryContainer),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (avatarUrl != null) {
-            AsyncImage(
-                model = avatarUrl,
+    Box(modifier = modifier.size(32.dp)) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (avatarUrl != null) {
+                AsyncImage(
+                    model = avatarUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.matchParentSize().clip(CircleShape),
+                )
+            } else {
+                Text(
+                    text = initial,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
+        }
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .size(14.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Default.Mic,
                 contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxWidth().height(28.dp).clip(CircleShape),
-            )
-        } else {
-            Text(
-                text = initial,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(9.dp),
             )
         }
     }
