@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Mic
@@ -449,11 +448,11 @@ private fun SpeedChip(
             val nextIndex = (speedSteps.indexOf(playbackSpeed) + 1) % speedSteps.size
             onSpeedChange(speedSteps[nextIndex])
         },
-        shape = RoundedCornerShape(50),
+        shape = CircleShape,
         color = MaterialTheme.colorScheme.surfaceVariant,
-        modifier = modifier.height(audioSideSlotHeight),
+        modifier = modifier.size(audioSideSlotHeight),
     ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 8.dp)) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth().height(audioSideSlotHeight)) {
             Text(
                 text = "×${if (playbackSpeed % 1f == 0f) playbackSpeed.toInt().toString() else playbackSpeed.toString()}",
                 style = MaterialTheme.typography.labelSmall,
