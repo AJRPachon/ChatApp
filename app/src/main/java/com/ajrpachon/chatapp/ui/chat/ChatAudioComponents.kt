@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Mic
@@ -26,6 +27,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -175,6 +177,7 @@ internal fun LocalAudioPlayer(filePath: String, amplitudeHistory: List<Float> = 
     var isPlaying by remember { mutableStateOf(false) }
     var currentMs by remember { mutableStateOf(0) }
     var durationMs by remember { mutableStateOf(0) }
+    var playbackSpeed by remember { mutableStateOf(1f) }
     val playerRef = remember { mutableStateOf<MediaPlayer?>(null) }
 
     DisposableEffect(filePath) {
@@ -211,6 +214,11 @@ internal fun LocalAudioPlayer(filePath: String, amplitudeHistory: List<Float> = 
         },
         waveformSeed = filePath.hashCode(),
         realWaveform = amplitudeHistory,
+        playbackSpeed = playbackSpeed,
+        onSpeedChange = { speed ->
+            playbackSpeed = speed
+            playerRef.value?.let { mp -> mp.playbackParams = mp.playbackParams.setSpeed(speed) }
+        },
     )
 }
 
@@ -229,6 +237,7 @@ internal fun RemoteAudioPlayer(
     var isPlaying by remember { mutableStateOf(false) }
     var currentMs by remember { mutableStateOf(0) }
     var durationMs by remember { mutableStateOf(0) }
+    var playbackSpeed by remember { mutableStateOf(1f) }
     val playerRef = remember { mutableStateOf<MediaPlayer?>(null) }
 
     DisposableEffect(url) {
@@ -269,6 +278,12 @@ internal fun RemoteAudioPlayer(
         isFromMe = isFromMe,
         sendStatus = sendStatus,
         isRead = isRead,
+        avatarAvailable = true,
+        playbackSpeed = playbackSpeed,
+        onSpeedChange = { speed ->
+            playbackSpeed = speed
+            playerRef.value?.let { mp -> mp.playbackParams = mp.playbackParams.setSpeed(speed) }
+        },
     )
 }
 
@@ -289,6 +304,9 @@ internal fun AudioPlayerRow(
     isFromMe: Boolean = false,
     sendStatus: com.ajrpachon.chatapp.domain.model.SendStatus? = null,
     isRead: Boolean = false,
+    avatarAvailable: Boolean = false,
+    playbackSpeed: Float = 1f,
+    onSpeedChange: (Float) -> Unit = {},
 ) {
     val activeColor = MaterialTheme.colorScheme.primary
     val inactiveColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
@@ -298,10 +316,10 @@ internal fun AudioPlayerRow(
     // it draws the same regardless of recording length); fall back to a seeded random waveform
     // only when we have no real data (e.g. audio received from someone else).
     val bars = remember(waveformSeed, realWaveform) {
-        if (realWaveform.isNotEmpty()) resampleToBars(realWaveform, barCount = 32)
+        if (realWaveform.isNotEmpty()) resampleToBars(realWaveform, barCount = AUDIO_BAR_COUNT)
         else {
             val rng = java.util.Random(waveformSeed.toLong())
-            List(32) { 0.2f + rng.nextFloat() * 0.8f }
+            List(AUDIO_BAR_COUNT) { 0.2f + rng.nextFloat() * 0.8f }
         }
     }
 
@@ -311,10 +329,15 @@ internal fun AudioPlayerRow(
     ) {
         // The sender avatar sits on the "inner" edge of the bubble: before the play button for
         // messages I sent (bubble is right-aligned), after everything for messages I received.
+        // While playing it's swapped for the speed toggle, then swaps back once playback stops.
         if (isFromMe) {
-            AudioSenderAvatar(
+            AudioSideSlot(
+                isPlaying = isPlaying,
+                avatarAvailable = avatarAvailable,
                 avatarUrl = senderAvatarUrl,
                 initial = senderInitial,
+                playbackSpeed = playbackSpeed,
+                onSpeedChange = onSpeedChange,
                 modifier = Modifier.padding(end = 4.dp),
             )
         }
@@ -324,14 +347,17 @@ internal fun AudioPlayerRow(
                 contentDescription = if (isPlaying) "Pausar" else "Reproducir",
             )
         }
-        Column(modifier = Modifier.weight(1f).padding(end = if (isFromMe) 0.dp else 4.dp)) {
+        Column(
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.weight(1f).padding(end = if (isFromMe) 0.dp else 4.dp),
+        ) {
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(28.dp),
+                    .height(36.dp),
             ) {
                 val barCount = bars.size
-                val gap = size.width * 0.015f
+                val gap = size.width * 0.012f
                 val barW = (size.width - gap * (barCount - 1)) / barCount
                 bars.forEachIndexed { i, h ->
                     val barH = h * size.height
@@ -346,7 +372,7 @@ internal fun AudioPlayerRow(
                     )
                 }
             }
-            Spacer(Modifier.height(2.dp))
+            Spacer(Modifier.height(1.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -374,10 +400,63 @@ internal fun AudioPlayerRow(
             }
         }
         if (!isFromMe) {
-            AudioSenderAvatar(
+            AudioSideSlot(
+                isPlaying = isPlaying,
+                avatarAvailable = avatarAvailable,
                 avatarUrl = senderAvatarUrl,
                 initial = senderInitial,
+                playbackSpeed = playbackSpeed,
+                onSpeedChange = onSpeedChange,
                 modifier = Modifier.padding(start = 4.dp),
+            )
+        }
+    }
+}
+
+private val audioSideSlotHeight = 44.dp
+private const val AUDIO_BAR_COUNT = 56
+
+/** The slot at the row's inner edge: the sender avatar while idle/paused, the playback-speed
+ *  toggle while playing (only when [avatarAvailable] — the local record-preview player has no
+ *  sender to show, so it always gets the speed toggle). */
+@Composable
+private fun AudioSideSlot(
+    isPlaying: Boolean,
+    avatarAvailable: Boolean,
+    avatarUrl: String?,
+    initial: String,
+    playbackSpeed: Float,
+    onSpeedChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (avatarAvailable && !isPlaying) {
+        AudioSenderAvatar(avatarUrl = avatarUrl, initial = initial, modifier = modifier)
+    } else {
+        SpeedChip(playbackSpeed = playbackSpeed, onSpeedChange = onSpeedChange, modifier = modifier)
+    }
+}
+
+/** Playback-speed toggle: cycles ×1 → ×1.5 → ×2 → ×1. */
+@Composable
+private fun SpeedChip(
+    playbackSpeed: Float,
+    onSpeedChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val speedSteps = listOf(1f, 1.5f, 2f)
+    Surface(
+        onClick = {
+            val nextIndex = (speedSteps.indexOf(playbackSpeed) + 1) % speedSteps.size
+            onSpeedChange(speedSteps[nextIndex])
+        },
+        shape = RoundedCornerShape(50),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        modifier = modifier.height(audioSideSlotHeight),
+    ) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 8.dp)) {
+            Text(
+                text = "×${if (playbackSpeed % 1f == 0f) playbackSpeed.toInt().toString() else playbackSpeed.toString()}",
+                style = MaterialTheme.typography.labelSmall,
             )
         }
     }
@@ -391,7 +470,7 @@ private fun AudioSenderAvatar(
     initial: String,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier.size(32.dp)) {
+    Box(modifier = modifier.size(audioSideSlotHeight)) {
         Box(
             modifier = Modifier
                 .matchParentSize()
@@ -417,7 +496,7 @@ private fun AudioSenderAvatar(
         Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .size(14.dp)
+                .size(18.dp)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.primary),
             contentAlignment = Alignment.Center,
@@ -426,7 +505,7 @@ private fun AudioSenderAvatar(
                 imageVector = Icons.Default.Mic,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.size(9.dp),
+                modifier = Modifier.size(11.dp),
             )
         }
     }
