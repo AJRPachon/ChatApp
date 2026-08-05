@@ -39,11 +39,12 @@ fun MessageDTO.toDBO() = MessageDBO(
     sendStatus = "sent",
 )
 
-fun MessageDBO.toBO(currentUserId: String, senderName: String) = MessageBO(
+fun MessageDBO.toBO(currentUserId: String, senderName: String, senderAvatarUrl: String? = null) = MessageBO(
     id = id,
     conversationId = conversationId,
     senderId = senderId,
     senderName = senderName,
+    senderAvatarUrl = senderAvatarUrl,
     content = content,
     isRead = isRead,
     isFromMe = senderId == currentUserId,

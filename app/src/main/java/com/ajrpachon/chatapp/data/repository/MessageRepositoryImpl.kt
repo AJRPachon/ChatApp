@@ -10,6 +10,7 @@ import com.ajrpachon.chatapp.data.local.dao.ReactionDao
 import com.ajrpachon.chatapp.data.local.dao.UserDao
 import com.ajrpachon.chatapp.data.local.entity.MessageDBO
 import com.ajrpachon.chatapp.data.local.entity.ReactionDBO
+import com.ajrpachon.chatapp.data.local.entity.UserDBO
 import com.ajrpachon.chatapp.data.mapper.toBO
 import com.ajrpachon.chatapp.data.mapper.toDBO
 import com.ajrpachon.chatapp.data.remote.dto.MessageDTO
@@ -77,7 +78,8 @@ class MessageRepositoryImpl(
             val senderMap = userDao.getByIds(senderIds).associateBy { it.id }
             dbos.map { dbo ->
                 val senderName = senderMap[dbo.senderId]?.displayName ?: dbo.senderId
-                val bo = dbo.toBO(currentUserId, senderName)
+                val senderAvatarUrl = senderMap[dbo.senderId]?.avatarUrl
+                val bo = dbo.toBO(currentUserId, senderName, senderAvatarUrl)
                 // Attempt to decrypt E2EE messages inline; fall back to ciphertext on error
                 if (bo.isEncrypted && bo.content.isNotBlank()) {
                     tryDecrypt(currentUserId, bo.senderId, bo)
@@ -148,9 +150,10 @@ class MessageRepositoryImpl(
         remoteSource.sendMessage(messageDto)
         val messageDbo = messageDto.toDBO()
         messageDao.upsert(messageDbo)
-        val senderName = userDao.getById(senderId)?.displayName ?: senderId
+        val sender = userDao.getById(senderId)
+        val senderName = sender?.displayName ?: senderId
         // Return with plaintext for local display
-        return messageDbo.toBO(senderId, senderName).let {
+        return messageDbo.toBO(senderId, senderName, sender?.avatarUrl).let {
             if (isEncrypted) it.copy(content = content, isEncrypted = true) else it
         }
     }
@@ -232,15 +235,16 @@ class MessageRepositoryImpl(
             SenderResolvingPagingSource(
                 source = messageDao.getMessagesPaged(conversationId, historyVisibleFrom),
                 mapDbo = { dbo, senderMap ->
-                    val senderName = senderMap[dbo.senderId] ?: dbo.senderId
-                    val bo = dbo.toBO(currentUserId, senderName)
+                    val sender = senderMap[dbo.senderId]
+                    val senderName = sender?.displayName ?: dbo.senderId
+                    val bo = dbo.toBO(currentUserId, senderName, sender?.avatarUrl)
                     if (bo.isEncrypted && bo.content.isNotBlank()) {
                         tryDecrypt(currentUserId, bo.senderId, bo)
                     } else {
                         bo
                     }
                 },
-                resolveSenders = { senderIds -> userDao.getByIds(senderIds).associateBy { it.id }.mapValues { it.value.displayName } },
+                resolveSenders = { senderIds -> userDao.getByIds(senderIds).associateBy { it.id } },
             )
         }.flow
 
@@ -260,7 +264,7 @@ class MessageRepositoryImpl(
         val senderMap = userDao.getByIds(senderIds).associateBy { it.id }
         return dbos.map { dbo ->
             val senderName = senderMap[dbo.senderId]?.displayName ?: dbo.senderId
-            dbo.toBO(currentUserId, senderName)
+            dbo.toBO(currentUserId, senderName, senderMap[dbo.senderId]?.avatarUrl)
         }
     }
 
@@ -278,7 +282,7 @@ class MessageRepositoryImpl(
             val senderMap = userDao.getByIds(senderIds).associateBy { it.id }
             dbos.map { dbo ->
                 val senderName = senderMap[dbo.senderId]?.displayName ?: dbo.senderId
-                dbo.toBO(currentUserId, senderName)
+                dbo.toBO(currentUserId, senderName, senderMap[dbo.senderId]?.avatarUrl)
             }
         }
 
@@ -292,7 +296,7 @@ class MessageRepositoryImpl(
             val senderMap = userDao.getByIds(senderIds).associateBy { it.id }
             dbos.map { dbo ->
                 val senderName = senderMap[dbo.senderId]?.displayName ?: dbo.senderId
-                dbo.toBO(currentUserId, senderName)
+                dbo.toBO(currentUserId, senderName, senderMap[dbo.senderId]?.avatarUrl)
             }
         }
 
@@ -363,7 +367,7 @@ class MessageRepositoryImpl(
         val senderMap = userDao.getByIds(senderIds).associateBy { it.id }
         return dbos.map { dbo ->
             val senderName = senderMap[dbo.senderId]?.displayName ?: dbo.senderId
-            dbo.toBO(currentUserId, senderName)
+            dbo.toBO(currentUserId, senderName, senderMap[dbo.senderId]?.avatarUrl)
         }
     }
 
@@ -378,7 +382,7 @@ class MessageRepositoryImpl(
         val senderMap = userDao.getByIds(senderIds).associateBy { it.id }
         return dbos.map { dbo ->
             val senderName = senderMap[dbo.senderId]?.displayName ?: dbo.senderId
-            dbo.toBO("", senderName)
+            dbo.toBO("", senderName, senderMap[dbo.senderId]?.avatarUrl)
         }
     }
 
@@ -402,8 +406,8 @@ class MessageRepositoryImpl(
  */
 private class SenderResolvingPagingSource(
     private val source: PagingSource<Int, MessageDBO>,
-    private val mapDbo: suspend (MessageDBO, Map<String, String>) -> MessageBO,
-    private val resolveSenders: suspend (List<String>) -> Map<String, String>,
+    private val mapDbo: suspend (MessageDBO, Map<String, UserDBO>) -> MessageBO,
+    private val resolveSenders: suspend (List<String>) -> Map<String, UserDBO>,
 ) : PagingSource<Int, MessageBO>() {
 
     init {

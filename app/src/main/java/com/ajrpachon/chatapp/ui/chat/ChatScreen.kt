@@ -2006,7 +2006,12 @@ private fun MessageBubble(
                         )
                     }
                     if (message.audioUrl != null && MediaUrlValidator.isValid(message.audioUrl)) {
-                        RemoteAudioPlayer(url = message.audioUrl)
+                        RemoteAudioPlayer(
+                            url = message.audioUrl,
+                            senderAvatarUrl = message.senderAvatarUrl,
+                            senderInitial = message.senderName.firstOrNull()?.uppercase() ?: "?",
+                            sentTime = timeText,
+                        )
                     }
                     if (message.content.isNotBlank()) {
                         var showMsgMenu by remember { mutableStateOf(false) }
@@ -2117,11 +2122,15 @@ private fun MessageBubble(
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                             )
                         }
-                        Text(
-                            text = timeText,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                        )
+                        // Audio messages show their send time inside the audio row instead
+                        // (bottom-right of the waveform), so skip it here.
+                        if (message.audioUrl == null) {
+                            Text(
+                                text = timeText,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            )
+                        }
                         if (message.isFromMe) {
                             when (message.sendStatus) {
                                 com.ajrpachon.chatapp.domain.model.SendStatus.PENDING ->

@@ -1,7 +1,12 @@
 package com.ajrpachon.chatapp.ui.chat
 
 import android.media.MediaPlayer
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,7 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Mic
@@ -23,7 +28,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -34,10 +38,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import kotlinx.coroutines.delay
 
 // ── Audio helpers ─────────────────────────────────────────────────────────────
@@ -170,7 +178,6 @@ internal fun LocalAudioPlayer(filePath: String, amplitudeHistory: List<Float> = 
     var isPlaying by remember { mutableStateOf(false) }
     var currentMs by remember { mutableStateOf(0) }
     var durationMs by remember { mutableStateOf(0) }
-    var playbackSpeed by remember { mutableStateOf(1f) }
     val playerRef = remember { mutableStateOf<MediaPlayer?>(null) }
 
     DisposableEffect(filePath) {
@@ -207,23 +214,21 @@ internal fun LocalAudioPlayer(filePath: String, amplitudeHistory: List<Float> = 
         },
         waveformSeed = filePath.hashCode(),
         realWaveform = amplitudeHistory,
-        playbackSpeed = playbackSpeed,
-        onSpeedChange = { speed ->
-            playbackSpeed = speed
-            playerRef.value?.let { mp ->
-                mp.playbackParams = mp.playbackParams.setSpeed(speed)
-            }
-        },
     )
 }
 
 @Composable
-internal fun RemoteAudioPlayer(url: String, modifier: Modifier = Modifier) {
+internal fun RemoteAudioPlayer(
+    url: String,
+    modifier: Modifier = Modifier,
+    senderAvatarUrl: String? = null,
+    senderInitial: String = "?",
+    sentTime: String? = null,
+) {
     var isPrepared by remember { mutableStateOf(false) }
     var isPlaying by remember { mutableStateOf(false) }
     var currentMs by remember { mutableStateOf(0) }
     var durationMs by remember { mutableStateOf(0) }
-    var playbackSpeed by remember { mutableStateOf(1f) }
     val playerRef = remember { mutableStateOf<MediaPlayer?>(null) }
 
     DisposableEffect(url) {
@@ -258,13 +263,9 @@ internal fun RemoteAudioPlayer(url: String, modifier: Modifier = Modifier) {
             else { mp.start(); isPlaying = true }
         },
         waveformSeed = url.hashCode(),
-        playbackSpeed = playbackSpeed,
-        onSpeedChange = { speed ->
-            playbackSpeed = speed
-            playerRef.value?.let { mp ->
-                mp.playbackParams = mp.playbackParams.setSpeed(speed)
-            }
-        },
+        senderAvatarUrl = senderAvatarUrl,
+        senderInitial = senderInitial,
+        sentTime = sentTime,
     )
 }
 
@@ -279,8 +280,9 @@ internal fun AudioPlayerRow(
     modifier: Modifier = Modifier,
     waveformSeed: Int = 0,
     realWaveform: List<Float> = emptyList(),
-    playbackSpeed: Float = 1f,
-    onSpeedChange: (Float) -> Unit = {},
+    senderAvatarUrl: String? = null,
+    senderInitial: String = "?",
+    sentTime: String? = null,
 ) {
     val activeColor = MaterialTheme.colorScheme.primary
     val inactiveColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
@@ -296,8 +298,6 @@ internal fun AudioPlayerRow(
             List(32) { 0.2f + rng.nextFloat() * 0.8f }
         }
     }
-
-    val speedSteps = listOf(1f, 1.5f, 2f)
 
     Row(
         modifier = modifier.widthIn(min = 160.dp),
@@ -332,26 +332,65 @@ internal fun AudioPlayerRow(
                 }
             }
             Spacer(Modifier.height(2.dp))
-            Text(
-                text = formatAudioDuration(if (currentMs > 0) currentMs else durationMs),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = formatAudioDuration(if (currentMs > 0) currentMs else durationMs),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                )
+                // Message send time, right-aligned under the end of the waveform.
+                if (sentTime != null) {
+                    Text(
+                        text = sentTime,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    )
+                }
+            }
         }
-        // Speed chip: cycles ×1 → ×1.5 → ×2 → ×1
-        Surface(
-            onClick = {
-                val nextIndex = (speedSteps.indexOf(playbackSpeed) + 1) % speedSteps.size
-                onSpeedChange(speedSteps[nextIndex])
-            },
-            shape = RoundedCornerShape(50),
-            color = MaterialTheme.colorScheme.surfaceVariant,
+        AudioSenderAvatar(
+            avatarUrl = senderAvatarUrl,
+            initial = senderInitial,
+            isPlaying = isPlaying,
             modifier = Modifier.padding(start = 4.dp),
-        ) {
+        )
+    }
+}
+
+/** Sender avatar shown at the trailing end of the audio row, in place of the old speed toggle.
+ *  Gets a highlighted ring while the audio is playing. */
+@Composable
+private fun AudioSenderAvatar(
+    avatarUrl: String?,
+    initial: String,
+    isPlaying: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val ringColor = if (isPlaying) MaterialTheme.colorScheme.primary else Color.Transparent
+    Box(
+        modifier = modifier
+            .size(32.dp)
+            .border(BorderStroke(2.dp, ringColor), CircleShape)
+            .padding(2.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.primaryContainer),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (avatarUrl != null) {
+            AsyncImage(
+                model = avatarUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxWidth().height(28.dp).clip(CircleShape),
+            )
+        } else {
             Text(
-                text = "×${if (playbackSpeed % 1f == 0f) playbackSpeed.toInt().toString() else playbackSpeed.toString()}",
+                text = initial,
                 style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
         }
     }
