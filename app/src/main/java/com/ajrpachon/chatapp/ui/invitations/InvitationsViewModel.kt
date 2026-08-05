@@ -25,8 +25,13 @@ class InvitationsViewModel(
         viewModelScope.launch {
             getCurrentUserUseCase().filterNotNull().collectLatest { user ->
                 currentUserId = user.id
-                observeInvitationsUseCase(user.id).collect { invitations ->
-                    updateState { it.copy(invitations = invitations, isLoading = false) }
+                catchResult {
+                    observeInvitationsUseCase(user.id).collect { invitations ->
+                        updateState { it.copy(invitations = invitations, isLoading = false) }
+                    }
+                }.onFailure { e ->
+                    AppLogger.e(TAG, "Observe invitations failed", e)
+                    updateState { it.copy(isLoading = false, error = e.message) }
                 }
             }
         }
