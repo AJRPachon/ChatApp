@@ -312,6 +312,7 @@
     <string name="conversations_photo_plural">📷 %1$d photos</string>
     <string name="conversations_from_me_prefix">You: %1$s</string>
     <string name="conversations_gif">GIF</string>
+    <string name="conversations_audio">🎤 Audio (%1$s)</string>
     <string name="conversations_poll">📊 Poll</string>
     <string name="conversations_contact">👤 Contact</string>
     <string name="conversations_muted_content_description">Muted</string>

@@ -16,6 +16,7 @@ data class MessageBO(
     val createdAt: Instant,
     val imageUrl: String? = null,
     val audioUrl: String? = null,
+    val audioDurationMs: Long? = null,
     val replyToId: String? = null,
     val replyToContent: String? = null,
     val replyToSenderName: String? = null,
