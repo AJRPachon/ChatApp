@@ -10,9 +10,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-// sendMessage has 19 params — use anyArgs() to avoid fragile positional any() chains
+// sendMessage has 20 params — use anyArgs() to avoid fragile positional any() chains
 private fun stubSend(repo: MessageRepository, result: MessageBO) {
-    coEvery { repo.sendMessage(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns result
+    coEvery {
+        repo.sendMessage(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+    } returns result
 }
 
 class SendMessageUseCaseTest {
@@ -40,8 +42,8 @@ class SendMessageUseCaseTest {
         coVerify {
             messageRepository.sendMessage(
                 "conv1", "user1", "Hello",
-                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
-                any(), any(), any(), any(), any(), any(),
+                any(), any(), any(), any(), any(), any(), any(), any(), any(),
+                any(), any(), any(), any(), any(), any(), any(), any(),
             )
         }
     }
@@ -98,13 +100,26 @@ class SendMessageUseCaseTest {
 
         coVerify {
             messageRepository.sendMessage(
-                any(), any(), any(),
-                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
+                conversationId = any(),
+                senderId = any(),
+                content = any(),
+                imageUrl = any(),
+                audioUrl = any(),
+                audioDurationMs = any(),
+                replyToId = any(),
+                replyToContent = any(),
+                replyToSenderName = any(),
+                callType = any(),
+                callStatus = any(),
+                callDuration = any(),
+                gifUrl = any(),
+                stickerUrl = any(),
                 fileUrl = "https://storage/file.pdf",
                 fileName = "document.pdf",
                 fileSize = 1024L,
                 fileMimeType = "application/pdf",
-                any(), any(),
+                videoUrl = any(),
+                otherUserId = any(),
             )
         }
     }
@@ -126,11 +141,26 @@ class SendMessageUseCaseTest {
 
         coVerify {
             messageRepository.sendMessage(
-                any(), any(), any(),
-                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
-                any(), any(), any(), any(),
+                conversationId = any(),
+                senderId = any(),
+                content = any(),
+                imageUrl = any(),
+                audioUrl = any(),
+                audioDurationMs = any(),
+                replyToId = any(),
+                replyToContent = any(),
+                replyToSenderName = any(),
+                callType = any(),
+                callStatus = any(),
+                callDuration = any(),
+                gifUrl = any(),
+                stickerUrl = any(),
+                fileUrl = any(),
+                fileName = any(),
+                fileSize = any(),
+                fileMimeType = any(),
                 videoUrl = "https://storage/video.mp4",
-                any(),
+                otherUserId = any(),
             )
         }
     }
@@ -140,7 +170,7 @@ class SendMessageUseCaseTest {
     @Test
     fun `returns failure when repository throws`() = runTest {
         coEvery {
-            messageRepository.sendMessage(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+            messageRepository.sendMessage(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
         } throws RuntimeException("network error")
 
         val result = useCase("conv1", "user1", "Hello")

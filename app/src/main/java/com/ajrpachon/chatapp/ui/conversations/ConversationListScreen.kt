@@ -1,5 +1,7 @@
 package com.ajrpachon.chatapp.ui.conversations
 
+import com.ajrpachon.chatapp.ui.chat.formatAudioDuration
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -421,6 +423,10 @@ private fun ArchivedConversationItem(
             )
             conversation.lastMessage?.let { msg ->
                 val previewText = when {
+                    msg.audioUrl != null -> stringResource(
+                        R.string.conversations_audio,
+                        formatAudioDuration((msg.audioDurationMs ?: 0L).toInt()),
+                    )
                     msg.content.startsWith("poll:") -> stringResource(R.string.conversations_poll)
                     msg.content.startsWith("contact:") -> stringResource(R.string.conversations_contact)
                     else -> msg.content
@@ -545,6 +551,17 @@ private fun ConversationItem(
                                 } else {
                                     stringResource(R.string.conversations_photo_plural, conversation.trailingImageCount)
                                 }
+                                Text(
+                                    text = if (fromMe) stringResource(R.string.conversations_from_me_prefix, label) else label,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                            lastMsg?.audioUrl != null -> {
+                                val durationText = formatAudioDuration((lastMsg.audioDurationMs ?: 0L).toInt())
+                                val label = stringResource(R.string.conversations_audio, durationText)
                                 Text(
                                     text = if (fromMe) stringResource(R.string.conversations_from_me_prefix, label) else label,
                                     style = MaterialTheme.typography.bodyMedium,
