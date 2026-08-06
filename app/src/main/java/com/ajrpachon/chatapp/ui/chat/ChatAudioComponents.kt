@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -218,7 +219,11 @@ internal fun LocalAudioPlayer(filePath: String, amplitudeHistory: List<Float> = 
 }
 
 @Composable
-internal fun RemoteAudioPlayer(url: String, modifier: Modifier = Modifier) {
+internal fun RemoteAudioPlayer(
+    url: String,
+    modifier: Modifier = Modifier,
+    trailingContent: @Composable () -> Unit = {},
+) {
     var isPrepared by remember { mutableStateOf(false) }
     var isPlaying by remember { mutableStateOf(false) }
     var currentMs by remember { mutableStateOf(0) }
@@ -265,6 +270,7 @@ internal fun RemoteAudioPlayer(url: String, modifier: Modifier = Modifier) {
                 mp.playbackParams = mp.playbackParams.setSpeed(speed)
             }
         },
+        trailingContent = trailingContent,
     )
 }
 
@@ -281,6 +287,7 @@ internal fun AudioPlayerRow(
     realWaveform: List<Float> = emptyList(),
     playbackSpeed: Float = 1f,
     onSpeedChange: (Float) -> Unit = {},
+    trailingContent: @Composable () -> Unit = {},
 ) {
     val activeColor = MaterialTheme.colorScheme.primary
     val inactiveColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
@@ -300,16 +307,23 @@ internal fun AudioPlayerRow(
     val speedSteps = listOf(1f, 1.5f, 2f)
 
     Row(
-        modifier = modifier.widthIn(min = 160.dp),
+        modifier = modifier.widthIn(min = 160.dp).height(IntrinsicSize.Min),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconButton(onClick = onToggle, enabled = isPrepared) {
+        IconButton(
+            onClick = onToggle,
+            enabled = isPrepared,
+            modifier = Modifier.align(Alignment.CenterVertically).size(44.dp),
+        ) {
             Icon(
                 imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                 contentDescription = if (isPlaying) "Pausar" else "Reproducir",
+                modifier = Modifier.size(32.dp),
             )
         }
-        Column(modifier = Modifier.weight(1f).padding(end = 4.dp)) {
+        Column(
+            modifier = Modifier.weight(1f).padding(end = 4.dp).align(Alignment.CenterVertically),
+        ) {
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -354,5 +368,6 @@ internal fun AudioPlayerRow(
                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
             )
         }
+        trailingContent()
     }
 }

@@ -15,6 +15,7 @@ data class MessageBO(
     val createdAt: Instant,
     val imageUrl: String? = null,
     val audioUrl: String? = null,
+    val audioDurationMs: Long? = null,
     val replyToId: String? = null,
     val replyToContent: String? = null,
     val replyToSenderName: String? = null,
@@ -49,6 +50,11 @@ data class MessageBO(
         audioUrl != null -> "Audio"
         fileUrl != null -> "📎 ${fileName ?: "Archivo"}"
         videoUrl != null -> "🎥 Video"
+        content.startsWith("contact:{") -> {
+            val name = Regex("\"name\":\"([^\"]*)\"").find(content)?.groupValues?.get(1)
+            "👤 ${name ?: "Contacto"}"
+        }
+        content.startsWith("poll:") -> "📊 Encuesta"
         else -> content.take(80)
     }
 }
