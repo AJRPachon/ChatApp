@@ -1563,7 +1563,7 @@ private fun PdfFileCard(
         MaterialTheme.colorScheme.surfaceVariant
     val documentPdfDefault = stringResource(R.string.chat_document_pdf_default)
 
-    ChatBubbleSlot(isFromMe = message.isFromMe, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)) { maxBubbleWidth ->
+    ChatBubbleSlot(isFromMe = message.isFromMe, modifier = Modifier.padding(vertical = 2.dp)) { maxBubbleWidth ->
         Surface(
             shape = RoundedCornerShape(12.dp),
             color = bubbleColor,
@@ -1638,7 +1638,7 @@ private fun GenericFileBubble(message: MessageBO) {
         MaterialTheme.colorScheme.surfaceVariant
     val context = LocalContext.current
 
-    ChatBubbleSlot(isFromMe = message.isFromMe, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)) { maxBubbleWidth ->
+    ChatBubbleSlot(isFromMe = message.isFromMe, modifier = Modifier.padding(vertical = 2.dp)) { maxBubbleWidth ->
         Surface(
             shape = RoundedCornerShape(12.dp),
             color = bubbleColor,
@@ -1708,7 +1708,7 @@ private fun VideoBubble(message: MessageBO) {
     }
     val context = LocalContext.current
 
-    ChatBubbleSlot(isFromMe = message.isFromMe, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)) { maxBubbleWidth ->
+    ChatBubbleSlot(isFromMe = message.isFromMe, modifier = Modifier.padding(vertical = 2.dp)) { maxBubbleWidth ->
         Column(
             horizontalAlignment = if (message.isFromMe) Alignment.End else Alignment.Start,
         ) {
@@ -1770,7 +1770,7 @@ private fun StickerBubble(message: MessageBO) {
         val local = message.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
         "%02d:%02d".format(local.hour, local.minute)
     }
-    ChatBubbleSlot(isFromMe = message.isFromMe, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)) {
+    ChatBubbleSlot(isFromMe = message.isFromMe, modifier = Modifier.padding(vertical = 2.dp)) {
         Column(horizontalAlignment = if (message.isFromMe) Alignment.End else Alignment.Start) {
             val sticker = StickerValidation.sanitize(message.stickerUrl)
             if (sticker != null) {
@@ -1789,7 +1789,7 @@ private fun StickerBubble(message: MessageBO) {
 
 @Composable
 private fun DeletedMessageBubble(message: MessageBO) {
-    ChatBubbleSlot(isFromMe = message.isFromMe, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)) { maxBubbleWidth ->
+    ChatBubbleSlot(isFromMe = message.isFromMe, modifier = Modifier.padding(vertical = 2.dp)) { maxBubbleWidth ->
         Surface(
             shape = RoundedCornerShape(12.dp),
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
@@ -2751,7 +2751,7 @@ private fun ContactBubble(
         if (phone.isNotBlank()) onCheckRelationship(phone)
     }
 
-    ChatBubbleSlot(isFromMe = isFromMe, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)) { maxBubbleWidth ->
+    ChatBubbleSlot(isFromMe = isFromMe, modifier = Modifier.padding(vertical = 2.dp)) { maxBubbleWidth ->
     Card(
         modifier = Modifier.widthIn(max = minOf(280.dp, maxBubbleWidth)),
         colors = CardDefaults.cardColors(
@@ -3429,7 +3429,7 @@ private fun PollBubble(
     val options = pollUiState?.options ?: emptyList()
     val userVotes = pollUiState?.userVotes ?: emptyList()
 
-    ChatBubbleSlot(isFromMe = isFromMe, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) { maxBubbleWidth ->
+    ChatBubbleSlot(isFromMe = isFromMe, modifier = Modifier.padding(vertical = 4.dp)) { maxBubbleWidth ->
         Card(
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier.widthIn(min = 220.dp, max = minOf(300.dp, maxBubbleWidth)),
