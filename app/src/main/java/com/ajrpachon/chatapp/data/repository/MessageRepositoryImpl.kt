@@ -1,26 +1,33 @@
 ﻿package com.ajrpachon.chatapp.data.repository
-import com.ajrpachon.chatapp.utils.catchResult
-import com.ajrpachon.chatapp.utils.AppLogger
-
 
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
-import androidx.paging.map
+import androidx.paging.PagingSource
+import androidx.paging.PagingState
 import com.ajrpachon.chatapp.data.local.dao.MessageDao
 import com.ajrpachon.chatapp.data.local.dao.ReactionDao
 import com.ajrpachon.chatapp.data.local.dao.UserDao
+import com.ajrpachon.chatapp.data.local.entity.MessageDBO
 import com.ajrpachon.chatapp.data.local.entity.ReactionDBO
-import com.ajrpachon.chatapp.data.mapper.toDBO
 import com.ajrpachon.chatapp.data.mapper.toBO
+import com.ajrpachon.chatapp.data.mapper.toDBO
 import com.ajrpachon.chatapp.data.remote.dto.MessageDTO
 import com.ajrpachon.chatapp.data.remote.source.MessageRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.UserRemoteSource
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
+import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.E2EEKeyManager
+import com.ajrpachon.chatapp.utils.UploadLimits.checkAudioSize
+import com.ajrpachon.chatapp.utils.UploadLimits.checkFileSize
+import com.ajrpachon.chatapp.utils.UploadLimits.checkImageSize
+import com.ajrpachon.chatapp.utils.UploadLimits.checkVideoSize
+import com.ajrpachon.chatapp.utils.catchResult
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.storage.storage
+import java.util.concurrent.ConcurrentHashMap
+import javax.crypto.SecretKey
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -28,12 +35,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.util.concurrent.ConcurrentHashMap
-import javax.crypto.SecretKey
-import com.ajrpachon.chatapp.utils.UploadLimits.checkAudioSize
-import com.ajrpachon.chatapp.utils.UploadLimits.checkImageSize
-import com.ajrpachon.chatapp.utils.UploadLimits.checkFileSize
-import com.ajrpachon.chatapp.utils.UploadLimits.checkVideoSize
 import kotlinx.datetime.Instant
 private const val TAG = "MsgRepo"
 
@@ -230,18 +231,20 @@ class MessageRepositoryImpl(
 
     override fun getMessagesPaged(conversationId: String, currentUserId: String, historyVisibleFrom: Long): Flow<PagingData<MessageBO>> =
         Pager(PagingConfig(pageSize = 30, enablePlaceholders = false)) {
-            messageDao.getMessagesPaged(conversationId, historyVisibleFrom)
-        }.flow.map { pagingData ->
-            pagingData.map { dbo ->
-                val senderName = userDao.getById(dbo.senderId)?.displayName ?: dbo.senderId
-                val bo = dbo.toBO(currentUserId, senderName)
-                if (bo.isEncrypted && bo.content.isNotBlank()) {
-                    tryDecrypt(currentUserId, bo.senderId, bo)
-                } else {
-                    bo
-                }
-            }
-        }
+            SenderResolvingPagingSource(
+                source = messageDao.getMessagesPaged(conversationId, historyVisibleFrom),
+                mapDbo = { dbo, senderMap ->
+                    val senderName = senderMap[dbo.senderId] ?: dbo.senderId
+                    val bo = dbo.toBO(currentUserId, senderName)
+                    if (bo.isEncrypted && bo.content.isNotBlank()) {
+                        tryDecrypt(currentUserId, bo.senderId, bo)
+                    } else {
+                        bo
+                    }
+                },
+                resolveSenders = { senderIds -> userDao.getByIds(senderIds).associateBy { it.id }.mapValues { it.value.displayName } },
+            )
+        }.flow
 
     override suspend fun syncMessages(conversationId: String, since: Long) {
         val dtos = remoteSource.getMessages(conversationId, since)
@@ -391,5 +394,46 @@ class MessageRepositoryImpl(
     override suspend fun getMostActiveConversationId(): String? = messageDao.getMostActiveConversation()?.conversationId
     override suspend fun countMessagesByDay(since: Long): List<Pair<Long, Int>> =
         messageDao.countMessagesByDay(since).map { it.dayEpoch to it.count }
+}
+
+/**
+ * Wraps a Room-generated [PagingSource] of [MessageDBO] and resolves each page's sender
+ * information in a single batch query (via [resolveSenders]) instead of hitting the DB once
+ * per item — avoids the N+1 query pattern that a plain `PagingData.map { ... }` would cause,
+ * since that operator only sees one item at a time and never the full loaded page.
+ */
+private class SenderResolvingPagingSource(
+    private val source: PagingSource<Int, MessageDBO>,
+    private val mapDbo: suspend (MessageDBO, Map<String, String>) -> MessageBO,
+    private val resolveSenders: suspend (List<String>) -> Map<String, String>,
+) : PagingSource<Int, MessageBO>() {
+
+    init {
+        source.registerInvalidatedCallback { invalidate() }
+    }
+
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, MessageBO> {
+        return when (val result = source.load(params)) {
+            is LoadResult.Page -> {
+                val senderIds = result.data.map { it.senderId }.distinct()
+                val senderMap = resolveSenders(senderIds)
+                LoadResult.Page(
+                    data = result.data.map { dbo -> mapDbo(dbo, senderMap) },
+                    prevKey = result.prevKey,
+                    nextKey = result.nextKey,
+                    itemsBefore = result.itemsBefore,
+                    itemsAfter = result.itemsAfter,
+                )
+            }
+            is LoadResult.Error -> LoadResult.Error(result.throwable)
+            is LoadResult.Invalid -> LoadResult.Invalid()
+        }
+    }
+
+    override fun getRefreshKey(state: PagingState<Int, MessageBO>): Int? =
+        state.anchorPosition?.let { anchorPosition ->
+            val anchorPage = state.closestPageToPosition(anchorPosition)
+            anchorPage?.prevKey?.plus(1) ?: anchorPage?.nextKey?.minus(1)
+        }
 }
 

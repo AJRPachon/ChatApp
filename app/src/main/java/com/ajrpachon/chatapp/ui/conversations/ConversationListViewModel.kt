@@ -205,4 +205,12 @@ class ConversationListViewModel(
             convs.sortedByDescending { it.updatedAt }
         }
     }
+
+    override fun onCleared() {
+        super.onCleared()
+        // presenceManager.close() only cancels its internal CoroutineScope (no suspending
+        // I/O of its own), so it is safe to call synchronously here, unlike typingRepository.close()
+        // in ChatViewModel which performs a network call and needs NonCancellable.
+        presenceManager.close()
+    }
 }

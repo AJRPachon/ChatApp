@@ -1,9 +1,9 @@
 ﻿package com.ajrpachon.chatapp.domain.usecase
-import com.ajrpachon.chatapp.utils.catchResult
 
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.MessageLimits
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
+import com.ajrpachon.chatapp.utils.catchResult
 
 class SendMessageUseCase(private val messageRepository: MessageRepository) {
     @Suppress("LongParameterList")

@@ -132,6 +132,7 @@
     <string name="chat_option_number">Option %1$d</string>
     <string name="chat_remove_option">Remove option</string>
     <string name="chat_add_option">Add option</string>
+    <string name="chat_poll_allow_multiple">Allow multiple answers</string>
 
     <!-- Pinned message banner -->
     <string name="chat_pinned_message_count">Pinned message (%1$d)</string>
