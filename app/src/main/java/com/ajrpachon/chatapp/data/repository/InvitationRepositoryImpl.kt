@@ -9,10 +9,13 @@ import com.ajrpachon.chatapp.data.remote.source.InvitationRemoteSource
 import com.ajrpachon.chatapp.domain.model.InvitationBO
 import com.ajrpachon.chatapp.domain.model.UserRelationship
 import com.ajrpachon.chatapp.domain.repository.InvitationRepository
+import com.ajrpachon.chatapp.utils.AppLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+
+private const val TAG = "InvitationRepo"
 
 class InvitationRepositoryImpl(
     private val invitationDao: InvitationDao,
@@ -22,7 +25,10 @@ class InvitationRepositoryImpl(
 
     override fun observePendingInvitations(userId: String): Flow<List<InvitationBO>> = channelFlow {
         // Seed Room with current pending invitations from remote
-        launch { catchResult { syncPendingInvitations(userId) } }
+        launch {
+            catchResult { syncPendingInvitations(userId) }
+                .onFailure { e -> AppLogger.e(TAG, "Initial invitations sync failed", e) }
+        }
 
         // Realtime: new invitation arrives → resync to get full sender profile
         launch {
