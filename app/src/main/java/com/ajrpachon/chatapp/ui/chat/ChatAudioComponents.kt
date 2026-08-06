@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -177,6 +178,9 @@ internal fun LocalAudioPlayer(filePath: String, amplitudeHistory: List<Float> = 
     var currentMs by remember { mutableStateOf(0) }
     var durationMs by remember { mutableStateOf(0) }
     var playbackSpeed by remember { mutableStateOf(1f) }
+    // Tracks whether playback has started and not yet finished naturally, so the speed control
+    // (when shown) survives a pause and only reverts once the audio actually ends.
+    var hasPlayedOnce by remember { mutableStateOf(false) }
     val playerRef = remember { mutableStateOf<MediaPlayer?>(null) }
 
     DisposableEffect(filePath) {
@@ -187,7 +191,7 @@ internal fun LocalAudioPlayer(filePath: String, amplitudeHistory: List<Float> = 
             mp.prepare()
             isPrepared = true
             durationMs = mp.duration
-            mp.setOnCompletionListener { p -> p.seekTo(0); isPlaying = false; currentMs = 0 }
+            mp.setOnCompletionListener { p -> p.seekTo(0); isPlaying = false; currentMs = 0; hasPlayedOnce = false }
         }
         onDispose { mp.release(); playerRef.value = null }
     }
@@ -209,14 +213,15 @@ internal fun LocalAudioPlayer(filePath: String, amplitudeHistory: List<Float> = 
             val mp = playerRef.value ?: return@AudioPlayerRow
             if (!isPrepared) return@AudioPlayerRow
             if (mp.isPlaying) { mp.pause(); isPlaying = false }
-            else { mp.start(); isPlaying = true }
+            else { mp.start(); isPlaying = true; hasPlayedOnce = true }
         },
         waveformSeed = filePath.hashCode(),
         realWaveform = amplitudeHistory,
+        showSpeedControl = hasPlayedOnce,
         playbackSpeed = playbackSpeed,
         onSpeedChange = { speed ->
             playbackSpeed = speed
-            playerRef.value?.let { mp -> mp.playbackParams = mp.playbackParams.setSpeed(speed) }
+            playerRef.value?.let { mp -> applyPlaybackSpeed(mp, speed) }
         },
     )
 }
@@ -237,6 +242,9 @@ internal fun RemoteAudioPlayer(
     var currentMs by remember { mutableStateOf(0) }
     var durationMs by remember { mutableStateOf(0) }
     var playbackSpeed by remember { mutableStateOf(1f) }
+    // Tracks whether playback has started and not yet finished naturally, so the speed control
+    // survives a pause and the sender avatar only comes back once the audio actually ends.
+    var hasPlayedOnce by remember { mutableStateOf(false) }
     val playerRef = remember { mutableStateOf<MediaPlayer?>(null) }
 
     DisposableEffect(url) {
@@ -245,7 +253,7 @@ internal fun RemoteAudioPlayer(
         runCatching {
             mp.setDataSource(url)
             mp.setOnPreparedListener { p -> isPrepared = true; durationMs = p.duration }
-            mp.setOnCompletionListener { p -> p.seekTo(0); isPlaying = false; currentMs = 0 }
+            mp.setOnCompletionListener { p -> p.seekTo(0); isPlaying = false; currentMs = 0; hasPlayedOnce = false }
             mp.prepareAsync()
         }
         onDispose { mp.release(); playerRef.value = null }
@@ -268,7 +276,7 @@ internal fun RemoteAudioPlayer(
             val mp = playerRef.value ?: return@AudioPlayerRow
             if (!isPrepared) return@AudioPlayerRow
             if (mp.isPlaying) { mp.pause(); isPlaying = false }
-            else { mp.start(); isPlaying = true }
+            else { mp.start(); isPlaying = true; hasPlayedOnce = true }
         },
         waveformSeed = url.hashCode(),
         senderAvatarUrl = senderAvatarUrl,
@@ -278,12 +286,26 @@ internal fun RemoteAudioPlayer(
         sendStatus = sendStatus,
         isRead = isRead,
         avatarAvailable = true,
+        showSpeedControl = hasPlayedOnce,
         playbackSpeed = playbackSpeed,
         onSpeedChange = { speed ->
             playbackSpeed = speed
-            playerRef.value?.let { mp -> mp.playbackParams = mp.playbackParams.setSpeed(speed) }
+            playerRef.value?.let { mp -> applyPlaybackSpeed(mp, speed) }
         },
     )
+}
+
+/** Applies the given playback speed to an active [MediaPlayer]. On some OEM builds (MIUI in
+ *  particular) changing [android.media.PlaybackParams] while the player is actively playing
+ *  gets silently ignored until playback is restarted, so we re-issue [MediaPlayer.start] to
+ *  force the new rate to take effect. Wrapped in [runCatching] since some devices/formats
+ *  reject variable-rate playback outright (e.g. raw PCM) and throw instead of no-op'ing. */
+private fun applyPlaybackSpeed(mp: MediaPlayer, speed: Float) {
+    runCatching {
+        val wasPlaying = mp.isPlaying
+        mp.playbackParams = mp.playbackParams.setSpeed(speed)
+        if (wasPlaying && !mp.isPlaying) mp.start()
+    }
 }
 
 @Suppress("LongParameterList")
@@ -304,6 +326,9 @@ internal fun AudioPlayerRow(
     sendStatus: com.ajrpachon.chatapp.domain.model.SendStatus? = null,
     isRead: Boolean = false,
     avatarAvailable: Boolean = false,
+    // Whether the speed toggle should be shown instead of the sender avatar — true once playback
+    // has started, stays true across a pause, and only goes back to false when it finishes.
+    showSpeedControl: Boolean = isPlaying,
     playbackSpeed: Float = 1f,
     onSpeedChange: (Float) -> Unit = {},
 ) {
@@ -331,7 +356,7 @@ internal fun AudioPlayerRow(
         // While playing it's swapped for the speed toggle, then swaps back once playback stops.
         if (isFromMe) {
             AudioSideSlot(
-                isPlaying = isPlaying,
+                showSpeedControl = showSpeedControl,
                 avatarAvailable = avatarAvailable,
                 avatarUrl = senderAvatarUrl,
                 initial = senderInitial,
@@ -340,20 +365,28 @@ internal fun AudioPlayerRow(
                 modifier = Modifier.padding(end = 4.dp),
             )
         }
-        IconButton(onClick = onToggle, enabled = isPrepared) {
+        IconButton(
+            onClick = onToggle,
+            enabled = isPrepared,
+            modifier = Modifier.size(52.dp),
+        ) {
             Icon(
                 imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                 contentDescription = if (isPlaying) "Pausar" else "Reproducir",
+                modifier = Modifier.size(30.dp),
             )
         }
         Column(
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.weight(1f).padding(end = if (isFromMe) 0.dp else 4.dp),
+            verticalArrangement = Arrangement.Bottom,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .padding(top = 4.dp, end = if (isFromMe) 6.dp else 8.dp),
         ) {
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(36.dp),
+                    .height(32.dp),
             ) {
                 val barCount = bars.size
                 val gap = size.width * 0.012f
@@ -371,7 +404,7 @@ internal fun AudioPlayerRow(
                     )
                 }
             }
-            Spacer(Modifier.height(1.dp))
+            Spacer(Modifier.height(2.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -400,7 +433,7 @@ internal fun AudioPlayerRow(
         }
         if (!isFromMe) {
             AudioSideSlot(
-                isPlaying = isPlaying,
+                showSpeedControl = showSpeedControl,
                 avatarAvailable = avatarAvailable,
                 avatarUrl = senderAvatarUrl,
                 initial = senderInitial,
@@ -415,12 +448,13 @@ internal fun AudioPlayerRow(
 private val audioSideSlotHeight = 44.dp
 private const val AUDIO_BAR_COUNT = 56
 
-/** The slot at the row's inner edge: the sender avatar while idle/paused, the playback-speed
- *  toggle while playing (only when [avatarAvailable] — the local record-preview player has no
- *  sender to show, so it always gets the speed toggle). */
+/** The slot at the row's inner edge: the sender avatar while idle, the playback-speed toggle
+ *  from the moment playback starts until it actually finishes — a pause keeps the speed toggle
+ *  showing (only when [avatarAvailable] — the local record-preview player has no sender to show,
+ *  so it always gets the speed toggle). */
 @Composable
 private fun AudioSideSlot(
-    isPlaying: Boolean,
+    showSpeedControl: Boolean,
     avatarAvailable: Boolean,
     avatarUrl: String?,
     initial: String,
@@ -428,7 +462,7 @@ private fun AudioSideSlot(
     onSpeedChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (avatarAvailable && !isPlaying) {
+    if (avatarAvailable && !showSpeedControl) {
         AudioSenderAvatar(avatarUrl = avatarUrl, initial = initial, modifier = modifier)
     } else {
         SpeedChip(playbackSpeed = playbackSpeed, onSpeedChange = onSpeedChange, modifier = modifier)
