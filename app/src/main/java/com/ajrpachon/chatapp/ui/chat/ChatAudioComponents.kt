@@ -2,17 +2,20 @@ package com.ajrpachon.chatapp.ui.chat
 
 import android.media.MediaPlayer
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Mic
@@ -35,10 +38,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import kotlinx.coroutines.delay
 
 // ── Audio helpers ─────────────────────────────────────────────────────────────
@@ -172,6 +178,9 @@ internal fun LocalAudioPlayer(filePath: String, amplitudeHistory: List<Float> = 
     var currentMs by remember { mutableStateOf(0) }
     var durationMs by remember { mutableStateOf(0) }
     var playbackSpeed by remember { mutableStateOf(1f) }
+    // Tracks whether playback has started and not yet finished naturally, so the speed control
+    // (when shown) survives a pause and only reverts once the audio actually ends.
+    var hasPlayedOnce by remember { mutableStateOf(false) }
     val playerRef = remember { mutableStateOf<MediaPlayer?>(null) }
 
     DisposableEffect(filePath) {
@@ -182,7 +191,7 @@ internal fun LocalAudioPlayer(filePath: String, amplitudeHistory: List<Float> = 
             mp.prepare()
             isPrepared = true
             durationMs = mp.duration
-            mp.setOnCompletionListener { p -> p.seekTo(0); isPlaying = false; currentMs = 0 }
+            mp.setOnCompletionListener { p -> p.seekTo(0); isPlaying = false; currentMs = 0; hasPlayedOnce = false }
         }
         onDispose { mp.release(); playerRef.value = null }
     }
@@ -204,16 +213,15 @@ internal fun LocalAudioPlayer(filePath: String, amplitudeHistory: List<Float> = 
             val mp = playerRef.value ?: return@AudioPlayerRow
             if (!isPrepared) return@AudioPlayerRow
             if (mp.isPlaying) { mp.pause(); isPlaying = false }
-            else { mp.start(); isPlaying = true }
+            else { mp.start(); isPlaying = true; hasPlayedOnce = true }
         },
         waveformSeed = filePath.hashCode(),
         realWaveform = amplitudeHistory,
+        showSpeedControl = hasPlayedOnce,
         playbackSpeed = playbackSpeed,
         onSpeedChange = { speed ->
             playbackSpeed = speed
-            playerRef.value?.let { mp ->
-                mp.playbackParams = mp.playbackParams.setSpeed(speed)
-            }
+            playerRef.value?.let { mp -> applyPlaybackSpeed(mp, speed) }
         },
     )
 }
@@ -222,13 +230,21 @@ internal fun LocalAudioPlayer(filePath: String, amplitudeHistory: List<Float> = 
 internal fun RemoteAudioPlayer(
     url: String,
     modifier: Modifier = Modifier,
-    trailingContent: @Composable () -> Unit = {},
+    senderAvatarUrl: String? = null,
+    senderInitial: String = "?",
+    sentTime: String? = null,
+    isFromMe: Boolean = false,
+    sendStatus: com.ajrpachon.chatapp.domain.model.SendStatus? = null,
+    isRead: Boolean = false,
 ) {
     var isPrepared by remember { mutableStateOf(false) }
     var isPlaying by remember { mutableStateOf(false) }
     var currentMs by remember { mutableStateOf(0) }
     var durationMs by remember { mutableStateOf(0) }
     var playbackSpeed by remember { mutableStateOf(1f) }
+    // Tracks whether playback has started and not yet finished naturally, so the speed control
+    // survives a pause and the sender avatar only comes back once the audio actually ends.
+    var hasPlayedOnce by remember { mutableStateOf(false) }
     val playerRef = remember { mutableStateOf<MediaPlayer?>(null) }
 
     DisposableEffect(url) {
@@ -237,7 +253,7 @@ internal fun RemoteAudioPlayer(
         runCatching {
             mp.setDataSource(url)
             mp.setOnPreparedListener { p -> isPrepared = true; durationMs = p.duration }
-            mp.setOnCompletionListener { p -> p.seekTo(0); isPlaying = false; currentMs = 0 }
+            mp.setOnCompletionListener { p -> p.seekTo(0); isPlaying = false; currentMs = 0; hasPlayedOnce = false }
             mp.prepareAsync()
         }
         onDispose { mp.release(); playerRef.value = null }
@@ -260,18 +276,36 @@ internal fun RemoteAudioPlayer(
             val mp = playerRef.value ?: return@AudioPlayerRow
             if (!isPrepared) return@AudioPlayerRow
             if (mp.isPlaying) { mp.pause(); isPlaying = false }
-            else { mp.start(); isPlaying = true }
+            else { mp.start(); isPlaying = true; hasPlayedOnce = true }
         },
         waveformSeed = url.hashCode(),
+        senderAvatarUrl = senderAvatarUrl,
+        senderInitial = senderInitial,
+        sentTime = sentTime,
+        isFromMe = isFromMe,
+        sendStatus = sendStatus,
+        isRead = isRead,
+        avatarAvailable = true,
+        showSpeedControl = hasPlayedOnce,
         playbackSpeed = playbackSpeed,
         onSpeedChange = { speed ->
             playbackSpeed = speed
-            playerRef.value?.let { mp ->
-                mp.playbackParams = mp.playbackParams.setSpeed(speed)
-            }
+            playerRef.value?.let { mp -> applyPlaybackSpeed(mp, speed) }
         },
-        trailingContent = trailingContent,
     )
+}
+
+/** Applies the given playback speed to an active [MediaPlayer]. On some OEM builds (MIUI in
+ *  particular) changing [android.media.PlaybackParams] while the player is actively playing
+ *  gets silently ignored until playback is restarted, so we re-issue [MediaPlayer.start] to
+ *  force the new rate to take effect. Wrapped in [runCatching] since some devices/formats
+ *  reject variable-rate playback outright (e.g. raw PCM) and throw instead of no-op'ing. */
+private fun applyPlaybackSpeed(mp: MediaPlayer, speed: Float) {
+    runCatching {
+        val wasPlaying = mp.isPlaying
+        mp.playbackParams = mp.playbackParams.setSpeed(speed)
+        if (wasPlaying && !mp.isPlaying) mp.start()
+    }
 }
 
 @Suppress("LongParameterList")
@@ -285,9 +319,18 @@ internal fun AudioPlayerRow(
     modifier: Modifier = Modifier,
     waveformSeed: Int = 0,
     realWaveform: List<Float> = emptyList(),
+    senderAvatarUrl: String? = null,
+    senderInitial: String = "?",
+    sentTime: String? = null,
+    isFromMe: Boolean = false,
+    sendStatus: com.ajrpachon.chatapp.domain.model.SendStatus? = null,
+    isRead: Boolean = false,
+    avatarAvailable: Boolean = false,
+    // Whether the speed toggle should be shown instead of the sender avatar — true once playback
+    // has started, stays true across a pause, and only goes back to false when it finishes.
+    showSpeedControl: Boolean = isPlaying,
     playbackSpeed: Float = 1f,
     onSpeedChange: (Float) -> Unit = {},
-    trailingContent: @Composable () -> Unit = {},
 ) {
     val activeColor = MaterialTheme.colorScheme.primary
     val inactiveColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
@@ -297,40 +340,56 @@ internal fun AudioPlayerRow(
     // it draws the same regardless of recording length); fall back to a seeded random waveform
     // only when we have no real data (e.g. audio received from someone else).
     val bars = remember(waveformSeed, realWaveform) {
-        if (realWaveform.isNotEmpty()) resampleToBars(realWaveform, barCount = 32)
+        if (realWaveform.isNotEmpty()) resampleToBars(realWaveform, barCount = AUDIO_BAR_COUNT)
         else {
             val rng = java.util.Random(waveformSeed.toLong())
-            List(32) { 0.2f + rng.nextFloat() * 0.8f }
+            List(AUDIO_BAR_COUNT) { 0.2f + rng.nextFloat() * 0.8f }
         }
     }
 
-    val speedSteps = listOf(1f, 1.5f, 2f)
-
     Row(
-        modifier = modifier.widthIn(min = 160.dp).height(IntrinsicSize.Min),
+        modifier = modifier.widthIn(min = 160.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // The sender avatar sits on the "inner" edge of the bubble: before the play button for
+        // messages I sent (bubble is right-aligned), after everything for messages I received.
+        // While playing it's swapped for the speed toggle, then swaps back once playback stops.
+        if (isFromMe) {
+            AudioSideSlot(
+                showSpeedControl = showSpeedControl,
+                avatarAvailable = avatarAvailable,
+                avatarUrl = senderAvatarUrl,
+                initial = senderInitial,
+                playbackSpeed = playbackSpeed,
+                onSpeedChange = onSpeedChange,
+                modifier = Modifier.padding(end = 4.dp),
+            )
+        }
         IconButton(
             onClick = onToggle,
             enabled = isPrepared,
-            modifier = Modifier.align(Alignment.CenterVertically).size(44.dp),
+            modifier = Modifier.size(52.dp),
         ) {
             Icon(
                 imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                 contentDescription = if (isPlaying) "Pausar" else "Reproducir",
-                modifier = Modifier.size(32.dp),
+                modifier = Modifier.size(30.dp),
             )
         }
         Column(
-            modifier = Modifier.weight(1f).padding(end = 4.dp).align(Alignment.CenterVertically),
+            verticalArrangement = Arrangement.Bottom,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .padding(top = 4.dp, end = if (isFromMe) 6.dp else 8.dp),
         ) {
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(28.dp),
+                    .height(32.dp),
             ) {
                 val barCount = bars.size
-                val gap = size.width * 0.015f
+                val gap = size.width * 0.012f
                 val barW = (size.width - gap * (barCount - 1)) / barCount
                 bars.forEachIndexed { i, h ->
                     val barH = h * size.height
@@ -346,28 +405,141 @@ internal fun AudioPlayerRow(
                 }
             }
             Spacer(Modifier.height(2.dp))
-            Text(
-                text = formatAudioDuration(if (currentMs > 0) currentMs else durationMs),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = formatAudioDuration(if (currentMs > 0) currentMs else durationMs),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                )
+                // Message send time (+ status icon if it's mine), under the end of the waveform.
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (sentTime != null) {
+                        Text(
+                            text = sentTime,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        )
+                    }
+                    if (isFromMe && sendStatus != null) {
+                        Spacer(Modifier.width(2.dp))
+                        SendStatusIcon(sendStatus = sendStatus, isRead = isRead)
+                    }
+                }
+            }
+        }
+        if (!isFromMe) {
+            AudioSideSlot(
+                showSpeedControl = showSpeedControl,
+                avatarAvailable = avatarAvailable,
+                avatarUrl = senderAvatarUrl,
+                initial = senderInitial,
+                playbackSpeed = playbackSpeed,
+                onSpeedChange = onSpeedChange,
+                modifier = Modifier.padding(start = 4.dp),
             )
         }
-        // Speed chip: cycles ×1 → ×1.5 → ×2 → ×1
-        Surface(
-            onClick = {
-                val nextIndex = (speedSteps.indexOf(playbackSpeed) + 1) % speedSteps.size
-                onSpeedChange(speedSteps[nextIndex])
-            },
-            shape = RoundedCornerShape(50),
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            modifier = Modifier.padding(start = 4.dp),
-        ) {
+    }
+}
+
+private val audioSideSlotHeight = 44.dp
+private const val AUDIO_BAR_COUNT = 56
+
+/** The slot at the row's inner edge: the sender avatar while idle, the playback-speed toggle
+ *  from the moment playback starts until it actually finishes — a pause keeps the speed toggle
+ *  showing (only when [avatarAvailable] — the local record-preview player has no sender to show,
+ *  so it always gets the speed toggle). */
+@Composable
+private fun AudioSideSlot(
+    showSpeedControl: Boolean,
+    avatarAvailable: Boolean,
+    avatarUrl: String?,
+    initial: String,
+    playbackSpeed: Float,
+    onSpeedChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (avatarAvailable && !showSpeedControl) {
+        AudioSenderAvatar(avatarUrl = avatarUrl, initial = initial, modifier = modifier)
+    } else {
+        SpeedChip(playbackSpeed = playbackSpeed, onSpeedChange = onSpeedChange, modifier = modifier)
+    }
+}
+
+/** Playback-speed toggle: cycles ×1 → ×1.5 → ×2 → ×1. */
+@Composable
+private fun SpeedChip(
+    playbackSpeed: Float,
+    onSpeedChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val speedSteps = listOf(1f, 1.5f, 2f)
+    Surface(
+        onClick = {
+            val nextIndex = (speedSteps.indexOf(playbackSpeed) + 1) % speedSteps.size
+            onSpeedChange(speedSteps[nextIndex])
+        },
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        modifier = modifier.size(audioSideSlotHeight),
+    ) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth().height(audioSideSlotHeight)) {
             Text(
                 text = "×${if (playbackSpeed % 1f == 0f) playbackSpeed.toInt().toString() else playbackSpeed.toString()}",
                 style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
             )
         }
-        trailingContent()
+    }
+}
+
+/** Sender avatar shown at the inner edge of the audio row (in place of the old speed toggle),
+ *  badged with a small mic icon, matching the reference voice-message design. */
+@Composable
+private fun AudioSenderAvatar(
+    avatarUrl: String?,
+    initial: String,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier = modifier.size(audioSideSlotHeight)) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (avatarUrl != null) {
+                AsyncImage(
+                    model = avatarUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.matchParentSize().clip(CircleShape),
+                )
+            } else {
+                Text(
+                    text = initial,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
+        }
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .size(18.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Default.Mic,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(11.dp),
+            )
+        }
     }
 }

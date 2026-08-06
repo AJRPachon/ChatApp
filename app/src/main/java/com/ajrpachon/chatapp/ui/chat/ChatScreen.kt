@@ -1803,55 +1803,6 @@ private fun DeletedMessageBubble(message: MessageBO) {
 
 // ── MessageBubble ─────────────────────────────────────────────────────────────
 
-@Composable
-private fun MessageTimestampRow(message: com.ajrpachon.chatapp.domain.model.MessageBO, timeText: String) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        message.expiresAt?.let { exp ->
-            val secsLeft = ((exp - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
-            Text(
-                "⏱️ ${if (secsLeft < 60) "${secsLeft}s" else "${secsLeft / 60}m"}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
-            )
-        }
-        if (message.isEdited) {
-            Text(
-                stringResource(R.string.chat_edited_label),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-            )
-        }
-        Text(
-            text = timeText,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-        )
-        if (message.isFromMe) {
-            when (message.sendStatus) {
-                com.ajrpachon.chatapp.domain.model.SendStatus.PENDING ->
-                    Icon(
-                        imageVector = androidx.compose.material.icons.Icons.Default.Schedule,
-                        contentDescription = stringResource(R.string.chat_pending_send),
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                        modifier = Modifier.size(12.dp),
-                    )
-                com.ajrpachon.chatapp.domain.model.SendStatus.FAILED ->
-                    Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = stringResource(R.string.chat_send_error),
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(12.dp),
-                    )
-                com.ajrpachon.chatapp.domain.model.SendStatus.SENT ->
-                    ReadReceiptIcon(isRead = message.isRead)
-            }
-        }
-    }
-}
-
 @Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList", "ReturnCount")
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -2054,16 +2005,15 @@ private fun MessageBubble(
                                 .clip(RoundedCornerShape(8.dp)),
                         )
                     }
-                    val isAudioOnly = message.audioUrl != null &&
-                        MediaUrlValidator.isValid(message.audioUrl) && message.content.isBlank()
                     if (message.audioUrl != null && MediaUrlValidator.isValid(message.audioUrl)) {
                         RemoteAudioPlayer(
                             url = message.audioUrl,
-                            trailingContent = if (isAudioOnly) {
-                                { MessageTimestampRow(message = message, timeText = timeText) }
-                            } else {
-                                {}
-                            },
+                            senderAvatarUrl = message.senderAvatarUrl,
+                            senderInitial = message.senderName.firstOrNull()?.uppercase() ?: "?",
+                            sentTime = timeText,
+                            isFromMe = message.isFromMe,
+                            sendStatus = message.sendStatus,
+                            isRead = message.isRead,
                         )
                     }
                     if (message.content.isNotBlank()) {
@@ -2155,9 +2105,37 @@ private fun MessageBubble(
                             }
                         }
                     }
-                    if (!isAudioOnly) {
-                        Box(modifier = Modifier.align(Alignment.End)) {
-                            MessageTimestampRow(message = message, timeText = timeText)
+                    Row(
+                        modifier = Modifier.align(Alignment.End),
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        message.expiresAt?.let { exp ->
+                            val secsLeft = ((exp - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
+                            Text(
+                                "⏱️ ${if (secsLeft < 60) "${secsLeft}s" else "${secsLeft / 60}m"}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                            )
+                        }
+                        if (message.isEdited) {
+                            Text(
+                                stringResource(R.string.chat_edited_label),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                            )
+                        }
+                        // Audio messages show their send time (and status icon) inside the
+                        // audio row instead (bottom-right of the waveform), so skip it here.
+                        if (message.audioUrl == null) {
+                            Text(
+                                text = timeText,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            )
+                            if (message.isFromMe) {
+                                SendStatusIcon(sendStatus = message.sendStatus, isRead = message.isRead)
+                            }
                         }
                     }
                 }
@@ -2298,7 +2276,7 @@ private fun LocationMessageCard(mapsUrl: String) {
 }
 
 @Composable
-private fun ReadReceiptIcon(isRead: Boolean) {
+internal fun ReadReceiptIcon(isRead: Boolean) {
     Icon(
         imageVector = if (isRead) Icons.Default.DoneAll else Icons.Default.Done,
         contentDescription = if (isRead) stringResource(R.string.chat_read) else stringResource(R.string.chat_sent),
@@ -2308,6 +2286,29 @@ private fun ReadReceiptIcon(isRead: Boolean) {
         else
             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
     )
+}
+
+/** Pending/failed/sent-or-read status icon shown next to a sent message's time. */
+@Composable
+internal fun SendStatusIcon(sendStatus: com.ajrpachon.chatapp.domain.model.SendStatus, isRead: Boolean) {
+    when (sendStatus) {
+        com.ajrpachon.chatapp.domain.model.SendStatus.PENDING ->
+            Icon(
+                imageVector = androidx.compose.material.icons.Icons.Default.Schedule,
+                contentDescription = stringResource(R.string.chat_pending_send),
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                modifier = Modifier.size(12.dp),
+            )
+        com.ajrpachon.chatapp.domain.model.SendStatus.FAILED ->
+            Icon(
+                imageVector = Icons.Default.Warning,
+                contentDescription = stringResource(R.string.chat_send_error),
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(12.dp),
+            )
+        com.ajrpachon.chatapp.domain.model.SendStatus.SENT ->
+            ReadReceiptIcon(isRead = isRead)
+    }
 }
 
 

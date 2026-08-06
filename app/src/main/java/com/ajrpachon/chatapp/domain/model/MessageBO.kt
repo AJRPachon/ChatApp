@@ -9,6 +9,7 @@ data class MessageBO(
     val conversationId: String,
     val senderId: String,
     val senderName: String,
+    val senderAvatarUrl: String? = null,
     val content: String,
     val isRead: Boolean,
     val isFromMe: Boolean,
