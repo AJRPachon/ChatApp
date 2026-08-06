@@ -24,6 +24,7 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -163,6 +164,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -1434,6 +1436,33 @@ private fun ReplySelectContainer(
     }
 }
 
+// ── Chat bubble outer-margin rule ──────────────────────────────────────────────
+
+/** Fraction of the available width a chat bubble may ever occupy. This is the one rule every
+ *  bubble type in this file renders through via [ChatBubbleSlot]: a bubble is pinned to the
+ *  outer edge — right for messages I sent, left for messages I received — leaving at least a
+ *  matching blank margin on the opposite ("inner") side, like a voice-message-style layout.
+ *  Bubbles whose natural content is already narrower than the cap simply keep their own width. */
+private const val BUBBLE_MAX_WIDTH_FRACTION = 0.85f
+
+/** Single choke point for the outer-margin rule above. Wrap any chat bubble's root content in
+ *  this instead of a bare `Modifier.fillMaxWidth()` Row/Column so every bubble type stays
+ *  consistent. [content] receives the resolved max width to apply (typically via
+ *  `Modifier.widthIn(max = it)`, combined with any smaller fixed cap the bubble already has). */
+@Composable
+private fun ChatBubbleSlot(
+    isFromMe: Boolean,
+    modifier: Modifier = Modifier,
+    content: @Composable (maxBubbleWidth: Dp) -> Unit,
+) {
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val maxBubbleWidth = maxWidth * BUBBLE_MAX_WIDTH_FRACTION
+        Box(modifier = Modifier.align(if (isFromMe) Alignment.CenterEnd else Alignment.CenterStart)) {
+            content(maxBubbleWidth)
+        }
+    }
+}
+
 // ── CallMessageBubble ─────────────────────────────────────────────────────────
 
 @Composable
@@ -1463,14 +1492,12 @@ private fun CallMessageBubble(message: MessageBO) {
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
     }
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (message.isFromMe) Arrangement.End else Arrangement.Start,
-    ) {
+    ChatBubbleSlot(isFromMe = message.isFromMe) { maxBubbleWidth ->
         Surface(
             shape = RoundedCornerShape(12.dp),
             color = if (message.isFromMe) MaterialTheme.colorScheme.primaryContainer
                     else MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier.widthIn(max = maxBubbleWidth),
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -1534,14 +1561,13 @@ private fun PdfFileCard(
         MaterialTheme.colorScheme.primaryContainer
     else
         MaterialTheme.colorScheme.surfaceVariant
-    val alignment = if (message.isFromMe) Alignment.CenterEnd else Alignment.CenterStart
     val documentPdfDefault = stringResource(R.string.chat_document_pdf_default)
 
-    Box(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp)) {
+    ChatBubbleSlot(isFromMe = message.isFromMe, modifier = Modifier.padding(vertical = 2.dp)) { maxBubbleWidth ->
         Surface(
             shape = RoundedCornerShape(12.dp),
             color = bubbleColor,
-            modifier = Modifier.align(alignment).widthIn(max = 280.dp),
+            modifier = Modifier.widthIn(max = minOf(280.dp, maxBubbleWidth)),
         ) {
             Column(modifier = Modifier.padding(10.dp)) {
                 Row(
@@ -1610,14 +1636,13 @@ private fun GenericFileBubble(message: MessageBO) {
         MaterialTheme.colorScheme.primaryContainer
     else
         MaterialTheme.colorScheme.surfaceVariant
-    val alignment = if (message.isFromMe) Alignment.CenterEnd else Alignment.CenterStart
     val context = LocalContext.current
 
-    Box(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp)) {
+    ChatBubbleSlot(isFromMe = message.isFromMe, modifier = Modifier.padding(vertical = 2.dp)) { maxBubbleWidth ->
         Surface(
             shape = RoundedCornerShape(12.dp),
             color = bubbleColor,
-            modifier = Modifier.align(alignment).widthIn(max = 280.dp)
+            modifier = Modifier.widthIn(max = minOf(280.dp, maxBubbleWidth))
                 .clickable {
                     message.fileUrl?.let { url ->
                         val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
@@ -1681,18 +1706,16 @@ private fun VideoBubble(message: MessageBO) {
         val local = message.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
         "%02d:%02d".format(local.hour, local.minute)
     }
-    val alignment = if (message.isFromMe) Alignment.CenterEnd else Alignment.CenterStart
     val context = LocalContext.current
 
-    Box(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp)) {
+    ChatBubbleSlot(isFromMe = message.isFromMe, modifier = Modifier.padding(vertical = 2.dp)) { maxBubbleWidth ->
         Column(
-            modifier = Modifier.align(alignment),
             horizontalAlignment = if (message.isFromMe) Alignment.End else Alignment.Start,
         ) {
             Surface(
                 shape = RoundedCornerShape(12.dp),
                 color = if (message.isFromMe) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                modifier = Modifier.widthIn(max = 240.dp).clickable {
+                modifier = Modifier.widthIn(max = minOf(240.dp, maxBubbleWidth)).clickable {
                     val uri = android.net.Uri.parse(message.videoUrl)
                     val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
                         setDataAndType(uri, "video/*")
@@ -1747,21 +1770,18 @@ private fun StickerBubble(message: MessageBO) {
         val local = message.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
         "%02d:%02d".format(local.hour, local.minute)
     }
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 2.dp),
-        horizontalAlignment = if (message.isFromMe) Alignment.End else Alignment.Start,
-    ) {
-        val sticker = StickerValidation.sanitize(message.stickerUrl)
-        if (sticker != null) {
-            Text(text = sticker, fontSize = 64.sp)
+    ChatBubbleSlot(isFromMe = message.isFromMe, modifier = Modifier.padding(vertical = 2.dp)) {
+        Column(horizontalAlignment = if (message.isFromMe) Alignment.End else Alignment.Start) {
+            val sticker = StickerValidation.sanitize(message.stickerUrl)
+            if (sticker != null) {
+                Text(text = sticker, fontSize = 64.sp)
+            }
+            Text(
+                text = timeText,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+            )
         }
-        Text(
-            text = timeText,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-        )
     }
 }
 
@@ -1769,16 +1789,12 @@ private fun StickerBubble(message: MessageBO) {
 
 @Composable
 private fun DeletedMessageBubble(message: MessageBO) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 2.dp),
-        horizontalArrangement = if (message.isFromMe) Arrangement.End else Arrangement.Start,
-    ) {
+    ChatBubbleSlot(isFromMe = message.isFromMe, modifier = Modifier.padding(vertical = 2.dp)) { maxBubbleWidth ->
         Surface(
             shape = RoundedCornerShape(12.dp),
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
             border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+            modifier = Modifier.widthIn(max = maxBubbleWidth),
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -1952,17 +1968,14 @@ private fun MessageBubble(
                 .graphicsLayer { translationX = swipeOffset.value },
             horizontalAlignment = if (message.isFromMe) Alignment.End else Alignment.Start,
         ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = if (message.isFromMe) Arrangement.End else Arrangement.Start,
-        ) {
-            Box {
+        ChatBubbleSlot(isFromMe = message.isFromMe) { maxBubbleWidth ->
             Surface(
                 shape = RoundedCornerShape(12.dp),
                 color = if (message.isFromMe) {
                     if (outgoingBubbleColor != Color.Unspecified) outgoingBubbleColor
                     else MaterialTheme.colorScheme.primaryContainer
                 } else MaterialTheme.colorScheme.surfaceVariant,
+                modifier = Modifier.widthIn(max = maxBubbleWidth),
             ) {
                 Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                     if (isGroup && !message.isFromMe && message.senderName.isNotBlank()) {
@@ -2006,7 +2019,15 @@ private fun MessageBubble(
                         )
                     }
                     if (message.audioUrl != null && MediaUrlValidator.isValid(message.audioUrl)) {
-                        RemoteAudioPlayer(url = message.audioUrl)
+                        RemoteAudioPlayer(
+                            url = message.audioUrl,
+                            senderAvatarUrl = message.senderAvatarUrl,
+                            senderInitial = message.senderName.firstOrNull()?.uppercase() ?: "?",
+                            sentTime = timeText,
+                            isFromMe = message.isFromMe,
+                            sendStatus = message.sendStatus,
+                            isRead = message.isRead,
+                        )
                     }
                     if (message.content.isNotBlank()) {
                         var showMsgMenu by remember { mutableStateOf(false) }
@@ -2117,35 +2138,21 @@ private fun MessageBubble(
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                             )
                         }
-                        Text(
-                            text = timeText,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                        )
-                        if (message.isFromMe) {
-                            when (message.sendStatus) {
-                                com.ajrpachon.chatapp.domain.model.SendStatus.PENDING ->
-                                    Icon(
-                                        imageVector = androidx.compose.material.icons.Icons.Default.Schedule,
-                                        contentDescription = stringResource(R.string.chat_pending_send),
-                                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                                        modifier = Modifier.size(12.dp),
-                                    )
-                                com.ajrpachon.chatapp.domain.model.SendStatus.FAILED ->
-                                    Icon(
-                                        imageVector = Icons.Default.Warning,
-                                        contentDescription = stringResource(R.string.chat_send_error),
-                                        tint = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.size(12.dp),
-                                    )
-                                com.ajrpachon.chatapp.domain.model.SendStatus.SENT ->
-                                    ReadReceiptIcon(isRead = message.isRead)
+                        // Audio messages show their send time (and status icon) inside the
+                        // audio row instead (bottom-right of the waveform), so skip it here.
+                        if (message.audioUrl == null) {
+                            Text(
+                                text = timeText,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            )
+                            if (message.isFromMe) {
+                                SendStatusIcon(sendStatus = message.sendStatus, isRead = message.isRead)
                             }
                         }
                     }
                 }
             }
-            } // Box
         }
         if (messageReactions.isNotEmpty()) {
             val grouped = messageReactions.groupBy { it.emoji }
@@ -2281,7 +2288,7 @@ private fun LocationMessageCard(mapsUrl: String) {
 }
 
 @Composable
-private fun ReadReceiptIcon(isRead: Boolean) {
+internal fun ReadReceiptIcon(isRead: Boolean) {
     Icon(
         imageVector = if (isRead) Icons.Default.DoneAll else Icons.Default.Done,
         contentDescription = if (isRead) stringResource(R.string.chat_read) else stringResource(R.string.chat_sent),
@@ -2291,6 +2298,29 @@ private fun ReadReceiptIcon(isRead: Boolean) {
         else
             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
     )
+}
+
+/** Pending/failed/sent-or-read status icon shown next to a sent message's time. */
+@Composable
+internal fun SendStatusIcon(sendStatus: com.ajrpachon.chatapp.domain.model.SendStatus, isRead: Boolean) {
+    when (sendStatus) {
+        com.ajrpachon.chatapp.domain.model.SendStatus.PENDING ->
+            Icon(
+                imageVector = androidx.compose.material.icons.Icons.Default.Schedule,
+                contentDescription = stringResource(R.string.chat_pending_send),
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                modifier = Modifier.size(12.dp),
+            )
+        com.ajrpachon.chatapp.domain.model.SendStatus.FAILED ->
+            Icon(
+                imageVector = Icons.Default.Warning,
+                contentDescription = stringResource(R.string.chat_send_error),
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(12.dp),
+            )
+        com.ajrpachon.chatapp.domain.model.SendStatus.SENT ->
+            ReadReceiptIcon(isRead = isRead)
+    }
 }
 
 
@@ -2721,14 +2751,9 @@ private fun ContactBubble(
         if (phone.isNotBlank()) onCheckRelationship(phone)
     }
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 2.dp),
-        horizontalArrangement = if (isFromMe) Arrangement.End else Arrangement.Start,
-    ) {
+    ChatBubbleSlot(isFromMe = isFromMe, modifier = Modifier.padding(vertical = 2.dp)) { maxBubbleWidth ->
     Card(
-        modifier = Modifier.widthIn(max = 280.dp),
+        modifier = Modifier.widthIn(max = minOf(280.dp, maxBubbleWidth)),
         colors = CardDefaults.cardColors(
             containerColor = if (isFromMe) MaterialTheme.colorScheme.primaryContainer
             else MaterialTheme.colorScheme.surfaceVariant,
@@ -3404,17 +3429,10 @@ private fun PollBubble(
     val options = pollUiState?.options ?: emptyList()
     val userVotes = pollUiState?.userVotes ?: emptyList()
 
-    val alignment = if (isFromMe) Alignment.End else Alignment.Start
-
-    Column(
-        horizontalAlignment = alignment,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-    ) {
+    ChatBubbleSlot(isFromMe = isFromMe, modifier = Modifier.padding(vertical = 4.dp)) { maxBubbleWidth ->
         Card(
             shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.widthIn(min = 220.dp, max = 300.dp),
+            modifier = Modifier.widthIn(min = 220.dp, max = minOf(300.dp, maxBubbleWidth)),
         ) {
             Column(modifier = Modifier.padding(12.dp)) {
                 // Header

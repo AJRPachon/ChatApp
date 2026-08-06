@@ -825,6 +825,7 @@ class ChatViewModel(
     private fun sendAudio() {
         val userId = state.value.currentUserId ?: return
         val filePath = state.value.audioState.pendingFilePath ?: return
+        val durationMs = state.value.audioState.recordingDurationMs
         val reply = state.value.replyingTo
         viewModelScope.launch {
             sendEffect(ChatEffect.ScrollToBottom)
@@ -833,7 +834,7 @@ class ChatViewModel(
             catchResult {
                 val bytes = withContext(Dispatchers.IO) { java.io.File(filePath).readBytes() }
                 val audioUrl = messageRepository.uploadAudio(conversationId, bytes)
-                sendMessageUseCase(conversationId, userId, "", audioUrl = audioUrl,
+                sendMessageUseCase(conversationId, userId, "", audioUrl = audioUrl, audioDurationMs = durationMs,
                     replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
                 )
                 catchResult { java.io.File(filePath).delete() }
@@ -993,7 +994,8 @@ class ChatViewModel(
         viewModelScope.launch {
             catchResult {
                 messageRepository.sendMessage(conversationId = targetConversationId, senderId = uid, content = message.content,
-                    imageUrl = message.imageUrl, audioUrl = message.audioUrl, gifUrl = message.gifUrl, stickerUrl = message.stickerUrl,
+                    imageUrl = message.imageUrl, audioUrl = message.audioUrl, audioDurationMs = message.audioDurationMs,
+                    gifUrl = message.gifUrl, stickerUrl = message.stickerUrl,
                 )
                 sendEffect(ChatEffect.ShowSnackbar("Mensaje reenviado"))
             }.onFailure { updateState { it.copy(error = "No se pudo reenviar") } }
@@ -1021,7 +1023,8 @@ class ChatViewModel(
             for (message in toForward) {
                 catchResult {
                     messageRepository.sendMessage(conversationId = targetConversationId, senderId = uid, content = message.content,
-                        imageUrl = message.imageUrl, audioUrl = message.audioUrl, gifUrl = message.gifUrl, stickerUrl = message.stickerUrl,
+                        imageUrl = message.imageUrl, audioUrl = message.audioUrl, audioDurationMs = message.audioDurationMs,
+                    gifUrl = message.gifUrl, stickerUrl = message.stickerUrl,
                     )
                     forwarded++
                 }
