@@ -309,7 +309,7 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | **Robolectric** | 4.16.1 | Tests unitarios con contexto Android |
 | **Room Testing** | 2.8.4 | Tests de integración en memoria para DAOs |
 
-**370 tests** repartidos en 38 ficheros:
+**475 tests** repartidos en 59 ficheros:
 
 **ViewModels**
 
@@ -321,7 +321,9 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | `CreateGroupViewModelTest` | 11 |
 | `NewChatViewModelTest` | 10 |
 | `InvitationsViewModelTest` | 7 |
+| `UserInfoViewModelTest` | 6 |
 | `ConversationListViewModelTest` | 5 |
+| `GlobalSearchViewModelTest` | 5 |
 
 **DAOs (Room in-memory)**
 
@@ -339,10 +341,12 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 
 | Fichero | Tests |
 |---|---|
-| `GroupRepositoryImplTest` | 11 |
 | `InvitationRepositoryImplTest` | 12 |
+| `GroupRepositoryImplTest` | 11 |
 | `UserRepositoryImplTest` | 8 |
+| `PollRepositoryImplTest` | 7 |
 | `ReactionRepositoryImplTest` | 5 |
+| `BroadcastListRepositoryImplTest` | 5 |
 | `CallRepositoryImplTest` | 3 |
 | `MessageRepositoryImplTest` | 3 |
 
@@ -350,25 +354,42 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 
 | Fichero | Tests |
 |---|---|
-| `SendMessageUseCaseTest` | 11 |
 | `SetUsernameUseCaseTest` | 12 |
+| `SendMessageUseCaseTest` | 11 |
 | `SendInvitationUseCaseTest` | 9 |
 | `CreateGroupUseCaseTest` | 8 |
 | `UpdateGroupUseCaseTest` | 7 |
 | `BlockUserUseCaseTest` | 6 |
+| `ExportConversationUseCaseTest` | 6 |
 | `RespondInvitationUseCaseTest` | 4 |
 | `ObserveConversationsUseCaseTest` | 4 |
+| `GetCurrentUserUseCaseTest` | 4 |
+| `PromoteGroupMemberUseCaseTest` | 4 |
 | `GetOrCreateConversationUseCaseTest` | 3 |
 | `LeaveGroupUseCaseTest` | 3 |
+| `GetGroupMembersUseCaseTest` | 3 |
+| `SearchUsersUseCaseTest` | 3 |
+| `AddGroupMemberUseCaseTest` | 2 |
+| `GetCacheFileUseCaseTest` | 2 |
+| `GetDeviceContactsUseCaseTest` | 2 |
+| `ObserveInvitationsUseCaseTest` | 2 |
+| `ObserveMessagesUseCaseTest` | 2 |
+| `RemoveGroupMemberUseCaseTest` | 2 |
+| `GetUriMetadataUseCaseTest` | 1 |
+| `ReadUriAsBytesUseCaseTest` | 1 |
 
 **Mappers y modelos**
 
 | Fichero | Tests |
 |---|---|
-| `UserMapperTest` | 16 |
+| `MessageBOTest` | 22 |
 | `MediaUrlValidatorTest` | 17 |
+| `UserMapperTest` | 16 |
+| `ConversationMapperTest` | 13 |
 | `MessageMapperTest` | 13 |
 | `InvitationMapperTest` | 10 |
+| `GroupMapperTest` | 8 |
+| `StatusMapperTest` | 5 |
 
 **Utilidades y servicios**
 
