@@ -28,6 +28,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -196,6 +197,9 @@ class ConversationRepositoryImpl(
             dbos.mapNotNull { dbo -> dbo.toBO(userId) }
         }.collect { send(it) }
     }
+
+    override suspend fun getLocalConversations(userId: String): List<ConversationBO> =
+        conversationDao.observeActive().first().mapNotNull { dbo -> dbo.toBO(userId) }
 
     override fun observeArchivedConversations(userId: String): Flow<List<ConversationBO>> =
         conversationDao.observeArchived().map { dbos -> dbos.mapNotNull { dbo -> dbo.toBO(userId) } }

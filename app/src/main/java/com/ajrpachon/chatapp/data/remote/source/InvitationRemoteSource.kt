@@ -5,6 +5,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.result.PostgrestResult
 import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
@@ -29,7 +30,7 @@ class InvitationRemoteSource(private val supabase: SupabaseClient) {
                     eq("status", "pending")
                 }
             }
-            .decodeList<InvitationDTO>()
+            .decodeListOrEmpty<InvitationDTO>()
 
     suspend fun sendInvitation(senderId: String, receiverId: String): InvitationDTO {
         // If a previous rejected invitation exists, reset it to pending
@@ -41,7 +42,7 @@ class InvitationRemoteSource(private val supabase: SupabaseClient) {
                     eq("status", "rejected")
                 }
             }
-            .decodeList<InvitationDTO>()
+            .decodeListOrEmpty<InvitationDTO>()
             .firstOrNull()
 
         if (existing != null) {
@@ -67,10 +68,10 @@ class InvitationRemoteSource(private val supabase: SupabaseClient) {
     suspend fun getRelationshipInvitations(userA: String, userB: String): List<InvitationDTO> {
         val sent = supabase.postgrest["invitations"]
             .select { filter { eq("sender_id", userA); eq("receiver_id", userB) } }
-            .decodeList<InvitationDTO>()
+            .decodeListOrEmpty<InvitationDTO>()
         val received = supabase.postgrest["invitations"]
             .select { filter { eq("sender_id", userB); eq("receiver_id", userA) } }
-            .decodeList<InvitationDTO>()
+            .decodeListOrEmpty<InvitationDTO>()
         return sent + received
     }
 
@@ -87,11 +88,11 @@ class InvitationRemoteSource(private val supabase: SupabaseClient) {
     suspend fun isBlocked(userA: String, userB: String): Boolean {
         val byA = supabase.postgrest["blocked_users"]
             .select { filter { eq("blocker_id", userA); eq("blocked_id", userB) } }
-            .decodeList<Map<String, String>>()
+            .decodeListOrEmpty<Map<String, String>>()
         if (byA.isNotEmpty()) return true
         val byB = supabase.postgrest["blocked_users"]
             .select { filter { eq("blocker_id", userB); eq("blocked_id", userA) } }
-            .decodeList<Map<String, String>>()
+            .decodeListOrEmpty<Map<String, String>>()
         return byB.isNotEmpty()
     }
 
@@ -129,3 +130,11 @@ class InvitationRemoteSource(private val supabase: SupabaseClient) {
         }
     }
 }
+
+/**
+ * PostgREST returns a byte-empty body (not the JSON literal `[]`) for some zero-row selects,
+ * which makes [PostgrestResult.decodeList] throw a [kotlinx.serialization.SerializationException]
+ * ("Expected start of the array '[', but had 'EOF' instead") instead of yielding an empty list.
+ */
+private inline fun <reified T> PostgrestResult.decodeListOrEmpty(): List<T> =
+    if (data.isBlank()) emptyList() else decodeList<T>()

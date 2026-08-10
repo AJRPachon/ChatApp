@@ -16,6 +16,7 @@ interface MessageRepository {
         content: String,
         imageUrl: String? = null,
         audioUrl: String? = null,
+        audioDurationMs: Long? = null,
         replyToId: String? = null,
         replyToContent: String? = null,
         replyToSenderName: String? = null,

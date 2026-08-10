@@ -9,6 +9,7 @@ data class StatusBO(
     val userAvatarUrl: String?,
     val text: String?,
     val imageUrl: String?,
+    val videoUrl: String?,
     val backgroundColor: Long,
     val createdAt: Instant,
     val expiresAt: Instant,
