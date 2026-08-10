@@ -2,7 +2,7 @@ package com.ajrpachon.chatapp.service
 
 import android.app.NotificationManager
 import android.content.Context
-import com.ajrpachon.chatapp.data.local.NotificationSoundRepository
+import com.ajrpachon.chatapp.domain.repository.NotificationSoundRepository
 import com.ajrpachon.chatapp.service.FcmMessageHandler.Payload
 import io.mockk.mockk
 import org.junit.After

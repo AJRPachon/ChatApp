@@ -15,12 +15,6 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
-data class PdfViewerState(
-    val pages: List<ImageBitmap> = emptyList(),
-    val isLoading: Boolean = false,
-    val error: String? = null,
-)
-
 class PdfViewerViewModel(
     private val getCacheFile: GetCacheFileUseCase,
     private val okHttpClient: OkHttpClient,

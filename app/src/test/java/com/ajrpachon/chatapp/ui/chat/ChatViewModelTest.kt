@@ -16,7 +16,7 @@ import com.ajrpachon.chatapp.domain.repository.ReactionRepository
 import com.ajrpachon.chatapp.domain.repository.ScheduledMessageRepository
 import com.ajrpachon.chatapp.domain.repository.TypingRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
-import com.ajrpachon.chatapp.data.local.ChatThemeRepository
+import com.ajrpachon.chatapp.domain.repository.ChatThemeRepository
 import com.ajrpachon.chatapp.domain.repository.AiAssistantRepository
 import com.ajrpachon.chatapp.domain.repository.ContactRepository
 import com.ajrpachon.chatapp.domain.repository.DraftRepository

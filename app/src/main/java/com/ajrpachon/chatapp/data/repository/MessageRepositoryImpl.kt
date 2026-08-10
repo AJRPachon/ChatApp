@@ -395,6 +395,10 @@ class MessageRepositoryImpl(
     override suspend fun countImages(): Int = messageDao.countImages()
     override suspend fun countAudio(): Int = messageDao.countAudio()
     override suspend fun countVideos(): Int = messageDao.countVideos()
+    override fun getImagesForConversation(conversationId: String): Flow<List<String>> =
+        messageDao.getImagesForConversation(conversationId)
+    override fun getVideosForConversation(conversationId: String): Flow<List<String>> =
+        messageDao.getVideosForConversation(conversationId)
     override suspend fun getMostActiveConversationId(): String? = messageDao.getMostActiveConversation()?.conversationId
     override suspend fun countMessagesByDay(since: Long): List<Pair<Long, Int>> =
         messageDao.countMessagesByDay(since).map { it.dayEpoch to it.count }
