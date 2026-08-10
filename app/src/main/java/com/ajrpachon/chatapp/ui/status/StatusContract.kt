@@ -24,6 +24,7 @@ sealed interface StatusIntent {
     data class ColorChanged(val color: Long) : StatusIntent
     data object PostTextStatus : StatusIntent
     data class PostImageStatus(val uri: Uri) : StatusIntent
+    data class PostVideoStatus(val uri: Uri) : StatusIntent
     data class DeleteStatus(val statusId: String) : StatusIntent
     /** Filters [allStatuses] by [userId] and stores the result in [StatusState.userStatuses]. */
     data class FilterUserStatuses(val allStatuses: List<StatusBO>, val userId: String) : StatusIntent

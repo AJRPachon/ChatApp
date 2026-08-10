@@ -12,6 +12,21 @@ fun formatLastSeen(diffMs: Long): String = when {
     else -> "última vez hace ${diffMs / 86_400_000} d"
 }
 
+/**
+ * Formats how long ago a status/story was posted, relative to now. Stories
+ * expire 24h after [createdAt] (see StatusRepositoryImpl.STATUS_TTL_MS), so
+ * this only ever needs two units: minutes for the first hour, then whole
+ * hours ("45m", then "1h", "2h", … up to "23h") — no days.
+ */
+fun formatStatusAge(createdAt: Instant): String {
+    val elapsedMs = (System.currentTimeMillis() - createdAt.toEpochMilliseconds()).coerceAtLeast(0)
+    return if (elapsedMs < 3_600_000L) {
+        "${(elapsedMs / 60_000L).coerceAtLeast(1)}m"
+    } else {
+        "${elapsedMs / 3_600_000L}h"
+    }
+}
+
 /** Formats disappearing-mode seconds into a compact label (e.g. "5m", "1h", "7d"). */
 fun formatDisappearingDuration(seconds: Long): String = when {
     seconds <= 0L -> ""

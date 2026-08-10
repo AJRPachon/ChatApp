@@ -12,6 +12,7 @@ fun StatusDTO.toDBO() = StatusDBO(
     userId = userId,
     text = text,
     imageUrl = imageUrl,
+    videoUrl = videoUrl,
     backgroundColor = backgroundColor,
     createdAt = runCatching { Instant.parse(createdAt).toEpochMilliseconds() }
         .getOrDefault(System.currentTimeMillis()),
@@ -30,6 +31,7 @@ fun StatusDBO.toBO(
     userAvatarUrl = userAvatarUrl,
     text = text,
     imageUrl = imageUrl,
+    videoUrl = videoUrl,
     backgroundColor = backgroundColor,
     createdAt = Instant.fromEpochMilliseconds(createdAt),
     expiresAt = Instant.fromEpochMilliseconds(expiresAt),

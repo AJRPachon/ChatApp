@@ -19,6 +19,7 @@ import com.ajrpachon.chatapp.ui.pdf.PdfViewerScreen
 import com.ajrpachon.chatapp.ui.profile.ProfileScreen
 import com.ajrpachon.chatapp.ui.profile.SessionAuditScreen
 import com.ajrpachon.chatapp.ui.search.GlobalSearchScreen
+import com.ajrpachon.chatapp.ui.status.StatusViewerScreen
 import com.ajrpachon.chatapp.ui.usagestats.UsageStatsScreen
 import com.ajrpachon.chatapp.ui.userinfo.UserInfoScreen
 import com.github.skydoves.navgraph.annotations.NavGraphRoot
@@ -58,6 +59,7 @@ import kotlinx.serialization.Serializable
 @Serializable data class PdfViewerRoute(val url: String, val filename: String) : NavKey
 @Serializable data object GlobalSearchRoute : NavKey
 @Serializable data class ChatMediaGalleryRoute(val conversationId: String, val conversationName: String) : NavKey
+@Serializable data class StatusViewerRoute(val userId: String) : NavKey
 
 // ── NavEntry providers ─────────────────────────────────────────────────────
 
@@ -103,6 +105,9 @@ fun mainNavEntry(
             },
             onGoToGlobalSearch = dropUnlessResumed {
                 backStack.add(GlobalSearchRoute)
+            },
+            onOpenStatusViewer = { userId ->
+                backStack.add(StatusViewerRoute(userId))
             },
         )
     }
@@ -315,6 +320,13 @@ fun miscNavEntry(
             conversationId = key.conversationId,
             conversationName = key.conversationName,
             onBack = dropUnlessResumed { backStack.removeLastOrNull() },
+        )
+    }
+
+    is StatusViewerRoute -> NavEntry(key) {
+        StatusViewerScreen(
+            userId = key.userId,
+            onClose = dropUnlessResumed { backStack.removeLastOrNull() },
         )
     }
 

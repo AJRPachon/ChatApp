@@ -8,6 +8,8 @@ import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.ReadUriAsBytesUseCase
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import com.ajrpachon.chatapp.utils.AppLogger
+import com.ajrpachon.chatapp.utils.UploadLimits.checkImageSize
+import com.ajrpachon.chatapp.utils.UploadLimits.checkVideoSize
 import com.ajrpachon.chatapp.utils.catchResult
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -39,6 +41,7 @@ class StatusViewModel(
             is StatusIntent.ColorChanged -> updateState { it.copy(selectedColor = intent.color) }
             is StatusIntent.PostTextStatus -> postTextStatus()
             is StatusIntent.PostImageStatus -> postImageStatus(intent.uri)
+            is StatusIntent.PostVideoStatus -> postVideoStatus(intent.uri)
             is StatusIntent.DeleteStatus -> deleteStatus(intent.statusId)
             is StatusIntent.FilterUserStatuses ->
                 updateState { it.copy(userStatuses = intent.allStatuses.filter { s -> s.userId == intent.userId }) }
@@ -51,9 +54,8 @@ class StatusViewModel(
             catchResult {
                 val currentUser = getCurrentUserUseCase().first() ?: return@catchResult
                 val contactIds = conversationRepository
-                    .observeConversations(currentUser.id)
-                    .first()
-                    .mapNotNull { if (!it.isGroup) it.participants.firstOrNull { p -> p.id != currentUser.id }?.id else null }
+                    .getLocalConversations(currentUser.id)
+                    .mapNotNull { if (!it.isGroup) it.otherUserId else null }
                 statusRepository.syncStatuses(contactIds)
             }.onFailure { e -> AppLogger.e(TAG, "sync failed", e) }
             updateState { it.copy(isLoading = false) }
@@ -76,7 +78,20 @@ class StatusViewModel(
             updateState { it.copy(isLoading = true) }
             catchResult {
                 val bytes = readUriAsBytes(uri.toString())
+                bytes.checkImageSize()
                 statusRepository.postImageStatus(bytes, null)
+            }.onFailure { e -> updateState { it.copy(error = e.message) } }
+            updateState { it.copy(isLoading = false) }
+        }
+    }
+
+    private fun postVideoStatus(uri: Uri) {
+        viewModelScope.launch {
+            updateState { it.copy(isLoading = true) }
+            catchResult {
+                val bytes = readUriAsBytes(uri.toString())
+                bytes.checkVideoSize()
+                statusRepository.postVideoStatus(bytes, null)
             }.onFailure { e -> updateState { it.copy(error = e.message) } }
             updateState { it.copy(isLoading = false) }
         }

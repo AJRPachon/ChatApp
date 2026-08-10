@@ -431,14 +431,12 @@
 
     <!-- StatusScreen -->
     <string name="status_add_text_cd">Add text status</string>
-    <string name="status_add_image_cd">Add image status</string>
+    <string name="status_add_image_cd">Add photo or video status</string>
     <string name="status_my_status">My status</string>
     <string name="status_new_status_title">New status</string>
     <string name="status_compose_placeholder">What\'s happening?</string>
     <string name="status_publish">Post</string>
     <string name="status_cancel">Cancel</string>
-    <string name="status_delete_cd">Delete status</string>
-    <string name="status_close_cd">Close</string>
 
     <!-- PdfViewerScreen -->
     <string name="pdf_share_chooser_title">Share PDF</string>
