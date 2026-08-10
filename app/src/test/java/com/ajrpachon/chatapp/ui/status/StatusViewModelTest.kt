@@ -1,6 +1,5 @@
 package com.ajrpachon.chatapp.ui.status
 
-import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.StatusBO
 import com.ajrpachon.chatapp.domain.model.UserBO
@@ -38,7 +37,6 @@ class StatusViewModelTest {
     private val readUriAsBytes = mockk<ReadUriAsBytesUseCase>(relaxed = true)
 
     private val statusesFlow = MutableStateFlow<List<StatusBO>>(emptyList())
-    private val conversationsFlow = MutableStateFlow<List<ConversationBO>>(emptyList())
 
     private val testUser = UserBO(
         id = "me",
@@ -52,7 +50,7 @@ class StatusViewModelTest {
     @Before
     fun setUp() {
         every { statusRepository.observeActiveStatuses() } returns statusesFlow
-        every { conversationRepository.observeConversations("me") } returns conversationsFlow
+        coEvery { conversationRepository.getLocalConversations("me") } returns emptyList()
         every { getCurrentUserUseCase() } returns flowOf(testUser)
         coEvery { statusRepository.syncStatuses(any()) } returns Unit
     }
@@ -191,6 +189,30 @@ class StatusViewModelTest {
         coVerify { statusRepository.deleteStatus("s42") }
     }
 
+    // ── PostVideoStatus ───────────────────────────────────────────────────────
+
+    @Test
+    fun `PostVideoStatus reads the uri and calls repository`() = runTest(sharedScheduler) {
+        val bytes = ByteArray(10)
+        coEvery { readUriAsBytes(any()) } returns bytes
+        val vm = buildVm()
+        vm.onIntent(StatusIntent.PostVideoStatus(mockk(relaxed = true)))
+        advanceUntilIdle()
+
+        coVerify { statusRepository.postVideoStatus(bytes, null) }
+    }
+
+    @Test
+    fun `PostVideoStatus with oversized video sets error and does not call repository`() = runTest(sharedScheduler) {
+        coEvery { readUriAsBytes(any()) } returns ByteArray(51 * 1024 * 1024)
+        val vm = buildVm()
+        vm.onIntent(StatusIntent.PostVideoStatus(mockk(relaxed = true)))
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { statusRepository.postVideoStatus(any(), any()) }
+        assertTrue(vm.state.value.error != null)
+    }
+
     // ── Refresh / sync ────────────────────────────────────────────────────────
 
     @Test
@@ -222,6 +244,7 @@ class StatusViewModelTest {
         userAvatarUrl = null,
         text = "test",
         imageUrl = null,
+        videoUrl = null,
         backgroundColor = 0xFF1976D2,
         createdAt = Instant.fromEpochMilliseconds(System.currentTimeMillis()),
         expiresAt = Instant.fromEpochMilliseconds(System.currentTimeMillis() + 60_000L),

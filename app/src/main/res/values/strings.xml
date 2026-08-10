@@ -431,14 +431,12 @@
 
     <!-- StatusScreen -->
     <string name="status_add_text_cd">Agregar estado de texto</string>
-    <string name="status_add_image_cd">Agregar estado con imagen</string>
+    <string name="status_add_image_cd">Agregar estado con foto o video</string>
     <string name="status_my_status">Mi estado</string>
     <string name="status_new_status_title">Nuevo estado</string>
     <string name="status_compose_placeholder">¿Qué está pasando?</string>
     <string name="status_publish">Publicar</string>
     <string name="status_cancel">Cancelar</string>
-    <string name="status_delete_cd">Eliminar estado</string>
-    <string name="status_close_cd">Cerrar</string>
 
     <!-- PdfViewerScreen -->
     <string name="pdf_share_chooser_title">Compartir PDF</string>

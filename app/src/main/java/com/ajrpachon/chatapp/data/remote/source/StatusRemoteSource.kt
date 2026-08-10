@@ -12,6 +12,7 @@ class StatusRemoteSource(private val supabase: SupabaseClient) {
     fun getCurrentUserId(): String? = supabase.auth.currentUserOrNull()?.id
 
     private val STATUS_IMAGE_BUCKET = "status-images"
+    private val statusVideoBucket = "status-videos"
 
     suspend fun getActiveStatuses(contactIds: List<String>): List<StatusDTO> {
         if (contactIds.isEmpty()) return emptyList()
@@ -38,5 +39,11 @@ class StatusRemoteSource(private val supabase: SupabaseClient) {
         val path = "$userId/${java.util.UUID.randomUUID()}.jpg"
         supabase.storage[STATUS_IMAGE_BUCKET].upload(path, bytes) { upsert = false }
         return supabase.storage[STATUS_IMAGE_BUCKET].publicUrl(path)
+    }
+
+    suspend fun uploadStatusVideo(userId: String, bytes: ByteArray): String {
+        val path = "$userId/${java.util.UUID.randomUUID()}.mp4"
+        supabase.storage[statusVideoBucket].upload(path, bytes) { upsert = false }
+        return supabase.storage[statusVideoBucket].publicUrl(path)
     }
 }

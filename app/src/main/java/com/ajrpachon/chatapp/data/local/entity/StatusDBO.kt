@@ -10,6 +10,7 @@ data class StatusDBO(
     val userId: String,
     val text: String?,
     val imageUrl: String?,
+    val videoUrl: String? = null,
     @ColumnInfo(name = "backgroundColor") val backgroundColor: Long = 0xFF1976D2,
     val createdAt: Long,
     val expiresAt: Long,

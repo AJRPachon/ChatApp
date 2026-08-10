@@ -67,6 +67,21 @@ class StatusRepositoryImpl(
         remoteSource.postStatus(dto)
         statusDao.upsert(dto.toDBO())
     }
+    override suspend fun postVideoStatus(videoBytes: ByteArray, text: String?) {
+        val userId = remoteSource.getCurrentUserId() ?: return
+        val videoUrl = remoteSource.uploadStatusVideo(userId, videoBytes)
+        val now = System.currentTimeMillis()
+        val dto = StatusDTO(
+            id = java.util.UUID.randomUUID().toString(),
+            userId = userId,
+            text = text,
+            videoUrl = videoUrl,
+            createdAt = Instant.fromEpochMilliseconds(now).toString(),
+            expiresAt = Instant.fromEpochMilliseconds(now + STATUS_TTL_MS).toString(),
+        )
+        remoteSource.postStatus(dto)
+        statusDao.upsert(dto.toDBO())
+    }
     override suspend fun deleteStatus(statusId: String) {
         remoteSource.deleteStatus(statusId)
         catchResult { statusDao.deleteExpired(0L) }
