@@ -17,9 +17,9 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import com.ajrpachon.chatapp.data.local.ChatThemeRepository
 import com.ajrpachon.chatapp.domain.model.ChatTheme
 import com.ajrpachon.chatapp.domain.repository.AiAssistantRepository
+import com.ajrpachon.chatapp.domain.repository.ChatThemeRepository
 import com.ajrpachon.chatapp.domain.repository.ContactRepository
 import com.ajrpachon.chatapp.domain.repository.DraftRepository
 import com.ajrpachon.chatapp.domain.repository.IncognitoRepository

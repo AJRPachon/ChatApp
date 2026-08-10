@@ -2,9 +2,9 @@
 import com.ajrpachon.chatapp.utils.catchResult
 
 import androidx.lifecycle.viewModelScope
-import com.ajrpachon.chatapp.data.local.AppLockRepository
-import com.ajrpachon.chatapp.data.local.ThemeRepository
+import com.ajrpachon.chatapp.domain.repository.AppLockRepository
 import com.ajrpachon.chatapp.domain.repository.AuthRepository
+import com.ajrpachon.chatapp.domain.repository.ThemeRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.service.FcmTokenManager

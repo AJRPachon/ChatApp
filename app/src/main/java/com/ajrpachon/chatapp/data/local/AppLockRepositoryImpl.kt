@@ -10,26 +10,27 @@ import kotlinx.coroutines.flow.map
 
 private val Context.appLockDataStore by preferencesDataStore(name = "app_lock_prefs")
 
-class AppLockRepository(private val context: Context) {
+class AppLockRepositoryImpl(private val context: Context) :
+    com.ajrpachon.chatapp.domain.repository.AppLockRepository {
 
     private val IS_ENABLED_KEY = booleanPreferencesKey("app_lock_enabled")
     private val BACKGROUNDED_AT_KEY = longPreferencesKey("app_lock_backgrounded_at")
 
-    val isEnabled: Flow<Boolean> =
+    override val isEnabled: Flow<Boolean> =
         context.appLockDataStore.data.map { prefs -> prefs[IS_ENABLED_KEY] ?: false }
 
-    val backgroundedAt: Flow<Long> =
+    override val backgroundedAt: Flow<Long> =
         context.appLockDataStore.data.map { prefs -> prefs[BACKGROUNDED_AT_KEY] ?: 0L }
 
-    suspend fun enable() {
+    override suspend fun enable() {
         context.appLockDataStore.edit { prefs -> prefs[IS_ENABLED_KEY] = true }
     }
 
-    suspend fun disable() {
+    override suspend fun disable() {
         context.appLockDataStore.edit { prefs -> prefs[IS_ENABLED_KEY] = false }
     }
 
-    suspend fun recordBackgroundedAt(timestamp: Long) {
+    override suspend fun recordBackgroundedAt(timestamp: Long) {
         context.appLockDataStore.edit { prefs -> prefs[BACKGROUNDED_AT_KEY] = timestamp }
     }
 }

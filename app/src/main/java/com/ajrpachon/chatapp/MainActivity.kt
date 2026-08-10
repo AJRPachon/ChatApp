@@ -31,7 +31,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import com.ajrpachon.chatapp.ui.auth.IntegrityBlockedScreen
-import com.ajrpachon.chatapp.data.local.AppLockRepository
+import com.ajrpachon.chatapp.domain.repository.AppLockRepository
 import com.ajrpachon.chatapp.utils.IntegrityChecker
 import com.ajrpachon.chatapp.utils.IntegrityResult
 import androidx.compose.material3.CircularProgressIndicator
@@ -41,7 +41,7 @@ import com.ajrpachon.chatapp.ui.call.IncomingCallScreen
 import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import com.ajrpachon.chatapp.data.local.ThemePreference
-import com.ajrpachon.chatapp.data.local.ThemeRepository
+import com.ajrpachon.chatapp.domain.repository.ThemeRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.utils.SessionGuard
 import kotlinx.coroutines.flow.first

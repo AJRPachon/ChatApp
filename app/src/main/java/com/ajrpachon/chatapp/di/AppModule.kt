@@ -1,7 +1,6 @@
 ﻿package com.ajrpachon.chatapp.di
 
 import com.ajrpachon.chatapp.BuildConfig
-import com.ajrpachon.chatapp.data.local.ThemeRepository
 import com.ajrpachon.chatapp.data.local.buildChatDatabase
 import com.ajrpachon.chatapp.data.session.AndroidSessionManager
 import com.ajrpachon.chatapp.ui.applock.AppLockViewModel
@@ -171,19 +170,27 @@ val utilsModule = module {
     // start()-caller; see ConversationListViewModel for rationale.
     single { PresenceManager(get()) }
     single { LinkPreviewFetcher() }
-    single { com.ajrpachon.chatapp.data.local.AppLockRepository(androidContext()) }
+    single<com.ajrpachon.chatapp.domain.repository.AppLockRepository> {
+        com.ajrpachon.chatapp.data.local.AppLockRepositoryImpl(androidContext())
+    }
     single<com.ajrpachon.chatapp.domain.repository.IncognitoRepository> {
         com.ajrpachon.chatapp.data.local.IncognitoRepository(androidContext())
     }
-    single { ThemeRepository(androidContext()) }
+    single<com.ajrpachon.chatapp.domain.repository.ThemeRepository> {
+        com.ajrpachon.chatapp.data.local.ThemeRepositoryImpl(androidContext())
+    }
     single<com.ajrpachon.chatapp.domain.repository.DraftRepository> {
         com.ajrpachon.chatapp.data.local.DraftRepository(androidContext())
     }
     single { TranslationManager() }
-    single { com.ajrpachon.chatapp.data.local.NotificationSoundRepository(androidContext()) }
+    single<com.ajrpachon.chatapp.domain.repository.NotificationSoundRepository> {
+        com.ajrpachon.chatapp.data.local.NotificationSoundRepositoryImpl(androidContext())
+    }
     single { com.ajrpachon.chatapp.utils.AudioTranscriber(androidContext()) }
     single { androidx.credentials.CredentialManager.create(androidContext()) }
-    single { com.ajrpachon.chatapp.data.local.ChatThemeRepository(androidContext()) }
+    single<com.ajrpachon.chatapp.domain.repository.ChatThemeRepository> {
+        com.ajrpachon.chatapp.data.local.ChatThemeRepositoryImpl(androidContext())
+    }
     single { com.ajrpachon.chatapp.utils.NetworkMonitor(androidContext()) }
     single { com.ajrpachon.chatapp.utils.ContactSyncManager(androidContext().contentResolver) }
     single { com.ajrpachon.chatapp.utils.BackupManager(androidContext(), get()) }

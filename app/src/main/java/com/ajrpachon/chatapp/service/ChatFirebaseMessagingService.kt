@@ -19,7 +19,7 @@ class ChatFirebaseMessagingService : FirebaseMessagingService() {
 
     private val fcmTokenRemoteSource: FcmTokenRemoteSource by inject()
     private val fcmTokenManager: FcmTokenManager by inject()
-    private val notificationSoundRepository: com.ajrpachon.chatapp.data.local.NotificationSoundRepository by inject()
+    private val notificationSoundRepository: com.ajrpachon.chatapp.domain.repository.NotificationSoundRepository by inject()
     private val job = SupervisorJob()
     private val scope = CoroutineScope(job + Dispatchers.IO + CoroutineName("FCMService"))
 

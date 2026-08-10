@@ -12,7 +12,7 @@ import androidx.core.app.Person
 import androidx.core.app.RemoteInput
 import com.ajrpachon.chatapp.MainActivity
 import com.ajrpachon.chatapp.R
-import com.ajrpachon.chatapp.data.local.NotificationSoundRepository
+import com.ajrpachon.chatapp.domain.repository.NotificationSoundRepository
 import com.ajrpachon.chatapp.domain.model.NotificationSound
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.runBlocking

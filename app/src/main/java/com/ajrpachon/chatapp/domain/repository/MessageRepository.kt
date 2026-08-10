@@ -57,6 +57,8 @@ interface MessageRepository {
     suspend fun countImages(): Int
     suspend fun countAudio(): Int
     suspend fun countVideos(): Int
+    fun getImagesForConversation(conversationId: String): Flow<List<String>>
+    fun getVideosForConversation(conversationId: String): Flow<List<String>>
     suspend fun getMostActiveConversationId(): String?
     suspend fun countMessagesByDay(since: Long): List<Pair<Long, Int>>
     @Suppress("LongParameterList")

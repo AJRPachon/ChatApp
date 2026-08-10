@@ -11,8 +11,8 @@ import com.ajrpachon.chatapp.domain.usecase.ObserveConversationsUseCase
 import com.ajrpachon.chatapp.domain.usecase.ObserveInvitationsUseCase
 import com.ajrpachon.chatapp.service.FcmTokenManager
 import com.ajrpachon.chatapp.data.local.DraftRepository
-import com.ajrpachon.chatapp.data.local.NotificationSoundRepository
-import com.ajrpachon.chatapp.data.local.ThemeRepository
+import com.ajrpachon.chatapp.domain.repository.NotificationSoundRepository
+import com.ajrpachon.chatapp.domain.repository.ThemeRepository
 import com.ajrpachon.chatapp.service.PresenceManager
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import com.ajrpachon.chatapp.utils.NetworkMonitor

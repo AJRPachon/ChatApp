@@ -4,16 +4,18 @@ import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.ajrpachon.chatapp.domain.model.ThemePreference
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 private val Context.themeDataStore by preferencesDataStore(name = "theme_prefs")
 
-class ThemeRepository(private val context: Context) {
+class ThemeRepositoryImpl(private val context: Context) :
+    com.ajrpachon.chatapp.domain.repository.ThemeRepository {
 
     private val THEME_KEY = stringPreferencesKey("theme_preference")
 
-    fun observe(): Flow<ThemePreference> =
+    override fun observe(): Flow<ThemePreference> =
         context.themeDataStore.data.map { prefs ->
             when (prefs[THEME_KEY]) {
                 ThemePreference.LIGHT.name -> ThemePreference.LIGHT
@@ -22,7 +24,7 @@ class ThemeRepository(private val context: Context) {
             }
         }
 
-    suspend fun set(theme: ThemePreference) {
+    override suspend fun set(theme: ThemePreference) {
         context.themeDataStore.edit { prefs ->
             prefs[THEME_KEY] = theme.name
         }

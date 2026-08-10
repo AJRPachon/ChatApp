@@ -11,9 +11,10 @@ import kotlinx.coroutines.flow.map
 
 private val Context.notifSoundDataStore by preferencesDataStore(name = "notif_sound_prefs")
 
-class NotificationSoundRepository(private val context: Context) {
+class NotificationSoundRepositoryImpl(private val context: Context) :
+    com.ajrpachon.chatapp.domain.repository.NotificationSoundRepository {
 
-    fun observe(conversationId: String): Flow<NotificationSound> {
+    override fun observe(conversationId: String): Flow<NotificationSound> {
         val key = stringPreferencesKey("notif_sound_$conversationId")
         return context.notifSoundDataStore.data.map { prefs ->
             prefs[key]?.let { name ->
@@ -22,14 +23,14 @@ class NotificationSoundRepository(private val context: Context) {
         }
     }
 
-    suspend fun set(conversationId: String, sound: NotificationSound) {
+    override suspend fun set(conversationId: String, sound: NotificationSound) {
         val key = stringPreferencesKey("notif_sound_$conversationId")
         context.notifSoundDataStore.edit { prefs ->
             prefs[key] = sound.name
         }
     }
 
-    suspend fun get(conversationId: String): NotificationSound {
+    override suspend fun get(conversationId: String): NotificationSound {
         val key = stringPreferencesKey("notif_sound_$conversationId")
         val prefs = context.notifSoundDataStore.data.first()
         return prefs[key]?.let { name ->
