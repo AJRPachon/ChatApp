@@ -487,6 +487,7 @@ fun StatusViewerScreen(
     )
 }
 
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
 private fun StoryVideoPlayer(
     url: String,
