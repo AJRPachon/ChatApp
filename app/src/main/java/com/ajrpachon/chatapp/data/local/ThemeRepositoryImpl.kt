@@ -13,11 +13,11 @@ private val Context.themeDataStore by preferencesDataStore(name = "theme_prefs")
 class ThemeRepositoryImpl(private val context: Context) :
     com.ajrpachon.chatapp.domain.repository.ThemeRepository {
 
-    private val THEME_KEY = stringPreferencesKey("theme_preference")
+    private val themeKey = stringPreferencesKey("theme_preference")
 
     override fun observe(): Flow<ThemePreference> =
         context.themeDataStore.data.map { prefs ->
-            when (prefs[THEME_KEY]) {
+            when (prefs[themeKey]) {
                 ThemePreference.LIGHT.name -> ThemePreference.LIGHT
                 ThemePreference.DARK.name -> ThemePreference.DARK
                 else -> ThemePreference.SYSTEM
@@ -26,7 +26,7 @@ class ThemeRepositoryImpl(private val context: Context) :
 
     override suspend fun set(theme: ThemePreference) {
         context.themeDataStore.edit { prefs ->
-            prefs[THEME_KEY] = theme.name
+            prefs[themeKey] = theme.name
         }
     }
 }
