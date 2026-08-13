@@ -11,6 +11,7 @@ import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
 import com.ajrpachon.chatapp.ui.chat.gallery.ChatMediaGalleryViewModel
 import com.ajrpachon.chatapp.ui.chat.ChatViewModel
 import com.ajrpachon.chatapp.ui.chat.StickerPackViewModel
+import com.ajrpachon.chatapp.ui.components.EmojiPickerViewModel
 import com.ajrpachon.chatapp.ui.conversations.ConversationListViewModel
 import com.ajrpachon.chatapp.ui.group.CreateGroupViewModel
 import com.ajrpachon.chatapp.ui.group.GroupInfoViewModel
@@ -111,6 +112,7 @@ val viewModelModule = module {
     viewModelOf(::BackupViewModel)
     viewModelOf(::GlobalSearchViewModel)
     viewModelOf(::StatusViewModel)
+    viewModelOf(::EmojiPickerViewModel)
     // ChatViewModel: Repositories only, no DAOs
     viewModel { params ->
         ChatViewModel(
@@ -198,6 +200,9 @@ val utilsModule = module {
         com.ajrpachon.chatapp.data.local.WallpaperRepository(androidContext())
     }
     single { androidContext().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager }
+    single<com.ajrpachon.chatapp.domain.repository.EmojiRepository> {
+        com.ajrpachon.chatapp.data.emoji.EmojiRepositoryImpl(androidContext())
+    }
 }
 
 val aiModule = module {

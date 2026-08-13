@@ -22,19 +22,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ajrpachon.chatapp.data.emoji.EmojiCategory
-import com.ajrpachon.chatapp.data.emoji.EmojiRepository
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
+import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,37 +37,36 @@ fun EmojiPickerBottomSheet(
     sheetState: SheetState,
     onDismiss: () -> Unit,
     onEmojiSelected: (String) -> Unit,
+    vm: EmojiPickerViewModel = koinViewModel(),
 ) {
-    val context = LocalContext.current
+    val state by vm.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
-    val repo = remember { EmojiRepository(context) }
-
-    var categories by remember { mutableStateOf<List<EmojiCategory>>(emptyList()) }
-    var selectedTab by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) {
-        val loaded = repo.getCategories().toMutableList()
-        val recent = repo.getRecent()
-        if (recent.isNotEmpty()) {
-            loaded[0] = loaded[0].copy(emojis = recent)
-        } else {
-            loaded.removeAt(0)
+        vm.effect.collect { effect ->
+            when (effect) {
+                is EmojiPickerEffect.EmojiChosen -> {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        onDismiss()
+                        onEmojiSelected(effect.emoji)
+                    }
+                }
+            }
         }
-        categories = loaded
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            if (categories.isNotEmpty()) {
+            if (state.categories.isNotEmpty()) {
                 ScrollableTabRow(
-                    selectedTabIndex = selectedTab,
+                    selectedTabIndex = state.selectedTab,
                     edgePadding = 8.dp,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    categories.forEachIndexed { index, cat ->
+                    state.categories.forEachIndexed { index, cat ->
                         Tab(
-                            selected = selectedTab == index,
-                            onClick = { selectedTab = index },
+                            selected = state.selectedTab == index,
+                            onClick = { vm.onIntent(EmojiPickerIntent.SelectTab(index)) },
                             text = {
                                 Text(
                                     text = cat.icon,
@@ -83,7 +77,7 @@ fun EmojiPickerBottomSheet(
                     }
                 }
 
-                val current = categories.getOrNull(selectedTab)
+                val current = state.categories.getOrNull(state.selectedTab)
                 if (current != null) {
                     Text(
                         text = current.category,
@@ -106,11 +100,7 @@ fun EmojiPickerBottomSheet(
                                 modifier = Modifier
                                     .size(44.dp)
                                     .clickable {
-                                        repo.recordUsed(emoji)
-                                        scope.launch { sheetState.hide() }.invokeOnCompletion {
-                                            onDismiss()
-                                            onEmojiSelected(emoji)
-                                        }
+                                        vm.onIntent(EmojiPickerIntent.EmojiClicked(emoji))
                                     },
                             ) {
                                 Text(text = emoji, fontSize = 24.sp)
