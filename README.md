@@ -186,7 +186,7 @@ com.ajrpachon.chatapp/
 │   │                                 ChatThemeColors (mapeo ChatTheme → colores Compose)
 │   ├── auth/                         Login, registro, MFA challenge e IntegrityBlockedScreen
 │   ├── conversations/                Lista de conversaciones con carpetas y difusión
-│   ├── chat/                         Chat (StickerPicker, EmojiPicker, GiphyClient, asistente IA,
+│   ├── chat/                         Chat (StickerPicker, EmojiPicker, GifPicker, asistente IA,
 │   │                                 ChatThemeColors); gallery/ con ChatMediaGalleryViewModel
 │   ├── call/                         Llamada en curso + overlay de entrante (filtros, grabación, grid grupal)
 │   ├── newchat/                      Buscar usuario / importar contactos / escanear QR
@@ -207,7 +207,6 @@ com.ajrpachon.chatapp/
 │
 ├── 🔴 service/                    ← Servicios en background
 │   ├── ChatFirebaseMessagingService.kt
-│   ├── FcmTokenManager.kt
 │   ├── FcmMessageHandler.kt          MessagingStyle + RemoteInput + grouping
 │   ├── NotificationReplyReceiver.kt  Inline reply from notification
 │   ├── ActiveChatTracker.kt
@@ -219,8 +218,7 @@ com.ajrpachon.chatapp/
 │                                     OkHttpProvider, SessionGuard, RootDetector,
 │                                     ClipboardProtection, IntegrityChecker,
 │                                     TranslationManager, AudioTranscriber,
-│                                     ContactSyncManager, BackupManager,
-│                                     GiphyKeyManager, LinkPreviewFetcher,
+│                                     ContactSyncManager, LinkPreviewFetcher,
 │                                     SecureStorage, UploadLimits, NetworkMonitor
 ├── MainActivity.kt                ← NavDisplay + todas las rutas (Navigation 3)
 └── ChatApplication.kt             ← Inicialización de Koin y Supabase
@@ -397,7 +395,7 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 |---|---|
 | `UploadLimitsTest` | 18 |
 | `FcmMessageHandlerTest` | 19 |
-| `GiphyKeyManagerTest` | 5 |
+| `GifPickerViewModelTest` | 5 |
 | `CatchResultTest` | 4 |
 
 ### CI/CD
