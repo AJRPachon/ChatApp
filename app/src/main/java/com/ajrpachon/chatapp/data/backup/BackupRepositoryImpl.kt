@@ -1,9 +1,11 @@
-package com.ajrpachon.chatapp.utils
+package com.ajrpachon.chatapp.data.backup
 
 import android.accounts.AccountManager
 import android.content.Context
 import com.ajrpachon.chatapp.data.local.dao.MessageDao
 import com.ajrpachon.chatapp.data.local.entity.MessageDBO
+import com.ajrpachon.chatapp.domain.model.BackupInfo
+import com.ajrpachon.chatapp.domain.repository.BackupRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -25,12 +27,6 @@ private const val DRIVE_UPLOAD_URL =
 private const val DRIVE_FILES_URL = "https://www.googleapis.com/drive/v3/files"
 private const val BACKUP_FILE_NAME = "chatapp_backup.json"
 private const val DRIVE_SCOPE = "oauth2:https://www.googleapis.com/auth/drive.file"
-
-data class BackupInfo(
-    val lastBackupDate: String,
-    val backupSizeMb: String,
-    val fileId: String,
-)
 
 @Serializable
 private data class MessageBackup(
@@ -126,10 +122,10 @@ private fun MessageBackup.toDBO() = MessageDBO(
     isSaved = isSaved,
 )
 
-class BackupManager(
+class BackupRepositoryImpl(
     private val context: Context,
     private val messageDao: MessageDao,
-) {
+) : BackupRepository {
     private val httpClient = OkHttpClient.Builder()
         .connectTimeout(60, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
@@ -167,7 +163,7 @@ class BackupManager(
             }
         }
 
-    suspend fun backup(): BackupInfo = withContext(Dispatchers.IO) {
+    override suspend fun backup(): BackupInfo = withContext(Dispatchers.IO) {
         val token = getAccessToken()
 
         val messages = messageDao.getAllMessages()
@@ -216,7 +212,7 @@ class BackupManager(
         )
     }
 
-    suspend fun restore() = withContext(Dispatchers.IO) {
+    override suspend fun restore() = withContext(Dispatchers.IO) {
         val token = getAccessToken()
 
         val encodedQuery = java.net.URLEncoder.encode(
@@ -254,7 +250,7 @@ class BackupManager(
         messageDao.upsertAll(messages.map { it.toDBO() })
     }
 
-    suspend fun getLatestBackupInfo(): BackupInfo? = withContext(Dispatchers.IO) {
+    override suspend fun getLatestBackupInfo(): BackupInfo? = withContext(Dispatchers.IO) {
         runCatching {
             val token = getAccessToken()
             val encodedQuery = java.net.URLEncoder.encode(
