@@ -71,4 +71,6 @@ interface MessageRepository {
         replyToContent: String? = null,
         replyToSenderName: String? = null,
     )
+    suspend fun getPendingMessages(): List<MessageBO>
+    suspend fun updateSendStatus(messageId: String, status: String)
 }

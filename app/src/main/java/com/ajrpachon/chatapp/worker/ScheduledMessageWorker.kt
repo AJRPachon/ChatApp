@@ -3,7 +3,7 @@ package com.ajrpachon.chatapp.worker
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.ajrpachon.chatapp.data.local.dao.ScheduledMessageDao
+import com.ajrpachon.chatapp.domain.repository.ScheduledMessageRepository
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
 import com.ajrpachon.chatapp.utils.AppLogger
 import org.koin.core.component.KoinComponent
@@ -14,12 +14,12 @@ class ScheduledMessageWorker(
     params: WorkerParameters,
 ) : CoroutineWorker(appContext, params), KoinComponent {
 
-    private val scheduledMessageDao: ScheduledMessageDao by inject()
+    private val scheduledMessageRepository: ScheduledMessageRepository by inject()
     private val sendMessageUseCase: SendMessageUseCase by inject()
 
     override suspend fun doWork(): Result {
         val nowMs = System.currentTimeMillis()
-        val pending = scheduledMessageDao.getPending(nowMs)
+        val pending = scheduledMessageRepository.getPending(nowMs)
         AppLogger.d(TAG, "ScheduledMessageWorker: found ${pending.size} pending messages")
         for (msg in pending) {
             sendMessageUseCase(
@@ -27,7 +27,7 @@ class ScheduledMessageWorker(
                 senderId = msg.senderId,
                 content = msg.text,
             ).onSuccess {
-                scheduledMessageDao.deleteById(msg.id)
+                scheduledMessageRepository.deleteById(msg.id)
                 AppLogger.d(TAG, "Sent and deleted scheduled message ${msg.id}")
             }.onFailure { e ->
                 AppLogger.e(TAG, "Failed to send scheduled message ${msg.id}", e)

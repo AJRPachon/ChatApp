@@ -378,6 +378,20 @@ class MessageRepositoryImpl(
         messageDao.upsert(dbo)
     }
 
+    override suspend fun getPendingMessages(): List<MessageBO> {
+        val dbos = messageDao.getPendingMessages()
+        val senderIds = dbos.map { it.senderId }.distinct()
+        val senderMap = userDao.getByIds(senderIds).associateBy { it.id }
+        return dbos.map { dbo ->
+            val senderName = senderMap[dbo.senderId]?.displayName ?: dbo.senderId
+            dbo.toBO(dbo.senderId, senderName, senderMap[dbo.senderId]?.avatarUrl)
+        }
+    }
+
+    override suspend fun updateSendStatus(messageId: String, status: String) {
+        messageDao.updateSendStatus(messageId, status)
+    }
+
     override suspend fun searchAllMessages(query: String): List<MessageBO> {
         val dbos = messageDao.searchAllMessages(query)
         val senderIds = dbos.map { it.senderId }.distinct()
