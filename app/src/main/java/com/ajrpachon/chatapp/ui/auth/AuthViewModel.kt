@@ -7,8 +7,8 @@ import androidx.credentials.exceptions.NoCredentialException
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.domain.repository.AuthRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
+import com.ajrpachon.chatapp.domain.repository.FcmTokenRepository
 import com.ajrpachon.chatapp.domain.usecase.SetUsernameUseCase
-import com.ajrpachon.chatapp.service.FcmTokenManager
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.IntegrityResult
@@ -27,7 +27,7 @@ class AuthViewModel(
     private val userRepository: UserRepository,
     private val setUsernameUseCase: SetUsernameUseCase,
     private val googleWebClientId: String,
-    private val fcmTokenManager: FcmTokenManager,
+    private val fcmTokenRepository: FcmTokenRepository,
     private val sessionGuard: SessionGuard,
 ) : BaseViewModel<AuthState, AuthEffect>(AuthState()) {
 
@@ -45,11 +45,11 @@ class AuthViewModel(
                 when {
                     profile?.username?.isNotBlank() == true -> {
                         userRepository.markAsCurrentUser(userId, session.email ?: "")
-                        launch { catchResult { fcmTokenManager.syncToken() } }
+                        launch { catchResult { fcmTokenRepository.syncToken() } }
                         sendEffect(AuthEffect.NavigateToHome)
                     }
                     profileResult.isFailure && userRepository.getUserById(userId) != null -> {
-                        launch { catchResult { fcmTokenManager.syncToken() } }
+                        launch { catchResult { fcmTokenRepository.syncToken() } }
                         sendEffect(AuthEffect.NavigateToHome)
                     }
                     else -> updateState { it.copy(isLoading = false, needsUsername = true) }
@@ -211,7 +211,7 @@ class AuthViewModel(
         val profile = userRepository.fetchProfileFromRemote(userId)
         if (profile?.username?.isNotBlank() == true) {
             userRepository.markAsCurrentUser(userId, session.email ?: "")
-            catchResult { fcmTokenManager.syncToken() }
+            catchResult { fcmTokenRepository.syncToken() }
             sessionGuard.recordActivity()
             val aal = catchResult { authRepository.getMfaAssuranceLevel() }.getOrNull()
             if (aal != null && aal.current != aal.next) {
@@ -254,7 +254,7 @@ class AuthViewModel(
                 setUsernameUseCase(userId, username)
                     .onSuccess {
                         updateState { it.copy(needsUsername = false) }
-                        launch { catchResult { fcmTokenManager.syncToken() } }
+                        launch { catchResult { fcmTokenRepository.syncToken() } }
                         sessionGuard.recordActivity()
                         sendEffect(AuthEffect.NavigateToHome)
                     }

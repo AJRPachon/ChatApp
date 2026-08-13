@@ -1,8 +1,9 @@
-package com.ajrpachon.chatapp.service
+package com.ajrpachon.chatapp.data.repository
 
 import android.content.Context
-import com.ajrpachon.chatapp.data.session.AndroidSecureStorage
 import com.ajrpachon.chatapp.data.remote.source.FcmTokenRemoteSource
+import com.ajrpachon.chatapp.data.session.AndroidSecureStorage
+import com.ajrpachon.chatapp.domain.repository.FcmTokenRepository
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.catchResult
 import com.google.firebase.messaging.FirebaseMessaging
@@ -12,19 +13,19 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
-class FcmTokenManager(
+class FcmTokenRepositoryImpl(
     private val remoteSource: FcmTokenRemoteSource,
     private val context: Context,
-) {
+) : FcmTokenRepository {
 
     private val storage by lazy { AndroidSecureStorage(context, "fcm_prefs") }
     private val tokenMutex = Mutex()
 
-    fun savePendingToken(token: String) {
+    override fun savePendingToken(token: String) {
         storage.putString(KEY_PENDING_TOKEN, token)
     }
 
-    suspend fun syncToken() = tokenMutex.withLock {
+    override suspend fun syncToken() = tokenMutex.withLock {
         catchResult {
             val token = FirebaseMessaging.getInstance().token.await()
             AppLogger.d(TAG, "FCM token obtained: ${token.take(20)}...")
@@ -36,7 +37,7 @@ class FcmTokenManager(
         }
     }
 
-    suspend fun deleteToken() = tokenMutex.withLock {
+    override suspend fun deleteToken() = tokenMutex.withLock {
         catchResult {
             val token = FirebaseMessaging.getInstance().token.await()
             remoteSource.deleteToken(token)
@@ -48,8 +49,12 @@ class FcmTokenManager(
         }
     }
 
+    override suspend fun upsertToken(token: String) {
+        remoteSource.upsertToken(token)
+    }
+
     companion object {
-        private const val TAG = "FcmTokenManager"
+        private const val TAG = "FcmTokenRepositoryImpl"
         private const val KEY_PENDING_TOKEN = "pending_fcm_token"
     }
 }
