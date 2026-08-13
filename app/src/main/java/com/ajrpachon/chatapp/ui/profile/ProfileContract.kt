@@ -1,7 +1,7 @@
 package com.ajrpachon.chatapp.ui.profile
 
 import android.graphics.Bitmap
-import com.ajrpachon.chatapp.data.local.ThemePreference
+import com.ajrpachon.chatapp.domain.model.ThemePreference
 
 data class TwoFactorState(
     val isEnrolled: Boolean = false,
