@@ -114,6 +114,9 @@ val repositoryModule = module {
             fileProviderAuthority = "${androidContext().packageName}.fileprovider",
         )
     }
+    single<com.ajrpachon.chatapp.domain.repository.BackupRepository> {
+        com.ajrpachon.chatapp.data.backup.BackupRepositoryImpl(androidContext(), get())
+    }
 }
 
 val useCaseModule = module {

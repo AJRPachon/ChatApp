@@ -195,7 +195,6 @@ val utilsModule = module {
     }
     single { com.ajrpachon.chatapp.utils.NetworkMonitor(androidContext()) }
     single { com.ajrpachon.chatapp.utils.ContactSyncManager(androidContext().contentResolver) }
-    single { com.ajrpachon.chatapp.utils.BackupManager(androidContext(), get()) }
     single<com.ajrpachon.chatapp.domain.repository.WallpaperRepository> {
         com.ajrpachon.chatapp.data.local.WallpaperRepository(androidContext())
     }
