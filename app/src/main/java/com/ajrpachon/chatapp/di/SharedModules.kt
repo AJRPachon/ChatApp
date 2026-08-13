@@ -5,6 +5,7 @@ import com.ajrpachon.chatapp.domain.repository.AuthRepository
 import com.ajrpachon.chatapp.data.remote.source.CallRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.ConversationRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.FcmTokenRemoteSource
+import com.ajrpachon.chatapp.data.remote.source.GiphyRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.GroupRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.InvitationRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.MessageRemoteSource
@@ -81,6 +82,7 @@ val remoteModule = module {
     singleOf(::FcmTokenRemoteSource)
     singleOf(::ReactionRemoteSource)
     singleOf(::StatusRemoteSource)
+    singleOf(::GiphyRemoteSource)
 }
 
 val repositoryModule = module {
@@ -117,6 +119,9 @@ val repositoryModule = module {
     }
     single<com.ajrpachon.chatapp.domain.repository.FcmTokenRepository> {
         com.ajrpachon.chatapp.data.repository.FcmTokenRepositoryImpl(get(), androidContext())
+    }
+    single<com.ajrpachon.chatapp.domain.repository.GiphyRepository> {
+        com.ajrpachon.chatapp.data.repository.GiphyRepositoryImpl(get(), androidContext())
     }
 }
 

@@ -11,6 +11,7 @@ import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
 import com.ajrpachon.chatapp.ui.chat.gallery.ChatMediaGalleryViewModel
 import com.ajrpachon.chatapp.ui.chat.ChatViewModel
 import com.ajrpachon.chatapp.ui.chat.StickerPackViewModel
+import com.ajrpachon.chatapp.ui.chat.GifPickerViewModel
 import com.ajrpachon.chatapp.ui.components.EmojiPickerViewModel
 import com.ajrpachon.chatapp.ui.conversations.ConversationListViewModel
 import com.ajrpachon.chatapp.ui.group.CreateGroupViewModel
@@ -113,6 +114,7 @@ val viewModelModule = module {
     viewModelOf(::GlobalSearchViewModel)
     viewModelOf(::StatusViewModel)
     viewModelOf(::EmojiPickerViewModel)
+    viewModelOf(::GifPickerViewModel)
     // ChatViewModel: Repositories only, no DAOs
     viewModel { params ->
         ChatViewModel(
