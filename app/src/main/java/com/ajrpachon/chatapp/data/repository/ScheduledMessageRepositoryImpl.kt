@@ -14,6 +14,8 @@ class ScheduledMessageRepositoryImpl(
     override fun observeAll(): Flow<List<ScheduledMessage>> =
         scheduledMessageDao.observeAll().map { list -> list.map { it.toDomain() } }
     override suspend fun deleteById(id: String) { scheduledMessageDao.deleteById(id) }
+    override suspend fun getPending(nowMs: Long): List<ScheduledMessage> =
+        scheduledMessageDao.getPending(nowMs).map { it.toDomain() }
     override suspend fun schedule(
         id: String,
         conversationId: String,

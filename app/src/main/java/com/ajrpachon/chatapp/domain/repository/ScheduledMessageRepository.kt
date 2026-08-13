@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 interface ScheduledMessageRepository {
     fun observeAll(): Flow<List<ScheduledMessage>>
     suspend fun deleteById(id: String)
+    suspend fun getPending(nowMs: Long): List<ScheduledMessage>
     @Suppress("LongParameterList")
     suspend fun schedule(
         id: String,
