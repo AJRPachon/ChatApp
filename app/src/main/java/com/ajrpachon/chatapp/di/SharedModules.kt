@@ -11,7 +11,6 @@ import com.ajrpachon.chatapp.data.remote.source.MessageRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.ReactionRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.StatusRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.UserRemoteSource
-import com.ajrpachon.chatapp.service.FcmTokenManager
 import com.ajrpachon.chatapp.data.repository.CallRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.ContactRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.ConversationRepositoryImpl
@@ -82,7 +81,6 @@ val remoteModule = module {
     singleOf(::FcmTokenRemoteSource)
     singleOf(::ReactionRemoteSource)
     singleOf(::StatusRemoteSource)
-    single { FcmTokenManager(get(), get()) }
 }
 
 val repositoryModule = module {
@@ -113,6 +111,9 @@ val repositoryModule = module {
             context = androidContext(),
             fileProviderAuthority = "${androidContext().packageName}.fileprovider",
         )
+    }
+    single<com.ajrpachon.chatapp.domain.repository.FcmTokenRepository> {
+        com.ajrpachon.chatapp.data.repository.FcmTokenRepositoryImpl(get(), androidContext())
     }
 }
 

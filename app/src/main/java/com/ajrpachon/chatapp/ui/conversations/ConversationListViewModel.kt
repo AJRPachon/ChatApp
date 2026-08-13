@@ -3,12 +3,12 @@ package com.ajrpachon.chatapp.ui.conversations
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.DraftRepository
+import com.ajrpachon.chatapp.domain.repository.FcmTokenRepository
 import com.ajrpachon.chatapp.domain.repository.ThemeRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
 import com.ajrpachon.chatapp.domain.usecase.ObserveConversationsUseCase
 import com.ajrpachon.chatapp.domain.usecase.ObserveInvitationsUseCase
-import com.ajrpachon.chatapp.service.FcmTokenManager
 import com.ajrpachon.chatapp.service.PresenceManager
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import com.ajrpachon.chatapp.utils.AppLogger
@@ -26,7 +26,7 @@ class ConversationListViewModel(
     private val observeInvitationsUseCase: ObserveInvitationsUseCase,
     private val conversationRepository: ConversationRepository,
     private val leaveGroupUseCase: LeaveGroupUseCase,
-    private val fcmTokenManager: FcmTokenManager,
+    private val fcmTokenRepository: FcmTokenRepository,
     private val presenceManager: PresenceManager,
     private val draftRepository: DraftRepository,
     private val notificationSoundRepository: com.ajrpachon.chatapp.domain.repository.NotificationSoundRepository,
@@ -36,7 +36,7 @@ class ConversationListViewModel(
 
     init {
         presenceManager.start()
-        viewModelScope.launch { fcmTokenManager.syncToken() }
+        viewModelScope.launch { fcmTokenRepository.syncToken() }
         viewModelScope.launch {
             networkMonitor.isOnline.collect { online ->
                 updateState { it.copy(isOnline = online) }

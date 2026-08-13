@@ -4,10 +4,10 @@ import com.ajrpachon.chatapp.utils.catchResult
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.domain.repository.AppLockRepository
 import com.ajrpachon.chatapp.domain.repository.AuthRepository
+import com.ajrpachon.chatapp.domain.repository.FcmTokenRepository
 import com.ajrpachon.chatapp.domain.repository.ThemeRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
-import com.ajrpachon.chatapp.service.FcmTokenManager
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.UploadLimits.checkAvatarSize
@@ -23,7 +23,7 @@ import qrcode.QRCode
 class ProfileViewModel(
     private val authRepository: AuthRepository,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
-    private val fcmTokenManager: FcmTokenManager,
+    private val fcmTokenRepository: FcmTokenRepository,
     private val userRepository: UserRepository,
     private val themeRepository: ThemeRepository,
     private val appLockRepository: AppLockRepository,
@@ -112,7 +112,7 @@ class ProfileViewModel(
     fun signOut() {
         viewModelScope.launch {
             catchResult {
-                fcmTokenManager.deleteToken()
+                fcmTokenRepository.deleteToken()
                 authRepository.signOut()
                 userRepository.clearCurrentUser()
             }.onFailure { e -> AppLogger.e(TAG, "Sign out failed", e) }
@@ -127,7 +127,7 @@ class ProfileViewModel(
     fun signOutAll() {
         viewModelScope.launch {
             catchResult {
-                fcmTokenManager.deleteToken()
+                fcmTokenRepository.deleteToken()
                 authRepository.signOutAll()
                 userRepository.clearCurrentUser()
             }.onFailure { e -> AppLogger.e(TAG, "Sign out all failed", e) }
