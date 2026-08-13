@@ -13,11 +13,11 @@ import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
 import okio.Path.Companion.toOkioPath
+import com.ajrpachon.chatapp.data.remote.source.GiphyRemoteSource
 import com.ajrpachon.chatapp.di.appModules
-import com.ajrpachon.chatapp.ui.chat.GiphyClientHolder
-import com.ajrpachon.chatapp.utils.GiphyKeyManager
 import com.ajrpachon.chatapp.utils.OkHttpProvider
 import org.koin.android.ext.koin.androidContext
+import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
 
 class ChatApplication : Application(), SingletonImageLoader.Factory {
@@ -25,7 +25,6 @@ class ChatApplication : Application(), SingletonImageLoader.Factory {
     override fun onCreate() {
         super.onCreate()
         if (BuildConfig.DEBUG) enableStrictMode()
-        GiphyKeyManager.init(this)
         createNotificationChannel()
         startKoin {
             androidContext(this@ChatApplication)
@@ -34,11 +33,12 @@ class ChatApplication : Application(), SingletonImageLoader.Factory {
     }
 
     override fun onTerminate() {
-        // GiphyClientHolder is a process-wide singleton reused across every GIF picker
+        // GiphyRemoteSource owns a process-wide HttpClient reused across every GIF picker
         // opening, so it must NOT be closed when the picker closes. onTerminate() is only
         // called by the emulator (never on real devices), but it's the best-effort hook we
         // have to release the underlying OkHttp connection pool for this shared client.
-        GiphyClientHolder.close()
+        // getOrNull() guards against Koin already having been stopped (e.g. in tests).
+        GlobalContext.getOrNull()?.get<GiphyRemoteSource>()?.close()
         super.onTerminate()
     }
 
