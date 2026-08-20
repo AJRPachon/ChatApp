@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.theme
 
+import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -8,7 +9,10 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 
 private val LightColorScheme = lightColorScheme(
     primary = Signal_Primary,
@@ -94,6 +98,21 @@ fun ChatAppTheme(
         }
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
+    }
+
+    // enableEdgeToEdge() only styles the system bar icons from the *system* light/dark
+    // setting at launch — it has no way to know about our in-app ThemePreference
+    // (SYSTEM/LIGHT/DARK), which can diverge from the system setting or change at
+    // runtime without recreating the Activity. Re-assert the correct icon appearance
+    // on every recomposition so it always matches what's actually on screen.
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as? Activity)?.window ?: return@SideEffect
+            val controller = WindowCompat.getInsetsController(window, view)
+            controller.isAppearanceLightStatusBars = !darkTheme
+            controller.isAppearanceLightNavigationBars = !darkTheme
+        }
     }
 
     MaterialTheme(
