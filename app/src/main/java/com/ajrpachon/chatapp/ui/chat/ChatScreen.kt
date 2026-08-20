@@ -38,18 +38,20 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
@@ -2777,6 +2779,7 @@ private fun LinkPreviewCard(data: LinkPreviewData) {
 
 // ── ImageViewerDialog ─────────────────────────────────────────────────────────
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ImageViewerDialog(
     imageUrls: List<String>,
@@ -2789,71 +2792,50 @@ private fun ImageViewerDialog(
             usePlatformDefaultWidth = false,
             dismissOnBackPress = true,
             dismissOnClickOutside = false,
+            decorFitsSystemWindows = false,
         ),
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black),
-        ) {
-            val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialIndex)
-            var fullscreenUrl by remember { mutableStateOf<String?>(null) }
+        val pagerState = rememberPagerState(
+            initialPage = initialIndex.coerceIn(0, imageUrls.lastIndex),
+        ) { imageUrls.size }
 
-            LazyColumn(
-                state = listState,
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+            // One photo per page, always centered (Fit + fillMaxSize letterboxes instead of
+            // pinning content to the top) — swipe between photos instead of stacking them in a
+            // scrollable column.
+            HorizontalPager(
+                state = pagerState,
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(vertical = 56.dp),
+            ) { page ->
+                AsyncImage(
+                    model = imageUrls[page],
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            if (imageUrls.size > 1) {
+                Text(
+                    text = "${pagerState.currentPage + 1}/${imageUrls.size}",
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .statusBarsPadding()
+                        .padding(top = 12.dp),
+                )
+            }
+
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(top = 4.dp, end = 8.dp)
+                    .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(50)),
             ) {
-                itemsIndexed(imageUrls, key = { _, url -> url }) { _, url ->
-                    AsyncImage(
-                        model = url,
-                        contentDescription = null,
-                        contentScale = ContentScale.FillWidth,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 800.dp)
-                            .clickable { fullscreenUrl = url },
-                    )
-                }
-            }
-
-            fullscreenUrl?.let { url ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black)
-                        .clickable { fullscreenUrl = null },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    AsyncImage(
-                        model = url,
-                        contentDescription = null,
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                    IconButton(
-                        onClick = { fullscreenUrl = null },
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(top = 40.dp, end = 8.dp)
-                            .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(50)),
-                    ) {
-                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.chat_close), tint = Color.White)
-                    }
-                }
-            }
-
-            if (fullscreenUrl == null) {
-                IconButton(
-                    onClick = onDismiss,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = 40.dp, end = 8.dp)
-                        .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(50)),
-                ) {
-                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.chat_close), tint = Color.White)
-                }
+                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.chat_close), tint = Color.White)
             }
         }
     }
