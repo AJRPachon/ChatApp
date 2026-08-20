@@ -783,7 +783,7 @@ fun ChatScreen(
                                     style = MaterialTheme.typography.labelSmall,
                                     maxLines = 1,
                                     color = if (isActive)
-                                        androidx.compose.ui.graphics.Color(0xFF4CAF50)
+                                        MaterialTheme.colorScheme.tertiary
                                     else
                                         MaterialTheme.colorScheme.outline,
                                 )
@@ -1494,7 +1494,7 @@ private fun CallMessageBubble(message: MessageBO) {
 
     ChatBubbleSlot(isFromMe = message.isFromMe) { maxBubbleWidth ->
         Surface(
-            shape = RoundedCornerShape(12.dp),
+            shape = MaterialTheme.shapes.small,
             color = if (message.isFromMe) MaterialTheme.colorScheme.primaryContainer
                     else MaterialTheme.colorScheme.surfaceVariant,
             modifier = Modifier.widthIn(max = maxBubbleWidth),
@@ -1565,7 +1565,7 @@ private fun PdfFileCard(
 
     ChatBubbleSlot(isFromMe = message.isFromMe, modifier = Modifier.padding(vertical = 2.dp)) { maxBubbleWidth ->
         Surface(
-            shape = RoundedCornerShape(12.dp),
+            shape = MaterialTheme.shapes.small,
             color = bubbleColor,
             modifier = Modifier.widthIn(max = minOf(280.dp, maxBubbleWidth)),
         ) {
@@ -1604,7 +1604,7 @@ private fun PdfFileCard(
                 }
                 Spacer(Modifier.height(6.dp))
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
+                    shape = MaterialTheme.shapes.small,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1640,7 +1640,7 @@ private fun GenericFileBubble(message: MessageBO) {
 
     ChatBubbleSlot(isFromMe = message.isFromMe, modifier = Modifier.padding(vertical = 2.dp)) { maxBubbleWidth ->
         Surface(
-            shape = RoundedCornerShape(12.dp),
+            shape = MaterialTheme.shapes.small,
             color = bubbleColor,
             modifier = Modifier.widthIn(max = minOf(280.dp, maxBubbleWidth))
                 .clickable {
@@ -1713,7 +1713,7 @@ private fun VideoBubble(message: MessageBO) {
             horizontalAlignment = if (message.isFromMe) Alignment.End else Alignment.Start,
         ) {
             Surface(
-                shape = RoundedCornerShape(12.dp),
+                shape = MaterialTheme.shapes.small,
                 color = if (message.isFromMe) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier.widthIn(max = minOf(240.dp, maxBubbleWidth)).clickable {
                     val uri = android.net.Uri.parse(message.videoUrl)
@@ -1734,7 +1734,7 @@ private fun VideoBubble(message: MessageBO) {
                         model = message.videoUrl,
                         contentDescription = stringResource(R.string.chat_video_content_description),
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)),
+                        modifier = Modifier.fillMaxSize().clip(MaterialTheme.shapes.small),
                     )
                     Surface(
                         shape = CircleShape,
@@ -1791,7 +1791,7 @@ private fun StickerBubble(message: MessageBO) {
 private fun DeletedMessageBubble(message: MessageBO) {
     ChatBubbleSlot(isFromMe = message.isFromMe, modifier = Modifier.padding(vertical = 2.dp)) { maxBubbleWidth ->
         Surface(
-            shape = RoundedCornerShape(12.dp),
+            shape = MaterialTheme.shapes.small,
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
             border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
             modifier = Modifier.widthIn(max = maxBubbleWidth),
@@ -1970,7 +1970,7 @@ private fun MessageBubble(
         ) {
         ChatBubbleSlot(isFromMe = message.isFromMe) { maxBubbleWidth ->
             Surface(
-                shape = RoundedCornerShape(12.dp),
+                shape = MaterialTheme.shapes.small,
                 color = if (message.isFromMe) {
                     if (outgoingBubbleColor != Color.Unspecified) outgoingBubbleColor
                     else MaterialTheme.colorScheme.primaryContainer

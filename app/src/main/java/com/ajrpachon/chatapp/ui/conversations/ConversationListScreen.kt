@@ -69,7 +69,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -291,6 +290,7 @@ fun ConversationListScreen(
             ) {
                 SmallFloatingActionButton(
                     onClick = dropUnlessResumed { onNewGroup() },
+                    shape = MaterialTheme.shapes.small,
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                 ) {
@@ -298,6 +298,7 @@ fun ConversationListScreen(
                 }
                 FloatingActionButton(
                     onClick = dropUnlessResumed { onNewChat() },
+                    shape = MaterialTheme.shapes.small,
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                 ) {
@@ -494,7 +495,7 @@ private fun ConversationItem(
                             .size(14.dp)
                             .align(Alignment.BottomEnd)
                             .background(
-                                androidx.compose.ui.graphics.Color(0xFF4CAF50),
+                                MaterialTheme.colorScheme.tertiary,
                                 CircleShape,
                             )
                             .border(2.dp, MaterialTheme.colorScheme.background, CircleShape),
