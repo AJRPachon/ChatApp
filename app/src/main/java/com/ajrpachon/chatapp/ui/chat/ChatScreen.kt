@@ -1977,7 +1977,17 @@ private fun MessageBubble(
                 } else MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier.widthIn(max = maxBubbleWidth),
             ) {
-                Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                val hasMedia = message.imageUrl != null || message.gifUrl != null
+                val hasHeader = (isGroup && !message.isFromMe && message.senderName.isNotBlank()) ||
+                    message.replyToId != null
+                // A bare photo/GIF (no caption, no audio) bleeds to the bubble's own edges —
+                // clipped by Surface's shape — instead of sitting inside the same padded column
+                // as text, so it reads as a photo, not a text bubble with a picture stuffed in
+                // it. Its time/status moves onto the image itself (see MediaMetaOverlay).
+                val mediaIsStandalone = hasMedia && message.content.isBlank() && message.audioUrl == null
+
+                @Composable
+                fun BubbleHeader() {
                     if (isGroup && !message.isFromMe && message.senderName.isNotBlank()) {
                         Text(
                             text = message.senderName,
@@ -1993,161 +2003,86 @@ private fun MessageBubble(
                             isFromMe = message.isFromMe,
                             onClick = { onReplyClick(message.replyToId) },
                         )
-                        Spacer(Modifier.height(6.dp))
+                        if (!hasMedia) Spacer(Modifier.height(6.dp))
                     }
-                    if (message.imageUrl != null) {
-                        AsyncImage(
-                            model = message.imageUrl.takeIf { MediaUrlValidator.isValid(it) },
-                            contentDescription = stringResource(R.string.chat_image_content_description),
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .widthIn(max = 240.dp)
-                                .height(200.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { onImageClick(message.imageUrl) },
+                }
+
+                if (!hasMedia) {
+                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                        BubbleHeader()
+                        MessageFooterContent(
+                            message = message,
+                            timeText = timeText,
+                            onEdit = onEdit,
+                            onSelfDestruct = onSelfDestruct,
+                            onDelete = onDelete,
+                            onForward = onForward,
+                            onCopy = onCopy,
+                            onToggleReaction = onToggleReaction,
+                            linkPreviews = linkPreviews,
+                            onDetectedUrl = onDetectedUrl,
                         )
                     }
-                    if (message.gifUrl != null) {
-                        AsyncImage(
-                            model = message.gifUrl.takeIf { MediaUrlValidator.isValid(it) },
-                            contentDescription = stringResource(R.string.chat_gif_content_description),
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .widthIn(max = 240.dp)
-                                .height(180.dp)
-                                .clip(RoundedCornerShape(8.dp)),
-                        )
-                    }
-                    if (message.audioUrl != null && MediaUrlValidator.isValid(message.audioUrl)) {
-                        RemoteAudioPlayer(
-                            url = message.audioUrl,
-                            senderAvatarUrl = message.senderAvatarUrl,
-                            senderInitial = message.senderName.firstOrNull()?.uppercase() ?: "?",
-                            sentTime = timeText,
-                            isFromMe = message.isFromMe,
-                            sendStatus = message.sendStatus,
-                            isRead = message.isRead,
-                        )
-                    }
-                    if (message.content.isNotBlank()) {
-                        var showMsgMenu by remember { mutableStateOf(false) }
-                        var showEmojiPicker by remember { mutableStateOf(false) }
-                        val emojiSheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
-                        val locationUrl = remember(message.content) {
-                            if (message.content.startsWith("📍 Mi ubicación: https://maps.google.com/?q=")) {
-                                message.content.substringAfter("📍 Mi ubicación: ")
-                            } else null
-                        }
-                        if (locationUrl != null) {
-                            LocationMessageCard(mapsUrl = locationUrl)
-                        }
-                        Box(
-                            modifier = Modifier.combinedClickable(
-                                onClick = {},
-                                onLongClick = { showMsgMenu = true },
-                            ),
-                        ) {
-                            if (locationUrl == null) {
-                                Text(text = message.content, style = MaterialTheme.typography.bodyMedium)
+                } else {
+                    Column {
+                        if (hasHeader) {
+                            Column(modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 6.dp)) {
+                                BubbleHeader()
                             }
-                            DropdownMenu(expanded = showMsgMenu, onDismissRequest = { showMsgMenu = false }) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.chat_react)) },
-                                    leadingIcon = { Text("😊") },
-                                    onClick = { showMsgMenu = false; showEmojiPicker = true },
+                        }
+                        message.imageUrl?.let { imageUrl ->
+                            Box {
+                                AsyncImage(
+                                    model = imageUrl.takeIf { MediaUrlValidator.isValid(it) },
+                                    contentDescription = stringResource(R.string.chat_image_content_description),
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(220.dp)
+                                        .clickable { onImageClick(imageUrl) },
                                 )
-                                if (onEdit != null) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.chat_edit)) },
-                                        leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
-                                        onClick = { showMsgMenu = false; onEdit() },
+                                if (mediaIsStandalone) {
+                                    MediaMetaOverlay(
+                                        message = message,
+                                        timeText = timeText,
+                                        modifier = Modifier.align(Alignment.BottomEnd),
                                     )
                                 }
-                                if (onSelfDestruct != null) {
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(if (message.expiresAt != null) stringResource(R.string.chat_remove_self_destruct) else stringResource(R.string.chat_ephemeral_message))
-                                        },
-                                        leadingIcon = { Text(if (message.expiresAt != null) "♾️" else "⏱️") },
-                                        onClick = { showMsgMenu = false; onSelfDestruct() },
-                                    )
-                                }
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.chat_copy)) },
-                                    leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null) },
-                                    onClick = { showMsgMenu = false; onCopy(message.content) },
+                            }
+                        }
+                        message.gifUrl?.let { gifUrl ->
+                            Box {
+                                AsyncImage(
+                                    model = gifUrl.takeIf { MediaUrlValidator.isValid(it) },
+                                    contentDescription = stringResource(R.string.chat_gif_content_description),
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(190.dp),
                                 )
-                                if (onDelete != null) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.chat_delete)) },
-                                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
-                                        onClick = { showMsgMenu = false; onDelete() },
-                                    )
-                                }
-                                if (onForward != null) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.chat_forward)) },
-                                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.Forward, contentDescription = null) },
-                                        onClick = { showMsgMenu = false; onForward() },
+                                if (mediaIsStandalone) {
+                                    MediaMetaOverlay(
+                                        message = message,
+                                        timeText = timeText,
+                                        modifier = Modifier.align(Alignment.BottomEnd),
                                     )
                                 }
                             }
                         }
-                        if (showEmojiPicker) {
-                            EmojiPickerBottomSheet(
-                                sheetState = emojiSheetState,
-                                onDismiss = { showEmojiPicker = false },
-                                onEmojiSelected = { emoji -> onToggleReaction(emoji) },
-                            )
-                        }
-                    }
-                    // Link preview — shown only for plain text messages (no image/audio/gif)
-                    val hasAttachment = message.imageUrl != null || message.audioUrl != null ||
-                        message.gifUrl != null
-                    if (!hasAttachment && message.content.isNotBlank()) {
-                        val detectedUrl = remember(message.content) {
-                            val matcher = Patterns.WEB_URL.matcher(message.content)
-                            if (matcher.find()) matcher.group() else null
-                        }
-                        if (detectedUrl != null) {
-                            LaunchedEffect(detectedUrl) { onDetectedUrl(detectedUrl) }
-                            val previewData = linkPreviews[detectedUrl]
-                            if (previewData != null) {
-                                Spacer(Modifier.height(6.dp))
-                                LinkPreviewCard(data = previewData)
-                            }
-                        }
-                    }
-                    Row(
-                        modifier = Modifier.align(Alignment.End),
-                        horizontalArrangement = Arrangement.spacedBy(2.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        message.expiresAt?.let { exp ->
-                            val secsLeft = ((exp - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
-                            Text(
-                                "⏱️ ${if (secsLeft < 60) "${secsLeft}s" else "${secsLeft / 60}m"}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
-                            )
-                        }
-                        if (message.isEdited) {
-                            Text(
-                                stringResource(R.string.chat_edited_label),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                            )
-                        }
-                        // Audio messages show their send time (and status icon) inside the
-                        // audio row instead (bottom-right of the waveform), so skip it here.
-                        if (message.audioUrl == null) {
-                            Text(
-                                text = timeText,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                            )
-                            if (message.isFromMe) {
-                                SendStatusIcon(sendStatus = message.sendStatus, isRead = message.isRead)
+                        if (!mediaIsStandalone) {
+                            Column(modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 6.dp, bottom = 8.dp)) {
+                                MessageFooterContent(
+                                    message = message,
+                                    timeText = timeText,
+                                    onEdit = onEdit,
+                                    onSelfDestruct = onSelfDestruct,
+                                    onDelete = onDelete,
+                                    onForward = onForward,
+                                    onCopy = onCopy,
+                                    onToggleReaction = onToggleReaction,
+                                    linkPreviews = linkPreviews,
+                                    onDetectedUrl = onDetectedUrl,
+                                )
                             }
                         }
                     }
@@ -2201,6 +2136,166 @@ private fun MessageBubble(
                     .padding(4.dp)
                     .size(20.dp),
             )
+        }
+    }
+}
+
+/**
+ * Everything a bubble shows below its media (or in place of it, for a text-only message):
+ * the audio player, the message text (with its long-press menu) or shared-location card, the
+ * link preview, and the trailing time/edited/self-destruct/status row. Shared between the
+ * plain-text bubble layout and the has-media bubble layout in [MessageBubble] so this fairly
+ * involved block — dropdown menu, emoji picker, link detection — only exists once.
+ */
+@Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList")
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@Composable
+private fun MessageFooterContent(
+    message: MessageBO,
+    timeText: String,
+    onEdit: (() -> Unit)?,
+    onSelfDestruct: (() -> Unit)?,
+    onDelete: (() -> Unit)?,
+    onForward: (() -> Unit)?,
+    onCopy: (String) -> Unit,
+    onToggleReaction: (String) -> Unit,
+    linkPreviews: Map<String, LinkPreviewData?>,
+    onDetectedUrl: (String) -> Unit,
+) {
+    if (message.audioUrl != null && MediaUrlValidator.isValid(message.audioUrl)) {
+        RemoteAudioPlayer(
+            url = message.audioUrl,
+            senderAvatarUrl = message.senderAvatarUrl,
+            senderInitial = message.senderName.firstOrNull()?.uppercase() ?: "?",
+            sentTime = timeText,
+            isFromMe = message.isFromMe,
+            sendStatus = message.sendStatus,
+            isRead = message.isRead,
+        )
+    }
+    if (message.content.isNotBlank()) {
+        var showMsgMenu by remember { mutableStateOf(false) }
+        var showEmojiPicker by remember { mutableStateOf(false) }
+        val emojiSheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        val locationUrl = remember(message.content) {
+            if (message.content.startsWith("📍 Mi ubicación: https://maps.google.com/?q=")) {
+                message.content.substringAfter("📍 Mi ubicación: ")
+            } else null
+        }
+        if (locationUrl != null) {
+            LocationMessageCard(mapsUrl = locationUrl)
+        }
+        Box(
+            modifier = Modifier.combinedClickable(
+                onClick = {},
+                onLongClick = { showMsgMenu = true },
+            ),
+        ) {
+            if (locationUrl == null) {
+                Text(text = message.content, style = MaterialTheme.typography.bodyMedium)
+            }
+            DropdownMenu(expanded = showMsgMenu, onDismissRequest = { showMsgMenu = false }) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.chat_react)) },
+                    leadingIcon = { Text("😊") },
+                    onClick = { showMsgMenu = false; showEmojiPicker = true },
+                )
+                if (onEdit != null) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.chat_edit)) },
+                        leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                        onClick = { showMsgMenu = false; onEdit() },
+                    )
+                }
+                if (onSelfDestruct != null) {
+                    DropdownMenuItem(
+                        text = {
+                            Text(if (message.expiresAt != null) stringResource(R.string.chat_remove_self_destruct) else stringResource(R.string.chat_ephemeral_message))
+                        },
+                        leadingIcon = { Text(if (message.expiresAt != null) "♾️" else "⏱️") },
+                        onClick = { showMsgMenu = false; onSelfDestruct() },
+                    )
+                }
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.chat_copy)) },
+                    leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null) },
+                    onClick = { showMsgMenu = false; onCopy(message.content) },
+                )
+                if (onDelete != null) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.chat_delete)) },
+                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
+                        onClick = { showMsgMenu = false; onDelete() },
+                    )
+                }
+                if (onForward != null) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.chat_forward)) },
+                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.Forward, contentDescription = null) },
+                        onClick = { showMsgMenu = false; onForward() },
+                    )
+                }
+            }
+        }
+        if (showEmojiPicker) {
+            EmojiPickerBottomSheet(
+                sheetState = emojiSheetState,
+                onDismiss = { showEmojiPicker = false },
+                onEmojiSelected = { emoji -> onToggleReaction(emoji) },
+            )
+        }
+    }
+    // Link preview — shown only for plain text messages (no image/audio/gif)
+    val hasAttachment = message.imageUrl != null || message.audioUrl != null ||
+        message.gifUrl != null
+    if (!hasAttachment && message.content.isNotBlank()) {
+        val detectedUrl = remember(message.content) {
+            val matcher = Patterns.WEB_URL.matcher(message.content)
+            if (matcher.find()) matcher.group() else null
+        }
+        if (detectedUrl != null) {
+            LaunchedEffect(detectedUrl) { onDetectedUrl(detectedUrl) }
+            val previewData = linkPreviews[detectedUrl]
+            if (previewData != null) {
+                Spacer(Modifier.height(6.dp))
+                LinkPreviewCard(data = previewData)
+            }
+        }
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        message.expiresAt?.let { exp ->
+            val secsLeft = ((exp - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
+            Text(
+                "⏱️ ${if (secsLeft < 60) "${secsLeft}s" else "${secsLeft / 60}m"}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                modifier = Modifier.padding(end = 2.dp),
+            )
+        }
+        if (message.isEdited) {
+            Text(
+                stringResource(R.string.chat_edited_label),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                modifier = Modifier.padding(end = 2.dp),
+            )
+        }
+        // Audio messages show their send time (and status icon) inside the
+        // audio row instead (bottom-right of the waveform), so skip it here.
+        if (message.audioUrl == null) {
+            Text(
+                text = timeText,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                modifier = Modifier.padding(end = 2.dp),
+            )
+            if (message.isFromMe) {
+                SendStatusIcon(sendStatus = message.sendStatus, isRead = message.isRead)
+            }
         }
     }
 }
@@ -2288,7 +2383,7 @@ private fun LocationMessageCard(mapsUrl: String) {
 }
 
 @Composable
-internal fun ReadReceiptIcon(isRead: Boolean) {
+internal fun ReadReceiptIcon(isRead: Boolean, unreadTint: Color? = null) {
     Icon(
         imageVector = if (isRead) Icons.Default.DoneAll else Icons.Default.Done,
         contentDescription = if (isRead) stringResource(R.string.chat_read) else stringResource(R.string.chat_sent),
@@ -2296,19 +2391,29 @@ internal fun ReadReceiptIcon(isRead: Boolean) {
         tint = if (isRead)
             androidx.compose.ui.graphics.Color(0xFF4FC3F7)
         else
-            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+            unreadTint ?: MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
     )
 }
 
-/** Pending/failed/sent-or-read status icon shown next to a sent message's time. */
+/**
+ * Pending/failed/sent-or-read status icon shown next to a sent message's time.
+ *
+ * [neutralTint] overrides the "pending" / "sent but unread" colors only — the read (blue) and
+ * failed (error) states stay as-is regardless, since those need to read correctly on any
+ * background. Pass a light tint when placing this over a photo (see [MediaMetaOverlay]).
+ */
 @Composable
-internal fun SendStatusIcon(sendStatus: com.ajrpachon.chatapp.domain.model.SendStatus, isRead: Boolean) {
+internal fun SendStatusIcon(
+    sendStatus: com.ajrpachon.chatapp.domain.model.SendStatus,
+    isRead: Boolean,
+    neutralTint: Color? = null,
+) {
     when (sendStatus) {
         com.ajrpachon.chatapp.domain.model.SendStatus.PENDING ->
             Icon(
                 imageVector = androidx.compose.material.icons.Icons.Default.Schedule,
                 contentDescription = stringResource(R.string.chat_pending_send),
-                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                tint = neutralTint ?: MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                 modifier = Modifier.size(12.dp),
             )
         com.ajrpachon.chatapp.domain.model.SendStatus.FAILED ->
@@ -2319,7 +2424,60 @@ internal fun SendStatusIcon(sendStatus: com.ajrpachon.chatapp.domain.model.SendS
                 modifier = Modifier.size(12.dp),
             )
         com.ajrpachon.chatapp.domain.model.SendStatus.SENT ->
-            ReadReceiptIcon(isRead = isRead)
+            ReadReceiptIcon(isRead = isRead, unreadTint = neutralTint)
+    }
+}
+
+/**
+ * Time (+ edited/self-destruct/status) pill overlaid on the bottom-right corner of a photo or
+ * GIF that has no caption — mirrors what [MessageFooterContent]'s trailing row shows for a
+ * captioned message, but styled to stay legible over arbitrary image content instead of sitting
+ * in a padded strip below it.
+ */
+@Composable
+private fun MediaMetaOverlay(
+    message: MessageBO,
+    timeText: String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        color = Color.Black.copy(alpha = 0.45f),
+        shape = RoundedCornerShape(50),
+        modifier = modifier.padding(6.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            message.expiresAt?.let { exp ->
+                val secsLeft = ((exp - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
+                Text(
+                    "⏱️ ${if (secsLeft < 60) "${secsLeft}s" else "${secsLeft / 60}m"}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White,
+                )
+            }
+            if (message.isEdited) {
+                Text(
+                    stringResource(R.string.chat_edited_label),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.85f),
+                )
+            }
+            Text(
+                text = timeText,
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White,
+            )
+            if (message.isFromMe) {
+                SendStatusIcon(
+                    sendStatus = message.sendStatus,
+                    isRead = message.isRead,
+                    neutralTint = Color.White.copy(alpha = 0.85f),
+                )
+            }
+        }
     }
 }
 
