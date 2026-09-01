@@ -71,7 +71,7 @@ internal fun ChatMessageList(
         Modifier
             .fillMaxSize()
             .background(
-                state.wallpaperColor?.let { Color(it) }
+                state.wallpaper.color?.let { Color(it) }
                     ?: MaterialTheme.colorScheme.background
             )
     ) {

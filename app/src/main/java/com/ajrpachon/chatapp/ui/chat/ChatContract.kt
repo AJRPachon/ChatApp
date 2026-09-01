@@ -240,6 +240,17 @@ data class ChatIncognitoUiState(
     val showInfoDialog: Boolean = false,
 )
 
+/**
+ * Chat wallpaper color + its picker sheet, owned directly by `ChatViewModel` (no delegate —
+ * `SetWallpaperColor` writes straight through `wallpaperRepository`, observed back in `init`).
+ * Sixteenth and last of the nested groups in docs/chat-viewmodel-decomposition.md's "Shrinking
+ * ChatState/ChatIntent" plan.
+ */
+data class ChatWallpaperUiState(
+    val color: Long? = null,
+    val showPicker: Boolean = false,
+)
+
 data class ChatState(
     val inputText: String = "",
     val isSending: Boolean = false,
@@ -275,9 +286,7 @@ data class ChatState(
     val scheduling: ChatSchedulingUiState = ChatSchedulingUiState(),
     // AI Assistant
     val ai: ChatAiUiState = ChatAiUiState(),
-    // Wallpaper
-    val wallpaperColor: Long? = null,
-    val showWallpaperPicker: Boolean = false,
+    val wallpaper: ChatWallpaperUiState = ChatWallpaperUiState(),
     val groupPresence: ChatGroupPresenceUiState = ChatGroupPresenceUiState(),
     val isOnline: Boolean = true,
     val contactCard: ChatContactCardUiState = ChatContactCardUiState(),

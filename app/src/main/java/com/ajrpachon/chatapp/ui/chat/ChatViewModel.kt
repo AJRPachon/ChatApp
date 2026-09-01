@@ -252,7 +252,7 @@ class ChatViewModel(
             chatThemeRepository.observe(conversationId).collect { theme -> updateState { it.copy(theme = it.theme.copy(theme = theme)) } }
         }
         viewModelScope.launch {
-            wallpaperRepository.getWallpaperColor(conversationId).collect { color -> updateState { it.copy(wallpaperColor = color) } }
+            wallpaperRepository.getWallpaperColor(conversationId).collect { color -> updateState { it.copy(wallpaper = it.wallpaper.copy(color = color)) } }
         }
         updateState { it.copy(conversationTitle = otherUserName) }
         val uid = currentUserId
@@ -458,8 +458,8 @@ class ChatViewModel(
                 val suggestion = state.value.ai.suggestion ?: return
                 updateState { it.copy(inputText = suggestion, ai = it.ai.copy(showSheet = false, suggestion = null)) }
             }
-            is ChatIntent.OpenWallpaperPicker -> updateState { it.copy(showWallpaperPicker = true) }
-            is ChatIntent.DismissWallpaperPicker -> updateState { it.copy(showWallpaperPicker = false) }
+            is ChatIntent.OpenWallpaperPicker -> updateState { it.copy(wallpaper = it.wallpaper.copy(showPicker = true)) }
+            is ChatIntent.DismissWallpaperPicker -> updateState { it.copy(wallpaper = it.wallpaper.copy(showPicker = false)) }
             is ChatIntent.SetWallpaperColor -> viewModelScope.launch { wallpaperRepository.setWallpaperColor(conversationId, intent.color) }
             is ChatIntent.SendContact -> quickSendDelegate.sendContact(intent.name, intent.phone)
             is ChatIntent.ContactSelected -> quickSendDelegate.handleContactSelected(intent.uri)

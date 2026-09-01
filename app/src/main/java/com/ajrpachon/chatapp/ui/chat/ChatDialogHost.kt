@@ -305,9 +305,9 @@ internal fun ChatDialogHost(
         }
     }
 
-    if (state.showWallpaperPicker) {
+    if (state.wallpaper.showPicker) {
         WallpaperPickerSheet(
-            currentColor = state.wallpaperColor,
+            currentColor = state.wallpaper.color,
             onSelect = { colorValue: Long? ->
                 vm.onIntent(ChatIntent.SetWallpaperColor(colorValue))
                 vm.onIntent(ChatIntent.DismissWallpaperPicker)

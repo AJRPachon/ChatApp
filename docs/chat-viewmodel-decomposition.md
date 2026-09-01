@@ -253,15 +253,16 @@ scroll/error/effect handling, and the `Scaffold` wiring the three new composable
 
 ### Shrinking `ChatState`/`ChatIntent`
 
-**In progress.** The composable split above is done, so `state.xxx` reads are now spread
-across `ChatScreen.kt` + `ChatTopBar.kt`/`ChatBottomBar.kt`/`ChatMessageList.kt`/
+**Done.** The composable split above meant `state.xxx` reads were spread across
+`ChatScreen.kt` + `ChatTopBar.kt`/`ChatBottomBar.kt`/`ChatMessageList.kt`/
 `ChatDialogHost.kt`/`ChatDialogs.kt`/`ChatBottomSheets.kt`/the message-bubble files rather
-than one file — but each nested-state group below only touches 3-6 files in practice (a
+than one file — but each nested-state group below only touched 3-6 files in practice (a
 delegate, the one or two UI files that read that concern's fields, `ChatViewModel.kt`'s
-`onIntent` branches), so grouping one concern at a time is still a small, independently
-verifiable slice. Same discipline as Phase 1's delegates: one slice = one commit, verified by
-the full compile→detekt→test cycle, `ChatViewModelTest` unchanged (pure move, no behavior
-change).
+`onIntent` branches), so grouping one concern at a time stayed a small, independently
+verifiable slice throughout. Same discipline as Phase 1's delegates: one slice = one commit,
+verified by the full compile→detekt→test cycle, `ChatViewModelTest` updated only on the two
+slices (3 and 5) whose tests asserted on a moved field directly. See "Shrinking
+ChatState/ChatIntent: done" below the target-shape table for the closing summary.
 
 **Target shape:** each group becomes a nested `data class` with its own `= DefaultValue()`,
 referenced as `state.<name>` instead of `state.<individual field>`. Grouped by the delegate
@@ -286,7 +287,7 @@ identity set once in `init`) are grouped by UI feature instead.
 | 13 | `state.disappearing: ChatDisappearingUiState` | `disappearingModeSeconds`→`seconds`, `showDisappearingModeSheet`→`showSheet` | none | **Done** |
 | 14 | `state.mention: ChatMentionUiState` | `mentionSuggestions`→`suggestions`, `showMentionSuggestions`→`showSuggestions` | none | **Done** |
 | 15 | `state.incognito: ChatIncognitoUiState` | `isIncognito`, `showIncognitoInfoDialog`→`showInfoDialog` | none | **Done** |
-| 16 | `state.wallpaper: ChatWallpaperUiState` | `wallpaperColor`, `showWallpaperPicker` | none | Not started |
+| 16 | `state.wallpaper: ChatWallpaperUiState` | `wallpaperColor`→`color`, `showWallpaperPicker`→`showPicker` | none | **Done** |
 
 Left flat on `ChatState` (no grouping planned): `inputText`, `isSending`, `currentUserId`,
 `conversationTitle`, `error`, `replyingTo`, `editingMessage`, `selectedMessageIds`,
@@ -501,6 +502,48 @@ call site moved, the repository call itself is untouched. 4 files: `ChatContract
 `DismissIncognitoDialog`, `toggleIncognito`/`confirmIncognito`), `ChatDialogHost.kt` (1 read),
 `ChatTopBar.kt` (3 reads: the incognito banner visibility, the overflow-menu label, and its
 icon tint).
+
+**Slice 15 (`ChatWallpaperUiState`) — last slice, same pattern as every non-delegate group
+before it:** `wallpaperColor`/`showWallpaperPicker` → `state.wallpaper.{color,showPicker}`.
+No surprises — by this point every one of the remaining "no delegate" groups (mute, theme,
+disappearing, mention, incognito, wallpaper) had settled into the same shape: one `init`-block
+observer or `onIntent` writer, one dialog-host or top-bar reader, occasionally a
+`ChatMessageList`/`ChatScreen` read for something rendered mid-conversation (here, the
+wallpaper-tinted background behind the message list). 4 files: `ChatContract.kt`,
+`ChatViewModel.kt` (the `init` block's `wallpaperRepository.getWallpaperColor` collector,
+`OpenWallpaperPicker`/`DismissWallpaperPicker`), `ChatDialogHost.kt` (2 reads for
+`WallpaperPickerSheet`), `ChatMessageList.kt` (1 read, the background tint).
+
+### Shrinking ChatState/ChatIntent: done
+
+All 16 rows of the target-shape table are now **Done**. `ChatState` went from 65 flat fields
+to 16 nested state objects (`ai`, `translation`, `poll`, `scheduling`, `forward`,
+`contactCard`, `search`, `mediaUpload`, `audioState`, `groupPresence`, `mute`, `theme`,
+`disappearing`, `mention`, `incognito`, `wallpaper`) plus the ~20 fields that were always core
+messaging or conversation identity and stayed flat by design (see the "Left flat on
+`ChatState`" paragraph above the target-shape table). Every slice was a pure move — verified
+by the same compile→detekt→test cycle each time, `ChatViewModelTest` updated only where a test
+literally asserted on a moved field's old name (slices 3 and 5) — spread across 15 commits on
+`feat/tema-senal`, none touching more than 6 files.
+
+Two recurring lessons worth keeping in mind for any future `ChatState` work:
+
+- **Same-named-but-different-type fields are everywhere in a chat app.** `ChatIntent.MuteFor`
+  vs. `ChatState.mute.mutedUntil`, `ConversationBO.isMuted`/`disappearingModeSeconds` vs. the
+  `ChatState` fields they seed, `incognitoRepository.isIncognito()` vs. `state.incognito.
+  isIncognito`, `MessageBubble`'s own `pollUiStates`/`contactPhoneLookups` params vs. the
+  `ChatState` maps that narrow into them — a bare grep for a field name needs its matches
+  checked one by one, not just counted.
+- **Not every field this plan moved has a UI reader today.** `translation` (slice 2) and
+  `mention` (slice 13) are both populated by their respective delegate/handler but never read
+  by any composable — real, pre-existing feature gaps that this plan surfaced by forcing a
+  full grep of every field's usage, not something introduced by the moves themselves.
+
+`ChatIntent`'s 78-variant `when` in `onIntent` was **not** split into per-concern sealed
+hierarchies — per the original plan, that was always lower priority than the state split, and
+nothing in doing the state work surfaced a concrete pain point (a merge-conflict hotspot, a
+review-diff problem) that would justify it now. Worth revisiting only if `onIntent`'s `when`
+itself becomes the bottleneck in a future session.
 
 ## Non-goals
 
