@@ -70,8 +70,23 @@ carelessly):
 | 5 | `ChatForwardDelegate` | `showForwardDialog`, `forwardMessage`, `showForwardSelectionDialog`, `forwardSelectedMessages` | `conversationRepository`, `messageRepository` | **Done** |
 | 6 | `ChatContactCardDelegate` | `checkContactRelationship`, `contactCardPrimaryAction` | `userRepository`, `sendInvitationUseCase` | **Done** |
 | 7 | `ChatSearchDelegate` | `searchMessages`, `jumpToMessage` | `messageRepository` | **Done** |
-| 8 | `ChatMediaDelegate` | `sendImages`, `sendFile`, `sendVideo`, `startRecording`, `stopRecording`, `discardAudio`, `sendAudio`, `sendGif`, `sendSticker`, `sendContact`, `handleContactSelected`, `fetchAndSendLocation`, `sendLocationMessage` | `messageRepository`, `sendMessageUseCase`, `getUriMetadataUseCase`, `readUriAsBytesUseCase`, `contactRepository` | Planned — largest slice, owns the `recorder`/`recordingTimerJob` fields, do last among the "planned" group |
-| 9 | init-block group-presence/membership logic (lines ~174-273) | not a delegate — this is `init` wiring with heavy cross-references to other state (`groupMembers`, `memberOnlineStatuses`, `_historyVisibleFrom`) | most repositories | **Not planned yet** — highest risk, needs its own design pass |
+| 8a | `ChatMediaUploadDelegate` | `sendImages`, `sendFile`, `sendVideo` | `messageRepository`, `sendMessageUseCase`, `getUriMetadataUseCase`, `readUriAsBytesUseCase` | **Done** |
+| 8b | `ChatQuickSendDelegate` | `sendGif`, `sendSticker`, `sendContact`, `handleContactSelected`, `fetchAndSendLocation`, `sendLocationMessage` | `application` (LocationManager), `sendMessageUseCase`, `contactRepository` | **Done** |
+| 8c | `ChatAudioRecordingDelegate` | `startRecording`, `stopRecording`, `discardAudio`, `sendAudio`, + `cleanup()` for `onCleared()` | `application`, `messageRepository`, `sendMessageUseCase` | **Done** — originally planned as one "ChatMediaDelegate"; split into 8a/8b/8c once a single delegate covering all of it (9+ constructor params) tripped `LongParameterList` — the three really are distinct concerns (batch upload progress vs. one-shot sends vs. a `MediaRecorder` resource lifecycle) so the split reads better anyway |
+| 9 | init-block group-presence/membership logic (the `init { ... }` block) | not a delegate — this is `init` wiring with heavy cross-references to other state (`groupMembers`, `memberOnlineStatuses`, `_historyVisibleFrom`) | most repositories | **Not planned yet** — highest risk, needs its own design pass |
+
+All of Phase 1's "planned" delegates (rows 1-8c) are now done — row 9 (the `init`-block
+group-presence/membership logic) is the only remaining item, and stays deliberately
+unscheduled per its own note below. `ChatViewModel.kt` went from 1194 lines/57 functions to
+~720 lines/~30 functions across the ten delegates above, with zero changes to `ChatState`/
+`ChatIntent`/`ChatScreen` throughout.
+
+One more param-budget lesson from 8c: when a delegate's own constructor would hit 8 params,
+prefer folding two *narrow, related* callbacks into one (e.g. "cancel the pending draft-save
+job, then persist the cleared draft" became a single `clearDraft: suspend () -> Unit` instead
+of separate `draftRepository`/`cancelDraftSave` params) over reaching for a second bundling
+class — only introduce another `*Context`-style bundle if the delegate genuinely needs 3+ of
+these hooks, the way `ChatDelegateContext` bundles state/effect access.
 
 What stays directly on `ChatViewModel` after all of the above: `onIntent` dispatch, `init`
 wiring (conversation/user/group loading — see row 9), core send/edit/delete/reaction

@@ -1,11 +1,7 @@
 package com.ajrpachon.chatapp.ui.chat
 
-import android.annotation.SuppressLint
 import android.app.Application
-import android.location.LocationManager
-import android.media.MediaRecorder
 import android.net.Uri
-import android.os.Build
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
@@ -25,7 +21,6 @@ import com.ajrpachon.chatapp.domain.repository.PollRepository
 import com.ajrpachon.chatapp.domain.repository.WallpaperRepository
 import com.ajrpachon.chatapp.domain.model.CallType
 import com.ajrpachon.chatapp.domain.model.GroupMemberBO
-import com.ajrpachon.chatapp.domain.model.LocationMessageFormat
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
@@ -50,10 +45,8 @@ import com.ajrpachon.chatapp.utils.ClipboardProtection
 import com.ajrpachon.chatapp.utils.LinkPreviewFetcher
 import com.ajrpachon.chatapp.utils.NetworkMonitor
 import com.ajrpachon.chatapp.utils.TranslationManager
-import com.ajrpachon.chatapp.utils.UploadLimits
 import com.ajrpachon.chatapp.utils.catchResult
 import com.ajrpachon.chatapp.worker.MessageRetryWorker
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
@@ -185,10 +178,34 @@ class ChatViewModel(
         scope = viewModelScope,
         context = delegateContext,
     )
+    private val mediaUploadDelegate = ChatMediaUploadDelegate(
+        conversationId = conversationId,
+        messageRepository = messageRepository,
+        sendMessageUseCase = sendMessageUseCase,
+        getUriMetadataUseCase = getUriMetadataUseCase,
+        readUriAsBytesUseCase = readUriAsBytesUseCase,
+        scope = viewModelScope,
+        context = delegateContext,
+    )
+    private val quickSendDelegate = ChatQuickSendDelegate(
+        conversationId = conversationId,
+        application = application,
+        sendMessageUseCase = sendMessageUseCase,
+        contactRepository = contactRepository,
+        scope = viewModelScope,
+        context = delegateContext,
+    )
+    private val audioRecordingDelegate = ChatAudioRecordingDelegate(
+        conversationId = conversationId,
+        application = application,
+        messageRepository = messageRepository,
+        sendMessageUseCase = sendMessageUseCase,
+        clearDraft = { draftSaveJob?.cancel(); draftRepository.saveDraft(conversationId, "") },
+        scope = viewModelScope,
+        context = delegateContext,
+    )
 
     private var groupMembers: List<GroupMemberBO> = emptyList()
-    private var recorder: MediaRecorder? = null
-    private var recordingTimerJob: Job? = null
     private var remoteSyncJob: Job? = null
     private var typingResetJob: Job? = null
     private var typingPresenceJob: Job? = null
@@ -393,21 +410,21 @@ class ChatViewModel(
                 }
             }
             is ChatIntent.Send -> if (state.value.editingMessage != null) confirmEdit() else sendMessage()
-            is ChatIntent.SendImages -> sendImages(intent.uris)
-            is ChatIntent.SendFile -> sendFile(intent.uri)
-            is ChatIntent.SendVideo -> sendVideo(intent.uri)
-            is ChatIntent.StartRecording -> startRecording()
-            is ChatIntent.StopRecording -> stopRecording()
-            is ChatIntent.DiscardAudio -> discardAudio()
-            is ChatIntent.SendAudio -> sendAudio()
+            is ChatIntent.SendImages -> mediaUploadDelegate.sendImages(intent.uris)
+            is ChatIntent.SendFile -> mediaUploadDelegate.sendFile(intent.uri)
+            is ChatIntent.SendVideo -> mediaUploadDelegate.sendVideo(intent.uri)
+            is ChatIntent.StartRecording -> audioRecordingDelegate.startRecording()
+            is ChatIntent.StopRecording -> audioRecordingDelegate.stopRecording()
+            is ChatIntent.DiscardAudio -> audioRecordingDelegate.discardAudio()
+            is ChatIntent.SendAudio -> audioRecordingDelegate.sendAudio()
             is ChatIntent.StartCall -> startCall(intent.callType)
             is ChatIntent.DismissError -> updateState { it.copy(error = null) }
             is ChatIntent.SetReply -> updateState { it.copy(replyingTo = intent.message) }
             is ChatIntent.CancelReply -> updateState { it.copy(replyingTo = null) }
             is ChatIntent.OpenStickerPicker -> updateState { it.copy(showStickerPicker = true) }
             is ChatIntent.CloseStickerPicker -> updateState { it.copy(showStickerPicker = false) }
-            is ChatIntent.SendGif -> sendGif(intent.url)
-            is ChatIntent.SendSticker -> sendSticker(intent.emoji)
+            is ChatIntent.SendGif -> quickSendDelegate.sendGif(intent.url)
+            is ChatIntent.SendSticker -> quickSendDelegate.sendSticker(intent.emoji)
             is ChatIntent.ToggleMute -> toggleMute()
             is ChatIntent.ShowMuteDialog -> updateState { it.copy(showMuteDialog = true) }
             is ChatIntent.DismissMuteDialog -> updateState { it.copy(showMuteDialog = false) }
@@ -434,8 +451,8 @@ class ChatViewModel(
             is ChatIntent.ShowForwardSelectionDialog -> forwardDelegate.showForwardSelectionDialog()
             is ChatIntent.DismissForwardSelectionDialog -> updateState { it.copy(showForwardSelectionDialog = false, forwardableConversations = emptyList()) }
             is ChatIntent.ForwardSelectedMessages -> forwardDelegate.forwardSelectedMessages(intent.targetConversationId)
-            is ChatIntent.SendLocation -> sendLocationMessage(intent.mapsUrl)
-            is ChatIntent.FetchAndSendLocation -> fetchAndSendLocation()
+            is ChatIntent.SendLocation -> quickSendDelegate.sendLocationMessage(intent.mapsUrl)
+            is ChatIntent.FetchAndSendLocation -> quickSendDelegate.fetchAndSendLocation()
             is ChatIntent.TranslateMessage -> translationDelegate.translateMessage(intent.messageId, intent.text)
             is ChatIntent.DismissTranslation -> updateState { it.copy(translatedTexts = it.translatedTexts - intent.messageId) }
             is ChatIntent.TranscribeAudio -> translationDelegate.transcribeAudio(intent.messageId)
@@ -477,8 +494,8 @@ class ChatViewModel(
             is ChatIntent.OpenWallpaperPicker -> updateState { it.copy(showWallpaperPicker = true) }
             is ChatIntent.DismissWallpaperPicker -> updateState { it.copy(showWallpaperPicker = false) }
             is ChatIntent.SetWallpaperColor -> viewModelScope.launch { wallpaperRepository.setWallpaperColor(conversationId, intent.color) }
-            is ChatIntent.SendContact -> sendContact(intent.name, intent.phone)
-            is ChatIntent.ContactSelected -> handleContactSelected(intent.uri)
+            is ChatIntent.SendContact -> quickSendDelegate.sendContact(intent.name, intent.phone)
+            is ChatIntent.ContactSelected -> quickSendDelegate.handleContactSelected(intent.uri)
             is ChatIntent.RetryMessage -> enqueueMessageRetry()
             is ChatIntent.CheckContactRelationship -> contactCardDelegate.checkContactRelationship(intent.phone)
             is ChatIntent.ContactCardPrimaryAction -> contactCardDelegate.contactCardPrimaryAction(intent.phone)
@@ -508,66 +525,12 @@ class ChatViewModel(
         workManager.enqueueUniqueWork(MessageRetryWorker.WORK_NAME, ExistingWorkPolicy.KEEP, request)
     }
 
-    private fun handleContactSelected(uri: android.net.Uri) {
-        viewModelScope.launch {
-            catchResult {
-                val contact = contactRepository.getContactByUri(uri.toString())
-                if (contact != null) {
-                    sendContact(contact.name, contact.phoneNumber)
-                }
-            }.onFailure { e ->
-                AppLogger.e(TAG, "handleContactSelected failed", e)
-                updateState { it.copy(error = "No se pudo leer el contacto") }
-            }
-        }
-    }
-
-    private fun sendContact(name: String, phone: String) {
-        val userId = state.value.currentUserId ?: return
-        val reply = state.value.replyingTo
-        val content = "contact:{\"name\":${org.json.JSONObject.quote(name)},\"phone\":${org.json.JSONObject.quote(phone)}}"
-        viewModelScope.launch {
-            sendEffect(ChatEffect.ScrollToBottom)
-            updateState { it.copy(replyingTo = null) }
-            sendMessageUseCase(conversationId, userId, content,
-                replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
-            ).onFailure { e -> AppLogger.e(TAG, "sendContact failed", e); updateState { it.copy(error = e.message ?: "Error al enviar el contacto") } }
-        }
-    }
-
     private fun selectMention(member: GroupMemberBO) {
         val currentText = state.value.inputText
         val lastAtIndex = currentText.lastIndexOf('@')
         val newText = if (lastAtIndex >= 0) currentText.substring(0, lastAtIndex) + "@${member.username} "
                       else currentText + "@${member.username} "
         updateState { it.copy(inputText = newText, mentionSuggestions = emptyList(), showMentionSuggestions = false) }
-    }
-
-    @SuppressLint("MissingPermission")
-    private fun fetchAndSendLocation() {
-        val lm = application.getSystemService(LocationManager::class.java)
-        val providers = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
-        val location = providers.firstNotNullOfOrNull { provider ->
-            runCatching { lm.getLastKnownLocation(provider) }.getOrNull()
-        }
-        if (location != null) {
-            val url = "https://maps.google.com/?q=${location.latitude},${location.longitude}"
-            sendLocationMessage(url)
-        } else {
-            viewModelScope.launch { sendEffect(ChatEffect.ShowSnackbar("No se pudo obtener la ubicacion")) }
-        }
-    }
-
-    private fun sendLocationMessage(mapsUrl: String) {
-        val userId = state.value.currentUserId ?: return
-        val reply = state.value.replyingTo
-        viewModelScope.launch {
-            sendEffect(ChatEffect.ScrollToBottom)
-            updateState { it.copy(replyingTo = null) }
-            sendMessageUseCase(conversationId, userId, LocationMessageFormat.format(mapsUrl),
-                replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
-            ).onFailure { e -> updateState { it.copy(error = e.message ?: "Error") } }
-        }
     }
 
     private fun setExpiry(messageId: String, expiresAt: Long?) {
@@ -654,173 +617,6 @@ class ChatViewModel(
         }
     }
 
-    private fun sendImages(uris: List<Uri>) {
-        val userId = state.value.currentUserId ?: return
-        val reply = state.value.replyingTo
-        viewModelScope.launch {
-            sendEffect(ChatEffect.ScrollToBottom)
-            updateState { it.copy(replyingTo = null) }
-            val metadataByUri = uris.map { uri ->
-                val metadata = catchResult {
-                    withContext(Dispatchers.IO) { getUriMetadataUseCase(uri.toString()) }
-                }.getOrNull()
-                uri to metadata
-            }
-            val totalBytes = metadataByUri.sumOf { (_, metadata) -> metadata?.size?.takeIf { it >= 0 } ?: 0L }
-            // Only smooth batches that would render as ImageGroupBubble (>2 images) — that's
-            // where the per-message paging updates cause the reported bubble-shape jumping.
-            // Single/double sends already render fine as each message lands.
-            val showBatchPlaceholder = metadataByUri.size > 2
-            updateState {
-                it.copy(
-                    mediaUploadProgress = MediaUploadProgress(totalCount = metadataByUri.size, completedCount = 0, totalBytes = totalBytes),
-                    pendingImageUris = if (showBatchPlaceholder) metadataByUri.map { (uri, _) -> uri } else emptyList(),
-                    suppressedImageMessageIds = emptySet(),
-                )
-            }
-            for ((index, entry) in metadataByUri.withIndex()) {
-                val (uri, metadata) = entry
-                val bytes = catchResult {
-                    readUriAsBytesUseCase(uri.toString())
-                }.getOrNull()
-                if (bytes != null) {
-                    catchResult {
-                        val mimeType = metadata?.mimeType ?: "image/jpeg"
-                        val imageUrl = messageRepository.uploadImage(conversationId, bytes, mimeType)
-                        val replyForImage = if (index == 0) reply else null
-                        sendMessageUseCase(conversationId, userId, "", imageUrl,
-                            replyToId = replyForImage?.id, replyToContent = replyForImage?.replySnippet(), replyToSenderName = replyForImage?.senderName,
-                        ).getOrThrow()
-                    }.onSuccess { message ->
-                        if (showBatchPlaceholder) {
-                            updateState { it.copy(suppressedImageMessageIds = it.suppressedImageMessageIds + message.id) }
-                        }
-                    }.onFailure { e -> AppLogger.e(TAG, "sendImages failed", e); updateState { it.copy(error = e.message ?: "Error uploading image") } }
-                } else {
-                    AppLogger.e(TAG, "sendImages: could not read bytes for $uri")
-                    updateState { it.copy(error = "No se pudo leer la imagen") }
-                }
-                updateState { it.copy(mediaUploadProgress = it.mediaUploadProgress?.copy(completedCount = index + 1)) }
-            }
-            updateState { it.copy(mediaUploadProgress = null, pendingImageUris = emptyList(), suppressedImageMessageIds = emptySet()) }
-        }
-    }
-
-    private fun startRecording() {
-        val outputFilePath = java.io.File.createTempFile("audio_", ".m4a", application.cacheDir).absolutePath
-        val rec = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) MediaRecorder(application)
-                  else @Suppress("DEPRECATION") MediaRecorder()
-        catchResult {
-            rec.apply {
-                setAudioSource(MediaRecorder.AudioSource.MIC)
-                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-                setOutputFile(outputFilePath)
-                prepare(); start()
-            }
-            recorder = rec
-            updateState { it.copy(audioState = AudioState(isRecording = true, pendingFilePath = outputFilePath)) }
-            val startMs = System.currentTimeMillis()
-            recordingTimerJob = viewModelScope.launch {
-                while (true) {
-                    delay(50)
-                    val elapsed = System.currentTimeMillis() - startMs
-                    val amp = catchResult { (recorder?.maxAmplitude ?: 0).toFloat() / 32767f }.getOrDefault(0f)
-                    updateState { s ->
-                        // Keep the full history (not just a recent window) so the post-recording
-                        // preview waveform can reflect the whole recording, not just its tail.
-                        val newHistory = s.audioState.amplitudeHistory + amp
-                        s.copy(audioState = s.audioState.copy(recordingDurationMs = elapsed, amplitudeHistory = newHistory))
-                    }
-                }
-            }
-        }.onFailure { e ->
-            AppLogger.e(TAG, "Recording failed", e)
-            catchResult { rec.release() }
-            updateState { it.copy(error = "No se pudo iniciar la grabacion") }
-        }
-    }
-
-    private fun stopRecording() {
-        recordingTimerJob?.cancel(); recordingTimerJob = null
-        val durationMs = state.value.audioState.recordingDurationMs
-        catchResult { recorder?.apply { stop(); release() } }; recorder = null
-        updateState { it.copy(audioState = it.audioState.copy(isRecording = false, recordingDurationMs = durationMs)) }
-    }
-
-    private fun discardAudio() {
-        state.value.audioState.pendingFilePath?.let { path ->
-            catchResult { java.io.File(path).delete() }
-        }
-        updateState { it.copy(audioState = AudioState()) }
-    }
-
-    private fun sendAudio() {
-        val userId = state.value.currentUserId ?: return
-        val filePath = state.value.audioState.pendingFilePath ?: return
-        val durationMs = state.value.audioState.recordingDurationMs
-        val reply = state.value.replyingTo
-        viewModelScope.launch {
-            sendEffect(ChatEffect.ScrollToBottom)
-            updateState { it.copy(audioState = it.audioState.copy(isUploading = true), replyingTo = null) }
-            draftSaveJob?.cancel(); draftRepository.saveDraft(conversationId, "")
-            catchResult {
-                val bytes = withContext(Dispatchers.IO) { java.io.File(filePath).readBytes() }
-                val audioUrl = messageRepository.uploadAudio(conversationId, bytes)
-                sendMessageUseCase(conversationId, userId, "", audioUrl = audioUrl, audioDurationMs = durationMs,
-                    replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
-                )
-                catchResult { java.io.File(filePath).delete() }
-                updateState { it.copy(audioState = AudioState()) }
-            }.onFailure { e ->
-                updateState { it.copy(audioState = it.audioState.copy(isUploading = false), error = e.message ?: "Error al enviar el audio") }
-            }
-        }
-    }
-
-    private fun sendFile(uri: Uri) {
-        val userId = state.value.currentUserId ?: return
-        val reply = state.value.replyingTo
-        viewModelScope.launch {
-            sendEffect(ChatEffect.ScrollToBottom)
-            updateState { it.copy(isUploadingFile = true, replyingTo = null) }
-            catchResult {
-                val metadata = withContext(Dispatchers.IO) { getUriMetadataUseCase(uri.toString()) }
-                val mimeType = metadata.mimeType ?: "application/octet-stream"
-                val displayName = metadata.displayName ?: "archivo"
-                val fileSize = metadata.size
-                val bytes = readUriAsBytesUseCase(uri.toString())
-                val fileUrl = messageRepository.uploadFile(conversationId, bytes, displayName, mimeType)
-                sendMessageUseCase(conversationId, userId, "", fileUrl = fileUrl, fileName = displayName,
-                    fileSize = fileSize, fileMimeType = mimeType,
-                    replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
-                ).getOrThrow()
-            }.onFailure { e -> AppLogger.e(TAG, "sendFile failed", e); updateState { it.copy(error = e.message ?: "Error al enviar el archivo") } }
-            updateState { it.copy(isUploadingFile = false) }
-        }
-    }
-
-    private fun sendVideo(uri: Uri) {
-        val userId = state.value.currentUserId ?: return
-        val reply = state.value.replyingTo
-        viewModelScope.launch {
-            sendEffect(ChatEffect.ScrollToBottom)
-            updateState { it.copy(isUploadingFile = true, replyingTo = null) }
-            catchResult {
-                val fileSize = withContext(Dispatchers.IO) { getUriMetadataUseCase(uri.toString()) }.size
-                check(fileSize == null || fileSize <= UploadLimits.VIDEO_MAX_BYTES) {
-                    "El video supera el tamaño máximo permitido (50 MB)"
-                }
-                val bytes = readUriAsBytesUseCase(uri.toString())
-                val videoUrl = messageRepository.uploadVideo(conversationId, bytes)
-                sendMessageUseCase(conversationId, userId, "", videoUrl = videoUrl,
-                    replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
-                ).getOrThrow()
-            }.onFailure { e -> AppLogger.e(TAG, "sendVideo failed", e); updateState { it.copy(error = e.message ?: "Error al enviar el video") } }
-            updateState { it.copy(isUploadingFile = false) }
-        }
-    }
-
     private fun startCall(typeStr: String) {
         val callType = CallType.fromWire(typeStr)
         val isGroup = state.value.isGroup
@@ -830,30 +626,6 @@ class ChatViewModel(
                            else callRepository.createCall(conversationId, state.value.otherUserId ?: return@catchResult, callType)
                 sendEffect(ChatEffect.NavigateToCall(call))
             }.onFailure { e -> updateState { it.copy(error = e.message ?: "Error al iniciar la llamada") } }
-        }
-    }
-
-    private fun sendGif(url: String) {
-        val userId = state.value.currentUserId ?: return
-        val reply = state.value.replyingTo
-        viewModelScope.launch {
-            sendEffect(ChatEffect.ScrollToBottom)
-            updateState { it.copy(showStickerPicker = false, replyingTo = null) }
-            sendMessageUseCase(conversationId, userId, "", gifUrl = url,
-                replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
-            ).onFailure { e -> updateState { it.copy(error = e.message ?: "Error al enviar el GIF") } }
-        }
-    }
-
-    private fun sendSticker(emoji: String) {
-        val userId = state.value.currentUserId ?: return
-        val reply = state.value.replyingTo
-        viewModelScope.launch {
-            sendEffect(ChatEffect.ScrollToBottom)
-            updateState { it.copy(showStickerPicker = false, replyingTo = null) }
-            sendMessageUseCase(conversationId, userId, "", stickerUrl = emoji,
-                replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
-            ).onFailure { e -> updateState { it.copy(error = e.message ?: "Error al enviar el sticker") } }
         }
     }
 
@@ -935,12 +707,12 @@ class ChatViewModel(
 
     override fun onCleared() {
         super.onCleared()
-        recordingTimerJob?.cancel(); remoteSyncJob?.cancel(); typingResetJob?.cancel()
+        remoteSyncJob?.cancel(); typingResetJob?.cancel()
         typingPresenceJob?.cancel(); draftSaveJob?.cancel()
         viewModelScope.launch {
             withContext(NonCancellable) { catchResult { typingRepository.close(conversationId) } }
         }
-        catchResult { recorder?.apply { stop(); release() } }; recorder = null
+        audioRecordingDelegate.cleanup()
     }
 
     companion object {
