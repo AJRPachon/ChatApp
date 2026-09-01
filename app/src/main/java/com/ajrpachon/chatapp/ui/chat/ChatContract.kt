@@ -36,6 +36,26 @@ data class ChatContactCardUiState(
     val lookups: Map<String, ContactPhoneLookup> = emptyMap(),
 )
 
+/**
+ * In-conversation message search + jump-to-message highlighting, owned by
+ * [ChatSearchDelegate]. Seventh of the nested groups in
+ * docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan.
+ *
+ * [highlightedMessageId] lives here (not a separate top-level field) because it's only ever
+ * set by [ChatSearchDelegate.jumpToMessage] — reached both from a tapped search result and
+ * from a tapped reply-quote, but the highlight-and-fade-out behavior itself is this delegate's
+ * concern either way. Distinct from `ChatScreen`'s own local `highlightedMessageId` (`by
+ * remember`), which drives the actual scroll/visual-highlight animation and is set from the
+ * `LaunchedEffect(state.search.highlightedMessageId)` that observes this field.
+ */
+data class ChatSearchUiState(
+    val isActive: Boolean = false,
+    val query: String = "",
+    val results: List<MessageBO> = emptyList(),
+    val isSearching: Boolean = false,
+    val highlightedMessageId: String? = null,
+)
+
 /** Poll data + the current user's vote(s), kept in [ChatPollFeatureState.uiStates] keyed by pollId. */
 data class PollUiState(
     val poll: PollBO? = null,
@@ -153,11 +173,7 @@ data class ChatState(
     val mutedUntil: Long = 0L,
     val showMuteDialog: Boolean = false,
     val editingMessage: MessageBO? = null,
-    val isSearchActive: Boolean = false,
-    val searchQuery: String = "",
-    val searchResults: List<MessageBO> = emptyList(),
-    val isSearching: Boolean = false,
-    val highlightedMessageId: String? = null,
+    val search: ChatSearchUiState = ChatSearchUiState(),
     val expiryDialogMessageId: String? = null,
     val selectedMessageIds: Set<String> = emptySet(),
     val forward: ChatForwardUiState = ChatForwardUiState(),

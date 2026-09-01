@@ -273,11 +273,11 @@ internal fun ChatMessageList(
                 Icon(Icons.Default.KeyboardArrowDown, contentDescription = stringResource(R.string.chat_scroll_to_bottom))
             }
         }
-        if (state.isSearchActive) {
+        if (state.search.isActive) {
             MessageSearchOverlay(
-                query = state.searchQuery,
-                results = state.searchResults,
-                isSearching = state.isSearching,
+                query = state.search.query,
+                results = state.search.results,
+                isSearching = state.search.isSearching,
                 topPadding = innerPadding.calculateTopPadding(),
                 onQueryChange = { vm.onIntent(ChatIntent.SearchQueryChanged(it)) },
                 onClose = { vm.onIntent(ChatIntent.CloseSearch) },

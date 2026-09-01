@@ -104,8 +104,8 @@ fun ChatScreen(
     }
 
     // Jump-to-message: when ViewModel sets a highlighted message ID, scroll to it
-    LaunchedEffect(state.highlightedMessageId) {
-        val id = state.highlightedMessageId ?: return@LaunchedEffect
+    LaunchedEffect(state.search.highlightedMessageId) {
+        val id = state.search.highlightedMessageId ?: return@LaunchedEffect
         onScrollToMessage(id)
     }
 

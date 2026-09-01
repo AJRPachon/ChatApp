@@ -277,7 +277,7 @@ identity set once in `init`) are grouped by UI feature instead.
 | 4 | `state.scheduling: ChatSchedulingUiState` | `showScheduleDialog`→`showDialog`, `scheduledAtMs`, `scheduledMessageCount`→`messageCount`, `showScheduledSheet`→`showSheet`, `scheduledMessages`→`messages` | `ChatSchedulingDelegate` | **Done** |
 | 5 | `state.forward: ChatForwardUiState` | `showForwardDialog`→`showDialog`, `forwardingMessage`→`message`, `forwardableConversations`→`conversations`, `showForwardSelectionDialog`→`showSelectionDialog` | `ChatForwardDelegate` | **Done** |
 | 6 | `state.contactCard: ChatContactCardUiState` | `contactPhoneLookups`→`lookups` | `ChatContactCardDelegate` | **Done** |
-| 7 | `state.search: ChatSearchUiState` | `isSearchActive`, `searchQuery`, `searchResults`, `isSearching`, `highlightedMessageId` | `ChatSearchDelegate` | Not started |
+| 7 | `state.search: ChatSearchUiState` | `isSearchActive`→`isActive`, `searchQuery`→`query`, `searchResults`→`results`, `isSearching`, `highlightedMessageId` | `ChatSearchDelegate` | **Done** |
 | 8 | `state.mediaUpload: ChatMediaUploadUiState` | `isUploadingFile`, `mediaUploadProgress`, `pendingImageUris`, `suppressedImageMessageIds` | `ChatMediaUploadDelegate` | Not started |
 | 9 | `state.audioState: AudioState` | (unchanged — already grouped since before Phase 1) | `ChatAudioRecordingDelegate` | Already done |
 | 10 | `state.groupPresence: ChatGroupPresenceUiState` | `onlineMemberCount`, `groupMemberCount` (**not** `isOnline` — that's `NetworkMonitor`, a different concern despite the similar name; **not** `isGroup`/`isCurrentUserMember`/`groupAvatarUrl` — conversation identity, set once from `conversationRepository` in `init`, not by this delegate) | `ChatGroupPresenceDelegate` | Not started |
@@ -389,6 +389,30 @@ concern), `ChatContactCardDelegate.kt` (7 call sites), `ChatMessageList.kt` (2
 `state.contactPhoneLookups[phone]` reads feeding `MessageBubble`'s own same-named param —
 learned from slice 3's indentation miss, verified both were caught this time with a repo-wide
 grep before compiling rather than trusting a single `replace_all`).
+
+**Slice 7 (`ChatSearchUiState`) — a same-named field on two different types:**
+`isSearchActive`/`searchQuery`/`searchResults`/`isSearching`/`highlightedMessageId` →
+`state.search.{isActive,query,results,isSearching,highlightedMessageId}`. Two gotchas worth
+flagging for future slices:
+- `searchQuery`/`searchResults`/`isSearchActive` also exist, unrelated, on
+  `BroadcastListContract`, `ConversationListContract`, and `CreateGroupContract` — a repo-wide
+  grep without `ui/chat` path-scoping would have pulled in files this slice has no business
+  touching. Scoped every grep to `app/src/main/java/com/ajrpachon/chatapp/ui/chat` (and the
+  matching test package) from the start this time.
+- `state.highlightedMessageId` (the `ChatState` field this slice moved) is a *different thing*
+  from `ChatScreen`'s own local `var highlightedMessageId by remember` — same name, same
+  general purpose (a message ID to visually highlight), but the local one drives the actual
+  scroll animation and fade-out and is set from inside the `LaunchedEffect` that *observes*
+  `state.search.highlightedMessageId`. Documented the distinction directly on
+  `ChatSearchUiState` so it doesn't need re-deriving by reading `ChatScreen.kt` again next
+  time. Only the `ChatState` field moved this slice; `ChatScreen`'s local `remember` is
+  untouched.
+
+4 files: `ChatContract.kt`, `ChatSearchDelegate.kt` (6 call sites across `searchMessages`/
+`jumpToMessage`), `ChatViewModel.kt` (`OpenSearch`/`CloseSearch`), `ChatMessageList.kt` (the
+search-overlay call site), `ChatScreen.kt` (the `LaunchedEffect(state.highlightedMessageId)`
+that triggers the scroll — the first slice among 1-7 that needed to touch `ChatScreen.kt`
+directly rather than only the files it delegates to).
 
 ## Non-goals
 

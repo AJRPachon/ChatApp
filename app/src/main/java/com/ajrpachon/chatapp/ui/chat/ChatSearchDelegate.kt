@@ -26,26 +26,30 @@ class ChatSearchDelegate(
     private var searchJob: Job? = null
 
     fun searchMessages(query: String) {
-        updateState { it.copy(searchQuery = query) }
+        updateState { it.copy(search = it.search.copy(query = query)) }
         searchJob?.cancel()
         if (query.isBlank()) {
-            updateState { it.copy(searchResults = emptyList(), isSearching = false) }
+            updateState { it.copy(search = it.search.copy(results = emptyList(), isSearching = false)) }
             return
         }
         searchJob = scope.launch {
-            updateState { it.copy(isSearching = true) }
+            updateState { it.copy(search = it.search.copy(isSearching = true)) }
             delay(SEARCH_DEBOUNCE_MS)
             val uid = currentUserId() ?: return@launch
             val results = catchResult { messageRepository.searchMessages(conversationId, uid, query) }.getOrDefault(emptyList())
-            updateState { it.copy(searchResults = results, isSearching = false) }
+            updateState { it.copy(search = it.search.copy(results = results, isSearching = false)) }
         }
     }
 
     fun jumpToMessage(messageId: String) {
-        updateState { it.copy(isSearchActive = false, searchQuery = "", searchResults = emptyList(), highlightedMessageId = messageId) }
+        updateState {
+            it.copy(search = it.search.copy(isActive = false, query = "", results = emptyList(), highlightedMessageId = messageId))
+        }
         scope.launch {
             delay(JUMP_HIGHLIGHT_MS)
-            updateState { if (it.highlightedMessageId == messageId) it.copy(highlightedMessageId = null) else it }
+            updateState {
+                if (it.search.highlightedMessageId == messageId) it.copy(search = it.search.copy(highlightedMessageId = null)) else it
+            }
         }
     }
 }

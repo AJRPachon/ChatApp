@@ -402,8 +402,8 @@ class ChatViewModel(
             is ChatIntent.StartEdit -> updateState { it.copy(editingMessage = intent.message, inputText = intent.message.content) }
             is ChatIntent.CancelEdit -> updateState { it.copy(editingMessage = null, inputText = "") }
             is ChatIntent.ConfirmEdit -> confirmEdit()
-            is ChatIntent.OpenSearch -> updateState { it.copy(isSearchActive = true, searchQuery = "", searchResults = emptyList()) }
-            is ChatIntent.CloseSearch -> updateState { it.copy(isSearchActive = false, searchQuery = "", searchResults = emptyList()) }
+            is ChatIntent.OpenSearch -> updateState { it.copy(search = it.search.copy(isActive = true, query = "", results = emptyList())) }
+            is ChatIntent.CloseSearch -> updateState { it.copy(search = it.search.copy(isActive = false, query = "", results = emptyList())) }
             is ChatIntent.SearchQueryChanged -> searchDelegate.searchMessages(intent.query)
             is ChatIntent.ToggleReaction -> toggleReaction(intent.messageId, intent.emoji)
             is ChatIntent.JumpToMessage -> searchDelegate.jumpToMessage(intent.messageId)
