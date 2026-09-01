@@ -364,9 +364,9 @@ class ChatViewModel(
                     val matches = groupPresenceDelegate.groupMembers.filter { m ->
                         m.username.lowercase().contains(partial) || m.displayName.lowercase().contains(partial)
                     }
-                    updateState { it.copy(mentionSuggestions = matches, showMentionSuggestions = matches.isNotEmpty()) }
+                    updateState { it.copy(mention = it.mention.copy(suggestions = matches, showSuggestions = matches.isNotEmpty())) }
                 } else {
-                    updateState { it.copy(mentionSuggestions = emptyList(), showMentionSuggestions = false) }
+                    updateState { it.copy(mention = it.mention.copy(suggestions = emptyList(), showSuggestions = false)) }
                 }
                 if (intent.text.isNotEmpty()) {
                     sendTypingPresence(true)
@@ -497,7 +497,7 @@ class ChatViewModel(
         val lastAtIndex = currentText.lastIndexOf('@')
         val newText = if (lastAtIndex >= 0) currentText.substring(0, lastAtIndex) + "@${member.username} "
                       else currentText + "@${member.username} "
-        updateState { it.copy(inputText = newText, mentionSuggestions = emptyList(), showMentionSuggestions = false) }
+        updateState { it.copy(inputText = newText, mention = it.mention.copy(suggestions = emptyList(), showSuggestions = false)) }
     }
 
     private fun setExpiry(messageId: String, expiresAt: Long?) {

@@ -214,6 +214,21 @@ data class ChatDisappearingUiState(
     val showSheet: Boolean = false,
 )
 
+/**
+ * `@mention` autocomplete suggestions, owned directly by `ChatViewModel` (matched against
+ * [ChatGroupPresenceDelegate.groupMembers] inside the `InputChanged` intent handler).
+ * Fourteenth of the nested groups in docs/chat-viewmodel-decomposition.md's "Shrinking
+ * ChatState/ChatIntent" plan.
+ *
+ * Like [ChatTranslationUiState], this has **no UI consumer today** — `InputChanged` populates
+ * it, but no dropdown/overlay currently reads it to show the suggestions. Real feature gap,
+ * not something this slice's pure move should paper over.
+ */
+data class ChatMentionUiState(
+    val suggestions: List<GroupMemberBO> = emptyList(),
+    val showSuggestions: Boolean = false,
+)
+
 data class ChatState(
     val inputText: String = "",
     val isSending: Boolean = false,
@@ -244,8 +259,7 @@ data class ChatState(
     val isExporting: Boolean = false,
     val theme: ChatThemeUiState = ChatThemeUiState(),
     val disappearing: ChatDisappearingUiState = ChatDisappearingUiState(),
-    val mentionSuggestions: List<GroupMemberBO> = emptyList(),
-    val showMentionSuggestions: Boolean = false,
+    val mention: ChatMentionUiState = ChatMentionUiState(),
     // Incognito mode: when true, messages are NOT persisted to local Room DB
     val isIncognito: Boolean = false,
     val showIncognitoInfoDialog: Boolean = false,

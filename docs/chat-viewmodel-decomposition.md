@@ -284,7 +284,7 @@ identity set once in `init`) are grouped by UI feature instead.
 | 11 | `state.mute: ChatMuteUiState` | `isMuted`, `mutedUntil`, `showMuteDialog`→`showDialog` | none (`toggleMute`/`muteFor` on `ChatViewModel`) | **Done** |
 | 12 | `state.theme: ChatThemeUiState` | `chatTheme`→`theme`, `showThemePicker`→`showPicker` | none | **Done** |
 | 13 | `state.disappearing: ChatDisappearingUiState` | `disappearingModeSeconds`→`seconds`, `showDisappearingModeSheet`→`showSheet` | none | **Done** |
-| 14 | `state.mention: ChatMentionUiState` | `mentionSuggestions`, `showMentionSuggestions` | none | Not started |
+| 14 | `state.mention: ChatMentionUiState` | `mentionSuggestions`→`suggestions`, `showMentionSuggestions`→`showSuggestions` | none | **Done** |
 | 15 | `state.incognito: ChatIncognitoUiState` | `isIncognito`, `showIncognitoInfoDialog` | none | Not started |
 | 16 | `state.wallpaper: ChatWallpaperUiState` | `wallpaperColor`, `showWallpaperPicker` | none | Not started |
 
@@ -481,6 +481,15 @@ moved, not the right-hand `conv?.` read. 4 files: `ChatContract.kt` (field + the
 `disappearingDurationLabel` computed property), `ChatViewModel.kt` (the `init` block, 2
 `onIntent` branches, `sendMessage`, `setDisappearingMode`), `ChatDialogHost.kt` (2 reads for
 `DisappearingModeSheet`), `ChatTopBar.kt` (1 read, the disappearing-mode timer icon).
+
+**Slice 13 (`ChatMentionUiState`) — a second wired-but-unsurfaced feature:**
+`mentionSuggestions`/`showMentionSuggestions` → `state.mention.{suggestions,showSuggestions}`.
+Same shape as slice 2's translation finding: `InputChanged`'s `@mention` matching logic
+populates this state, but grep across `ui/chat` found no dropdown/overlay that reads it back —
+no UI consumer today. Documented on `ChatMentionUiState` itself, same as the translation
+slice. Only 2 files touched — the smallest blast radius of any slice with an owning writer,
+because there's no delegate, no dialog host entry, and no top-bar/bottom-bar/message-list
+read: `ChatContract.kt`, `ChatViewModel.kt` (`InputChanged`'s two branches, `selectMention`).
 
 ## Non-goals
 
