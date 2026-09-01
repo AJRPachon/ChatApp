@@ -175,7 +175,6 @@ private fun CallScreenContent(
                 is CallEffect.RequestScreenShare -> {
                     screenShareLauncher.launch(vm.mediaProjectionManager.createScreenCaptureIntent())
                 }
-                is CallEffect.ShowRecordingSaved -> { /* recording saved — no UI needed here */ }
             }
         }
     }

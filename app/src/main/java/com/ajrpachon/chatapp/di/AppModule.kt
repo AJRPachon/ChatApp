@@ -42,7 +42,6 @@ import io.github.jan.supabase.storage.Storage
 import io.ktor.client.engine.okhttp.OkHttp
 import android.app.NotificationManager
 import android.content.Context
-import android.os.Environment
 import okhttp3.OkHttpClient
 import org.koin.android.ext.koin.androidApplication
 import org.koin.android.ext.koin.androidContext
@@ -165,7 +164,6 @@ val viewModelModule = module {
             getCurrentUserUseCase = get(),
             sendMessageUseCase = get(),
             livekitUrl = BuildConfig.LIVEKIT_URL,
-            recordingsDir = androidContext().getExternalFilesDir(Environment.DIRECTORY_MUSIC) ?: androidContext().filesDir,
         )
     }
 }

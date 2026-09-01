@@ -28,21 +28,12 @@ data class CallState(
     val isScreenSharing: Boolean = false,
     val showInCallChat: Boolean = false,
     val inCallMessages: List<InCallMessage> = emptyList(),
-    val selectedFilter: CameraFilter = CameraFilter.NONE,
-    val showFilterSheet: Boolean = false,
-    val isRecording: Boolean = false,
-    val recordingFilePath: String? = null,
 )
 
 sealed class CallIntent {
     object ToggleScreenShare : CallIntent()
-    object OpenFilterSheet : CallIntent()
-    object DismissFilterSheet : CallIntent()
-    data class SetCameraFilter(val filter: CameraFilter) : CallIntent()
-    object ToggleRecording : CallIntent()
 }
 
 sealed class CallEffect {
     object RequestScreenShare : CallEffect()
-    data class ShowRecordingSaved(val path: String) : CallEffect()
 }

@@ -3,10 +3,7 @@ import com.ajrpachon.chatapp.utils.catchResult
 
 import android.app.Application
 import android.content.Intent
-import android.media.MediaRecorder
 import android.media.projection.MediaProjectionManager
-import android.os.Build
-import java.io.File
 import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
@@ -51,7 +48,6 @@ class CallViewModel(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val sendMessageUseCase: SendMessageUseCase,
     private val livekitUrl: String,
-    private val recordingsDir: File,
 ) : BaseViewModel<CallState, CallEffect>(CallState()) {
     private val callId get() = args.callId
     private val conversationId get() = args.conversationId
@@ -66,7 +62,6 @@ class CallViewModel(
     private var room: Room? = null
     private var durationJob: Job? = null
     private var missedCallJob: Job? = null
-    private var mediaRecorder: MediaRecorder? = null
 
     private var currentUserId: String? = null
     private var callMessageSent = false
@@ -368,58 +363,6 @@ class CallViewModel(
                     sendEffect(CallEffect.RequestScreenShare)
                 }
             }
-            is CallIntent.OpenFilterSheet -> updateState { it.copy(showFilterSheet = true) }
-            is CallIntent.DismissFilterSheet -> updateState { it.copy(showFilterSheet = false) }
-            is CallIntent.SetCameraFilter -> updateState {
-                it.copy(selectedFilter = intent.filter, showFilterSheet = false)
-            }
-            is CallIntent.ToggleRecording -> {
-                if (state.value.isRecording) {
-                    stopRecording()
-                } else {
-                    startRecording()
-                }
-            }
-        }
-    }
-
-    private fun startRecording() {
-        catchResult {
-            recordingsDir.mkdirs()
-            val file = File(recordingsDir, "$callId.m4a")
-            val recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                MediaRecorder(application)
-            } else {
-                @Suppress("DEPRECATION")
-                MediaRecorder()
-            }
-            recorder.setAudioSource(MediaRecorder.AudioSource.MIC)
-            recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-            recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-            recorder.setOutputFile(file.absolutePath)
-            recorder.prepare()
-            recorder.start()
-            mediaRecorder = recorder
-            updateState { it.copy(isRecording = true, recordingFilePath = file.absolutePath) }
-            AppLogger.d(TAG, "startRecording: OK path=${file.absolutePath}")
-        }.onFailure { e ->
-            AppLogger.e(TAG, "startRecording: FAILED", e)
-        }
-    }
-
-    private fun stopRecording() {
-        catchResult {
-            mediaRecorder?.stop()
-            mediaRecorder?.release()
-        }.onFailure { e ->
-            AppLogger.e(TAG, "stopRecording: error during stop/release", e)
-        }
-        mediaRecorder = null
-        val path = state.value.recordingFilePath
-        updateState { it.copy(isRecording = false) }
-        if (path != null) {
-            AppLogger.d(TAG, "stopRecording: saved to $path")
-            sendEffect(CallEffect.ShowRecordingSaved(path))
         }
     }
 
@@ -506,11 +449,6 @@ class CallViewModel(
         missedCallJob?.cancel()
         durationJob?.cancel()
         // Screen share is stopped automatically when the room disconnects below
-        if (state.value.isRecording) {
-            catchResult { mediaRecorder?.stop() }
-            catchResult { mediaRecorder?.release() }
-            mediaRecorder = null
-        }
         catchResult { room?.disconnect() }
         room = null
     }
