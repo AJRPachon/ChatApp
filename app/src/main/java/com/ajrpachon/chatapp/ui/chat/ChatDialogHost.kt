@@ -113,7 +113,7 @@ internal fun ChatDialogHost(
         )
     }
 
-    if (state.showIncognitoInfoDialog) {
+    if (state.incognito.showInfoDialog) {
         AlertDialog(
             onDismissRequest = { vm.onIntent(ChatIntent.DismissIncognitoDialog) },
             title = { Text(stringResource(R.string.chat_incognito_mode)) },

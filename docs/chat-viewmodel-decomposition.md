@@ -285,7 +285,7 @@ identity set once in `init`) are grouped by UI feature instead.
 | 12 | `state.theme: ChatThemeUiState` | `chatTheme`→`theme`, `showThemePicker`→`showPicker` | none | **Done** |
 | 13 | `state.disappearing: ChatDisappearingUiState` | `disappearingModeSeconds`→`seconds`, `showDisappearingModeSheet`→`showSheet` | none | **Done** |
 | 14 | `state.mention: ChatMentionUiState` | `mentionSuggestions`→`suggestions`, `showMentionSuggestions`→`showSuggestions` | none | **Done** |
-| 15 | `state.incognito: ChatIncognitoUiState` | `isIncognito`, `showIncognitoInfoDialog` | none | Not started |
+| 15 | `state.incognito: ChatIncognitoUiState` | `isIncognito`, `showIncognitoInfoDialog`→`showInfoDialog` | none | **Done** |
 | 16 | `state.wallpaper: ChatWallpaperUiState` | `wallpaperColor`, `showWallpaperPicker` | none | Not started |
 
 Left flat on `ChatState` (no grouping planned): `inputText`, `isSending`, `currentUserId`,
@@ -490,6 +490,17 @@ no UI consumer today. Documented on `ChatMentionUiState` itself, same as the tra
 slice. Only 2 files touched — the smallest blast radius of any slice with an owning writer,
 because there's no delegate, no dialog host entry, and no top-bar/bottom-bar/message-list
 read: `ChatContract.kt`, `ChatViewModel.kt` (`InputChanged`'s two branches, `selectMention`).
+
+**Slice 14 (`ChatIncognitoUiState`) — same-named repository method, different receiver:**
+`isIncognito`/`showIncognitoInfoDialog` → `state.incognito.{isIncognito,showInfoDialog}`.
+`incognitoRepository.isIncognito(conversationId)` (a repository method call, observed in
+`init`) reads identically to the `ChatState` field it feeds — same lesson as slice 10's
+`ConversationBO.isMuted`/`MuteFor.mutedUntil`: only the `it.copy(isIncognito = incognito)`
+call site moved, the repository call itself is untouched. 4 files: `ChatContract.kt`,
+`ChatViewModel.kt` (the `init` block's `incognitoRepository.isIncognito` collector,
+`DismissIncognitoDialog`, `toggleIncognito`/`confirmIncognito`), `ChatDialogHost.kt` (1 read),
+`ChatTopBar.kt` (3 reads: the incognito banner visibility, the overflow-menu label, and its
+icon tint).
 
 ## Non-goals
 

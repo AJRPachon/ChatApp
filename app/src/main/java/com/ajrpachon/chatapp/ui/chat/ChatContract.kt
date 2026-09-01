@@ -229,6 +229,17 @@ data class ChatMentionUiState(
     val showSuggestions: Boolean = false,
 )
 
+/**
+ * Incognito mode (messages not persisted to local Room DB) + its explanatory confirm dialog,
+ * owned directly by `ChatViewModel` (no delegate — `toggleIncognito`/`confirmIncognito`,
+ * `isIncognito` itself observed from `incognitoRepository` in `init`). Fifteenth of the nested
+ * groups in docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan.
+ */
+data class ChatIncognitoUiState(
+    val isIncognito: Boolean = false,
+    val showInfoDialog: Boolean = false,
+)
+
 data class ChatState(
     val inputText: String = "",
     val isSending: Boolean = false,
@@ -260,9 +271,7 @@ data class ChatState(
     val theme: ChatThemeUiState = ChatThemeUiState(),
     val disappearing: ChatDisappearingUiState = ChatDisappearingUiState(),
     val mention: ChatMentionUiState = ChatMentionUiState(),
-    // Incognito mode: when true, messages are NOT persisted to local Room DB
-    val isIncognito: Boolean = false,
-    val showIncognitoInfoDialog: Boolean = false,
+    val incognito: ChatIncognitoUiState = ChatIncognitoUiState(),
     val scheduling: ChatSchedulingUiState = ChatSchedulingUiState(),
     // AI Assistant
     val ai: ChatAiUiState = ChatAiUiState(),

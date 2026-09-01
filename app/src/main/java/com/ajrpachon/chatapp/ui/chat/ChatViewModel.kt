@@ -241,7 +241,7 @@ class ChatViewModel(
         }
         viewModelScope.launch {
             incognitoRepository.isIncognito(conversationId).collect { incognito ->
-                updateState { it.copy(isIncognito = incognito) }
+                updateState { it.copy(incognito = it.incognito.copy(isIncognito = incognito)) }
             }
         }
         viewModelScope.launch {
@@ -441,7 +441,7 @@ class ChatViewModel(
             is ChatIntent.SetDisappearingMode -> setDisappearingMode(intent.conversationId, intent.seconds)
             is ChatIntent.SelectMention -> selectMention(intent.member)
             is ChatIntent.ToggleIncognito -> toggleIncognito()
-            is ChatIntent.DismissIncognitoDialog -> updateState { it.copy(showIncognitoInfoDialog = false) }
+            is ChatIntent.DismissIncognitoDialog -> updateState { it.copy(incognito = it.incognito.copy(showInfoDialog = false)) }
             is ChatIntent.ConfirmIncognito -> confirmIncognito()
             is ChatIntent.OpenScheduleDialog -> updateState { it.copy(scheduling = it.scheduling.copy(showDialog = true)) }
             is ChatIntent.DismissScheduleDialog -> updateState { it.copy(scheduling = it.scheduling.copy(showDialog = false)) }
@@ -663,12 +663,12 @@ class ChatViewModel(
     }
 
     private fun toggleIncognito() {
-        if (state.value.isIncognito) viewModelScope.launch { incognitoRepository.setIncognito(conversationId, false) }
-        else updateState { it.copy(showIncognitoInfoDialog = true) }
+        if (state.value.incognito.isIncognito) viewModelScope.launch { incognitoRepository.setIncognito(conversationId, false) }
+        else updateState { it.copy(incognito = it.incognito.copy(showInfoDialog = true)) }
     }
 
     private fun confirmIncognito() {
-        updateState { it.copy(showIncognitoInfoDialog = false) }
+        updateState { it.copy(incognito = it.incognito.copy(showInfoDialog = false)) }
         viewModelScope.launch { incognitoRepository.setIncognito(conversationId, true) }
     }
 

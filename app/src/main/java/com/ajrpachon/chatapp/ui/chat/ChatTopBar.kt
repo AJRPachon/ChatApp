@@ -89,7 +89,7 @@ internal fun ChatTopBar(
     onScrollToMessage: (String) -> Unit,
 ) {
     Column {
-        if (state.isIncognito) {
+        if (state.incognito.isIncognito) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -345,12 +345,12 @@ internal fun ChatTopBar(
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text(if (state.isIncognito) stringResource(R.string.chat_disable_incognito) else stringResource(R.string.chat_incognito_mode)) },
+                            text = { Text(if (state.incognito.isIncognito) stringResource(R.string.chat_disable_incognito) else stringResource(R.string.chat_incognito_mode)) },
                             leadingIcon = {
                                 Icon(
                                     Icons.Default.Lock,
                                     contentDescription = null,
-                                    tint = if (state.isIncognito) IncognitoAccent else MaterialTheme.colorScheme.onSurface,
+                                    tint = if (state.incognito.isIncognito) IncognitoAccent else MaterialTheme.colorScheme.onSurface,
                                 )
                             },
                             onClick = {
