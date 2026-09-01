@@ -224,12 +224,12 @@ private fun GalleryFullScreenViewer(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black)
-                .clickable { onDismiss() },
+                .clickable(onClickLabel = stringResource(R.string.userinfo_close_cd)) { onDismiss() },
             contentAlignment = Alignment.Center,
         ) {
             AsyncImage(
                 model = url,
-                contentDescription = null,
+                contentDescription = stringResource(R.string.userinfo_fullscreen_image_cd),
                 contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxSize(),
             )

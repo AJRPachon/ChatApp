@@ -64,6 +64,16 @@
     <!-- Message bubble -->
     <string name="chat_image_content_description">Imagen</string>
     <string name="chat_gif_content_description">GIF</string>
+    <string name="chat_video_thumbnail_cd">Miniatura de vídeo</string>
+    <string name="chat_cancel_reply_cd">Cancelar respuesta</string>
+    <string name="chat_stop_recording_cd">Detener grabación</string>
+    <string name="chat_discard_audio_cd">Descartar audio</string>
+    <string name="chat_send_audio_cd">Enviar audio</string>
+    <string name="chat_attach_cd">Adjuntar</string>
+    <string name="chat_send_hold_to_schedule_cd">Enviar (mantén para programar)</string>
+    <string name="chat_record_audio_cd">Grabar audio</string>
+    <string name="chat_clear_search_cd">Limpiar</string>
+    <string name="chat_close_search_cd">Cerrar búsqueda</string>
     <string name="chat_react">Reaccionar</string>
     <string name="chat_edit">Editar</string>
     <string name="chat_remove_self_destruct">Quitar autodestrucción</string>
