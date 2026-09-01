@@ -280,7 +280,7 @@ identity set once in `init`) are grouped by UI feature instead.
 | 7 | `state.search: ChatSearchUiState` | `isSearchActive`→`isActive`, `searchQuery`→`query`, `searchResults`→`results`, `isSearching`, `highlightedMessageId` | `ChatSearchDelegate` | **Done** |
 | 8 | `state.mediaUpload: ChatMediaUploadUiState` | `isUploadingFile`, `mediaUploadProgress`→`progress`, `pendingImageUris`, `suppressedImageMessageIds` | `ChatMediaUploadDelegate` | **Done** |
 | 9 | `state.audioState: AudioState` | (unchanged — already grouped since before Phase 1) | `ChatAudioRecordingDelegate` | Already done |
-| 10 | `state.groupPresence: ChatGroupPresenceUiState` | `onlineMemberCount`, `groupMemberCount` (**not** `isOnline` — that's `NetworkMonitor`, a different concern despite the similar name; **not** `isGroup`/`isCurrentUserMember`/`groupAvatarUrl` — conversation identity, set once from `conversationRepository` in `init`, not by this delegate) | `ChatGroupPresenceDelegate` | Not started |
+| 10 | `state.groupPresence: ChatGroupPresenceUiState` | `onlineMemberCount`, `groupMemberCount`→`memberCount` (**not** `isOnline` — that's `NetworkMonitor`, a different concern despite the similar name; **not** `isGroup`/`isCurrentUserMember`/`groupAvatarUrl` — conversation identity, set once from `conversationRepository` in `init`, not by this delegate) | `ChatGroupPresenceDelegate` | **Done** |
 | 11 | `state.mute: ChatMuteUiState` | `isMuted`, `mutedUntil`, `showMuteDialog` | none (`toggleMute`/`muteFor` on `ChatViewModel`) | Not started |
 | 12 | `state.theme: ChatThemeUiState` | `chatTheme`, `showThemePicker` | none | Not started |
 | 13 | `state.disappearing: ChatDisappearingUiState` | `disappearingModeSeconds`, `showDisappearingModeSheet` | none | Not started |
@@ -429,6 +429,19 @@ discipline as every slice since 3. Touched 4 files: `ChatContract.kt`, `ChatMedi
 (9 call sites), `ChatBottomBar.kt` (2 reads for `NormalInputBar`'s upload-progress display),
 `ChatMessageList.kt` (5 reads: the pending-batch placeholder plus 3 `suppressedImageMessageIds`
 membership checks in the paging/grouping logic).
+
+**Slice 9 (`ChatGroupPresenceUiState`) — narrowest scope yet by design:** `onlineMemberCount`/
+`groupMemberCount` → `state.groupPresence.{onlineMemberCount,memberCount}`. (Numbered slice 9
+here, but row 10 in the target-shape table — there's no separate slice for row 9's
+`audioState`/`AudioState`, since that was already its own nested type from before this
+"Shrinking ChatState/ChatIntent" plan started.) The narrowest grouping so far on purpose:
+`isGroup`/`isCurrentUserMember`/`groupAvatarUrl` (conversation identity, set once in
+`ChatViewModel.init` from `conversationRepository`) and `isOnline` (network connectivity, from
+`NetworkMonitor` — unrelated despite the similarly-shaped name) stay flat, exactly as scoped
+in the target-shape table before any code was touched. 3 files: `ChatContract.kt` (also
+updated the `subtitleText` computed property, the one non-delegate read of these fields),
+`ChatGroupPresenceDelegate.kt` (2 call sites), `ChatTopBar.kt` (1 read, the presence-dot color
+check).
 
 ## Non-goals
 

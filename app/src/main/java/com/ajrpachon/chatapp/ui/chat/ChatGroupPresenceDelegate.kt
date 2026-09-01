@@ -19,8 +19,8 @@ private const val MEMBERSHIP_POLL_INTERVAL_MS = 3_000L
 /**
  * Handles group-conversation presence: polling membership sync, observing the live member list
  * (exposed as [groupMembers], read by ChatViewModel's `@mention` suggestion matching) and each
- * member's online status (for `ChatState.onlineMemberCount`/`groupMemberCount`), and reacting
- * when the current user joins or leaves the group.
+ * member's online status (for [ChatGroupPresenceUiState]'s `onlineMemberCount`/`memberCount`),
+ * and reacting when the current user joins or leaves the group.
  *
  * Row 9 of docs/chat-viewmodel-decomposition.md — deliberately last and separately designed
  * (unlike delegates 1-8c). Two things keep this from being a mechanical move:
@@ -54,7 +54,7 @@ class ChatGroupPresenceDelegate(
     fun start(uid: String) {
         scope.launch {
             memberOnlineStatuses.collect { map ->
-                updateState { it.copy(onlineMemberCount = map.values.count { online -> online }) }
+                updateState { it.copy(groupPresence = it.groupPresence.copy(onlineMemberCount = map.values.count { online -> online })) }
             }
         }
         scope.launch {
@@ -70,7 +70,7 @@ class ChatGroupPresenceDelegate(
                 getGroupMembersUseCase(conversationId).collect { members ->
                     groupMembers = members
                     val isMember = members.any { it.userId == uid }
-                    updateState { it.copy(isCurrentUserMember = isMember, groupMemberCount = members.size) }
+                    updateState { it.copy(isCurrentUserMember = isMember, groupPresence = it.groupPresence.copy(memberCount = members.size)) }
                     memberObserveJob?.cancel()
                     memberObserveJob = launch {
                         memberOnlineStatuses.value = emptyMap()

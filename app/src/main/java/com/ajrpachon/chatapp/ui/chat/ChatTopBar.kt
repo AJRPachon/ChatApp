@@ -189,7 +189,7 @@ internal fun ChatTopBar(
                         }
                         val secondaryLine = state.presenceText ?: state.subtitleText
                         secondaryLine?.let { line ->
-                            val isActive = state.isOtherUserOnline || state.onlineMemberCount > 0
+                            val isActive = state.isOtherUserOnline || state.groupPresence.onlineMemberCount > 0
                             Text(
                                 text = line,
                                 style = MaterialTheme.typography.labelSmall,

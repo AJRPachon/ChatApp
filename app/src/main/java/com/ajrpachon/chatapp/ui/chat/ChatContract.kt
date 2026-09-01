@@ -165,6 +165,21 @@ data class ChatForwardUiState(
     val conversations: List<ConversationBO> = emptyList(),
 )
 
+/**
+ * Live group-member presence, owned by [ChatGroupPresenceDelegate]. Tenth of the nested groups
+ * in docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan (there is no
+ * ninth row here — `audioState`/[AudioState] was already grouped before this plan started).
+ *
+ * Deliberately narrow: `isGroup`/`isCurrentUserMember`/`groupAvatarUrl` stay flat on
+ * [ChatState] — they're conversation identity set once from `conversationRepository` in
+ * `ChatViewModel.init`, not produced by this delegate. `state.isOnline` (network connectivity,
+ * from `NetworkMonitor`) also stays flat despite the similarly-shaped name — unrelated concern.
+ */
+data class ChatGroupPresenceUiState(
+    val onlineMemberCount: Int = 0,
+    val memberCount: Int = 0,
+)
+
 data class ChatState(
     val inputText: String = "",
     val isSending: Boolean = false,
@@ -211,9 +226,7 @@ data class ChatState(
     // Wallpaper
     val wallpaperColor: Long? = null,
     val showWallpaperPicker: Boolean = false,
-    // Group presence
-    val onlineMemberCount: Int = 0,
-    val groupMemberCount: Int = 0,
+    val groupPresence: ChatGroupPresenceUiState = ChatGroupPresenceUiState(),
     val isOnline: Boolean = true,
     val contactCard: ChatContactCardUiState = ChatContactCardUiState(),
     // Link previews: detected URL → fetched preview (null while loading or not found)
@@ -239,8 +252,8 @@ data class ChatState(
     val subtitleText: String?
         get() = when {
             !isGroup -> null
-            onlineMemberCount > 0 -> "$onlineMemberCount en línea"
-            groupMemberCount > 0 -> "$groupMemberCount miembros"
+            groupPresence.onlineMemberCount > 0 -> "${groupPresence.onlineMemberCount} en línea"
+            groupPresence.memberCount > 0 -> "${groupPresence.memberCount} miembros"
             else -> null
         }
 }
