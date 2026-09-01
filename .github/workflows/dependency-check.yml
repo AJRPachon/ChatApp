@@ -12,6 +12,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Verify NVD_API_KEY is configured
+        run: |
+          if [ -z "${{ secrets.NVD_API_KEY }}" ]; then
+            echo "::error::NVD_API_KEY secret is not set — the scan silently exits without running instead of failing loudly if this isn't caught here. Add it under Settings > Secrets and variables > Actions (free key: https://nvd.nist.gov/developers/request-an-api-key)."
+            exit 1
+          fi
+
       - name: Cache OWASP NVD database
         uses: actions/cache@v4
         with:
@@ -29,6 +36,9 @@ jobs:
             --failOnCVSS 7
             --enableExperimental
             --nvdApiKey ${{ secrets.NVD_API_KEY }}
+        # Tolerates a genuine CVSS>=7 finding failing this specific step (the report is still
+        # uploaded below either way) — misconfiguration (missing key) is now caught by the
+        # verification step above, before it can reach here and be masked by this.
         continue-on-error: true
 
       - name: Upload OWASP report
