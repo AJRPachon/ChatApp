@@ -180,9 +180,9 @@ internal fun ChatDialogHost(
         )
     }
 
-    if (state.showDisappearingModeSheet) {
+    if (state.disappearing.showSheet) {
         DisappearingModeSheet(
-            currentSeconds = state.disappearingModeSeconds,
+            currentSeconds = state.disappearing.seconds,
             onDismiss = { vm.onIntent(ChatIntent.DismissDisappearingModeSheet) },
             onSelect = { seconds -> vm.onIntent(ChatIntent.SetDisappearingMode(conversationId, seconds)) },
         )

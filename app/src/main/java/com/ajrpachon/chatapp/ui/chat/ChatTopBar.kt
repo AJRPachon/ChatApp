@@ -177,7 +177,7 @@ internal fun ChatTopBar(
                                     .weight(1f, fill = false)
                                     .basicMarquee(iterations = 1),
                             )
-                            if (state.disappearingModeSeconds > 0L) {
+                            if (state.disappearing.seconds > 0L) {
                                 Spacer(Modifier.width(4.dp))
                                 Icon(
                                     imageVector = Icons.Default.Timer,

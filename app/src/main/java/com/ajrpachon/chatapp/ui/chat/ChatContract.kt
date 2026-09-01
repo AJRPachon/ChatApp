@@ -203,6 +203,17 @@ data class ChatThemeUiState(
     val showPicker: Boolean = false,
 )
 
+/**
+ * Disappearing-messages mode + its picker sheet, owned directly by `ChatViewModel` (no
+ * delegate — set via `setDisappearingMode`). Thirteenth of the nested groups in
+ * docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan.
+ */
+data class ChatDisappearingUiState(
+    // 0 = off, >0 = seconds for new messages to auto-expire
+    val seconds: Long = 0L,
+    val showSheet: Boolean = false,
+)
+
 data class ChatState(
     val inputText: String = "",
     val isSending: Boolean = false,
@@ -232,9 +243,7 @@ data class ChatState(
     val poll: ChatPollFeatureState = ChatPollFeatureState(),
     val isExporting: Boolean = false,
     val theme: ChatThemeUiState = ChatThemeUiState(),
-    // 0 = off, >0 = seconds for new messages to auto-expire
-    val disappearingModeSeconds: Long = 0L,
-    val showDisappearingModeSheet: Boolean = false,
+    val disappearing: ChatDisappearingUiState = ChatDisappearingUiState(),
     val mentionSuggestions: List<GroupMemberBO> = emptyList(),
     val showMentionSuggestions: Boolean = false,
     // Incognito mode: when true, messages are NOT persisted to local Room DB
@@ -256,7 +265,7 @@ data class ChatState(
     val latestPinnedMessage: MessageBO? get() = pinnedMessages.firstOrNull()
 
     /** Formatted label for the disappearing-mode timer shown in the app bar. */
-    val disappearingDurationLabel: String get() = formatDisappearingDuration(disappearingModeSeconds)
+    val disappearingDurationLabel: String get() = formatDisappearingDuration(disappearing.seconds)
 
     /** Formatted presence text for 1-1 chats ("En línea" or "última vez hace X"). */
     val presenceText: String?

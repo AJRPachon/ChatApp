@@ -270,7 +270,7 @@ class ChatViewModel(
                         groupAvatarUrl = conv?.groupAvatarUrl,
                         isCurrentUserMember = true,
                         mute = it.mute.copy(isMuted = conv?.isMuted == true, mutedUntil = conv?.mutedUntil ?: 0L),
-                        disappearingModeSeconds = conv?.disappearingModeSeconds ?: 0L,
+                        disappearing = it.disappearing.copy(seconds = conv?.disappearingModeSeconds ?: 0L),
                     )
                 }
                 _historyVisibleFrom.value = historyVisibleFrom
@@ -436,8 +436,8 @@ class ChatViewModel(
             is ChatIntent.DismissThemePicker -> updateState { it.copy(theme = it.theme.copy(showPicker = false)) }
             is ChatIntent.ExportConversation -> exportConversation()
             is ChatIntent.CopyMessageContent -> clipboardProtection.copyWithTimeout("message", intent.content, viewModelScope)
-            is ChatIntent.ShowDisappearingModeSheet -> updateState { it.copy(showDisappearingModeSheet = true) }
-            is ChatIntent.DismissDisappearingModeSheet -> updateState { it.copy(showDisappearingModeSheet = false) }
+            is ChatIntent.ShowDisappearingModeSheet -> updateState { it.copy(disappearing = it.disappearing.copy(showSheet = true)) }
+            is ChatIntent.DismissDisappearingModeSheet -> updateState { it.copy(disappearing = it.disappearing.copy(showSheet = false)) }
             is ChatIntent.SetDisappearingMode -> setDisappearingMode(intent.conversationId, intent.seconds)
             is ChatIntent.SelectMention -> selectMention(intent.member)
             is ChatIntent.ToggleIncognito -> toggleIncognito()
@@ -535,7 +535,7 @@ class ChatViewModel(
         val userId = state.value.currentUserId ?: return
         if (text.isBlank()) return
         val reply = state.value.replyingTo
-        val disappearingSecs = state.value.disappearingModeSeconds
+        val disappearingSecs = state.value.disappearing.seconds
         viewModelScope.launch {
             sendEffect(ChatEffect.ScrollToBottom)
             updateState { it.copy(isSending = true, inputText = "", replyingTo = null) }
@@ -577,7 +577,7 @@ class ChatViewModel(
     }
 
     private fun setDisappearingMode(conversationId: String, seconds: Long) {
-        updateState { it.copy(showDisappearingModeSheet = false, disappearingModeSeconds = seconds) }
+        updateState { it.copy(disappearing = it.disappearing.copy(showSheet = false, seconds = seconds)) }
         viewModelScope.launch {
             catchResult { conversationRepository.setDisappearingMode(conversationId, seconds) }
                 .onFailure { e -> AppLogger.e(TAG, "setDisappearingMode failed", e) }

@@ -283,7 +283,7 @@ identity set once in `init`) are grouped by UI feature instead.
 | 10 | `state.groupPresence: ChatGroupPresenceUiState` | `onlineMemberCount`, `groupMemberCount`→`memberCount` (**not** `isOnline` — that's `NetworkMonitor`, a different concern despite the similar name; **not** `isGroup`/`isCurrentUserMember`/`groupAvatarUrl` — conversation identity, set once from `conversationRepository` in `init`, not by this delegate) | `ChatGroupPresenceDelegate` | **Done** |
 | 11 | `state.mute: ChatMuteUiState` | `isMuted`, `mutedUntil`, `showMuteDialog`→`showDialog` | none (`toggleMute`/`muteFor` on `ChatViewModel`) | **Done** |
 | 12 | `state.theme: ChatThemeUiState` | `chatTheme`→`theme`, `showThemePicker`→`showPicker` | none | **Done** |
-| 13 | `state.disappearing: ChatDisappearingUiState` | `disappearingModeSeconds`, `showDisappearingModeSheet` | none | Not started |
+| 13 | `state.disappearing: ChatDisappearingUiState` | `disappearingModeSeconds`→`seconds`, `showDisappearingModeSheet`→`showSheet` | none | **Done** |
 | 14 | `state.mention: ChatMentionUiState` | `mentionSuggestions`, `showMentionSuggestions` | none | Not started |
 | 15 | `state.incognito: ChatIncognitoUiState` | `isIncognito`, `showIncognitoInfoDialog` | none | Not started |
 | 16 | `state.wallpaper: ChatWallpaperUiState` | `wallpaperColor`, `showWallpaperPicker` | none | Not started |
@@ -467,6 +467,20 @@ Another non-delegate group, like slice 10. 4 files: `ChatContract.kt`, `ChatView
 `ChatScreen.kt` (1 read, `chatThemeColors = state.theme.theme.toColors()` — the `Scaffold`
 container-color computation, still living in `ChatScreen.kt` itself since it wasn't part of
 any of the four scaffold-extraction files).
+
+**Slice 12 (`ChatDisappearingUiState`) — a computed property to update, again:**
+`disappearingModeSeconds`/`showDisappearingModeSheet` → `state.disappearing.{seconds,showSheet}`.
+Like slice 9's `subtitleText`, `ChatState`'s own `disappearingDurationLabel` computed
+property reads `disappearingModeSeconds` implicitly (bare, inside the class body) — a second
+reminder that these computed properties, sitting right below the field list they're derived
+from, are easy to miss with a call-site-only search and need their own explicit check each
+slice. Also confirmed `conv?.disappearingModeSeconds` (read from `ConversationBO`, a domain
+model, inside the `init` block's conversation-load `updateState`) is a same-named field on a
+different type — only the left-hand `disappearingModeSeconds =` key in that `it.copy(...)`
+moved, not the right-hand `conv?.` read. 4 files: `ChatContract.kt` (field + the
+`disappearingDurationLabel` computed property), `ChatViewModel.kt` (the `init` block, 2
+`onIntent` branches, `sendMessage`, `setDisappearingMode`), `ChatDialogHost.kt` (2 reads for
+`DisappearingModeSheet`), `ChatTopBar.kt` (1 read, the disappearing-mode timer icon).
 
 ## Non-goals
 
