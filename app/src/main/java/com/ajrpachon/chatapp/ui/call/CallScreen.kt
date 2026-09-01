@@ -29,7 +29,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items as gridItems
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -47,10 +46,8 @@ import androidx.compose.material.icons.filled.StopScreenShare
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.VideocamOff
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -69,7 +66,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -78,6 +74,9 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.CallRoute
 import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.ui.common.formatCallDuration
+import com.ajrpachon.chatapp.ui.theme.CallBackground
+import com.ajrpachon.chatapp.ui.theme.CallScreenShareAccent
 import com.github.skydoves.navgraph.annotations.NavDestination
 import io.livekit.android.renderer.TextureViewRenderer
 import io.livekit.android.room.Room
@@ -119,7 +118,7 @@ fun CallScreen(
 
     if (!granted) {
         Box(
-            modifier = Modifier.fillMaxSize().background(Color(0xFF1A1A2E)),
+            modifier = Modifier.fillMaxSize().background(CallBackground),
             contentAlignment = Alignment.Center,
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -182,7 +181,7 @@ private fun CallScreenContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF1A1A2E)),
+            .background(CallBackground),
     ) {
         // Remote video — grid for groups, fullscreen for 1:1
         if (callType == "video") {
@@ -243,7 +242,7 @@ private fun CallScreenContent(
                             }
                         },
                 ) {
-                    BlurredVideoView(
+                    VideoView(
                         track = localVideo,
                         room = currentRoom,
                         blurred = state.isBackgroundBlurred,
@@ -259,7 +258,7 @@ private fun CallScreenContent(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = 48.dp)
-                    .background(Color(0xCCFF5722), RoundedCornerShape(8.dp))
+                    .background(CallScreenShareAccent.copy(alpha = 0.8f), RoundedCornerShape(8.dp))
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -277,26 +276,7 @@ private fun CallScreenContent(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             if (callType != "video" || state.remoteVideoTrack == null) {
-                Box(
-                    modifier = Modifier
-                        .size(88.dp)
-                        .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = otherUserName.firstOrNull()?.uppercase() ?: "?",
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    text = otherUserName,
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = Color.White,
-                    fontWeight = FontWeight.SemiBold,
-                )
+                CallPartyHeader(otherUserName)
                 Spacer(Modifier.height(8.dp))
             }
 
@@ -312,7 +292,7 @@ private fun CallScreenContent(
                     style = MaterialTheme.typography.bodyLarge,
                 )
                 CallPhase.ACTIVE -> Text(
-                    formatDuration(state.durationSeconds),
+                    formatCallDuration(state.durationSeconds),
                     color = Color.White.copy(alpha = 0.85f),
                     style = MaterialTheme.typography.bodyLarge,
                 )
@@ -389,7 +369,7 @@ private fun CallScreenContent(
             // Screen share toggle
             CallControlButton(
                 onClick = { vm.onIntent(CallIntent.ToggleScreenShare) },
-                containerColor = if (state.isScreenSharing) Color(0xFFFF5722) else Color.White.copy(alpha = 0.2f),
+                containerColor = if (state.isScreenSharing) CallScreenShareAccent else Color.White.copy(alpha = 0.2f),
                 iconTint = Color.White,
             ) {
                 Icon(
@@ -440,51 +420,19 @@ private fun CallScreenContent(
     }
 }
 
-@Composable
-private fun CallControlButton(
-    onClick: () -> Unit,
-    containerColor: Color,
-    iconTint: Color,
-    modifier: Modifier = Modifier,
-    size: androidx.compose.ui.unit.Dp = 52.dp,
-    content: @Composable () -> Unit,
-) {
-    FilledIconButton(
-        onClick = onClick,
-        modifier = modifier.size(size),
-        colors = IconButtonDefaults.filledIconButtonColors(
-            containerColor = containerColor,
-            contentColor = iconTint,
-        ),
-    ) { content() }
-}
-
 // ── Video rendering ───────────────────────────────────────────────────────────
 
+/**
+ * Renders [track] via a LiveKit [TextureViewRenderer]. [blurred] applies a background-blur
+ * RenderEffect (API 31+) — used for the local PiP preview when [CallState.isBackgroundBlurred]
+ * is on; remote/group tiles just leave it false. Previously two near-identical composables
+ * (VideoView / BlurredVideoView) differing only in this update block.
+ */
 @Composable
-fun VideoView(track: VideoTrack, room: Room? = null, modifier: Modifier = Modifier) {
-    key(track) {
-        AndroidView<TextureViewRenderer>(
-            factory = { ctx ->
-                TextureViewRenderer(ctx).also { view ->
-                    room?.initVideoRenderer(view)
-                    track.addRenderer(view)
-                }
-            },
-            onRelease = { view ->
-                track.removeRenderer(view)
-                view.release()
-            },
-            modifier = modifier,
-        )
-    }
-}
-
-@Composable
-private fun BlurredVideoView(
+fun VideoView(
     track: VideoTrack,
-    room: Room?,
-    blurred: Boolean,
+    room: Room? = null,
+    blurred: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     key(track) {
@@ -590,7 +538,3 @@ private fun InCallChatPanel(
     }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-private fun formatDuration(seconds: Int): String =
-    "%d:%02d".format(seconds / 60, seconds % 60)

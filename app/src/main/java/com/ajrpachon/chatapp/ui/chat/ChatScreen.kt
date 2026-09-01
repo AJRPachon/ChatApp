@@ -111,6 +111,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Switch
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.service.ActiveChatTracker
+import com.ajrpachon.chatapp.ui.common.formatCallDuration
 import com.ajrpachon.chatapp.ui.components.ChatMessagesSkeleton
 import com.ajrpachon.chatapp.ui.components.OfflineBanner
 import com.ajrpachon.chatapp.ui.theme.CallAcceptedGreen
@@ -2981,9 +2982,7 @@ private fun createVideoUri(context: Context): Uri {
 }
 
 // formatAudioDuration extracted to ChatAudioComponents.kt
-
-private fun formatCallDuration(seconds: Int): String =
-    "%d:%02d".format(seconds / 60, seconds % 60)
+// formatCallDuration extracted to ui/common/TimeFormatter.kt
 
 @Composable
 private fun ExpiryDurationDialog(onDismiss: () -> Unit, onSelect: (Long?) -> Unit) {

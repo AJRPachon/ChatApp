@@ -27,6 +27,10 @@ fun formatStatusAge(createdAt: Instant): String {
     }
 }
 
+/** Formats a call duration in seconds as "m:ss" (e.g. 75 -> "1:15"). */
+fun formatCallDuration(seconds: Int): String =
+    "%d:%02d".format(seconds / 60, seconds % 60)
+
 /** Formats disappearing-mode seconds into a compact label (e.g. "5m", "1h", "7d"). */
 fun formatDisappearingDuration(seconds: Long): String = when {
     seconds <= 0L -> ""

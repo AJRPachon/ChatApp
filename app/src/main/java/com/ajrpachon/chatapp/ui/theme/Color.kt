@@ -100,3 +100,5 @@ val AvatarColors = listOf(
 val IncognitoBannerBackground = Color(0xFF4A148C)
 val IncognitoAccent = Color(0xFF7B1FA2)
 val CallAcceptedGreen = Color(0xFF2E7D32)
+val CallBackground = Color(0xFF1A1A2E)
+val CallScreenShareAccent = Color(0xFFFF5722)
