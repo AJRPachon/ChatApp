@@ -144,6 +144,14 @@ class ChatViewModel(
         scope = viewModelScope,
         updateState = ::updateState,
     )
+    private val pollDelegate = ChatPollDelegate(
+        conversationId = conversationId,
+        currentUserId = { currentUserId },
+        pollRepository = pollRepository,
+        sendMessageUseCase = sendMessageUseCase,
+        scope = viewModelScope,
+        updateState = ::updateState,
+    )
 
     private var groupMembers: List<GroupMemberBO> = emptyList()
     private var recorder: MediaRecorder? = null
@@ -154,7 +162,6 @@ class ChatViewModel(
     private var draftSaveJob: Job? = null
     private val memberOnlineStatuses = MutableStateFlow<Map<String, Boolean>>(emptyMap())
     private var memberObserveJob: Job? = null
-    private val observedPollIds = mutableSetOf<String>()
     private val requestedLinkPreviewUrls = mutableSetOf<String>()
 
     init {
@@ -405,8 +412,8 @@ class ChatViewModel(
             is ChatIntent.UnsaveMessage -> viewModelScope.launch { catchResult { messageRepository.setSaved(intent.messageId, false) } }
             is ChatIntent.OpenCreatePollSheet -> updateState { it.copy(showCreatePollSheet = true) }
             is ChatIntent.DismissCreatePollSheet -> updateState { it.copy(showCreatePollSheet = false) }
-            is ChatIntent.CreatePoll -> createPoll(intent.question, intent.options, intent.allowMultiple)
-            is ChatIntent.VotePoll -> votePoll(intent.pollId, intent.optionId)
+            is ChatIntent.CreatePoll -> pollDelegate.createPoll(intent.question, intent.options, intent.allowMultiple)
+            is ChatIntent.VotePoll -> pollDelegate.votePoll(intent.pollId, intent.optionId)
             is ChatIntent.SetChatTheme -> setChatTheme(intent.theme)
             is ChatIntent.OpenThemePicker -> updateState { it.copy(showThemePicker = true) }
             is ChatIntent.DismissThemePicker -> updateState { it.copy(showThemePicker = false) }
@@ -442,7 +449,7 @@ class ChatViewModel(
             is ChatIntent.RetryMessage -> enqueueMessageRetry()
             is ChatIntent.CheckContactRelationship -> checkContactRelationship(intent.phone)
             is ChatIntent.ContactCardPrimaryAction -> contactCardPrimaryAction(intent.phone)
-            is ChatIntent.ObservePoll -> observePoll(intent.pollId)
+            is ChatIntent.ObservePoll -> pollDelegate.observePoll(intent.pollId)
             is ChatIntent.DetectedUrlChanged -> fetchLinkPreview(intent.url)
         }
     }
@@ -506,47 +513,6 @@ class ChatViewModel(
                 is SendInvitationResult.Failure -> {
                     AppLogger.e(TAG, "contactCardPrimaryAction failed: ${result.message}")
                     sendEffect(ChatEffect.ShowSnackbar(result.message))
-                }
-            }
-        }
-    }
-
-    /**
-     * Starts observing a poll's question/options/current-user-vote, keeping
-     * [ChatState.pollUiStates] up to date. Called from PollBubble (via intent)
-     * the first time a `poll:<id>` message is rendered — idempotent per pollId
-     * for the lifetime of this ViewModel.
-     */
-    private fun observePoll(pollId: String) {
-        if (!observedPollIds.add(pollId)) return
-        viewModelScope.launch {
-            catchResult {
-                pollRepository.observePollById(pollId).collect { poll ->
-                    updateState { s ->
-                        val current = s.pollUiStates[pollId] ?: PollUiState()
-                        s.copy(pollUiStates = s.pollUiStates + (pollId to current.copy(poll = poll)))
-                    }
-                }
-            }
-        }
-        viewModelScope.launch {
-            catchResult {
-                pollRepository.observeOptionsByPollId(pollId).collect { options ->
-                    updateState { s ->
-                        val current = s.pollUiStates[pollId] ?: PollUiState()
-                        s.copy(pollUiStates = s.pollUiStates + (pollId to current.copy(options = options)))
-                    }
-                }
-            }
-        }
-        val uid = currentUserId ?: return
-        viewModelScope.launch {
-            catchResult {
-                pollRepository.observeVotes(pollId, uid).collect { votes ->
-                    updateState { s ->
-                        val current = s.pollUiStates[pollId] ?: PollUiState()
-                        s.copy(pollUiStates = s.pollUiStates + (pollId to current.copy(userVotes = votes)))
-                    }
                 }
             }
         }
@@ -1042,31 +1008,6 @@ class ChatViewModel(
             }
             if (forwarded > 0) sendEffect(ChatEffect.ShowSnackbar("$forwarded mensaje(s) reenviado(s)"))
             else updateState { it.copy(error = "No se pudieron reenviar") }
-        }
-    }
-
-    private fun createPoll(question: String, options: List<String>, allowMultiple: Boolean) {
-        val userId = state.value.currentUserId ?: return
-        updateState { it.copy(showCreatePollSheet = false) }
-        viewModelScope.launch {
-            catchResult {
-                val pollId = pollRepository.createPoll(
-                    conversationId = conversationId,
-                    question = question,
-                    createdBy = userId,
-                    options = options,
-                    allowMultiple = allowMultiple,
-                )
-                sendMessageUseCase(conversationId, userId, "poll:$pollId")
-            }.onFailure { e -> AppLogger.e(TAG, "createPoll failed", e); updateState { it.copy(error = "No se pudo crear la encuesta") } }
-        }
-    }
-
-    private fun votePoll(pollId: String, optionId: String) {
-        val userId = state.value.currentUserId ?: return
-        viewModelScope.launch {
-            catchResult { pollRepository.vote(pollId, userId, optionId) }
-                .onFailure { e -> AppLogger.e(TAG, "votePoll failed", e); updateState { it.copy(error = "No se pudo registrar el voto") } }
         }
     }
 
