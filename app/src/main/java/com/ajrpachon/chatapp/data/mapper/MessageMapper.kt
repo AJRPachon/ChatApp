@@ -1,4 +1,4 @@
-﻿package com.ajrpachon.chatapp.data.mapper
+package com.ajrpachon.chatapp.data.mapper
 
 import com.ajrpachon.chatapp.data.local.entity.MessageDBO
 import com.ajrpachon.chatapp.data.remote.dto.MessageDTO

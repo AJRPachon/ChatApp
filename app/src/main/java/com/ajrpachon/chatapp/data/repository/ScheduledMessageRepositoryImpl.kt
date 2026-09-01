@@ -1,4 +1,4 @@
-﻿package com.ajrpachon.chatapp.data.repository
+package com.ajrpachon.chatapp.data.repository
 
 import com.ajrpachon.chatapp.data.local.dao.ScheduledMessageDao
 import com.ajrpachon.chatapp.data.local.entity.ScheduledMessageDBO

@@ -1,4 +1,4 @@
-﻿package com.ajrpachon.chatapp.ui.profile
+package com.ajrpachon.chatapp.ui.profile
 
 import android.os.Build
 import com.ajrpachon.chatapp.domain.repository.AuthRepository

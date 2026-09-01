@@ -1,4 +1,4 @@
-﻿package com.ajrpachon.chatapp.ui.auth
+package com.ajrpachon.chatapp.ui.auth
 
 import android.content.Context
 import androidx.credentials.CredentialManager

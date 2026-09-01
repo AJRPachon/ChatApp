@@ -1,4 +1,4 @@
-﻿package com.ajrpachon.chatapp.ui.group
+package com.ajrpachon.chatapp.ui.group
 import com.ajrpachon.chatapp.utils.catchResult
 
 import androidx.lifecycle.viewModelScope

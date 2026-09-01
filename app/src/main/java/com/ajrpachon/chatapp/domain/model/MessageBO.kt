@@ -1,4 +1,4 @@
-﻿package com.ajrpachon.chatapp.domain.model
+package com.ajrpachon.chatapp.domain.model
 
 import kotlinx.datetime.Instant
 

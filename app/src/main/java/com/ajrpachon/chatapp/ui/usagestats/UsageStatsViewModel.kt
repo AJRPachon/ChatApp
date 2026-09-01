@@ -1,4 +1,4 @@
-﻿package com.ajrpachon.chatapp.ui.usagestats
+package com.ajrpachon.chatapp.ui.usagestats
 
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.MessageRepository

@@ -1,4 +1,4 @@
-﻿package com.ajrpachon.chatapp.data.remote.dto
+package com.ajrpachon.chatapp.data.remote.dto
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

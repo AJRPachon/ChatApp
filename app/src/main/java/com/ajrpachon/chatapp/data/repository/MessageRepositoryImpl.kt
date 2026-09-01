@@ -1,4 +1,4 @@
-﻿package com.ajrpachon.chatapp.data.repository
+package com.ajrpachon.chatapp.data.repository
 
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
