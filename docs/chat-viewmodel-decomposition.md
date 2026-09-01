@@ -272,7 +272,7 @@ identity set once in `init`) are grouped by UI feature instead.
 | # | Nested state | Fields | Owning delegate | Status |
 |---|--------------|--------|------------------|--------|
 | 1 | `state.ai: ChatAiUiState` | `showAiSheet`→`showSheet`, `aiSuggestion`→`suggestion`, `isAiLoading`→`isLoading` | `ChatAiDelegate` | **Done** |
-| 2 | `state.translation: ChatTranslationUiState` | `translatedTexts`, `translatingMessageIds`, `audioTranscriptions` | `ChatTranslationDelegate` | Not started |
+| 2 | `state.translation: ChatTranslationUiState` | `translatedTexts`, `translatingMessageIds`, `audioTranscriptions`→`transcriptions` | `ChatTranslationDelegate` | **Done** |
 | 3 | `state.poll: ChatPollFeatureState` | `showCreatePollSheet`→`showCreateSheet`, `pollUiStates`→`uiStates` (renamed to avoid colliding with the existing per-poll `PollUiState` data class) | `ChatPollDelegate` | Not started |
 | 4 | `state.scheduling: ChatSchedulingUiState` | `showScheduleDialog`, `scheduledAtMs`, `scheduledMessageCount`, `showScheduledSheet`, `scheduledMessages` | `ChatSchedulingDelegate` | Not started |
 | 5 | `state.forward: ChatForwardUiState` | `showForwardDialog`, `forwardingMessage`, `forwardableConversations`, `showForwardSelectionDialog` | `ChatForwardDelegate` | Not started |
@@ -312,6 +312,18 @@ params from `state.showAiSheet`/`state.aiSuggestion`/`state.isAiLoading` → `st
 `state.ai.suggestion`/`state.ai.isLoading`) were the only 4 files touched — confirms the
 per-slice blast radius stays small even after the composable split spread `ChatState` reads
 across many files.
+
+**Slice 2 (`ChatTranslationUiState`) — even smaller than slice 1:** `translatedTexts`/
+`translatingMessageIds`/`audioTranscriptions` (renamed `transcriptions` once nested — the
+`audio` prefix was only disambiguating it from `translatedTexts` at the top level) turned out
+to have **no UI consumer at all** — grep across `ui/chat` found reads only in
+`ChatTranslationDelegate.kt` (the delegate that produces them) and `ChatViewModel.kt`'s
+`DismissTranslation` branch. `TranslateMessage`/`TranscribeAudio` intents can be sent and the
+delegate populates the state, but no bubble/dialog currently displays a translated string or a
+transcription — the feature is wired ViewModel-side but not surfaced in the UI yet. Not this
+slice's job to fix (pure move only); noting it here since it's a real gap, not a refactor
+artifact. Only 3 files touched: `ChatContract.kt`, `ChatTranslationDelegate.kt` (4 call sites),
+`ChatViewModel.kt` (1 call site).
 
 ## Non-goals
 

@@ -422,7 +422,7 @@ class ChatViewModel(
             is ChatIntent.SendLocation -> quickSendDelegate.sendLocationMessage(intent.mapsUrl)
             is ChatIntent.FetchAndSendLocation -> quickSendDelegate.fetchAndSendLocation()
             is ChatIntent.TranslateMessage -> translationDelegate.translateMessage(intent.messageId, intent.text)
-            is ChatIntent.DismissTranslation -> updateState { it.copy(translatedTexts = it.translatedTexts - intent.messageId) }
+            is ChatIntent.DismissTranslation -> updateState { it.copy(translation = it.translation.copy(translatedTexts = it.translation.translatedTexts - intent.messageId)) }
             is ChatIntent.TranscribeAudio -> translationDelegate.transcribeAudio(intent.messageId)
             is ChatIntent.PinMessage -> pinMessage(intent.messageId)
             is ChatIntent.UnpinMessage -> unpinMessage(intent.messageId)

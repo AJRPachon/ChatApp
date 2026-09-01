@@ -23,20 +23,27 @@ class ChatTranslationDelegate(
     private val updateState get() = context.updateState
 
     fun translateMessage(messageId: String, text: String) {
-        if (messageId in getState().translatingMessageIds) return
-        updateState { it.copy(translatingMessageIds = it.translatingMessageIds + messageId) }
+        if (messageId in getState().translation.translatingMessageIds) return
+        updateState { it.copy(translation = it.translation.copy(translatingMessageIds = it.translation.translatingMessageIds + messageId)) }
         scope.launch {
             catchResult { translationManager.translate(text) }
                 .onSuccess { translated ->
                     updateState {
                         it.copy(
-                            translatedTexts = it.translatedTexts + (messageId to translated),
-                            translatingMessageIds = it.translatingMessageIds - messageId,
+                            translation = it.translation.copy(
+                                translatedTexts = it.translation.translatedTexts + (messageId to translated),
+                                translatingMessageIds = it.translation.translatingMessageIds - messageId,
+                            ),
                         )
                     }
                 }
                 .onFailure {
-                    updateState { it.copy(translatingMessageIds = it.translatingMessageIds - messageId, error = "No se pudo traducir") }
+                    updateState {
+                        it.copy(
+                            translation = it.translation.copy(translatingMessageIds = it.translation.translatingMessageIds - messageId),
+                            error = "No se pudo traducir",
+                        )
+                    }
                 }
         }
     }
@@ -44,7 +51,7 @@ class ChatTranslationDelegate(
     fun transcribeAudio(messageId: String) {
         scope.launch {
             val result = catchResult { audioTranscriber.transcribeFromMic() }.getOrDefault(NO_TRANSCRIPTION_AVAILABLE)
-            updateState { s -> s.copy(audioTranscriptions = s.audioTranscriptions + (messageId to result)) }
+            updateState { s -> s.copy(translation = s.translation.copy(transcriptions = s.translation.transcriptions + (messageId to result))) }
         }
     }
 }

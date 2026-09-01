@@ -59,6 +59,19 @@ data class ChatAiUiState(
     val isLoading: Boolean = false,
 )
 
+/**
+ * Per-message translation/transcription state, owned by [ChatTranslationDelegate]. Second of
+ * the nested groups in docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent"
+ * plan.
+ */
+data class ChatTranslationUiState(
+    // messageId → translated text
+    val translatedTexts: Map<String, String> = emptyMap(),
+    val translatingMessageIds: Set<String> = emptySet(),
+    // messageId → transcribed text
+    val transcriptions: Map<String, String> = emptyMap(),
+)
+
 data class ChatState(
     val inputText: String = "",
     val isSending: Boolean = false,
@@ -99,10 +112,7 @@ data class ChatState(
     val forwardingMessage: MessageBO? = null,
     val forwardableConversations: List<ConversationBO> = emptyList(),
     val typingUserNames: List<String> = emptyList(),
-    // messageId → translated text
-    val translatedTexts: Map<String, String> = emptyMap(),
-    val translatingMessageIds: Set<String> = emptySet(),
-    val audioTranscriptions: Map<String, String> = emptyMap(),
+    val translation: ChatTranslationUiState = ChatTranslationUiState(),
     val pinnedMessages: List<MessageBO> = emptyList(),
     val showCreatePollSheet: Boolean = false,
     val isExporting: Boolean = false,
