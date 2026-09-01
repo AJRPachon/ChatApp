@@ -4,6 +4,7 @@ import com.ajrpachon.chatapp.utils.catchResult
 import android.app.Application
 import android.content.Intent
 import android.media.projection.MediaProjectionManager
+import com.ajrpachon.chatapp.domain.model.CallStatus
 import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
@@ -80,16 +81,7 @@ class CallViewModel(
         AppLogger.d(TAG, "observeHangupSignal: start listening callId=$callId")
         callRepository.observeHangupSignal(callId).collect {
             AppLogger.d(TAG, "observeHangupSignal: RECEIVED hangup signal, phase=${state.value.phase}")
-            if (state.value.phase != CallPhase.ENDED) {
-                durationJob?.cancel()
-                updateState { it.copy(phase = CallPhase.ENDED) }
-                viewModelScope.launch(Dispatchers.IO) {
-                    sendCallSummaryMessage("ended")
-                }
-                catchResult { room?.disconnect() }
-            } else {
-                AppLogger.d(TAG, "observeHangupSignal: already ENDED, ignoring")
-            }
+            endCallLocally("ended")
         }
     }
 
@@ -97,18 +89,26 @@ class CallViewModel(
         AppLogger.d(TAG, "observeRemoteStatus: start listening callId=$callId")
         callRepository.observeCallStatus(callId).collect { status ->
             AppLogger.d(TAG, "observeRemoteStatus: status=$status phase=${state.value.phase}")
-            when (status) {
-                "rejected", "ended" -> {
-                    if (state.value.phase != CallPhase.ENDED) {
-                        durationJob?.cancel()
-                        updateState { it.copy(phase = CallPhase.ENDED) }
-                        catchResult { room?.disconnect() }
-                        viewModelScope.launch(Dispatchers.IO) {
-                            sendCallSummaryMessage(status)
-                        }
-                    }
-                }
+            if (status == CallStatus.REJECTED || status == CallStatus.ENDED) {
+                endCallLocally(status.wireValue)
             }
+        }
+    }
+
+    /**
+     * Transitions to [CallPhase.ENDED] (a no-op if already there), disconnects the LiveKit room,
+     * and sends the call-summary chat message with [summaryStatus]. Consolidates three call sites
+     * (hangup signal, remote status going ENDED/REJECTED, a participant disconnecting) that used
+     * to each hand-roll this sequence — one of them (ParticipantDisconnected) had drifted out of
+     * sync and never called `room?.disconnect()`.
+     */
+    private fun endCallLocally(summaryStatus: String) {
+        if (state.value.phase == CallPhase.ENDED) return
+        durationJob?.cancel()
+        updateState { it.copy(phase = CallPhase.ENDED) }
+        catchResult { room?.disconnect() }
+        viewModelScope.launch(Dispatchers.IO) {
+            sendCallSummaryMessage(summaryStatus)
         }
     }
 
@@ -229,9 +229,7 @@ class CallViewModel(
                 AppLogger.d(TAG, "ParticipantDisconnected: identity=${event.participant.identity} phase=${state.value.phase}")
                 val phase = state.value.phase
                 if (!isGroup && phase != CallPhase.ENDED) {
-                    durationJob?.cancel()
-                    viewModelScope.launch { sendCallSummaryMessage(if (phase == CallPhase.ACTIVE) "ended" else "missed") }
-                    updateState { it.copy(phase = CallPhase.ENDED) }
+                    endCallLocally(if (phase == CallPhase.ACTIVE) "ended" else "missed")
                 }
             }
             is RoomEvent.TrackSubscribed -> {

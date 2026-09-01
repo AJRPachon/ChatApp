@@ -5,6 +5,7 @@ import com.ajrpachon.chatapp.data.remote.source.CallRemoteSource
 import com.ajrpachon.chatapp.domain.model.CallBO
 import com.ajrpachon.chatapp.domain.model.CallStatus
 import com.ajrpachon.chatapp.domain.model.CallType
+import com.ajrpachon.chatapp.domain.model.GROUP_CALL_ROOM_PREFIX
 import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.catchResult
@@ -25,7 +26,7 @@ class CallRepositoryImpl(
         val callerId = callRemoteSource.getCurrentUserId() ?: error("Not authenticated")
         val callId = java.util.UUID.randomUUID().toString()
         val roomName = "room_${conversationId.take(8)}_${System.currentTimeMillis()}"
-        val typeStr = if (type == CallType.VIDEO) "video" else "audio"
+        val typeStr = type.wireValue
 
         callRemoteSource.insertCall(
             callId = callId,
@@ -51,8 +52,8 @@ class CallRepositoryImpl(
 
     override suspend fun createGroupCall(conversationId: String, type: CallType): CallBO {
         val callerId = callRemoteSource.getCurrentUserId() ?: error("Not authenticated")
-        val roomName = "group_${conversationId.take(8)}_${System.currentTimeMillis()}"
-        val typeStr = if (type == CallType.VIDEO) "video" else "audio"
+        val roomName = "$GROUP_CALL_ROOM_PREFIX${conversationId.take(8)}_${System.currentTimeMillis()}"
+        val typeStr = type.wireValue
 
         val memberIds = callRemoteSource.getConversationParticipantIds(conversationId, callerId)
 
@@ -110,8 +111,8 @@ class CallRepositoryImpl(
             callDto.toBO(callerName)
         }
 
-    override fun observeCallStatus(callId: String): Flow<String> =
-        callRemoteSource.observeCallStatus(callId)
+    override fun observeCallStatus(callId: String): Flow<CallStatus> =
+        callRemoteSource.observeCallStatus(callId).map { CallStatus.fromWire(it) }
 
     override fun observeHangupSignal(callId: String): Flow<Unit> {
         val currentUserId = callRemoteSource.getCurrentUserId()

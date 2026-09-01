@@ -37,6 +37,7 @@ import com.ajrpachon.chatapp.utils.IntegrityResult
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.Alignment
 import com.ajrpachon.chatapp.ui.call.IncomingCallIntent
+import com.ajrpachon.chatapp.domain.model.isGroupCall
 import com.ajrpachon.chatapp.ui.call.IncomingCallScreen
 import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
@@ -201,10 +202,10 @@ class MainActivity : ComponentActivity() {
                                     callId = call.id,
                                     conversationId = call.conversationId,
                                     roomName = call.roomName,
-                                    callType = call.type.name.lowercase(),
+                                    callType = call.type.wireValue,
                                     otherUserName = call.callerName,
                                     isOutgoing = false,
-                                    isGroup = call.roomName.startsWith("group_"),
+                                    isGroup = call.isGroupCall(),
                                 )
                             )
                         },

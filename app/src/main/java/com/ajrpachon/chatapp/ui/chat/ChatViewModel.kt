@@ -892,7 +892,7 @@ class ChatViewModel(
     }
 
     private fun startCall(typeStr: String) {
-        val callType = if (typeStr == "video") CallType.VIDEO else CallType.AUDIO
+        val callType = CallType.fromWire(typeStr)
         val isGroup = state.value.isGroup
         viewModelScope.launch {
             catchResult {
