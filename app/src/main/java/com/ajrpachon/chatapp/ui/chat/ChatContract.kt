@@ -56,6 +56,27 @@ data class ChatSearchUiState(
     val highlightedMessageId: String? = null,
 )
 
+/**
+ * Image-batch/file/video upload state, owned by [ChatMediaUploadDelegate]. Eighth of the
+ * nested groups in docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent"
+ * plan.
+ *
+ * [isUploadingFile] covers `sendFile`/`sendVideo` (a single upload, no per-item progress);
+ * [progress]/[pendingImageUris]/[suppressedImageMessageIds] cover `sendImages` (a batch, with
+ * a placeholder bubble and per-item completion tracking) — see their own docs below.
+ */
+data class ChatMediaUploadUiState(
+    val isUploadingFile: Boolean = false,
+    val progress: MediaUploadProgress? = null,
+    // Local URIs for the in-flight image batch, so the placeholder bubble can render
+    // thumbnails instantly (from device storage) without waiting on network uploads.
+    val pendingImageUris: List<Uri> = emptyList(),
+    // Ids of messages created by the current in-flight batch; hidden from the normal
+    // paging-based grouping until the whole batch finishes, so only the stable
+    // placeholder bubble is visible mid-upload instead of a growing/jumping bubble.
+    val suppressedImageMessageIds: Set<String> = emptySet(),
+)
+
 /** Poll data + the current user's vote(s), kept in [ChatPollFeatureState.uiStates] keyed by pollId. */
 data class PollUiState(
     val poll: PollBO? = null,
@@ -147,15 +168,7 @@ data class ChatForwardUiState(
 data class ChatState(
     val inputText: String = "",
     val isSending: Boolean = false,
-    val isUploadingFile: Boolean = false,
-    val mediaUploadProgress: MediaUploadProgress? = null,
-    // Local URIs for the in-flight image batch, so the placeholder bubble can render
-    // thumbnails instantly (from device storage) without waiting on network uploads.
-    val pendingImageUris: List<Uri> = emptyList(),
-    // Ids of messages created by the current in-flight batch; hidden from the normal
-    // paging-based grouping until the whole batch finishes, so only the stable
-    // placeholder bubble is visible mid-upload instead of a growing/jumping bubble.
-    val suppressedImageMessageIds: Set<String> = emptySet(),
+    val mediaUpload: ChatMediaUploadUiState = ChatMediaUploadUiState(),
     val currentUserId: String? = null,
     val conversationTitle: String = "",
     val error: String? = null,

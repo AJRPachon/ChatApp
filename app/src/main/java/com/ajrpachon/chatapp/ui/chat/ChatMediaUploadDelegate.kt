@@ -57,9 +57,11 @@ class ChatMediaUploadDelegate(
             val showBatchPlaceholder = metadataByUri.size > 2
             updateState {
                 it.copy(
-                    mediaUploadProgress = MediaUploadProgress(totalCount = metadataByUri.size, completedCount = 0, totalBytes = totalBytes),
-                    pendingImageUris = if (showBatchPlaceholder) metadataByUri.map { (uri, _) -> uri } else emptyList(),
-                    suppressedImageMessageIds = emptySet(),
+                    mediaUpload = it.mediaUpload.copy(
+                        progress = MediaUploadProgress(totalCount = metadataByUri.size, completedCount = 0, totalBytes = totalBytes),
+                        pendingImageUris = if (showBatchPlaceholder) metadataByUri.map { (uri, _) -> uri } else emptyList(),
+                        suppressedImageMessageIds = emptySet(),
+                    ),
                 )
             }
             for ((index, entry) in metadataByUri.withIndex()) {
@@ -78,16 +80,20 @@ class ChatMediaUploadDelegate(
                         ).getOrThrow()
                     }.onSuccess { message ->
                         if (showBatchPlaceholder) {
-                            updateState { it.copy(suppressedImageMessageIds = it.suppressedImageMessageIds + message.id) }
+                            updateState {
+                                it.copy(mediaUpload = it.mediaUpload.copy(suppressedImageMessageIds = it.mediaUpload.suppressedImageMessageIds + message.id))
+                            }
                         }
                     }.onFailure { e -> AppLogger.e(TAG, "sendImages failed", e); updateState { it.copy(error = e.message ?: "Error uploading image") } }
                 } else {
                     AppLogger.e(TAG, "sendImages: could not read bytes for $uri")
                     updateState { it.copy(error = "No se pudo leer la imagen") }
                 }
-                updateState { it.copy(mediaUploadProgress = it.mediaUploadProgress?.copy(completedCount = index + 1)) }
+                updateState { it.copy(mediaUpload = it.mediaUpload.copy(progress = it.mediaUpload.progress?.copy(completedCount = index + 1))) }
             }
-            updateState { it.copy(mediaUploadProgress = null, pendingImageUris = emptyList(), suppressedImageMessageIds = emptySet()) }
+            updateState {
+                it.copy(mediaUpload = it.mediaUpload.copy(progress = null, pendingImageUris = emptyList(), suppressedImageMessageIds = emptySet()))
+            }
         }
     }
 
@@ -96,7 +102,7 @@ class ChatMediaUploadDelegate(
         val reply = getState().replyingTo
         scope.launch {
             sendEffect(ChatEffect.ScrollToBottom)
-            updateState { it.copy(isUploadingFile = true, replyingTo = null) }
+            updateState { it.copy(mediaUpload = it.mediaUpload.copy(isUploadingFile = true), replyingTo = null) }
             catchResult {
                 val metadata = withContext(Dispatchers.IO) { getUriMetadataUseCase(uri.toString()) }
                 val mimeType = metadata.mimeType ?: DEFAULT_FILE_MIME_TYPE
@@ -110,7 +116,7 @@ class ChatMediaUploadDelegate(
                     replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
                 ).getOrThrow()
             }.onFailure { e -> AppLogger.e(TAG, "sendFile failed", e); updateState { it.copy(error = e.message ?: "Error al enviar el archivo") } }
-            updateState { it.copy(isUploadingFile = false) }
+            updateState { it.copy(mediaUpload = it.mediaUpload.copy(isUploadingFile = false)) }
         }
     }
 
@@ -119,7 +125,7 @@ class ChatMediaUploadDelegate(
         val reply = getState().replyingTo
         scope.launch {
             sendEffect(ChatEffect.ScrollToBottom)
-            updateState { it.copy(isUploadingFile = true, replyingTo = null) }
+            updateState { it.copy(mediaUpload = it.mediaUpload.copy(isUploadingFile = true), replyingTo = null) }
             catchResult {
                 val fileSize = withContext(Dispatchers.IO) { getUriMetadataUseCase(uri.toString()) }.size
                 check(fileSize == null || fileSize <= UploadLimits.VIDEO_MAX_BYTES) {
@@ -132,7 +138,7 @@ class ChatMediaUploadDelegate(
                     replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
                 ).getOrThrow()
             }.onFailure { e -> AppLogger.e(TAG, "sendVideo failed", e); updateState { it.copy(error = e.message ?: "Error al enviar el video") } }
-            updateState { it.copy(isUploadingFile = false) }
+            updateState { it.copy(mediaUpload = it.mediaUpload.copy(isUploadingFile = false)) }
         }
     }
 }

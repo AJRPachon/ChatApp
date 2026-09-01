@@ -278,7 +278,7 @@ identity set once in `init`) are grouped by UI feature instead.
 | 5 | `state.forward: ChatForwardUiState` | `showForwardDialog`→`showDialog`, `forwardingMessage`→`message`, `forwardableConversations`→`conversations`, `showForwardSelectionDialog`→`showSelectionDialog` | `ChatForwardDelegate` | **Done** |
 | 6 | `state.contactCard: ChatContactCardUiState` | `contactPhoneLookups`→`lookups` | `ChatContactCardDelegate` | **Done** |
 | 7 | `state.search: ChatSearchUiState` | `isSearchActive`→`isActive`, `searchQuery`→`query`, `searchResults`→`results`, `isSearching`, `highlightedMessageId` | `ChatSearchDelegate` | **Done** |
-| 8 | `state.mediaUpload: ChatMediaUploadUiState` | `isUploadingFile`, `mediaUploadProgress`, `pendingImageUris`, `suppressedImageMessageIds` | `ChatMediaUploadDelegate` | Not started |
+| 8 | `state.mediaUpload: ChatMediaUploadUiState` | `isUploadingFile`, `mediaUploadProgress`→`progress`, `pendingImageUris`, `suppressedImageMessageIds` | `ChatMediaUploadDelegate` | **Done** |
 | 9 | `state.audioState: AudioState` | (unchanged — already grouped since before Phase 1) | `ChatAudioRecordingDelegate` | Already done |
 | 10 | `state.groupPresence: ChatGroupPresenceUiState` | `onlineMemberCount`, `groupMemberCount` (**not** `isOnline` — that's `NetworkMonitor`, a different concern despite the similar name; **not** `isGroup`/`isCurrentUserMember`/`groupAvatarUrl` — conversation identity, set once from `conversationRepository` in `init`, not by this delegate) | `ChatGroupPresenceDelegate` | Not started |
 | 11 | `state.mute: ChatMuteUiState` | `isMuted`, `mutedUntil`, `showMuteDialog` | none (`toggleMute`/`muteFor` on `ChatViewModel`) | Not started |
@@ -413,6 +413,22 @@ flagging for future slices:
 search-overlay call site), `ChatScreen.kt` (the `LaunchedEffect(state.highlightedMessageId)`
 that triggers the scroll — the first slice among 1-7 that needed to touch `ChatScreen.kt`
 directly rather than only the files it delegates to).
+
+**Slice 8 (`ChatMediaUploadUiState`) — two flows, one nested state:** `isUploadingFile`/
+`mediaUploadProgress`/`pendingImageUris`/`suppressedImageMessageIds` →
+`state.mediaUpload.{isUploadingFile,progress,pendingImageUris,suppressedImageMessageIds}`.
+`ChatMediaUploadDelegate` actually covers two different upload flows sharing one nested
+state: `sendFile`/`sendVideo` (a single upload, `isUploadingFile` as a plain busy flag) and
+`sendImages` (a batch, with a placeholder bubble and per-item completion tracked via
+`progress`/`pendingImageUris`/`suppressedImageMessageIds`) — documented the split directly on
+`ChatMediaUploadUiState` so the four fields' relationship isn't left to be re-derived from the
+delegate's code. `ChatMediaUploadDelegate.kt`'s call sites were too varied (mixing these
+fields with `replyingTo`/`error` in different combinations) for one clean regex like slice 6's,
+so each was a targeted edit instead — verified via the same repo-wide grep-before-compile
+discipline as every slice since 3. Touched 4 files: `ChatContract.kt`, `ChatMediaUploadDelegate.kt`
+(9 call sites), `ChatBottomBar.kt` (2 reads for `NormalInputBar`'s upload-progress display),
+`ChatMessageList.kt` (5 reads: the pending-batch placeholder plus 3 `suppressedImageMessageIds`
+membership checks in the paging/grouping logic).
 
 ## Non-goals
 

@@ -107,12 +107,12 @@ internal fun ChatMessageList(
             // reverseLayout=true → the first item in this content lambda sits at the visual
             // bottom (newest). Rendering the placeholder here keeps it "below" real messages
             // without needing negative indices into the paging data.
-            if (state.pendingImageUris.isNotEmpty()) {
+            if (state.mediaUpload.pendingImageUris.isNotEmpty()) {
                 item(key = "pending-image-batch") {
                     Box(Modifier.padding(top = 8.dp)) {
                         PendingImageBatchBubble(
-                            uris = state.pendingImageUris,
-                            progress = state.mediaUploadProgress,
+                            uris = state.mediaUpload.pendingImageUris,
+                            progress = state.mediaUpload.progress,
                         )
                     }
                 }
@@ -124,7 +124,7 @@ internal fun ChatMessageList(
                 val message = lazyPagingItems[index] ?: return@items
                 // Messages from the batch currently rendered by the placeholder above are
                 // hidden here to avoid a duplicate/jumping bubble while uploads are in flight.
-                if (message.id in state.suppressedImageMessageIds) return@items
+                if (message.id in state.mediaUpload.suppressedImageMessageIds) return@items
 
                 // Determine if this item is already covered by a group rendered at a lower index.
                 // With reverseLayout=true and DESC order, index 0 = newest (bottom).
@@ -132,7 +132,7 @@ internal fun ChatMessageList(
                 // Skip back over any suppressed (in-flight batch) messages so an older, already
                 // finished group isn't mistakenly treated as continuing into the new batch.
                 var prevIndex = index - 1
-                while (prevIndex >= 0 && lazyPagingItems[prevIndex]?.id in state.suppressedImageMessageIds) prevIndex--
+                while (prevIndex >= 0 && lazyPagingItems[prevIndex]?.id in state.mediaUpload.suppressedImageMessageIds) prevIndex--
                 val prevMessage = if (prevIndex >= 0) lazyPagingItems[prevIndex] else null
                 val isInsideGroup = prevMessage != null
                     && message.imageUrl != null && message.audioUrl == null
@@ -150,7 +150,7 @@ internal fun ChatMessageList(
                         var j = index + 1
                         while (j < lazyPagingItems.itemCount) {
                             val next = lazyPagingItems[j] ?: break
-                            if (next.id in state.suppressedImageMessageIds) break
+                            if (next.id in state.mediaUpload.suppressedImageMessageIds) break
                             if (next.imageUrl != null && next.audioUrl == null && next.senderId == message.senderId) {
                                 group.add(next)
                                 j++

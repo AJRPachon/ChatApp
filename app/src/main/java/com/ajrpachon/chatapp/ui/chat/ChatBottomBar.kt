@@ -125,8 +125,8 @@ internal fun ChatBottomBar(
                     else -> NormalInputBar(
                         inputText = state.inputText,
                         isSending = state.isSending,
-                        isUploadingImage = state.isUploadingFile,
-                        mediaUploadProgress = state.mediaUploadProgress,
+                        isUploadingImage = state.mediaUpload.isUploadingFile,
+                        mediaUploadProgress = state.mediaUpload.progress,
                         onTextChange = { vm.onIntent(ChatIntent.InputChanged(it)) },
                         onSend = { vm.onIntent(ChatIntent.Send) },
                         onGallery = onGallery,
