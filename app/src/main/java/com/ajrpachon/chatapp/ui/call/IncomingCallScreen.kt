@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.CallBO
 import com.ajrpachon.chatapp.domain.model.CallType
+import com.ajrpachon.chatapp.ui.theme.CallAcceptedGreen
 
 @Composable
 fun IncomingCallScreen(
@@ -107,7 +108,7 @@ fun IncomingCallScreen(
                         onClick = onAccept,
                         modifier = Modifier.size(64.dp),
                         colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = Color(0xFF2E7D32),
+                            containerColor = CallAcceptedGreen,
                         ),
                     ) {
                         Icon(

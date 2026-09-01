@@ -411,18 +411,16 @@ private fun CallScreenContent(
         }
 
         // Chat FAB (bottom-start)
-        IconButton(
+        CallControlButton(
             onClick = { vm.toggleInCallChat() },
+            containerColor = if (state.showInCallChat) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.2f),
+            iconTint = Color.White,
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(start = 16.dp, bottom = 64.dp)
-                .size(52.dp)
-                .background(
-                    color = if (state.showInCallChat) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.2f),
-                    shape = CircleShape,
-                ),
+                .padding(start = 16.dp, bottom = 64.dp),
+            size = 52.dp,
         ) {
-            Icon(Icons.Default.Chat, contentDescription = stringResource(R.string.call_in_call_chat_content_description), tint = Color.White)
+            Icon(Icons.Default.Chat, contentDescription = stringResource(R.string.call_in_call_chat_content_description))
         }
 
         // In-call chat panel
@@ -448,12 +446,13 @@ private fun CallControlButton(
     onClick: () -> Unit,
     containerColor: Color,
     iconTint: Color,
+    modifier: Modifier = Modifier,
     size: androidx.compose.ui.unit.Dp = 52.dp,
     content: @Composable () -> Unit,
 ) {
     FilledIconButton(
         onClick = onClick,
-        modifier = Modifier.size(size),
+        modifier = modifier.size(size),
         colors = IconButtonDefaults.filledIconButtonColors(
             containerColor = containerColor,
             contentColor = iconTint,

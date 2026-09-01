@@ -93,3 +93,10 @@ val AvatarColors = listOf(
     Color(0xFFEC407A), // pink
     Color(0xFF8D6E63), // brown
 )
+
+// ── Fixed accent colors ──────────────────────────────────────────────────
+// Independientes del tema: significado fijo (incógnito, llamada), no colores
+// de marca — se mantienen igual en claro/oscuro por diseño.
+val IncognitoBannerBackground = Color(0xFF4A148C)
+val IncognitoAccent = Color(0xFF7B1FA2)
+val CallAcceptedGreen = Color(0xFF2E7D32)
