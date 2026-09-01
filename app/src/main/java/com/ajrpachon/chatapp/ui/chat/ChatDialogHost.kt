@@ -188,14 +188,14 @@ internal fun ChatDialogHost(
         )
     }
 
-    if (state.showScheduleDialog) {
+    if (state.scheduling.showDialog) {
         ScheduleMessageDialog(
             onDismiss = { vm.onIntent(ChatIntent.DismissScheduleDialog) },
             onConfirm = { scheduledAtMs -> vm.onIntent(ChatIntent.ScheduleMessage(scheduledAtMs)) },
         )
     }
 
-    if (state.showScheduledSheet) {
+    if (state.scheduling.showSheet) {
         val scheduledSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(
             onDismissRequest = { vm.onIntent(ChatIntent.DismissScheduledSheet) },
@@ -207,7 +207,7 @@ internal fun ChatDialogHost(
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
-            if (state.scheduledMessages.isEmpty()) {
+            if (state.scheduling.messages.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -231,7 +231,7 @@ internal fun ChatDialogHost(
                 }
             } else {
                 LazyColumn {
-                    items(state.scheduledMessages, key = { it.id }) { msg ->
+                    items(state.scheduling.messages, key = { it.id }) { msg ->
                         val formatter = remember { java.text.SimpleDateFormat("dd MMM HH:mm", java.util.Locale.getDefault()) }
                         Row(
                             modifier = Modifier

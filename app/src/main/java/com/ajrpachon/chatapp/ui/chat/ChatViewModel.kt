@@ -236,7 +236,7 @@ class ChatViewModel(
         viewModelScope.launch {
             scheduledMessageRepository.observeAll().collect { all ->
                 val forThisConversation = all.filter { it.conversationId == conversationId }
-                updateState { it.copy(scheduledMessageCount = forThisConversation.size, scheduledMessages = forThisConversation) }
+                updateState { it.copy(scheduling = it.scheduling.copy(messageCount = forThisConversation.size, messages = forThisConversation)) }
             }
         }
         viewModelScope.launch {
@@ -444,11 +444,11 @@ class ChatViewModel(
             is ChatIntent.ToggleIncognito -> toggleIncognito()
             is ChatIntent.DismissIncognitoDialog -> updateState { it.copy(showIncognitoInfoDialog = false) }
             is ChatIntent.ConfirmIncognito -> confirmIncognito()
-            is ChatIntent.OpenScheduleDialog -> updateState { it.copy(showScheduleDialog = true) }
-            is ChatIntent.DismissScheduleDialog -> updateState { it.copy(showScheduleDialog = false) }
+            is ChatIntent.OpenScheduleDialog -> updateState { it.copy(scheduling = it.scheduling.copy(showDialog = true)) }
+            is ChatIntent.DismissScheduleDialog -> updateState { it.copy(scheduling = it.scheduling.copy(showDialog = false)) }
             is ChatIntent.ScheduleMessage -> schedulingDelegate.scheduleMessage(intent.scheduledAt)
-            is ChatIntent.ShowScheduledSheet -> updateState { it.copy(showScheduledSheet = true) }
-            is ChatIntent.DismissScheduledSheet -> updateState { it.copy(showScheduledSheet = false) }
+            is ChatIntent.ShowScheduledSheet -> updateState { it.copy(scheduling = it.scheduling.copy(showSheet = true)) }
+            is ChatIntent.DismissScheduledSheet -> updateState { it.copy(scheduling = it.scheduling.copy(showSheet = false)) }
             is ChatIntent.CancelScheduledMessage -> schedulingDelegate.cancelScheduledMessage(intent.id)
             is ChatIntent.OpenAiSheet -> updateState { it.copy(ai = it.ai.copy(showSheet = true, suggestion = null)) }
             is ChatIntent.DismissAiSheet -> updateState { it.copy(ai = it.ai.copy(showSheet = false, suggestion = null)) }

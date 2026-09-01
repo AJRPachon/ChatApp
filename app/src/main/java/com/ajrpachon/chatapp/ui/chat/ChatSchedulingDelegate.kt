@@ -38,10 +38,10 @@ class ChatSchedulingDelegate(
         val text = getState().inputText.trim()
         val userId = getState().currentUserId
         if (userId == null || text.isBlank()) {
-            updateState { it.copy(showScheduleDialog = false, error = "Escribe un mensaje antes de programarlo") }
+            updateState { it.copy(scheduling = it.scheduling.copy(showDialog = false), error = "Escribe un mensaje antes de programarlo") }
             return
         }
-        updateState { it.copy(showScheduleDialog = false, inputText = "", scheduledAtMs = scheduledAt) }
+        updateState { it.copy(scheduling = it.scheduling.copy(showDialog = false, scheduledAtMs = scheduledAt), inputText = "") }
         cancelDraftSave()
         scope.launch {
             draftRepository.saveDraft(conversationId, "")

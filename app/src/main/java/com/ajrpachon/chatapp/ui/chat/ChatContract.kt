@@ -83,6 +83,23 @@ data class ChatPollFeatureState(
     val uiStates: Map<String, PollUiState> = emptyMap(),
 )
 
+/**
+ * Scheduled-message dialog/sheet visibility + the live list, owned by
+ * [ChatSchedulingDelegate]. Fourth of the nested groups in
+ * docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan.
+ *
+ * [scheduledAtMs] is set by [ChatSchedulingDelegate.scheduleMessage] but never read back
+ * anywhere — same kind of write-only leftover as `pinnedBannerVisible` in `ChatScreen`, kept
+ * as-is rather than guessed at during a pure-move slice.
+ */
+data class ChatSchedulingUiState(
+    val showDialog: Boolean = false,
+    val scheduledAtMs: Long? = null,
+    val messageCount: Int = 0,
+    val showSheet: Boolean = false,
+    val messages: List<ScheduledMessage> = emptyList(),
+)
+
 data class ChatState(
     val inputText: String = "",
     val isSending: Boolean = false,
@@ -137,12 +154,7 @@ data class ChatState(
     // Incognito mode: when true, messages are NOT persisted to local Room DB
     val isIncognito: Boolean = false,
     val showIncognitoInfoDialog: Boolean = false,
-    // Scheduled messages
-    val showScheduleDialog: Boolean = false,
-    val scheduledAtMs: Long? = null,
-    val scheduledMessageCount: Int = 0,
-    val showScheduledSheet: Boolean = false,
-    val scheduledMessages: List<ScheduledMessage> = emptyList(),
+    val scheduling: ChatSchedulingUiState = ChatSchedulingUiState(),
     // AI Assistant
     val ai: ChatAiUiState = ChatAiUiState(),
     // Wallpaper

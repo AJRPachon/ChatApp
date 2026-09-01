@@ -209,7 +209,7 @@ internal fun ChatTopBar(
                 }
             },
             actions = {
-                if (state.scheduledMessageCount > 0) {
+                if (state.scheduling.messageCount > 0) {
                     Box {
                         IconButton(onClick = { vm.onIntent(ChatIntent.ShowScheduledSheet) }) {
                             Icon(Icons.Default.Schedule, contentDescription = stringResource(R.string.chat_scheduled_messages))
@@ -223,7 +223,7 @@ internal fun ChatTopBar(
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
-                                text = state.scheduledMessageCount.toString(),
+                                text = state.scheduling.messageCount.toString(),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onError,
                             )

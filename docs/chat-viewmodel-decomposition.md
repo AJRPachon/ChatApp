@@ -274,7 +274,7 @@ identity set once in `init`) are grouped by UI feature instead.
 | 1 | `state.ai: ChatAiUiState` | `showAiSheet`→`showSheet`, `aiSuggestion`→`suggestion`, `isAiLoading`→`isLoading` | `ChatAiDelegate` | **Done** |
 | 2 | `state.translation: ChatTranslationUiState` | `translatedTexts`, `translatingMessageIds`, `audioTranscriptions`→`transcriptions` | `ChatTranslationDelegate` | **Done** |
 | 3 | `state.poll: ChatPollFeatureState` | `showCreatePollSheet`→`showCreateSheet`, `pollUiStates`→`uiStates` (renamed to avoid colliding with the existing per-poll `PollUiState` data class) | `ChatPollDelegate` | **Done** |
-| 4 | `state.scheduling: ChatSchedulingUiState` | `showScheduleDialog`, `scheduledAtMs`, `scheduledMessageCount`, `showScheduledSheet`, `scheduledMessages` | `ChatSchedulingDelegate` | Not started |
+| 4 | `state.scheduling: ChatSchedulingUiState` | `showScheduleDialog`→`showDialog`, `scheduledAtMs`, `scheduledMessageCount`→`messageCount`, `showScheduledSheet`→`showSheet`, `scheduledMessages`→`messages` | `ChatSchedulingDelegate` | **Done** |
 | 5 | `state.forward: ChatForwardUiState` | `showForwardDialog`, `forwardingMessage`, `forwardableConversations`, `showForwardSelectionDialog` | `ChatForwardDelegate` | Not started |
 | 6 | `state.contactCard: ChatContactCardUiState` | `contactPhoneLookups`→`lookups` | `ChatContactCardDelegate` | Not started |
 | 7 | `state.search: ChatSearchUiState` | `isSearchActive`, `searchQuery`, `searchResults`, `isSearching`, `highlightedMessageId` | `ChatSearchDelegate` | Not started |
@@ -343,6 +343,20 @@ more than one call site). `ChatViewModelTest.kt`'s
 `vm.state.value.pollUiStates["poll1"]` directly — the first slice where the state shape leaked
 into a test assertion, updated to `vm.state.value.poll.uiStates["poll1"]` alongside the
 production code in the same commit.
+
+**Slice 4 (`ChatSchedulingUiState`) — another write-only field found:** `showScheduleDialog`/
+`scheduledAtMs`/`scheduledMessageCount`/`showScheduledSheet`/`scheduledMessages` →
+`state.scheduling.{showDialog,scheduledAtMs,messageCount,showSheet,messages}`. While tracing
+every call site, `scheduledAtMs` turned out to be set by
+`ChatSchedulingDelegate.scheduleMessage` but never read back anywhere in the app — same shape
+as `pinnedBannerVisible` from the topBar/bottomBar/message-list pass: a real, pre-existing
+leftover, not something this slice introduced or should silently start reading/using. Left the
+field in place (documented with a code comment on `ChatSchedulingUiState` itself this time,
+so the next person tracing it doesn't have to re-derive it via grep). 5 files touched:
+`ChatContract.kt`, `ChatSchedulingDelegate.kt` (2 call sites), `ChatViewModel.kt` (the `init`
+block's `scheduledMessageRepository.observeAll()` collector plus 4 `onIntent` branches),
+`ChatDialogHost.kt` (4 reads across the schedule dialog and scheduled-messages sheet),
+`ChatTopBar.kt` (the scheduled-count badge, 2 reads).
 
 ## Non-goals
 
