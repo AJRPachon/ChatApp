@@ -98,12 +98,12 @@ internal fun ChatDialogHost(
         )
     }
 
-    if (state.showForwardDialog) {
+    if (state.forward.showDialog) {
         ForwardConversationDialog(
-            conversations = state.forwardableConversations,
+            conversations = state.forward.conversations,
             onDismiss = { vm.onIntent(ChatIntent.DismissForwardDialog) },
             onSelect = { targetConversationId ->
-                val forwardingMsg = state.forwardingMessage
+                val forwardingMsg = state.forward.message
                 if (forwardingMsg != null) {
                     vm.onIntent(ChatIntent.ForwardMessage(forwardingMsg.id, targetConversationId))
                 } else {
@@ -135,9 +135,9 @@ internal fun ChatDialogHost(
 
     // Was previously duplicated verbatim (two identical `if` blocks, so this dialog composed
     // twice, stacked, whenever true) — collapsed to one during the Phase 2 scaffold split.
-    if (state.showForwardSelectionDialog) {
+    if (state.forward.showSelectionDialog) {
         ForwardConversationDialog(
-            conversations = state.forwardableConversations,
+            conversations = state.forward.conversations,
             onDismiss = { vm.onIntent(ChatIntent.DismissForwardSelectionDialog) },
             onSelect = { targetConversationId ->
                 vm.onIntent(ChatIntent.ForwardSelectedMessages(targetConversationId))

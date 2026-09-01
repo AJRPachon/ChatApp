@@ -100,6 +100,21 @@ data class ChatSchedulingUiState(
     val messages: List<ScheduledMessage> = emptyList(),
 )
 
+/**
+ * Single-message forward dialog + multi-select forward-selection dialog, owned by
+ * [ChatForwardDelegate]. Fifth of the nested groups in
+ * docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan.
+ *
+ * [conversations] is shared by both dialogs (only one is ever shown at a time, per
+ * [ChatForwardDelegate]) rather than duplicated per-dialog.
+ */
+data class ChatForwardUiState(
+    val showDialog: Boolean = false,
+    val message: MessageBO? = null,
+    val showSelectionDialog: Boolean = false,
+    val conversations: List<ConversationBO> = emptyList(),
+)
+
 data class ChatState(
     val inputText: String = "",
     val isSending: Boolean = false,
@@ -136,9 +151,7 @@ data class ChatState(
     val highlightedMessageId: String? = null,
     val expiryDialogMessageId: String? = null,
     val selectedMessageIds: Set<String> = emptySet(),
-    val showForwardDialog: Boolean = false,
-    val forwardingMessage: MessageBO? = null,
-    val forwardableConversations: List<ConversationBO> = emptyList(),
+    val forward: ChatForwardUiState = ChatForwardUiState(),
     val typingUserNames: List<String> = emptyList(),
     val translation: ChatTranslationUiState = ChatTranslationUiState(),
     val pinnedMessages: List<MessageBO> = emptyList(),
@@ -160,8 +173,6 @@ data class ChatState(
     // Wallpaper
     val wallpaperColor: Long? = null,
     val showWallpaperPicker: Boolean = false,
-    // Multi-forward
-    val showForwardSelectionDialog: Boolean = false,
     // Group presence
     val onlineMemberCount: Int = 0,
     val groupMemberCount: Int = 0,

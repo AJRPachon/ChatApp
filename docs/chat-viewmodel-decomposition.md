@@ -275,7 +275,7 @@ identity set once in `init`) are grouped by UI feature instead.
 | 2 | `state.translation: ChatTranslationUiState` | `translatedTexts`, `translatingMessageIds`, `audioTranscriptions`→`transcriptions` | `ChatTranslationDelegate` | **Done** |
 | 3 | `state.poll: ChatPollFeatureState` | `showCreatePollSheet`→`showCreateSheet`, `pollUiStates`→`uiStates` (renamed to avoid colliding with the existing per-poll `PollUiState` data class) | `ChatPollDelegate` | **Done** |
 | 4 | `state.scheduling: ChatSchedulingUiState` | `showScheduleDialog`→`showDialog`, `scheduledAtMs`, `scheduledMessageCount`→`messageCount`, `showScheduledSheet`→`showSheet`, `scheduledMessages`→`messages` | `ChatSchedulingDelegate` | **Done** |
-| 5 | `state.forward: ChatForwardUiState` | `showForwardDialog`, `forwardingMessage`, `forwardableConversations`, `showForwardSelectionDialog` | `ChatForwardDelegate` | Not started |
+| 5 | `state.forward: ChatForwardUiState` | `showForwardDialog`→`showDialog`, `forwardingMessage`→`message`, `forwardableConversations`→`conversations`, `showForwardSelectionDialog`→`showSelectionDialog` | `ChatForwardDelegate` | **Done** |
 | 6 | `state.contactCard: ChatContactCardUiState` | `contactPhoneLookups`→`lookups` | `ChatContactCardDelegate` | Not started |
 | 7 | `state.search: ChatSearchUiState` | `isSearchActive`, `searchQuery`, `searchResults`, `isSearching`, `highlightedMessageId` | `ChatSearchDelegate` | Not started |
 | 8 | `state.mediaUpload: ChatMediaUploadUiState` | `isUploadingFile`, `mediaUploadProgress`, `pendingImageUris`, `suppressedImageMessageIds` | `ChatMediaUploadDelegate` | Not started |
@@ -357,6 +357,22 @@ so the next person tracing it doesn't have to re-derive it via grep). 5 files to
 block's `scheduledMessageRepository.observeAll()` collector plus 4 `onIntent` branches),
 `ChatDialogHost.kt` (4 reads across the schedule dialog and scheduled-messages sheet),
 `ChatTopBar.kt` (the scheduled-count badge, 2 reads).
+
+**Slice 5 (`ChatForwardUiState`) — two dialogs sharing one field:** `showForwardDialog`/
+`forwardingMessage`/`forwardableConversations`/`showForwardSelectionDialog` →
+`state.forward.{showDialog,message,conversations,showSelectionDialog}`. The single-message
+forward dialog and the multi-select forward-selection dialog are mutually exclusive (only one
+shown at a time) but share the same conversations list, so `conversations` stays a single field
+on the nested state rather than being duplicated per-dialog — documented directly on
+`ChatForwardUiState` this time rather than left implicit. 5 files: `ChatContract.kt`,
+`ChatForwardDelegate.kt` (6 call sites across all 4 functions), `ChatViewModel.kt`
+(`DismissForwardDialog`/`DismissForwardSelectionDialog`), `ChatDialogHost.kt` (both
+`ForwardConversationDialog` call sites — including the one with the `Was previously duplicated
+verbatim` comment from the Phase 2 scaffold-split pass, left as-is since it's about a past bug
+fix, not the field names), `ChatViewModelTest.kt` (2 tests, renamed alongside their
+assertions since the old names — `sets showForwardDialog to true`,
+`resets showForwardDialog and forwardingMessage` — would otherwise describe fields that no
+longer exist).
 
 ## Non-goals
 

@@ -32,15 +32,15 @@ class ChatForwardDelegate(
         scope.launch {
             catchResult {
                 val conversations = conversationRepository.observeConversations(uid).first().filter { it.id != conversationId }
-                updateState { it.copy(showForwardDialog = true, forwardingMessage = message, forwardableConversations = conversations) }
+                updateState { it.copy(forward = it.forward.copy(showDialog = true, message = message, conversations = conversations)) }
             }.onFailure { updateState { it.copy(error = "No se pudo cargar las conversaciones") } }
         }
     }
 
     fun forwardMessage(targetConversationId: String) {
         val uid = currentUserId() ?: return
-        val message = getState().forwardingMessage ?: return
-        updateState { it.copy(showForwardDialog = false, forwardingMessage = null, forwardableConversations = emptyList()) }
+        val message = getState().forward.message ?: return
+        updateState { it.copy(forward = it.forward.copy(showDialog = false, message = null, conversations = emptyList())) }
         scope.launch {
             catchResult {
                 messageRepository.sendMessage(
@@ -58,7 +58,7 @@ class ChatForwardDelegate(
         scope.launch {
             catchResult {
                 val conversations = conversationRepository.observeConversations(uid).first().filter { it.id != conversationId }
-                updateState { it.copy(showForwardSelectionDialog = true, forwardableConversations = conversations) }
+                updateState { it.copy(forward = it.forward.copy(showSelectionDialog = true, conversations = conversations)) }
             }.onFailure { updateState { it.copy(error = "No se pudo cargar las conversaciones") } }
         }
     }
@@ -66,7 +66,12 @@ class ChatForwardDelegate(
     fun forwardSelectedMessages(targetConversationId: String) {
         val uid = currentUserId() ?: return
         val ids = getState().selectedMessageIds.toSet()
-        updateState { it.copy(showForwardSelectionDialog = false, forwardableConversations = emptyList(), selectedMessageIds = emptySet()) }
+        updateState {
+            it.copy(
+                forward = it.forward.copy(showSelectionDialog = false, conversations = emptyList()),
+                selectedMessageIds = emptySet(),
+            )
+        }
         scope.launch {
             val allMessages = catchResult { withContext(Dispatchers.IO) { messageRepository.getAllMessages(conversationId, uid) } }.getOrDefault(emptyList())
             val toForward = allMessages.filter { it.id in ids }

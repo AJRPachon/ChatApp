@@ -393,24 +393,24 @@ class ChatViewModelTest {
     // ── Forward dialog ────────────────────────────────────────────────────────
 
     @Test
-    fun `ShowForwardDialog sets showForwardDialog to true and stores message`() = runTest(sharedScheduler) {
+    fun `ShowForwardDialog sets forward showDialog to true and stores message`() = runTest(sharedScheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         val msg = mockk<MessageBO>(relaxed = true)
         vm.onIntent(ChatIntent.ShowForwardDialog(msg))
         advanceUntilIdle()
-        assertTrue(vm.state.value.showForwardDialog)
-        assertEquals(msg, vm.state.value.forwardingMessage)
+        assertTrue(vm.state.value.forward.showDialog)
+        assertEquals(msg, vm.state.value.forward.message)
     }
 
     @Test
-    fun `DismissForwardDialog resets showForwardDialog and forwardingMessage`() = runTest(sharedScheduler) {
+    fun `DismissForwardDialog resets forward showDialog and message`() = runTest(sharedScheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         vm.onIntent(ChatIntent.ShowForwardDialog(mockk(relaxed = true)))
         vm.onIntent(ChatIntent.DismissForwardDialog)
-        assertFalse(vm.state.value.showForwardDialog)
-        assertNull(vm.state.value.forwardingMessage)
+        assertFalse(vm.state.value.forward.showDialog)
+        assertNull(vm.state.value.forward.message)
     }
 
     // ── Polls ─────────────────────────────────────────────────────────────────

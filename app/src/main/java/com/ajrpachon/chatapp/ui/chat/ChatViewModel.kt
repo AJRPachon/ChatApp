@@ -414,10 +414,10 @@ class ChatViewModel(
             is ChatIntent.ClearSelection -> updateState { it.copy(selectedMessageIds = emptySet()) }
             is ChatIntent.DeleteSelectedMessages -> deleteSelectedMessages()
             is ChatIntent.ShowForwardDialog -> forwardDelegate.showForwardDialog(intent.message)
-            is ChatIntent.DismissForwardDialog -> updateState { it.copy(showForwardDialog = false, forwardingMessage = null, forwardableConversations = emptyList()) }
+            is ChatIntent.DismissForwardDialog -> updateState { it.copy(forward = it.forward.copy(showDialog = false, message = null, conversations = emptyList())) }
             is ChatIntent.ForwardMessage -> forwardDelegate.forwardMessage(intent.targetConversationId)
             is ChatIntent.ShowForwardSelectionDialog -> forwardDelegate.showForwardSelectionDialog()
-            is ChatIntent.DismissForwardSelectionDialog -> updateState { it.copy(showForwardSelectionDialog = false, forwardableConversations = emptyList()) }
+            is ChatIntent.DismissForwardSelectionDialog -> updateState { it.copy(forward = it.forward.copy(showSelectionDialog = false, conversations = emptyList())) }
             is ChatIntent.ForwardSelectedMessages -> forwardDelegate.forwardSelectedMessages(intent.targetConversationId)
             is ChatIntent.SendLocation -> quickSendDelegate.sendLocationMessage(intent.mapsUrl)
             is ChatIntent.FetchAndSendLocation -> quickSendDelegate.fetchAndSendLocation()
