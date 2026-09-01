@@ -276,7 +276,7 @@ internal fun ChatDialogHost(
         )
     }
 
-    if (state.showCreatePollSheet) {
+    if (state.poll.showCreateSheet) {
         ModalBottomSheet(
             onDismissRequest = { vm.onIntent(ChatIntent.DismissCreatePollSheet) },
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),

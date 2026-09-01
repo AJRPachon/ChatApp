@@ -273,7 +273,7 @@ identity set once in `init`) are grouped by UI feature instead.
 |---|--------------|--------|------------------|--------|
 | 1 | `state.ai: ChatAiUiState` | `showAiSheet`→`showSheet`, `aiSuggestion`→`suggestion`, `isAiLoading`→`isLoading` | `ChatAiDelegate` | **Done** |
 | 2 | `state.translation: ChatTranslationUiState` | `translatedTexts`, `translatingMessageIds`, `audioTranscriptions`→`transcriptions` | `ChatTranslationDelegate` | **Done** |
-| 3 | `state.poll: ChatPollFeatureState` | `showCreatePollSheet`→`showCreateSheet`, `pollUiStates`→`uiStates` (renamed to avoid colliding with the existing per-poll `PollUiState` data class) | `ChatPollDelegate` | Not started |
+| 3 | `state.poll: ChatPollFeatureState` | `showCreatePollSheet`→`showCreateSheet`, `pollUiStates`→`uiStates` (renamed to avoid colliding with the existing per-poll `PollUiState` data class) | `ChatPollDelegate` | **Done** |
 | 4 | `state.scheduling: ChatSchedulingUiState` | `showScheduleDialog`, `scheduledAtMs`, `scheduledMessageCount`, `showScheduledSheet`, `scheduledMessages` | `ChatSchedulingDelegate` | Not started |
 | 5 | `state.forward: ChatForwardUiState` | `showForwardDialog`, `forwardingMessage`, `forwardableConversations`, `showForwardSelectionDialog` | `ChatForwardDelegate` | Not started |
 | 6 | `state.contactCard: ChatContactCardUiState` | `contactPhoneLookups`→`lookups` | `ChatContactCardDelegate` | Not started |
@@ -324,6 +324,25 @@ transcription — the feature is wired ViewModel-side but not surfaced in the UI
 slice's job to fix (pure move only); noting it here since it's a real gap, not a refactor
 artifact. Only 3 files touched: `ChatContract.kt`, `ChatTranslationDelegate.kt` (4 call sites),
 `ChatViewModel.kt` (1 call site).
+
+**Slice 3 (`ChatPollFeatureState`) — first slice that also touched a test file:**
+`showCreatePollSheet`/`pollUiStates` → `state.poll.showCreateSheet`/`state.poll.uiStates`.
+Renamed `pollUiStates` to `uiStates` once nested (kept the pre-existing per-poll `PollUiState`
+data class itself untouched — different type, still keyed by pollId inside the map, just a
+name collision at the top level that nesting resolves). 5 files: `ChatContract.kt`,
+`ChatPollDelegate.kt` (7 call sites across `observePoll`'s three flows plus `createPoll`),
+`ChatViewModel.kt` (`OpenCreatePollSheet`/`DismissCreatePollSheet`), `ChatDialogHost.kt` (the
+create-sheet visibility check), `ChatMessageList.kt` (two identical-looking but
+differently-indented `state.pollUiStates[id]` reads feeding `MessageBubble`'s own
+`pollUiStates` param — a plain-text edit on the first one silently missed the second because
+the surrounding indentation differed by 4 spaces between the `group.size > 2` image-group
+branch and the plain-bubble branch; caught immediately by re-grepping for the old field name
+after the edit, which is now the standard verify-before-compile step for any slice touching
+more than one call site). `ChatViewModelTest.kt`'s
+`ObservePoll populates pollUiStates from pollRepository flows` test reads
+`vm.state.value.pollUiStates["poll1"]` directly — the first slice where the state shape leaked
+into a test assertion, updated to `vm.state.value.poll.uiStates["poll1"]` alongside the
+production code in the same commit.
 
 ## Non-goals
 

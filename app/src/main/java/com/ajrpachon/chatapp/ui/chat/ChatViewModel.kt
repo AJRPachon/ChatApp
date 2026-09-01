@@ -428,8 +428,8 @@ class ChatViewModel(
             is ChatIntent.UnpinMessage -> unpinMessage(intent.messageId)
             is ChatIntent.SaveMessage -> viewModelScope.launch { catchResult { messageRepository.setSaved(intent.messageId, true) } }
             is ChatIntent.UnsaveMessage -> viewModelScope.launch { catchResult { messageRepository.setSaved(intent.messageId, false) } }
-            is ChatIntent.OpenCreatePollSheet -> updateState { it.copy(showCreatePollSheet = true) }
-            is ChatIntent.DismissCreatePollSheet -> updateState { it.copy(showCreatePollSheet = false) }
+            is ChatIntent.OpenCreatePollSheet -> updateState { it.copy(poll = it.poll.copy(showCreateSheet = true)) }
+            is ChatIntent.DismissCreatePollSheet -> updateState { it.copy(poll = it.poll.copy(showCreateSheet = false)) }
             is ChatIntent.CreatePoll -> pollDelegate.createPoll(intent.question, intent.options, intent.allowMultiple)
             is ChatIntent.VotePoll -> pollDelegate.votePoll(intent.pollId, intent.optionId)
             is ChatIntent.SetChatTheme -> setChatTheme(intent.theme)

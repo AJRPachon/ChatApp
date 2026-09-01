@@ -428,7 +428,7 @@ class ChatViewModelTest {
         vm.onIntent(ChatIntent.ObservePoll("poll1"))
         advanceUntilIdle()
 
-        val pollUiState = vm.state.value.pollUiStates["poll1"]
+        val pollUiState = vm.state.value.poll.uiStates["poll1"]
         assertEquals(poll, pollUiState?.poll)
         assertEquals(options, pollUiState?.options)
     }

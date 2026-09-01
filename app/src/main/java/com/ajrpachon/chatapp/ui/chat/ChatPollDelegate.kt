@@ -11,8 +11,9 @@ private const val TAG = "ChatPollDelegate"
 
 /**
  * Handles polls: observing a poll's live question/options/current-user-vote for
- * [ChatState.pollUiStates], creating a poll, and voting. Third slice of the decomposition in
- * docs/chat-viewmodel-decomposition.md — see [ChatAiDelegate] for the pattern this follows.
+ * [ChatPollFeatureState.uiStates], creating a poll, and voting. Third slice of the
+ * decomposition in docs/chat-viewmodel-decomposition.md — see [ChatAiDelegate] for the pattern
+ * this follows.
  */
 class ChatPollDelegate(
     private val conversationId: String,
@@ -27,8 +28,8 @@ class ChatPollDelegate(
 
     /**
      * Starts observing a poll's question/options/current-user-vote, keeping
-     * [ChatState.pollUiStates] up to date. Called from PollBubble (via intent) the first time
-     * a `poll:<id>` message is rendered — idempotent per pollId for the lifetime of this
+     * [ChatPollFeatureState.uiStates] up to date. Called from PollBubble (via intent) the first
+     * time a `poll:<id>` message is rendered — idempotent per pollId for the lifetime of this
      * delegate (i.e. of the owning ChatViewModel).
      */
     fun observePoll(pollId: String) {
@@ -37,8 +38,8 @@ class ChatPollDelegate(
             catchResult {
                 pollRepository.observePollById(pollId).collect { poll ->
                     updateState { s ->
-                        val current = s.pollUiStates[pollId] ?: PollUiState()
-                        s.copy(pollUiStates = s.pollUiStates + (pollId to current.copy(poll = poll)))
+                        val current = s.poll.uiStates[pollId] ?: PollUiState()
+                        s.copy(poll = s.poll.copy(uiStates = s.poll.uiStates + (pollId to current.copy(poll = poll))))
                     }
                 }
             }
@@ -47,8 +48,8 @@ class ChatPollDelegate(
             catchResult {
                 pollRepository.observeOptionsByPollId(pollId).collect { options ->
                     updateState { s ->
-                        val current = s.pollUiStates[pollId] ?: PollUiState()
-                        s.copy(pollUiStates = s.pollUiStates + (pollId to current.copy(options = options)))
+                        val current = s.poll.uiStates[pollId] ?: PollUiState()
+                        s.copy(poll = s.poll.copy(uiStates = s.poll.uiStates + (pollId to current.copy(options = options))))
                     }
                 }
             }
@@ -58,8 +59,8 @@ class ChatPollDelegate(
             catchResult {
                 pollRepository.observeVotes(pollId, uid).collect { votes ->
                     updateState { s ->
-                        val current = s.pollUiStates[pollId] ?: PollUiState()
-                        s.copy(pollUiStates = s.pollUiStates + (pollId to current.copy(userVotes = votes)))
+                        val current = s.poll.uiStates[pollId] ?: PollUiState()
+                        s.copy(poll = s.poll.copy(uiStates = s.poll.uiStates + (pollId to current.copy(userVotes = votes))))
                     }
                 }
             }
@@ -68,7 +69,7 @@ class ChatPollDelegate(
 
     fun createPoll(question: String, options: List<String>, allowMultiple: Boolean) {
         val userId = currentUserId() ?: return
-        updateState { it.copy(showCreatePollSheet = false) }
+        updateState { it.copy(poll = it.poll.copy(showCreateSheet = false)) }
         scope.launch {
             catchResult {
                 val pollId = pollRepository.createPoll(

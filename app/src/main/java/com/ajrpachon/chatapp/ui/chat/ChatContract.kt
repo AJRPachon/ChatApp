@@ -27,7 +27,7 @@ data class ContactPhoneLookup(
     val isLoading: Boolean = false,
 )
 
-/** Poll data + the current user's vote(s), kept in [ChatState.pollUiStates] keyed by pollId. */
+/** Poll data + the current user's vote(s), kept in [ChatPollFeatureState.uiStates] keyed by pollId. */
 data class PollUiState(
     val poll: PollBO? = null,
     val options: List<PollOptionBO> = emptyList(),
@@ -72,6 +72,17 @@ data class ChatTranslationUiState(
     val transcriptions: Map<String, String> = emptyMap(),
 )
 
+/**
+ * Poll creation-sheet visibility + per-poll observed data, owned by [ChatPollDelegate]. Third
+ * of the nested groups in docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/
+ * ChatIntent" plan.
+ */
+data class ChatPollFeatureState(
+    val showCreateSheet: Boolean = false,
+    // pollId → poll/options/vote, populated on demand via ChatIntent.ObservePoll
+    val uiStates: Map<String, PollUiState> = emptyMap(),
+)
+
 data class ChatState(
     val inputText: String = "",
     val isSending: Boolean = false,
@@ -114,7 +125,7 @@ data class ChatState(
     val typingUserNames: List<String> = emptyList(),
     val translation: ChatTranslationUiState = ChatTranslationUiState(),
     val pinnedMessages: List<MessageBO> = emptyList(),
-    val showCreatePollSheet: Boolean = false,
+    val poll: ChatPollFeatureState = ChatPollFeatureState(),
     val isExporting: Boolean = false,
     val chatTheme: ChatTheme = ChatTheme.DEFAULT,
     val showThemePicker: Boolean = false,
@@ -145,8 +156,6 @@ data class ChatState(
     val isOnline: Boolean = true,
     // Contact-card relationship lookups, keyed by phone (see ContactPhoneLookup doc).
     val contactPhoneLookups: Map<String, ContactPhoneLookup> = emptyMap(),
-    // Polls: pollId → poll/options/vote, populated on demand via ChatIntent.ObservePoll
-    val pollUiStates: Map<String, PollUiState> = emptyMap(),
     // Link previews: detected URL → fetched preview (null while loading or not found)
     val linkPreviews: Map<String, LinkPreviewData?> = emptyMap(),
 ) {

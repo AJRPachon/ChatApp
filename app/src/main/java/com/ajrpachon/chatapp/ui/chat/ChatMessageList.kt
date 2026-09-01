@@ -196,7 +196,7 @@ internal fun ChatMessageList(
                                 onCheckContactRelationship = { vm.onIntent(ChatIntent.CheckContactRelationship(it)) },
                                 onContactCardPrimaryAction = { vm.onIntent(ChatIntent.ContactCardPrimaryAction(it)) },
                                 pollUiStates = pollIdOf(message.content)?.let { id ->
-                                    state.pollUiStates[id]?.let { mapOf(id to it) }
+                                    state.poll.uiStates[id]?.let { mapOf(id to it) }
                                 } ?: emptyMap(),
                                 onObservePoll = { pollId -> vm.onIntent(ChatIntent.ObservePoll(pollId)) },
                                 linkPreviews = state.linkPreviews,
@@ -237,7 +237,7 @@ internal fun ChatMessageList(
                             onCheckContactRelationship = { vm.onIntent(ChatIntent.CheckContactRelationship(it)) },
                             onContactCardPrimaryAction = { vm.onIntent(ChatIntent.ContactCardPrimaryAction(it)) },
                             pollUiStates = pollIdOf(message.content)?.let { id ->
-                                state.pollUiStates[id]?.let { mapOf(id to it) }
+                                state.poll.uiStates[id]?.let { mapOf(id to it) }
                             } ?: emptyMap(),
                             onObservePoll = { pollId -> vm.onIntent(ChatIntent.ObservePoll(pollId)) },
                             linkPreviews = state.linkPreviews,
