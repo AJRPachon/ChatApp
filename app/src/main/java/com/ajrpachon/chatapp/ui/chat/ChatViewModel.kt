@@ -137,6 +137,13 @@ class ChatViewModel(
         scope = viewModelScope,
         updateState = ::updateState,
     )
+    private val translationDelegate = ChatTranslationDelegate(
+        getState = { state.value },
+        translationManager = translationManager,
+        audioTranscriber = audioTranscriber,
+        scope = viewModelScope,
+        updateState = ::updateState,
+    )
 
     private var groupMembers: List<GroupMemberBO> = emptyList()
     private var recorder: MediaRecorder? = null
@@ -389,9 +396,9 @@ class ChatViewModel(
             is ChatIntent.ForwardSelectedMessages -> forwardSelectedMessages(intent.targetConversationId)
             is ChatIntent.SendLocation -> sendLocationMessage(intent.mapsUrl)
             is ChatIntent.FetchAndSendLocation -> fetchAndSendLocation()
-            is ChatIntent.TranslateMessage -> translateMessage(intent.messageId, intent.text)
+            is ChatIntent.TranslateMessage -> translationDelegate.translateMessage(intent.messageId, intent.text)
             is ChatIntent.DismissTranslation -> updateState { it.copy(translatedTexts = it.translatedTexts - intent.messageId) }
-            is ChatIntent.TranscribeAudio -> transcribeAudio(intent.messageId)
+            is ChatIntent.TranscribeAudio -> translationDelegate.transcribeAudio(intent.messageId)
             is ChatIntent.PinMessage -> pinMessage(intent.messageId)
             is ChatIntent.UnpinMessage -> unpinMessage(intent.messageId)
             is ChatIntent.SaveMessage -> viewModelScope.launch { catchResult { messageRepository.setSaved(intent.messageId, true) } }
@@ -1084,25 +1091,6 @@ class ChatViewModel(
 
     private fun unpinMessage(messageId: String) {
         viewModelScope.launch { catchResult { messageRepository.setPinned(messageId, false) } }
-    }
-
-    private fun transcribeAudio(messageId: String) {
-        viewModelScope.launch {
-            val result = catchResult { audioTranscriber.transcribeFromMic() }.getOrDefault("Transcripcion no disponible")
-            updateState { s -> s.copy(audioTranscriptions = s.audioTranscriptions + (messageId to result)) }
-        }
-    }
-
-    private fun translateMessage(messageId: String, text: String) {
-        if (messageId in state.value.translatingMessageIds) return
-        updateState { it.copy(translatingMessageIds = it.translatingMessageIds + messageId) }
-        viewModelScope.launch {
-            catchResult { translationManager.translate(text) }
-                .onSuccess { translated ->
-                    updateState { it.copy(translatedTexts = it.translatedTexts + (messageId to translated), translatingMessageIds = it.translatingMessageIds - messageId) }
-                }
-                .onFailure { updateState { it.copy(translatingMessageIds = it.translatingMessageIds - messageId, error = "No se pudo traducir") } }
-        }
     }
 
     private fun toggleIncognito() {
