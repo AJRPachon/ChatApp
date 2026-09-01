@@ -450,14 +450,14 @@ class ChatViewModel(
             is ChatIntent.ShowScheduledSheet -> updateState { it.copy(showScheduledSheet = true) }
             is ChatIntent.DismissScheduledSheet -> updateState { it.copy(showScheduledSheet = false) }
             is ChatIntent.CancelScheduledMessage -> schedulingDelegate.cancelScheduledMessage(intent.id)
-            is ChatIntent.OpenAiSheet -> updateState { it.copy(showAiSheet = true, aiSuggestion = null) }
-            is ChatIntent.DismissAiSheet -> updateState { it.copy(showAiSheet = false, aiSuggestion = null) }
+            is ChatIntent.OpenAiSheet -> updateState { it.copy(ai = it.ai.copy(showSheet = true, suggestion = null)) }
+            is ChatIntent.DismissAiSheet -> updateState { it.copy(ai = it.ai.copy(showSheet = false, suggestion = null)) }
             is ChatIntent.AiSummarize -> aiDelegate.summarize()
             is ChatIntent.AiSuggestReply -> aiDelegate.suggestReply()
             is ChatIntent.AiFreeform -> aiDelegate.freeform(intent.prompt)
             is ChatIntent.InsertAiSuggestion -> {
-                val suggestion = state.value.aiSuggestion ?: return
-                updateState { it.copy(inputText = suggestion, showAiSheet = false, aiSuggestion = null) }
+                val suggestion = state.value.ai.suggestion ?: return
+                updateState { it.copy(inputText = suggestion, ai = it.ai.copy(showSheet = false, suggestion = null)) }
             }
             is ChatIntent.OpenWallpaperPicker -> updateState { it.copy(showWallpaperPicker = true) }
             is ChatIntent.DismissWallpaperPicker -> updateState { it.copy(showWallpaperPicker = false) }

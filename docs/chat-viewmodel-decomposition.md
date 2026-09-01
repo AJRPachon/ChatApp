@@ -253,13 +253,65 @@ scroll/error/effect handling, and the `Scaffold` wiring the three new composable
 
 ### Shrinking `ChatState`/`ChatIntent`
 
-Not started. Only once the composable split above is further along does it make sense to
-group `ChatState`'s ~65 fields into nested state objects owned by each delegate (e.g.
-`state.ai: ChatAiState`) — every `state.xxx` read for that field across `ChatScreen.kt`'s
-(now multiple) files needs updating in the same step, so this should happen file-by-file
-alongside a composable's own move, not as one big rename. Splitting `ChatIntent` into
-per-concern sealed hierarchies, if the 78-variant `when` in `onIntent` becomes the
-bottleneck, is likely lower priority than the state split.
+**In progress.** The composable split above is done, so `state.xxx` reads are now spread
+across `ChatScreen.kt` + `ChatTopBar.kt`/`ChatBottomBar.kt`/`ChatMessageList.kt`/
+`ChatDialogHost.kt`/`ChatDialogs.kt`/`ChatBottomSheets.kt`/the message-bubble files rather
+than one file — but each nested-state group below only touches 3-6 files in practice (a
+delegate, the one or two UI files that read that concern's fields, `ChatViewModel.kt`'s
+`onIntent` branches), so grouping one concern at a time is still a small, independently
+verifiable slice. Same discipline as Phase 1's delegates: one slice = one commit, verified by
+the full compile→detekt→test cycle, `ChatViewModelTest` unchanged (pure move, no behavior
+change).
+
+**Target shape:** each group becomes a nested `data class` with its own `= DefaultValue()`,
+referenced as `state.<name>` instead of `state.<individual field>`. Grouped by the delegate
+that owns the fields where one exists (traceable 1:1 back to the Phase 1 table above); fields
+with no owning delegate (handled directly in `ChatViewModel.onIntent`, or pure conversation
+identity set once in `init`) are grouped by UI feature instead.
+
+| # | Nested state | Fields | Owning delegate | Status |
+|---|--------------|--------|------------------|--------|
+| 1 | `state.ai: ChatAiUiState` | `showAiSheet`→`showSheet`, `aiSuggestion`→`suggestion`, `isAiLoading`→`isLoading` | `ChatAiDelegate` | **Done** |
+| 2 | `state.translation: ChatTranslationUiState` | `translatedTexts`, `translatingMessageIds`, `audioTranscriptions` | `ChatTranslationDelegate` | Not started |
+| 3 | `state.poll: ChatPollFeatureState` | `showCreatePollSheet`→`showCreateSheet`, `pollUiStates`→`uiStates` (renamed to avoid colliding with the existing per-poll `PollUiState` data class) | `ChatPollDelegate` | Not started |
+| 4 | `state.scheduling: ChatSchedulingUiState` | `showScheduleDialog`, `scheduledAtMs`, `scheduledMessageCount`, `showScheduledSheet`, `scheduledMessages` | `ChatSchedulingDelegate` | Not started |
+| 5 | `state.forward: ChatForwardUiState` | `showForwardDialog`, `forwardingMessage`, `forwardableConversations`, `showForwardSelectionDialog` | `ChatForwardDelegate` | Not started |
+| 6 | `state.contactCard: ChatContactCardUiState` | `contactPhoneLookups`→`lookups` | `ChatContactCardDelegate` | Not started |
+| 7 | `state.search: ChatSearchUiState` | `isSearchActive`, `searchQuery`, `searchResults`, `isSearching`, `highlightedMessageId` | `ChatSearchDelegate` | Not started |
+| 8 | `state.mediaUpload: ChatMediaUploadUiState` | `isUploadingFile`, `mediaUploadProgress`, `pendingImageUris`, `suppressedImageMessageIds` | `ChatMediaUploadDelegate` | Not started |
+| 9 | `state.audioState: AudioState` | (unchanged — already grouped since before Phase 1) | `ChatAudioRecordingDelegate` | Already done |
+| 10 | `state.groupPresence: ChatGroupPresenceUiState` | `onlineMemberCount`, `groupMemberCount` (**not** `isOnline` — that's `NetworkMonitor`, a different concern despite the similar name; **not** `isGroup`/`isCurrentUserMember`/`groupAvatarUrl` — conversation identity, set once from `conversationRepository` in `init`, not by this delegate) | `ChatGroupPresenceDelegate` | Not started |
+| 11 | `state.mute: ChatMuteUiState` | `isMuted`, `mutedUntil`, `showMuteDialog` | none (`toggleMute`/`muteFor` on `ChatViewModel`) | Not started |
+| 12 | `state.theme: ChatThemeUiState` | `chatTheme`, `showThemePicker` | none | Not started |
+| 13 | `state.disappearing: ChatDisappearingUiState` | `disappearingModeSeconds`, `showDisappearingModeSheet` | none | Not started |
+| 14 | `state.mention: ChatMentionUiState` | `mentionSuggestions`, `showMentionSuggestions` | none | Not started |
+| 15 | `state.incognito: ChatIncognitoUiState` | `isIncognito`, `showIncognitoInfoDialog` | none | Not started |
+| 16 | `state.wallpaper: ChatWallpaperUiState` | `wallpaperColor`, `showWallpaperPicker` | none | Not started |
+
+Left flat on `ChatState` (no grouping planned): `inputText`, `isSending`, `currentUserId`,
+`conversationTitle`, `error`, `replyingTo`, `editingMessage`, `selectedMessageIds`,
+`expiryDialogMessageId`, `showStickerPicker`, `typingUserNames`, `pinnedMessages`,
+`isExporting`, `linkPreviews` (core messaging — the ViewModel's own remaining concern per the
+Phase 1 "what stays" list) and `otherUserId`/`otherUserAvatarUrl`/`isOtherUserOnline`/
+`otherUserLastSeenMs`/`groupAvatarUrl`/`isGroup`/`isCurrentUserMember`/`isOnline`
+(conversation identity/presence — touched by the `presenceText`/`subtitleText` computed
+properties and both `ChatTopBar`/`ChatBottomBar`; grouping this one is riskier than the
+delegate-backed rows since there's no delegate boundary to anchor it to, so it's deferred
+rather than guessed at up front).
+
+**Slice 1 (`ChatAiUiState`) — what the pattern looks like in practice:** `ChatContract.kt`
+gains a `data class ChatAiUiState(val showSheet: Boolean = false, val suggestion: String? =
+null, val isLoading: Boolean = false)`; `ChatState`'s three flat fields become `val ai:
+ChatAiUiState = ChatAiUiState()`. Every `it.copy(showAiSheet = x, aiSuggestion = y)` becomes
+`it.copy(ai = it.ai.copy(showSheet = x, suggestion = y))` — one extra `.copy()` nesting level,
+mechanical at each call site. `ChatAiDelegate.kt` (3 fields, 9 call sites), `ChatViewModel.kt`
+(`onIntent`'s `OpenAiSheet`/`DismissAiSheet`/`InsertAiSuggestion` branches), `ChatBottomSheets.kt`
+(`AiAssistantSheet`'s params — unchanged signature, since it already took the 3 fields as
+separate params, not `ChatState` itself) and `ChatDialogHost.kt` (the call site building those
+params from `state.showAiSheet`/`state.aiSuggestion`/`state.isAiLoading` → `state.ai.showSheet`/
+`state.ai.suggestion`/`state.ai.isLoading`) were the only 4 files touched — confirms the
+per-slice blast radius stays small even after the composable split spread `ChatState` reads
+across many files.
 
 ## Non-goals
 

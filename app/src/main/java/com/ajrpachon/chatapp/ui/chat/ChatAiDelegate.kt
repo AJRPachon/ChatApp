@@ -27,36 +27,36 @@ class ChatAiDelegate(
 
     fun summarize() {
         val uid = currentUserId() ?: return
-        updateState { it.copy(isAiLoading = true) }
+        updateState { it.copy(ai = it.ai.copy(isLoading = true)) }
         scope.launch {
             val snippets = catchResult {
                 messageRepository.getAllMessages(conversationId, uid).takeLast(AI_CONTEXT_MESSAGE_COUNT).map { it.content }
             }.getOrDefault(emptyList())
             aiAssistantRepository.summarize(snippets)
-                .onSuccess { result -> updateState { it.copy(aiSuggestion = result, isAiLoading = false) } }
-                .onFailure { e -> updateState { it.copy(isAiLoading = false, error = e.message) } }
+                .onSuccess { result -> updateState { it.copy(ai = it.ai.copy(suggestion = result, isLoading = false)) } }
+                .onFailure { e -> updateState { it.copy(ai = it.ai.copy(isLoading = false), error = e.message) } }
         }
     }
 
     fun suggestReply() {
         val uid = currentUserId() ?: return
-        updateState { it.copy(isAiLoading = true) }
+        updateState { it.copy(ai = it.ai.copy(isLoading = true)) }
         scope.launch {
             val last = catchResult {
                 messageRepository.getAllMessages(conversationId, uid).lastOrNull { it.senderId != uid }?.content ?: ""
             }.getOrDefault("")
             aiAssistantRepository.suggestReply(last)
-                .onSuccess { result -> updateState { it.copy(aiSuggestion = result, isAiLoading = false) } }
-                .onFailure { e -> updateState { it.copy(isAiLoading = false, error = e.message) } }
+                .onSuccess { result -> updateState { it.copy(ai = it.ai.copy(suggestion = result, isLoading = false)) } }
+                .onFailure { e -> updateState { it.copy(ai = it.ai.copy(isLoading = false), error = e.message) } }
         }
     }
 
     fun freeform(prompt: String) {
-        updateState { it.copy(isAiLoading = true) }
+        updateState { it.copy(ai = it.ai.copy(isLoading = true)) }
         scope.launch {
             aiAssistantRepository.freeform(prompt)
-                .onSuccess { result -> updateState { it.copy(aiSuggestion = result, isAiLoading = false) } }
-                .onFailure { e -> updateState { it.copy(isAiLoading = false, error = e.message) } }
+                .onSuccess { result -> updateState { it.copy(ai = it.ai.copy(suggestion = result, isLoading = false)) } }
+                .onFailure { e -> updateState { it.copy(ai = it.ai.copy(isLoading = false), error = e.message) } }
         }
     }
 

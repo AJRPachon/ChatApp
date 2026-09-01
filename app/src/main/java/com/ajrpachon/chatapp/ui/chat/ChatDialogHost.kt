@@ -265,10 +265,10 @@ internal fun ChatDialogHost(
         }
     }
 
-    if (state.showAiSheet) {
+    if (state.ai.showSheet) {
         AiAssistantSheet(
-            aiSuggestion = state.aiSuggestion,
-            isAiLoading = state.isAiLoading,
+            aiSuggestion = state.ai.suggestion,
+            isAiLoading = state.ai.isLoading,
             onDismiss = { vm.onIntent(ChatIntent.DismissAiSheet) },
             onSuggestReply = { vm.onIntent(ChatIntent.AiSuggestReply) },
             onFreeform = { prompt -> vm.onIntent(ChatIntent.AiFreeform(prompt)) },

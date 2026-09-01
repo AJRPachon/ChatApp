@@ -49,6 +49,16 @@ data class MediaUploadProgress(
     val totalBytes: Long,
 )
 
+/**
+ * AI-assistant sheet state, owned by [ChatAiDelegate]. First of the nested groups in
+ * docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan.
+ */
+data class ChatAiUiState(
+    val showSheet: Boolean = false,
+    val suggestion: String? = null,
+    val isLoading: Boolean = false,
+)
+
 data class ChatState(
     val inputText: String = "",
     val isSending: Boolean = false,
@@ -113,9 +123,7 @@ data class ChatState(
     val showScheduledSheet: Boolean = false,
     val scheduledMessages: List<ScheduledMessage> = emptyList(),
     // AI Assistant
-    val showAiSheet: Boolean = false,
-    val aiSuggestion: String? = null,
-    val isAiLoading: Boolean = false,
+    val ai: ChatAiUiState = ChatAiUiState(),
     // Wallpaper
     val wallpaperColor: Long? = null,
     val showWallpaperPicker: Boolean = false,
