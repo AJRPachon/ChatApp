@@ -1,4 +1,4 @@
-﻿package com.ajrpachon.chatapp.di
+package com.ajrpachon.chatapp.di
 
 import com.ajrpachon.chatapp.data.repository.AuthRepositoryImpl
 import com.ajrpachon.chatapp.domain.repository.AuthRepository
@@ -43,9 +43,8 @@ import com.ajrpachon.chatapp.domain.repository.StatusRepository
 import com.ajrpachon.chatapp.domain.repository.StickerPackRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import org.koin.android.ext.koin.androidContext
-import com.ajrpachon.chatapp.domain.usecase.AddGroupMemberUseCase
 import com.ajrpachon.chatapp.domain.usecase.BlockUserUseCase
-import com.ajrpachon.chatapp.domain.usecase.GetCacheFileUseCase
+import com.ajrpachon.chatapp.domain.usecase.GetCacheFilePathUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetDeviceContactsUseCase
 import com.ajrpachon.chatapp.domain.usecase.CreateGroupUseCase
 import com.ajrpachon.chatapp.domain.usecase.ExportConversationUseCase
@@ -57,10 +56,8 @@ import com.ajrpachon.chatapp.domain.usecase.GetOrCreateConversationUseCase
 import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
 import com.ajrpachon.chatapp.domain.usecase.ObserveConversationsUseCase
 import com.ajrpachon.chatapp.domain.usecase.ObserveInvitationsUseCase
-import com.ajrpachon.chatapp.domain.usecase.ObserveMessagesUseCase
 import com.ajrpachon.chatapp.domain.usecase.PromoteGroupMemberUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationUseCase
-import com.ajrpachon.chatapp.domain.usecase.RemoveGroupMemberUseCase
 import com.ajrpachon.chatapp.domain.usecase.RespondInvitationUseCase
 import com.ajrpachon.chatapp.domain.usecase.SearchUsersUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
@@ -131,21 +128,18 @@ val useCaseModule = module {
     factoryOf(::SearchUsersUseCase)
     factoryOf(::GetOrCreateConversationUseCase)
     factoryOf(::ObserveConversationsUseCase)
-    factoryOf(::ObserveMessagesUseCase)
     factoryOf(::SendMessageUseCase)
     factoryOf(::ObserveInvitationsUseCase)
     factoryOf(::RespondInvitationUseCase)
     factoryOf(::CreateGroupUseCase)
     factoryOf(::GetGroupMembersUseCase)
     factoryOf(::UpdateGroupUseCase)
-    factoryOf(::AddGroupMemberUseCase)
-    factoryOf(::RemoveGroupMemberUseCase)
     factoryOf(::LeaveGroupUseCase)
     factoryOf(::PromoteGroupMemberUseCase)
     factoryOf(::SendInvitationUseCase)
     factoryOf(::BlockUserUseCase)
     factoryOf(::GetDeviceContactsUseCase)
-    single { GetCacheFileUseCase(androidContext().cacheDir) }
+    single { GetCacheFilePathUseCase(androidContext().cacheDir.absolutePath) }
     factoryOf(::ReadUriAsBytesUseCase)
     factoryOf(::GetUriMetadataUseCase)
     factoryOf(::ExportConversationUseCase)
