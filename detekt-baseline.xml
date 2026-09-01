@@ -5,131 +5,27 @@
     <ID>ComplexCondition:ChatItem.kt$j &lt; size &amp;&amp; this[j].imageUrl != null &amp;&amp; this[j].audioUrl == null &amp;&amp; this[j].senderId == message.senderId</ID>
     <ID>ComplexCondition:MessageRepositoryImpl.kt$MessageRepositoryImpl$otherUserId != null &amp;&amp; content.isNotBlank() &amp;&amp; imageUrl == null &amp;&amp; audioUrl == null &amp;&amp; callType == null &amp;&amp; gifUrl == null &amp;&amp; stickerUrl == null &amp;&amp; fileUrl == null &amp;&amp; videoUrl == null</ID>
     <ID>CyclomaticComplexMethod:CallViewModel.kt$CallViewModel$private fun handleRoomEvent(event: RoomEvent)</ID>
-    <ID>CyclomaticComplexMethod:ChatScreen.kt$@Composable private fun CallMessageBubble(message: MessageBO)</ID>
-    <ID>CyclomaticComplexMethod:ChatScreen.kt$@NavEdge(to = CallRoute::class, label = "Start Call") @NavEdge(to = GroupInfoRoute::class, label = "Group Info") @NavEdge(to = UserInfoRoute::class, label = "User Info") @NavDestination(route = ChatRoute::class) @OptIn(ExperimentalMaterial3Api::class) @Composable fun ChatScreen( conversationId: String, otherUserName: String, onBack: () -&gt; Unit, onStartCall: (CallBO) -&gt; Unit = {}, onGroupInfo: () -&gt; Unit = {}, onUserInfo: (userId: String) -&gt; Unit = {}, onOpenPdf: (url: String, filename: String) -&gt; Unit = { _, _ -&gt; }, onOpenMediaGallery: () -&gt; Unit = {}, onNavigateToConversation: (conversationId: String, otherUserName: String) -&gt; Unit = { _, _ -&gt; }, )</ID>
     <ID>CyclomaticComplexMethod:ConversationListViewModel.kt$ConversationListViewModel$fun onIntent(intent: ConversationListIntent)</ID>
     <ID>CyclomaticComplexMethod:GroupInfoViewModel.kt$GroupInfoViewModel$fun onIntent(intent: GroupInfoIntent)</ID>
     <ID>CyclomaticComplexMethod:MainActivity.kt$MainActivity$override fun onCreate(savedInstanceState: Bundle?)</ID>
     <ID>LargeClass:ChatViewModel.kt$ChatViewModel : BaseViewModel</ID>
-    <ID>LongMethod:ChatScreen.kt$@Composable @OptIn(ExperimentalMaterial3Api::class) private fun AiAssistantSheet( aiSuggestion: String?, isAiLoading: Boolean, onDismiss: () -&gt; Unit, onSuggestReply: () -&gt; Unit, onFreeform: (String) -&gt; Unit, onInsert: () -&gt; Unit, )</ID>
-    <ID>LongMethod:ChatScreen.kt$@Composable private fun ImageGroupBubble( messages: List&lt;MessageBO&gt;, onImageClick: (index: Int) -&gt; Unit, onReply: () -&gt; Unit, )</ID>
-    <ID>LongMethod:ChatScreen.kt$@NavEdge(to = CallRoute::class, label = "Start Call") @NavEdge(to = GroupInfoRoute::class, label = "Group Info") @NavEdge(to = UserInfoRoute::class, label = "User Info") @NavDestination(route = ChatRoute::class) @OptIn(ExperimentalMaterial3Api::class) @Composable fun ChatScreen( conversationId: String, otherUserName: String, onBack: () -&gt; Unit, onStartCall: (CallBO) -&gt; Unit = {}, onGroupInfo: () -&gt; Unit = {}, onUserInfo: (userId: String) -&gt; Unit = {}, onOpenPdf: (url: String, filename: String) -&gt; Unit = { _, _ -&gt; }, onOpenMediaGallery: () -&gt; Unit = {}, onNavigateToConversation: (conversationId: String, otherUserName: String) -&gt; Unit = { _, _ -&gt; }, )</ID>
     <ID>LongMethod:ChatViewModel.kt$ChatViewModel$@Suppress("CyclomaticComplexMethod") fun onIntent(intent: ChatIntent)</ID>
     <ID>LongMethod:ConversationListViewModel.kt$ConversationListViewModel$fun onIntent(intent: ConversationListIntent)</ID>
     <ID>LongMethod:ConversationRepositoryImpl.kt$ConversationRepositoryImpl$override fun observeConversations(userId: String): Flow&lt;List&lt;ConversationBO&gt;&gt;</ID>
     <ID>LongMethod:MainActivity.kt$MainActivity$override fun onCreate(savedInstanceState: Bundle?)</ID>
-    <ID>LongParameterList:ChatScreen.kt$( conversationId: String, otherUserName: String, onBack: () -&gt; Unit, onStartCall: (CallBO) -&gt; Unit = {}, onGroupInfo: () -&gt; Unit = {}, onUserInfo: (userId: String) -&gt; Unit = {}, onOpenPdf: (url: String, filename: String) -&gt; Unit = { _, _ -&gt; }, onOpenMediaGallery: () -&gt; Unit = {}, onNavigateToConversation: (conversationId: String, otherUserName: String) -&gt; Unit = { _, _ -&gt; }, )</ID>
     <ID>LongParameterList:GroupInfoViewModel.kt$GroupInfoViewModel$( private val conversationId: String, private val userRepository: UserRepository, private val getGroupMembersUseCase: GetGroupMembersUseCase, private val updateGroupUseCase: UpdateGroupUseCase, private val leaveGroupUseCase: LeaveGroupUseCase, private val searchUsersUseCase: SearchUsersUseCase, private val groupRepository: GroupRepository, private val conversationRepository: ConversationRepository, )</ID>
     <ID>LoopWithTooManyJumpStatements:ChatScreen.kt$while</ID>
     <ID>LoopWithTooManyJumpStatements:ContactRepositoryImpl.kt$ContactRepositoryImpl$while</ID>
     <ID>LoopWithTooManyJumpStatements:ExportConversationUseCase.kt$ExportConversationUseCase$for</ID>
     <ID>MatchingDeclarationName:StickerPacks.kt$StickerCategory</ID>
-    <ID>MissingPackageDeclaration:AppModule.kt$.AppModule.kt</ID>
-    <ID>MissingPackageDeclaration:AuthViewModel.kt$.AuthViewModel.kt</ID>
-    <ID>MissingPackageDeclaration:ChatContract.kt$.ChatContract.kt</ID>
-    <ID>MissingPackageDeclaration:ChatScreen.kt$.ChatScreen.kt</ID>
-    <ID>MissingPackageDeclaration:ChatViewModel.kt$.ChatViewModel.kt</ID>
-    <ID>MissingPackageDeclaration:ConversationBO.kt$.ConversationBO.kt</ID>
-    <ID>MissingPackageDeclaration:ConversationRemoteSource.kt$.ConversationRemoteSource.kt</ID>
-    <ID>MissingPackageDeclaration:ConversationRepository.kt$.ConversationRepository.kt</ID>
-    <ID>MissingPackageDeclaration:ConversationRepositoryImpl.kt$.ConversationRepositoryImpl.kt</ID>
-    <ID>MissingPackageDeclaration:E2EEKeyManager.kt$.E2EEKeyManager.kt</ID>
-    <ID>MissingPackageDeclaration:GroupInfoViewModel.kt$.GroupInfoViewModel.kt</ID>
-    <ID>MissingPackageDeclaration:MessageBO.kt$.MessageBO.kt</ID>
-    <ID>MissingPackageDeclaration:MessageDBO.kt$.MessageDBO.kt</ID>
-    <ID>MissingPackageDeclaration:MessageDTO.kt$.MessageDTO.kt</ID>
-    <ID>MissingPackageDeclaration:MessageMapper.kt$.MessageMapper.kt</ID>
-    <ID>MissingPackageDeclaration:MessageRemoteSource.kt$.MessageRemoteSource.kt</ID>
-    <ID>MissingPackageDeclaration:MessageRepository.kt$.MessageRepository.kt</ID>
-    <ID>MissingPackageDeclaration:MessageRepositoryImpl.kt$.MessageRepositoryImpl.kt</ID>
-    <ID>MissingPackageDeclaration:ProfileViewModel.kt$.ProfileViewModel.kt</ID>
-    <ID>MissingPackageDeclaration:ReactionRemoteSource.kt$.ReactionRemoteSource.kt</ID>
-    <ID>MissingPackageDeclaration:ScheduledMessageRepository.kt$.ScheduledMessageRepository.kt</ID>
-    <ID>MissingPackageDeclaration:ScheduledMessageRepositoryImpl.kt$.ScheduledMessageRepositoryImpl.kt</ID>
-    <ID>MissingPackageDeclaration:SendMessageUseCase.kt$.SendMessageUseCase.kt</ID>
-    <ID>MissingPackageDeclaration:SessionAuditViewModel.kt$.SessionAuditViewModel.kt</ID>
-    <ID>MissingPackageDeclaration:SharedModules.kt$.SharedModules.kt</ID>
-    <ID>MissingPackageDeclaration:StatusRemoteSource.kt$.StatusRemoteSource.kt</ID>
-    <ID>MissingPackageDeclaration:StickerStoreSheet.kt$.StickerStoreSheet.kt</ID>
-    <ID>MissingPackageDeclaration:TypingRepository.kt$.TypingRepository.kt</ID>
-    <ID>MissingPackageDeclaration:TypingRepositoryImpl.kt$.TypingRepositoryImpl.kt</ID>
-    <ID>MissingPackageDeclaration:UsageStatsViewModel.kt$.UsageStatsViewModel.kt</ID>
-    <ID>MissingPackageDeclaration:UserRemoteSource.kt$.UserRemoteSource.kt</ID>
-    <ID>MissingPackageDeclaration:UserRepository.kt$.UserRepository.kt</ID>
-    <ID>MissingPackageDeclaration:UserRepositoryImpl.kt$.UserRepositoryImpl.kt</ID>
     <ID>NestedBlockDepth:ChatItem.kt$internal fun List&lt;MessageBO&gt;.toChatItems(): List&lt;ChatItem&gt;</ID>
-    <ID>NewLineAtEndOfFile:ConversationRepository.kt$.ConversationRepository.kt</ID>
     <ID>NewLineAtEndOfFile:GroupRemoteSource.kt$com.ajrpachon.chatapp.data.remote.source.GroupRemoteSource.kt</ID>
-    <ID>NewLineAtEndOfFile:MessageRemoteSource.kt$.MessageRemoteSource.kt</ID>
-    <ID>NewLineAtEndOfFile:MessageRepository.kt$.MessageRepository.kt</ID>
-    <ID>NewLineAtEndOfFile:UserRepository.kt$.UserRepository.kt</ID>
     <ID>ReturnCount:BroadcastListViewModel.kt$BroadcastListViewModel$private fun sendBroadcast()</ID>
     <ID>ReturnCount:InvitationRepositoryImpl.kt$InvitationRepositoryImpl$override suspend fun getRelationship(currentUserId: String, otherUserId: String): UserRelationship</ID>
     <ID>TooManyFunctions:CallViewModel.kt$CallViewModel : BaseViewModel</ID>
-    <ID>TooManyFunctions:ChatScreen.kt$.ChatScreen.kt</ID>
+    <ID>TooManyFunctions:ChatScreen.kt$com.ajrpachon.chatapp.ui.chat.ChatScreen.kt</ID>
     <ID>TooManyFunctions:MessageRepositoryImpl.kt$MessageRepositoryImpl : MessageRepository</ID>
     <ID>TooManyFunctions:UserRepository.kt$UserRepository</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$// ── Avatar placeholder colors ──────────────────────────────────────────── // Independientes del tema: identifican a la persona, no a la marca. val AvatarColors = listOf( Color(0xFF7986CB), // indigo Color(0xFF66BB6A), // green Color(0xFFEF5350), // red Color(0xFFAB47BC), // purple Color(0xFFFFA726), // orange Color(0xFF26C6DA), // cyan Color(0xFFEC407A), // pink Color(0xFF8D6E63), // brown )</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$// ── Dark scheme ───────────────────────────────────────────────────────── val Signal_PrimaryDark = Color(0xFFD9A455)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$// ── Light scheme ───────────────────────────────────────────────────────── val Signal_Primary = Color(0xFF8A6423)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_Error = Color(0xFFA8402F)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_ErrorContainer = Color(0xFFFBDED6)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_ErrorContainerDark = Color(0xFF4A1610)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_ErrorDark = Color(0xFFE2705F)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_InverseOnSurface = Color(0xFFEFF4F2)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_InverseOnSurfaceDark = Color(0xFF1B262A)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_InversePrimary = Color(0xFFE4B975)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_InversePrimaryDark = Color(0xFF8A6423)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_InverseSurface = Color(0xFF202B2C)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_InverseSurfaceDark = Color(0xFFE9F2EF)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_OnError = Color(0xFFFFFFFF)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_OnErrorContainer = Color(0xFF3A0900)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_OnErrorContainerDark = Color(0xFFFFDAD2)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_OnErrorDark = Color(0xFF2A0B04)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_OnPrimary = Color(0xFFFFFFFF)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_OnPrimaryContainer = Color(0xFF2B1D02)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_OnPrimaryContainerDark = Color(0xFFF2D9AE)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_OnPrimaryDark = Color(0xFF191106)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_OnSecondary = Color(0xFFFFFFFF)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_OnSecondaryContainer = Color(0xFF06201A)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_OnSecondaryContainerDark = Color(0xFFB9E2D6)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_OnSecondaryDark = Color(0xFF0A2820)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_OnSurface = Color(0xFF101819)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_OnSurfaceDark = Color(0xFFE9F2EF)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_OnSurfaceVariant = Color(0xFF414F4C)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_OnSurfaceVariantDark = Color(0xFFA0B4B0)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_OnTertiary = Color(0xFFFFFFFF)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_OnTertiaryContainer = Color(0xFF002111)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_OnTertiaryContainerDark = Color(0xFFB7EDD3)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_OnTertiaryDark = Color(0xFF06291B)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_Outline = Color(0xFF71827E)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_OutlineDark = Color(0xFF8AA09B)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_OutlineVariant = Color(0xFFD6E0DD)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_OutlineVariantDark = Color(0xFF28353A)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_PrimaryContainer = Color(0xFFF6E1B8)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_PrimaryContainerDark = Color(0xFF4C3814)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_Secondary = Color(0xFF3F6358)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_SecondaryContainer = Color(0xFFD2E9DF)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_SecondaryContainerDark = Color(0xFF234A40)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_SecondaryDark = Color(0xFF96C4B8)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_Surface = Color(0xFFF2F5F4)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_SurfaceContainer = Color(0xFFE6ECEA)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_SurfaceContainerDark = Color(0xFF182124)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_SurfaceContainerHigh = Color(0xFFE0E7E4)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_SurfaceContainerHighDark = Color(0xFF1F2B2F)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_SurfaceContainerHighest = Color(0xFFDAE2DF)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_SurfaceContainerHighestDark = Color(0xFF29373C)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_SurfaceContainerLow = Color(0xFFECF1EF)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_SurfaceContainerLowDark = Color(0xFF141C1E)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_SurfaceContainerLowest = Color(0xFFFFFFFF)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_SurfaceContainerLowestDark = Color(0xFF090E0F)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_SurfaceDark = Color(0xFF0E1516)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_SurfaceVariant = Color(0xFFDDE5E2)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_SurfaceVariantDark = Color(0xFF3D4A47)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_Tertiary = Color(0xFF1F6B48)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_TertiaryContainer = Color(0xFFB4EFCE)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_TertiaryContainerDark = Color(0xFF16402C)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Signal_TertiaryDark = Color(0xFF7FE0B3)</ID>
     <ID>TopLevelPropertyNaming:DatabaseBuilder.kt$private val MIGRATION_10_11 = object : Migration(10, 11) { override fun migrate(connection: SQLiteConnection) { connection.execSQL("ALTER TABLE messages ADD COLUMN isEncrypted INTEGER NOT NULL DEFAULT 0") } }</ID>
     <ID>TopLevelPropertyNaming:DatabaseBuilder.kt$private val MIGRATION_1_2 = object : Migration(1, 2) { override fun migrate(connection: SQLiteConnection) { connection.execSQL("ALTER TABLE messages ADD COLUMN imageUrl TEXT") } }</ID>
     <ID>TopLevelPropertyNaming:DatabaseBuilder.kt$private val MIGRATION_2_3 = object : Migration(2, 3) { override fun migrate(connection: SQLiteConnection) { connection.execSQL("ALTER TABLE conversations ADD COLUMN otherUserId TEXT") } }</ID>
