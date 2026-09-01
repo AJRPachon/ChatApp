@@ -170,9 +170,9 @@ internal fun ChatDialogHost(
         StickerStoreSheet(onDismiss = { showStickerStore = false })
     }
 
-    val chatTheme = state.chatTheme
+    val chatTheme = state.theme.theme
 
-    if (state.showThemePicker) {
+    if (state.theme.showPicker) {
         ChatThemePickerSheet(
             currentTheme = chatTheme,
             onSelect = { vm.onIntent(ChatIntent.SetChatTheme(it)) },

@@ -192,6 +192,17 @@ data class ChatMuteUiState(
     val showDialog: Boolean = false,
 )
 
+/**
+ * Chat wallpaper theme (colors, bubble style) + its picker sheet, owned directly by
+ * `ChatViewModel` (no delegate — set via `setChatTheme`, observed from `chatThemeRepository`
+ * in `init`). Twelfth of the nested groups in docs/chat-viewmodel-decomposition.md's
+ * "Shrinking ChatState/ChatIntent" plan.
+ */
+data class ChatThemeUiState(
+    val theme: ChatTheme = ChatTheme.DEFAULT,
+    val showPicker: Boolean = false,
+)
+
 data class ChatState(
     val inputText: String = "",
     val isSending: Boolean = false,
@@ -220,8 +231,7 @@ data class ChatState(
     val pinnedMessages: List<MessageBO> = emptyList(),
     val poll: ChatPollFeatureState = ChatPollFeatureState(),
     val isExporting: Boolean = false,
-    val chatTheme: ChatTheme = ChatTheme.DEFAULT,
-    val showThemePicker: Boolean = false,
+    val theme: ChatThemeUiState = ChatThemeUiState(),
     // 0 = off, >0 = seconds for new messages to auto-expire
     val disappearingModeSeconds: Long = 0L,
     val showDisappearingModeSheet: Boolean = false,

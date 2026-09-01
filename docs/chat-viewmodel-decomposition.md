@@ -282,7 +282,7 @@ identity set once in `init`) are grouped by UI feature instead.
 | 9 | `state.audioState: AudioState` | (unchanged — already grouped since before Phase 1) | `ChatAudioRecordingDelegate` | Already done |
 | 10 | `state.groupPresence: ChatGroupPresenceUiState` | `onlineMemberCount`, `groupMemberCount`→`memberCount` (**not** `isOnline` — that's `NetworkMonitor`, a different concern despite the similar name; **not** `isGroup`/`isCurrentUserMember`/`groupAvatarUrl` — conversation identity, set once from `conversationRepository` in `init`, not by this delegate) | `ChatGroupPresenceDelegate` | **Done** |
 | 11 | `state.mute: ChatMuteUiState` | `isMuted`, `mutedUntil`, `showMuteDialog`→`showDialog` | none (`toggleMute`/`muteFor` on `ChatViewModel`) | **Done** |
-| 12 | `state.theme: ChatThemeUiState` | `chatTheme`, `showThemePicker` | none | Not started |
+| 12 | `state.theme: ChatThemeUiState` | `chatTheme`→`theme`, `showThemePicker`→`showPicker` | none | **Done** |
 | 13 | `state.disappearing: ChatDisappearingUiState` | `disappearingModeSeconds`, `showDisappearingModeSheet` | none | Not started |
 | 14 | `state.mention: ChatMentionUiState` | `mentionSuggestions`, `showMentionSuggestions` | none | Not started |
 | 15 | `state.incognito: ChatIncognitoUiState` | `isIncognito`, `showIncognitoInfoDialog` | none | Not started |
@@ -455,6 +455,18 @@ type would have flagged both as false positives. 4 files: `ChatContract.kt`,
 `ChatViewModel.kt` (the `init` block's conversation-load `updateState`, `ShowMuteDialog`/
 `DismissMuteDialog`, `toggleMute`/`muteFor`), `ChatDialogHost.kt` (1 read), `ChatTopBar.kt` (3
 reads in the mute/unmute menu item).
+
+**Slice 11 (`ChatThemeUiState`) — a `theme` field on a type named `*ThemeUiState`:** `chatTheme`/
+`showThemePicker` → `state.theme.{theme,showPicker}`. `state.theme.theme` reads a little odd at
+the call site but is the correct outcome of the same "drop the redundant prefix once nested"
+rule every other slice followed — `ChatThemeUiState.theme: ChatTheme` is unambiguous in
+context, and `state.theme.themeValue` or similar would break the pattern for no real gain.
+Another non-delegate group, like slice 10. 4 files: `ChatContract.kt`, `ChatViewModel.kt` (the
+`init` block's `chatThemeRepository.observe` collector, `OpenThemePicker`/
+`DismissThemePicker`), `ChatDialogHost.kt` (2 reads for `ChatThemePickerSheet`),
+`ChatScreen.kt` (1 read, `chatThemeColors = state.theme.theme.toColors()` — the `Scaffold`
+container-color computation, still living in `ChatScreen.kt` itself since it wasn't part of
+any of the four scaffold-extraction files).
 
 ## Non-goals
 

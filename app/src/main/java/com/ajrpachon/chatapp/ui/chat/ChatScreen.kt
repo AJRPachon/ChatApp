@@ -271,7 +271,7 @@ fun ChatScreen(
         reactionDetailMessageId = reactionDetailMessageId,
     )
 
-    val chatThemeColors = state.chatTheme.toColors()
+    val chatThemeColors = state.theme.theme.toColors()
 
     val latestPinned = state.latestPinnedMessage
     var pinnedBannerVisible by rememberSaveable(latestPinned?.id) { mutableStateOf(true) }

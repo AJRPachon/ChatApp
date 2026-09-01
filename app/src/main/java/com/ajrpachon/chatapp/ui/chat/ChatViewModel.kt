@@ -249,7 +249,7 @@ class ChatViewModel(
             if (draft.isNotBlank()) updateState { it.copy(inputText = draft) }
         }
         viewModelScope.launch {
-            chatThemeRepository.observe(conversationId).collect { theme -> updateState { it.copy(chatTheme = theme) } }
+            chatThemeRepository.observe(conversationId).collect { theme -> updateState { it.copy(theme = it.theme.copy(theme = theme)) } }
         }
         viewModelScope.launch {
             wallpaperRepository.getWallpaperColor(conversationId).collect { color -> updateState { it.copy(wallpaperColor = color) } }
@@ -432,8 +432,8 @@ class ChatViewModel(
             is ChatIntent.CreatePoll -> pollDelegate.createPoll(intent.question, intent.options, intent.allowMultiple)
             is ChatIntent.VotePoll -> pollDelegate.votePoll(intent.pollId, intent.optionId)
             is ChatIntent.SetChatTheme -> setChatTheme(intent.theme)
-            is ChatIntent.OpenThemePicker -> updateState { it.copy(showThemePicker = true) }
-            is ChatIntent.DismissThemePicker -> updateState { it.copy(showThemePicker = false) }
+            is ChatIntent.OpenThemePicker -> updateState { it.copy(theme = it.theme.copy(showPicker = true)) }
+            is ChatIntent.DismissThemePicker -> updateState { it.copy(theme = it.theme.copy(showPicker = false)) }
             is ChatIntent.ExportConversation -> exportConversation()
             is ChatIntent.CopyMessageContent -> clipboardProtection.copyWithTimeout("message", intent.content, viewModelScope)
             is ChatIntent.ShowDisappearingModeSheet -> updateState { it.copy(showDisappearingModeSheet = true) }
