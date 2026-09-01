@@ -27,6 +27,15 @@ data class ContactPhoneLookup(
     val isLoading: Boolean = false,
 )
 
+/**
+ * Contact-card relationship lookups, owned by [ChatContactCardDelegate]. Sixth of the nested
+ * groups in docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan.
+ */
+data class ChatContactCardUiState(
+    // Keyed by phone (see ContactPhoneLookup doc).
+    val lookups: Map<String, ContactPhoneLookup> = emptyMap(),
+)
+
 /** Poll data + the current user's vote(s), kept in [ChatPollFeatureState.uiStates] keyed by pollId. */
 data class PollUiState(
     val poll: PollBO? = null,
@@ -177,8 +186,7 @@ data class ChatState(
     val onlineMemberCount: Int = 0,
     val groupMemberCount: Int = 0,
     val isOnline: Boolean = true,
-    // Contact-card relationship lookups, keyed by phone (see ContactPhoneLookup doc).
-    val contactPhoneLookups: Map<String, ContactPhoneLookup> = emptyMap(),
+    val contactCard: ChatContactCardUiState = ChatContactCardUiState(),
     // Link previews: detected URL → fetched preview (null while loading or not found)
     val linkPreviews: Map<String, LinkPreviewData?> = emptyMap(),
 ) {

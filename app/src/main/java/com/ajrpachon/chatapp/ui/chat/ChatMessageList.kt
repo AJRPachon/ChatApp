@@ -191,7 +191,7 @@ internal fun ChatMessageList(
                                 onRetryMessage = { vm.onIntent(ChatIntent.RetryMessage(it)) },
                                 onCopy = { vm.onIntent(ChatIntent.CopyMessageContent(it)) },
                                 contactPhoneLookups = contactPhoneOf(message.content)?.let { phone ->
-                                    state.contactPhoneLookups[phone]?.let { mapOf(phone to it) }
+                                    state.contactCard.lookups[phone]?.let { mapOf(phone to it) }
                                 } ?: emptyMap(),
                                 onCheckContactRelationship = { vm.onIntent(ChatIntent.CheckContactRelationship(it)) },
                                 onContactCardPrimaryAction = { vm.onIntent(ChatIntent.ContactCardPrimaryAction(it)) },
@@ -232,7 +232,7 @@ internal fun ChatMessageList(
                             onRetryMessage = { vm.onIntent(ChatIntent.RetryMessage(it)) },
                             onCopy = { vm.onIntent(ChatIntent.CopyMessageContent(it)) },
                             contactPhoneLookups = contactPhoneOf(message.content)?.let { phone ->
-                                state.contactPhoneLookups[phone]?.let { mapOf(phone to it) }
+                                state.contactCard.lookups[phone]?.let { mapOf(phone to it) }
                             } ?: emptyMap(),
                             onCheckContactRelationship = { vm.onIntent(ChatIntent.CheckContactRelationship(it)) },
                             onContactCardPrimaryAction = { vm.onIntent(ChatIntent.ContactCardPrimaryAction(it)) },

@@ -30,10 +30,10 @@ class ChatContactCardDelegate(
     private val sendEffect get() = context.sendEffect
 
     fun checkContactRelationship(phone: String) {
-        if (phone.isBlank() || getState().contactPhoneLookups.containsKey(phone)) return
+        if (phone.isBlank() || getState().contactCard.lookups.containsKey(phone)) return
         val currentId = currentUserId() ?: return
         updateState {
-            it.copy(contactPhoneLookups = it.contactPhoneLookups + (phone to ContactPhoneLookup(isLoading = true)))
+            it.copy(contactCard = it.contactCard.copy(lookups = it.contactCard.lookups + (phone to ContactPhoneLookup(isLoading = true))))
         }
         scope.launch {
             val lookup = catchResult {
@@ -41,12 +41,12 @@ class ChatContactCardDelegate(
                 val relationship = user?.let { sendInvitationUseCase.checkRelationship(currentId, it.id) }
                 ContactPhoneLookup(resolvedUser = user, relationship = relationship)
             }.getOrDefault(ContactPhoneLookup())
-            updateState { it.copy(contactPhoneLookups = it.contactPhoneLookups + (phone to lookup)) }
+            updateState { it.copy(contactCard = it.contactCard.copy(lookups = it.contactCard.lookups + (phone to lookup))) }
         }
     }
 
     fun contactCardPrimaryAction(phone: String) {
-        val lookup = getState().contactPhoneLookups[phone]
+        val lookup = getState().contactCard.lookups[phone]
         val resolvedUser = lookup?.resolvedUser
         if (resolvedUser == null) {
             val text = "¡Únete a ChatApp y hablamos! 💬"
@@ -57,31 +57,31 @@ class ChatContactCardDelegate(
             when (val result = sendInvitationUseCase(resolvedUser)) {
                 is SendInvitationResult.Sent -> {
                     updateState {
-                        it.copy(contactPhoneLookups = it.contactPhoneLookups + (phone to lookup.copy(relationship = UserRelationship.PENDING_SENT)))
+                        it.copy(contactCard = it.contactCard.copy(lookups = it.contactCard.lookups + (phone to lookup.copy(relationship = UserRelationship.PENDING_SENT))))
                     }
                     sendEffect(ChatEffect.ShowSnackbar("¡Invitación enviada!"))
                 }
                 is SendInvitationResult.AlreadySent -> {
                     updateState {
-                        it.copy(contactPhoneLookups = it.contactPhoneLookups + (phone to lookup.copy(relationship = UserRelationship.PENDING_SENT)))
+                        it.copy(contactCard = it.contactCard.copy(lookups = it.contactCard.lookups + (phone to lookup.copy(relationship = UserRelationship.PENDING_SENT))))
                     }
                     sendEffect(ChatEffect.ShowSnackbar("Invitación enviada · Pendiente de respuesta"))
                 }
                 is SendInvitationResult.PendingReceived -> {
                     updateState {
-                        it.copy(contactPhoneLookups = it.contactPhoneLookups + (phone to lookup.copy(relationship = UserRelationship.PENDING_RECEIVED)))
+                        it.copy(contactCard = it.contactCard.copy(lookups = it.contactCard.lookups + (phone to lookup.copy(relationship = UserRelationship.PENDING_RECEIVED))))
                     }
                     sendEffect(ChatEffect.ShowSnackbar("Ya tienes una invitación pendiente de esta persona"))
                 }
                 is SendInvitationResult.NavigateToChat -> {
                     updateState {
-                        it.copy(contactPhoneLookups = it.contactPhoneLookups + (phone to lookup.copy(relationship = UserRelationship.CONNECTED)))
+                        it.copy(contactCard = it.contactCard.copy(lookups = it.contactCard.lookups + (phone to lookup.copy(relationship = UserRelationship.CONNECTED))))
                     }
                     sendEffect(ChatEffect.NavigateToConversation(result.conversationId, result.name))
                 }
                 is SendInvitationResult.Blocked -> {
                     updateState {
-                        it.copy(contactPhoneLookups = it.contactPhoneLookups + (phone to lookup.copy(relationship = UserRelationship.BLOCKED)))
+                        it.copy(contactCard = it.contactCard.copy(lookups = it.contactCard.lookups + (phone to lookup.copy(relationship = UserRelationship.BLOCKED))))
                     }
                     sendEffect(ChatEffect.ShowSnackbar("No puedes enviar una invitación a este contacto"))
                 }

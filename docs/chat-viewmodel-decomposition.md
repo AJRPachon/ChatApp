@@ -276,7 +276,7 @@ identity set once in `init`) are grouped by UI feature instead.
 | 3 | `state.poll: ChatPollFeatureState` | `showCreatePollSheet`→`showCreateSheet`, `pollUiStates`→`uiStates` (renamed to avoid colliding with the existing per-poll `PollUiState` data class) | `ChatPollDelegate` | **Done** |
 | 4 | `state.scheduling: ChatSchedulingUiState` | `showScheduleDialog`→`showDialog`, `scheduledAtMs`, `scheduledMessageCount`→`messageCount`, `showScheduledSheet`→`showSheet`, `scheduledMessages`→`messages` | `ChatSchedulingDelegate` | **Done** |
 | 5 | `state.forward: ChatForwardUiState` | `showForwardDialog`→`showDialog`, `forwardingMessage`→`message`, `forwardableConversations`→`conversations`, `showForwardSelectionDialog`→`showSelectionDialog` | `ChatForwardDelegate` | **Done** |
-| 6 | `state.contactCard: ChatContactCardUiState` | `contactPhoneLookups`→`lookups` | `ChatContactCardDelegate` | Not started |
+| 6 | `state.contactCard: ChatContactCardUiState` | `contactPhoneLookups`→`lookups` | `ChatContactCardDelegate` | **Done** |
 | 7 | `state.search: ChatSearchUiState` | `isSearchActive`, `searchQuery`, `searchResults`, `isSearching`, `highlightedMessageId` | `ChatSearchDelegate` | Not started |
 | 8 | `state.mediaUpload: ChatMediaUploadUiState` | `isUploadingFile`, `mediaUploadProgress`, `pendingImageUris`, `suppressedImageMessageIds` | `ChatMediaUploadDelegate` | Not started |
 | 9 | `state.audioState: AudioState` | (unchanged — already grouped since before Phase 1) | `ChatAudioRecordingDelegate` | Already done |
@@ -373,6 +373,22 @@ fix, not the field names), `ChatViewModelTest.kt` (2 tests, renamed alongside th
 assertions since the old names — `sets showForwardDialog to true`,
 `resets showForwardDialog and forwardingMessage` — would otherwise describe fields that no
 longer exist).
+
+**Slice 6 (`ChatContactCardUiState`) — smallest slice, single field:** `contactPhoneLookups` →
+`state.contactCard.lookups`. Only one field to move, but `ChatContactCardDelegate.kt` had 7
+call sites all sharing the same `it.copy(contactPhoneLookups = it.contactPhoneLookups +
+(phone to X))` shape with a different `X` each time — handled with a small Python regex
+substitution (`it\.copy\(contactPhoneLookups = it\.contactPhoneLookups \+ \((.*?)\)\)` →
+inject the nesting around the captured group) rather than 7 manual edits, verified afterward
+by re-reading the whole file since a non-greedy regex across nested parens is exactly the kind
+of thing that can silently truncate on a more deeply-nested call site — it didn't here (all 7
+sites are a flat `phone to <expr>` with no further nested parens to confuse the match), but
+worth the second look every time this shortcut is used. 3 files: `ChatContract.kt` (new
+`ChatContactCardUiState`, added next to `ContactPhoneLookup` itself since they're one
+concern), `ChatContactCardDelegate.kt` (7 call sites), `ChatMessageList.kt` (2
+`state.contactPhoneLookups[phone]` reads feeding `MessageBubble`'s own same-named param —
+learned from slice 3's indentation miss, verified both were caught this time with a repo-wide
+grep before compiling rather than trusting a single `replace_all`).
 
 ## Non-goals
 
