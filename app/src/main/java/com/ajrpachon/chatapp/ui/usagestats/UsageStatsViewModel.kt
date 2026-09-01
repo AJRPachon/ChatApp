@@ -1,7 +1,7 @@
 package com.ajrpachon.chatapp.ui.usagestats
 
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
-import com.ajrpachon.chatapp.domain.repository.MessageRepository
+import com.ajrpachon.chatapp.domain.repository.MessageStatsRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
@@ -17,7 +17,7 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 class UsageStatsViewModel(
-    private val messageRepository: MessageRepository,
+    private val messageRepository: MessageStatsRepository,
     private val conversationRepository: ConversationRepository,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
 ) : BaseViewModel<UsageStatsState, Nothing>(UsageStatsState()) {

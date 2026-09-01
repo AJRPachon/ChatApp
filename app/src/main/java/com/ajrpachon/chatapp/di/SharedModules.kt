@@ -18,6 +18,8 @@ import com.ajrpachon.chatapp.data.repository.ConversationRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.GroupRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.InvitationRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.MessageRepositoryImpl
+import com.ajrpachon.chatapp.data.repository.MessageStatsRepositoryImpl
+import com.ajrpachon.chatapp.data.repository.PendingMessageRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.PollRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.ReactionRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.ScheduledMessageRepositoryImpl
@@ -33,6 +35,8 @@ import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
 import com.ajrpachon.chatapp.domain.repository.InvitationRepository
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
+import com.ajrpachon.chatapp.domain.repository.MessageStatsRepository
+import com.ajrpachon.chatapp.domain.repository.PendingMessageRepository
 import com.ajrpachon.chatapp.domain.repository.PollRepository
 import com.ajrpachon.chatapp.domain.repository.ReactionRepository
 import com.ajrpachon.chatapp.domain.repository.ScheduledMessageRepository
@@ -87,6 +91,8 @@ val repositoryModule = module {
     singleOf(::UserRepositoryImpl) { bind<UserRepository>() }
     singleOf(::ConversationRepositoryImpl) { bind<ConversationRepository>() }
     singleOf(::MessageRepositoryImpl) { bind<MessageRepository>() }
+    singleOf(::MessageStatsRepositoryImpl) { bind<MessageStatsRepository>() }
+    singleOf(::PendingMessageRepositoryImpl) { bind<PendingMessageRepository>() }
     singleOf(::InvitationRepositoryImpl) { bind<InvitationRepository>() }
     singleOf(::GroupRepositoryImpl) { bind<GroupRepository>() }
     singleOf(::CallRepositoryImpl) { bind<CallRepository>() }

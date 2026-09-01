@@ -12,6 +12,7 @@ import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
+import com.ajrpachon.chatapp.domain.repository.PendingMessageRepository
 import com.ajrpachon.chatapp.domain.repository.ReactionRepository
 import com.ajrpachon.chatapp.domain.repository.ScheduledMessageRepository
 import com.ajrpachon.chatapp.domain.repository.TypingRepository
@@ -65,6 +66,7 @@ class ChatViewModelTest {
 
     private val sendMessageUseCase = mockk<SendMessageUseCase>()
     private val messageRepository = mockk<MessageRepository>(relaxed = true)
+    private val pendingMessageRepository = mockk<PendingMessageRepository>(relaxed = true)
     private val callRepository = mockk<CallRepository>(relaxed = true)
     private val userRepository = mockk<UserRepository>(relaxed = true)
     private val getGroupMembersUseCase = mockk<GetGroupMembersUseCase>()
@@ -150,6 +152,7 @@ class ChatViewModelTest {
             clipboardProtection = clipboardProtection,
             sendMessageUseCase = sendMessageUseCase,
             messageRepository = messageRepository,
+            pendingMessageRepository = pendingMessageRepository,
             callRepository = callRepository,
             userRepository = userRepository,
             getGroupMembersUseCase = getGroupMembersUseCase,

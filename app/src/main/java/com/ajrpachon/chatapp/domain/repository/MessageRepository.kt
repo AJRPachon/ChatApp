@@ -4,6 +4,12 @@ import androidx.paging.PagingData
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import kotlinx.coroutines.flow.Flow
 
+// 24 methods, all genuinely one concept (message CRUD/lifecycle + conversation-scoped queries) —
+// stats (MessageStatsRepository) and the pending-message outbox (PendingMessageRepository) were
+// split out as separate interfaces since those are distinct concerns with distinct, narrower
+// consumers. This suppression covers what's left after that split, not the original 36-method
+// interface — see the architecture review that identified the original as three concerns bundled
+// into one.
 @Suppress("TooManyFunctions")
 interface MessageRepository {
     fun observeMessages(conversationId: String, currentUserId: String, historyVisibleFrom: Long = 0L): Flow<List<MessageBO>>
@@ -50,27 +56,6 @@ interface MessageRepository {
     suspend fun setSaved(messageId: String, saved: Boolean)
     suspend fun getAllMessages(conversationId: String, currentUserId: String): List<MessageBO>
     suspend fun searchAllMessages(query: String): List<MessageBO>
-    suspend fun countSent(userId: String): Int
-    suspend fun countReceived(userId: String): Int
-    suspend fun countCalls(): Int
-    suspend fun sumCallDurationSeconds(): Int
-    suspend fun countImages(): Int
-    suspend fun countAudio(): Int
-    suspend fun countVideos(): Int
     fun getImagesForConversation(conversationId: String): Flow<List<String>>
     fun getVideosForConversation(conversationId: String): Flow<List<String>>
-    suspend fun getMostActiveConversationId(): String?
-    suspend fun countMessagesByDay(since: Long): List<Pair<Long, Int>>
-    @Suppress("LongParameterList")
-    suspend fun savePendingMessage(
-        id: String,
-        conversationId: String,
-        senderId: String,
-        content: String,
-        replyToId: String? = null,
-        replyToContent: String? = null,
-        replyToSenderName: String? = null,
-    )
-    suspend fun getPendingMessages(): List<MessageBO>
-    suspend fun updateSendStatus(messageId: String, status: String)
 }

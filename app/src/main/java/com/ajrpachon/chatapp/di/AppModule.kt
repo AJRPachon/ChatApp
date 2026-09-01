@@ -123,6 +123,7 @@ val viewModelModule = module {
             clipboardProtection = get(),
             sendMessageUseCase = get(),
             messageRepository = get(),
+            pendingMessageRepository = get(),
             callRepository = get(),
             userRepository = get(),
             getGroupMembersUseCase = get(),

@@ -31,6 +31,7 @@ import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
+import com.ajrpachon.chatapp.domain.repository.PendingMessageRepository
 import com.ajrpachon.chatapp.domain.repository.ReactionRepository
 import com.ajrpachon.chatapp.domain.repository.ScheduledMessageRepository
 import com.ajrpachon.chatapp.domain.repository.TypingRepository
@@ -80,6 +81,7 @@ class ChatViewModel(
     private val clipboardProtection: ClipboardProtection,
     private val sendMessageUseCase: SendMessageUseCase,
     private val messageRepository: MessageRepository,
+    private val pendingMessageRepository: PendingMessageRepository,
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
     private val getGroupMembersUseCase: GetGroupMembersUseCase,
@@ -691,7 +693,7 @@ class ChatViewModel(
                 val e = result.exceptionOrNull()
                 AppLogger.e(TAG, "Send failed -- offline retry", e)
                 catchResult {
-                    messageRepository.savePendingMessage(
+                    pendingMessageRepository.savePendingMessage(
                         id = UUID.randomUUID().toString(),
                         conversationId = conversationId,
                         senderId = userId,
