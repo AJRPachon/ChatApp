@@ -106,23 +106,63 @@ mute/leave-group, incognito, chat theme, wallpaper, typing presence
 ViewModel, but one whose job is "core conversation messaging" instead of "everything the chat
 screen can possibly do."
 
-## Phase 2 (later, not started): shrink State/Intent, split ChatScreen
+## Phase 2 (in progress): split ChatScreen, shrink State/Intent
 
-Only once the delegates in the table above are stable does it make sense to:
+### Splitting `ChatScreen.kt`'s composables into per-feature files
 
-- Group `ChatState`'s ~65 fields into nested state objects owned by each delegate (e.g.
-  `state.ai: ChatAiState`) — this is what actually reduces the "one giant flat state" cost,
-  but it means every `state.xxx` read in `ChatScreen.kt` for that field needs updating, so it
-  must happen file-by-file in step with a delegate's own extraction, not as one big rename.
-- Split `ChatIntent` into per-concern sealed hierarchies if the 78-variant `when` in
-  `onIntent` becomes the bottleneck — likely lower priority than the state split.
-- Split `ChatScreen.kt`'s 39 composables into per-feature files. Lowest-risk first: the
-  self-contained dialogs/sheets that already take their own narrow state slice as params
-  (forward dialog, schedule dialog, AI sheet, create-poll sheet, theme picker, wallpaper
-  picker, disappearing-mode sheet) — each can move to its own file with no behavior change,
-  same pattern as this session's earlier `LocationMessageFormat`/`CallControlButton`
-  extractions. The message-bubble rendering tree (already partially decomposed this session)
-  and the top-level scaffold are higher-risk, do last.
+Lowest-risk first, per the original plan: the self-contained dialogs/sheets that already take
+only their own narrow params, no dependency on `ChatViewModel` or the message-bubble
+rendering tree.
+
+**Done (first pass):** `ChatDialogs.kt` (`ExpiryDurationDialog`, `MuteDurationDialog`,
+`ForwardConversationDialog`, `ScheduleMessageDialog`, `ImageViewerDialog`),
+`ChatBottomSheets.kt` (`ChatThemePickerSheet`, `DisappearingModeSheet`, `AiAssistantSheet`,
+`CreatePollSheetContent`, `ReactionDetailsSheet`, `WallpaperPickerSheet`),
+`PinnedMessageBanner.kt`. `ChatScreen.kt`: 3818 → 3051 lines.
+
+Two things this pass had to get right that a naive copy-paste doesn't:
+
+- **Visibility**: these composables were `private` (file-scoped in Kotlin — a top-level
+  `private` symbol is invisible outside its own file, even within the same package), but
+  `ChatScreen`'s main composable still calls all of them. Moving the declaration to a new file
+  requires widening to `internal` (visible module-wide), not keeping `private`, or the call
+  sites in `ChatScreen.kt` stop compiling.
+- **No FQN mid-chain**: some of the original code used fully-qualified names as a *standalone*
+  reference (`androidx.compose.foundation.layout.Column { ... }`, valid) or to qualify a
+  receiver at the *start* of a chain (`androidx.compose.ui.Modifier.height(8.dp)`, valid — but
+  note the `height` extension function still needs importing even though `Modifier` itself is
+  FQN'd, since Kotlin resolves extension-function names purely via import/scope, independent
+  of how the receiver was written). What doesn't work — and doesn't even parse — is injecting
+  a package path *mid-chain* after a receiver expression, e.g.
+  `Modifier.size(52.dp).androidx.compose.foundation.background(...)`. First draft of this
+  extraction introduced exactly that (an attempt to "FQN everything defensively" instead of
+  adding proper imports); fixed before commit by using bare names + real imports throughout,
+  which is what the compiler catches immediately if it recurs.
+- Also: `import androidx.compose.foundation.layout.weight` resolves to the wrong (internal)
+  symbol — `Modifier.weight()` is a member extension on `RowScope`/`ColumnScope`, resolved
+  automatically for any `.weight(...)` call inside a `Row { }`/`Column { }` lambda with **no
+  import at all**; explicitly importing `weight` breaks it. Same lesson as `LongParameterList`
+  in Phase 1: verify against a real compile, don't assume a plausible-looking import is right.
+
+**Left for a later pass, higher risk, in the order noted originally:** the message-bubble
+rendering tree (`MessageBubble` and everything it dispatches to — `ChatBubbleSlot`,
+`CallMessageBubble`, `FileBubble`, `PdfFileCard`, `GenericFileBubble`, `VideoBubble`,
+`StickerBubble`, `DeletedMessageBubble`, `MessageFooterContent`, `LocationMessageCard`,
+`MediaMetaOverlay`, `PendingImageBatchBubble`, `ImageGroupBubble`, `ReplyQuote`,
+`LinkPreviewCard`, `ContactHeader`, `ContactBubble`, `PollBubble`, `PollOptionRow`,
+`ReplySelectContainer`) and the top-level `ChatScreen`/`ChatScreenContent` scaffold itself.
+`PollBubble`/`PollOptionRow` stayed in `ChatScreen.kt` in this pass specifically because they
+depend on `ChatBubbleSlot`, which lives in that higher-risk tree.
+
+### Shrinking `ChatState`/`ChatIntent`
+
+Not started. Only once the composable split above is further along does it make sense to
+group `ChatState`'s ~65 fields into nested state objects owned by each delegate (e.g.
+`state.ai: ChatAiState`) — every `state.xxx` read for that field across `ChatScreen.kt`'s
+(now multiple) files needs updating in the same step, so this should happen file-by-file
+alongside a composable's own move, not as one big rename. Splitting `ChatIntent` into
+per-concern sealed hierarchies, if the 78-variant `when` in `onIntent` becomes the
+bottleneck, is likely lower priority than the state split.
 
 ## Non-goals
 
