@@ -203,17 +203,53 @@ remember { mutableStateOf(v) }` to `val xState = remember { mutableStateOf(v) }`
 Compose state-hoisting; keeps both sides of the split reading/writing the exact same state
 identity instead of two independent copies.
 
-Left in `ChatScreen.kt`, not attempted this pass: the `topBar` (incognito banner + the
-`TopAppBar` with its own sizeable dropdown-menu block + `PinnedMessageBanner`), `bottomBar`
-(offline banner, editing/reply preview bars, typing indicator, the audio-state
-recording/preview/normal-input switch), and the message-list content (`LazyColumn` with the
-image-group/suppressed-message paging logic, scroll-to-bottom FAB, search overlay). Unlike the
-dialog host, these three don't have a clean boundary the way the `if (state.showX)` sequence
-did — they share numerous `remember`-scoped locals declared once at the top of `ChatScreen`
-(the permission-launchers alone are read from both `bottomBar`'s `NormalInputBar` callbacks and
-inline `onClick`s elsewhere), so splitting any one of them means either a `MutableState`-hoisting
-pass similar to this one but larger, or accepting a long callback-param list. Worth another
-pass, but a bigger one than any single slice so far — not attempted in this session.
+**Done (fourth pass — `topBar`/`bottomBar`/message-list, the rest of the `Scaffold`):** the
+three regions left after the dialog-host pass, each extracted to its own file:
+
+- `ChatTopBar.kt` — incognito banner, the `TopAppBar` (multi-select count vs. avatar/name/
+  presence title, back/clear-selection navigation, the scheduled-badge/call/overflow dropdown
+  menus), `PinnedMessageBanner`. Cleanest boundary of the three: its internal
+  `callMenuExpanded`/`menuExpanded` locals are self-contained within the block itself, so it
+  only needed `state`, `vm`, `latestPinned`, `pinnedBannerVisible`, the already-hoisted
+  `showDeleteSelectionConfirm` `MutableState` (reused from the dialog-host pass — this bar's
+  delete action opens that same confirmation dialog), and 5 pass-through navigation callbacks.
+- `ChatBottomBar.kt` — offline banner, editing/reply preview bars, typing indicator, the
+  audio-state recording/preview/normal-input switch. The one genuinely entangled with the
+  permission-launcher machinery: 10 `rememberLauncherForActivityResult` launchers plus
+  `cameraUri`/`videoUri` are all declared once at the top of `ChatScreen` and read from
+  `NormalInputBar`'s attachment-picker callbacks. Rather than threading typed
+  `ActivityResultLauncher<I>` objects across the file boundary (10 different contracts:
+  `PickVisualMediaRequest`, `Array<String>`, `Uri`, `String`×5, `Void?` — exact generic
+  matching for no benefit), `ChatScreen` keeps building the finished, permission-check-then-
+  launch lambdas (`onGallery`/`onCamera`/`onMic`/`onAttachFile`/`onAttachVideo`/`onLocation`/
+  `onContact`) exactly as before, and passes those 7 closed-over `() -> Unit` callbacks in. This
+  also means `cameraUri`/`videoUri` never needed `MutableState`-hoisting — they stay `var x by
+  rememberSaveable` in `ChatScreen`, since only `ChatScreen`-local code ever touches them.
+- `ChatMessageList.kt` — the `Scaffold` content lambda: `ChatMessagesSkeleton` during initial
+  load, the `LazyColumn` (pending-image-batch placeholder, the image-group-vs-single-bubble
+  dispatch with its consecutive-image lookahead, paging-load-more indicator), the
+  scroll-to-bottom FAB, `MessageSearchOverlay`. Reuses all four `MutableState`s already hoisted
+  for `ChatDialogHost` (`viewerUrls`, `viewerInitialIndex`, `showViewer`,
+  `reactionDetailMessageId`) since bubbles here are what originally populate them.
+
+Found and fixed in passing (real bug, not a refactor artifact): `bottomBar`'s `Surface` block
+rendered `OfflineBanner()` **twice** whenever offline — once via the outer
+`AnimatedVisibility(!state.isOnline) { OfflineBanner() }`, and again via a redundant
+`if (!state.isOnline) { OfflineBanner() }` a few lines further into the same `Column`. Kept only
+the outer `AnimatedVisibility` version in `ChatBottomBar.kt`.
+
+Left as-is, not "fixed": `pinnedBannerVisible` (`var ... by rememberSaveable(latestPinned?.id) {
+mutableStateOf(true) }`) is read once (`if (latestPinned != null && pinnedBannerVisible)`) but
+never reassigned anywhere in the file — grep confirms only the declaration and that one read.
+Ambiguous whether this is dead code or a half-wired feature (there's no explicit
+dismiss-without-unpin action), so passed through to `ChatTopBar` as a plain `Boolean` unchanged
+rather than making a judgment call about it inside a pure-move refactor.
+
+`ChatScreen.kt`: 1069 → 404 lines (1194/57 functions → this file alone, across the whole plan).
+What remains is genuinely just setup: state/effect collection, the permission-launcher
+declarations `ChatBottomBar`'s callbacks close over, the `LaunchedEffect`s driving
+scroll/error/effect handling, and the `Scaffold` wiring the three new composables (plus
+`ChatDialogHost`) together.
 
 ### Shrinking `ChatState`/`ChatIntent`
 
