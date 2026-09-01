@@ -55,7 +55,6 @@ import com.ajrpachon.chatapp.utils.TranslationManager
 import com.ajrpachon.chatapp.utils.UploadLimits
 import com.ajrpachon.chatapp.utils.catchResult
 import com.ajrpachon.chatapp.worker.MessageRetryWorker
-import com.ajrpachon.chatapp.worker.ScheduledMessageWorker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -127,22 +126,27 @@ class ChatViewModel(
     val pinnedMessages: Flow<List<MessageBO>> =
         messageRepository.getPinnedMessages(conversationId, currentUserId ?: "")
 
-    // See docs/chat-viewmodel-decomposition.md — the first concern extracted out of this
-    // class's flat method list. More delegates will follow the same pattern.
+    // See docs/chat-viewmodel-decomposition.md — delegates extracted out of this class's flat
+    // method list, one concern each, all sharing delegateContext as their only hook back into
+    // this ViewModel's state/effects.
+    private val delegateContext = ChatDelegateContext(
+        getState = { state.value },
+        updateState = ::updateState,
+        sendEffect = ::sendEffect,
+    )
     private val aiDelegate = ChatAiDelegate(
         conversationId = conversationId,
         currentUserId = { currentUserId },
         messageRepository = messageRepository,
         aiAssistantRepository = aiAssistantRepository,
         scope = viewModelScope,
-        updateState = ::updateState,
+        context = delegateContext,
     )
     private val translationDelegate = ChatTranslationDelegate(
-        getState = { state.value },
         translationManager = translationManager,
         audioTranscriber = audioTranscriber,
         scope = viewModelScope,
-        updateState = ::updateState,
+        context = delegateContext,
     )
     private val pollDelegate = ChatPollDelegate(
         conversationId = conversationId,
@@ -150,7 +154,16 @@ class ChatViewModel(
         pollRepository = pollRepository,
         sendMessageUseCase = sendMessageUseCase,
         scope = viewModelScope,
-        updateState = ::updateState,
+        context = delegateContext,
+    )
+    private val schedulingDelegate = ChatSchedulingDelegate(
+        conversationId = conversationId,
+        scheduledMessageRepository = scheduledMessageRepository,
+        draftRepository = draftRepository,
+        workManager = workManager,
+        cancelDraftSave = { draftSaveJob?.cancel() },
+        scope = viewModelScope,
+        context = delegateContext,
     )
 
     private var groupMembers: List<GroupMemberBO> = emptyList()
@@ -428,10 +441,10 @@ class ChatViewModel(
             is ChatIntent.ConfirmIncognito -> confirmIncognito()
             is ChatIntent.OpenScheduleDialog -> updateState { it.copy(showScheduleDialog = true) }
             is ChatIntent.DismissScheduleDialog -> updateState { it.copy(showScheduleDialog = false) }
-            is ChatIntent.ScheduleMessage -> scheduleMessage(intent.scheduledAt)
+            is ChatIntent.ScheduleMessage -> schedulingDelegate.scheduleMessage(intent.scheduledAt)
             is ChatIntent.ShowScheduledSheet -> updateState { it.copy(showScheduledSheet = true) }
             is ChatIntent.DismissScheduledSheet -> updateState { it.copy(showScheduledSheet = false) }
-            is ChatIntent.CancelScheduledMessage -> cancelScheduledMessage(intent.id)
+            is ChatIntent.CancelScheduledMessage -> schedulingDelegate.cancelScheduledMessage(intent.id)
             is ChatIntent.OpenAiSheet -> updateState { it.copy(showAiSheet = true, aiSuggestion = null) }
             is ChatIntent.DismissAiSheet -> updateState { it.copy(showAiSheet = false, aiSuggestion = null) }
             is ChatIntent.AiSummarize -> aiDelegate.summarize()
@@ -1042,49 +1055,6 @@ class ChatViewModel(
     private fun confirmIncognito() {
         updateState { it.copy(showIncognitoInfoDialog = false) }
         viewModelScope.launch { incognitoRepository.setIncognito(conversationId, true) }
-    }
-
-    private fun scheduleMessage(scheduledAt: Long) {
-        val text = state.value.inputText.trim()
-        val userId = state.value.currentUserId
-        if (userId == null || text.isBlank()) {
-            updateState { it.copy(showScheduleDialog = false, error = "Escribe un mensaje antes de programarlo") }
-            return
-        }
-        updateState { it.copy(showScheduleDialog = false, inputText = "", scheduledAtMs = scheduledAt) }
-        draftSaveJob?.cancel()
-        viewModelScope.launch {
-            draftRepository.saveDraft(conversationId, "")
-            val msgId = UUID.randomUUID().toString()
-            val now = System.currentTimeMillis()
-            catchResult {
-                scheduledMessageRepository.schedule(
-                    id = msgId,
-                    conversationId = conversationId,
-                    senderId = userId,
-                    text = text,
-                    scheduledAtMs = scheduledAt,
-                    createdAt = now,
-                )
-            }
-                .onSuccess {
-                    val delayMs = (scheduledAt - System.currentTimeMillis()).coerceAtLeast(0L)
-                    workManager.enqueue(
-                        OneTimeWorkRequestBuilder<ScheduledMessageWorker>()
-                            .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
-                            .addTag(ScheduledMessageWorker.WORK_TAG).build()
-                    )
-                    sendEffect(ChatEffect.ShowSnackbar("Mensaje programado"))
-                }
-                .onFailure { updateState { it.copy(error = "No se pudo programar el mensaje", inputText = text) } }
-        }
-    }
-
-    private fun cancelScheduledMessage(id: String) {
-        viewModelScope.launch {
-            workManager.cancelAllWorkByTag("scheduled_$id")
-            catchResult { scheduledMessageRepository.deleteById(id) }
-        }
     }
 
     override fun onCleared() {

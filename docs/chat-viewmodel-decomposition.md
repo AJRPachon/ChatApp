@@ -33,12 +33,16 @@ UI lifecycle of its own) that receives, via constructor:
 - a `scope: CoroutineScope` (ChatViewModel passes its own `viewModelScope`, so delegate
   coroutines are cancelled exactly when the ViewModel is cleared — no separate lifecycle to
   manage),
-- `updateState: ((ChatState) -> ChatState) -> Unit` — a bound reference to
-  `BaseViewModel.updateState` (`::updateState`, accessible since it's called from inside
-  ChatViewModel), so a delegate can only ever produce a *new* `ChatState` via the same
-  `.copy()` pattern every intent handler already uses. It never touches a raw mutable
-  field.
-- optionally `sendEffect: suspend (ChatEffect) -> Unit` if the concern emits effects.
+- `context: ChatDelegateContext` — bundles the three hooks a delegate needs back into
+  ChatViewModel: `getState: () -> ChatState`, `updateState: ((ChatState) -> ChatState) -> Unit`
+  (a bound reference to `BaseViewModel.updateState`, so a delegate can only ever produce a
+  *new* `ChatState` via the same `.copy()` pattern every intent handler already uses — never a
+  raw mutable field), and `sendEffect: (ChatEffect) -> Unit`. ChatViewModel builds one
+  `ChatDelegateContext` and passes the same instance to every delegate. (The first three
+  delegates each took `getState`/`updateState`/`sendEffect` as separate constructor params;
+  bundled into `ChatDelegateContext` once the 4th delegate's constructor tripped detekt's
+  `LongParameterList` threshold — start any new delegate with `context` from day one rather
+  than adding the three separately.)
 
 `ChatViewModel.onIntent()` keeps its single `when` dispatcher (that's the MVI contract and
 shouldn't move), but each branch forwards to a delegate method instead of a private function
@@ -62,7 +66,7 @@ carelessly):
 | 1 | `ChatAiDelegate` | `aiSummarize`, `aiSuggestReply`, `aiFreeform` | `messageRepository`, `aiAssistantRepository` | **Done** |
 | 2 | `ChatTranslationDelegate` | `translateMessage`, `transcribeAudio` | `translationManager`, `audioTranscriber` | **Done** |
 | 3 | `ChatPollDelegate` | `observePoll`, `createPoll`, `votePoll` | `pollRepository`, `sendMessageUseCase` | **Done** |
-| 4 | `ChatSchedulingDelegate` | `scheduleMessage`, `cancelScheduledMessage` | `scheduledMessageRepository`, `workManager`, `draftRepository` | Planned |
+| 4 | `ChatSchedulingDelegate` | `scheduleMessage`, `cancelScheduledMessage` | `scheduledMessageRepository`, `workManager`, `draftRepository` | **Done** |
 | 5 | `ChatForwardDelegate` | `showForwardDialog`, `forwardMessage`, `showForwardSelectionDialog`, `forwardSelectedMessages` | `conversationRepository`, `messageRepository` | Planned |
 | 6 | `ChatContactCardDelegate` | `checkContactRelationship`, `contactCardPrimaryAction` | `userRepository`, `sendInvitationUseCase` | Planned |
 | 7 | `ChatSearchDelegate` | `searchMessages`, `jumpToMessage` | `messageRepository` | Planned |

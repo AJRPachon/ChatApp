@@ -11,15 +11,17 @@ private const val NO_TRANSCRIPTION_AVAILABLE = "Transcripcion no disponible"
 /**
  * Handles per-message translation and audio transcription — second slice of the decomposition
  * in docs/chat-viewmodel-decomposition.md. See [ChatAiDelegate] for the pattern this follows
- * (state mutated only via [updateState], [ChatState]/[ChatIntent]/ChatScreen unchanged).
+ * (state mutated only via [ChatDelegateContext], [ChatState]/[ChatIntent]/ChatScreen unchanged).
  */
 class ChatTranslationDelegate(
-    private val getState: () -> ChatState,
     private val translationManager: TranslationManager,
     private val audioTranscriber: AudioTranscriber,
     private val scope: CoroutineScope,
-    private val updateState: ((ChatState) -> ChatState) -> Unit,
+    private val context: ChatDelegateContext,
 ) {
+    private val getState get() = context.getState
+    private val updateState get() = context.updateState
+
     fun translateMessage(messageId: String, text: String) {
         if (messageId in getState().translatingMessageIds) return
         updateState { it.copy(translatingMessageIds = it.translatingMessageIds + messageId) }

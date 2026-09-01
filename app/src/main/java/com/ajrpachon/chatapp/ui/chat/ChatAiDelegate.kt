@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
  * docs/chat-viewmodel-decomposition.md for the migration plan this follows.
  *
  * [ChatState]/[ChatIntent] are unchanged: this delegate only ever produces a new state via
- * [updateState] (a bound reference to `BaseViewModel.updateState`), the same `.copy()` pattern
+ * [context]'s `updateState` (bound to `BaseViewModel.updateState`), the same `.copy()` pattern
  * every intent handler on ChatViewModel itself uses — so ChatScreen needs no changes.
  */
 class ChatAiDelegate(
@@ -21,8 +21,10 @@ class ChatAiDelegate(
     private val messageRepository: MessageRepository,
     private val aiAssistantRepository: AiAssistantRepository,
     private val scope: CoroutineScope,
-    private val updateState: ((ChatState) -> ChatState) -> Unit,
+    private val context: ChatDelegateContext,
 ) {
+    private val updateState get() = context.updateState
+
     fun summarize() {
         val uid = currentUserId() ?: return
         updateState { it.copy(isAiLoading = true) }

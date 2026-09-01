@@ -20,8 +20,9 @@ class ChatPollDelegate(
     private val pollRepository: PollRepository,
     private val sendMessageUseCase: SendMessageUseCase,
     private val scope: CoroutineScope,
-    private val updateState: ((ChatState) -> ChatState) -> Unit,
+    private val context: ChatDelegateContext,
 ) {
+    private val updateState get() = context.updateState
     private val observedPollIds = mutableSetOf<String>()
 
     /**
