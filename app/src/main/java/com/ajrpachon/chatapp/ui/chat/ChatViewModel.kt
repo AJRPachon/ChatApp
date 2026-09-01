@@ -165,6 +165,14 @@ class ChatViewModel(
         scope = viewModelScope,
         context = delegateContext,
     )
+    private val forwardDelegate = ChatForwardDelegate(
+        conversationId = conversationId,
+        currentUserId = { currentUserId },
+        conversationRepository = conversationRepository,
+        messageRepository = messageRepository,
+        scope = viewModelScope,
+        context = delegateContext,
+    )
 
     private var groupMembers: List<GroupMemberBO> = emptyList()
     private var recorder: MediaRecorder? = null
@@ -408,12 +416,12 @@ class ChatViewModel(
             is ChatIntent.ToggleMessageSelection -> toggleMessageSelection(intent.messageId)
             is ChatIntent.ClearSelection -> updateState { it.copy(selectedMessageIds = emptySet()) }
             is ChatIntent.DeleteSelectedMessages -> deleteSelectedMessages()
-            is ChatIntent.ShowForwardDialog -> showForwardDialog(intent.message)
+            is ChatIntent.ShowForwardDialog -> forwardDelegate.showForwardDialog(intent.message)
             is ChatIntent.DismissForwardDialog -> updateState { it.copy(showForwardDialog = false, forwardingMessage = null, forwardableConversations = emptyList()) }
-            is ChatIntent.ForwardMessage -> forwardMessage(intent.targetConversationId)
-            is ChatIntent.ShowForwardSelectionDialog -> showForwardSelectionDialog()
+            is ChatIntent.ForwardMessage -> forwardDelegate.forwardMessage(intent.targetConversationId)
+            is ChatIntent.ShowForwardSelectionDialog -> forwardDelegate.showForwardSelectionDialog()
             is ChatIntent.DismissForwardSelectionDialog -> updateState { it.copy(showForwardSelectionDialog = false, forwardableConversations = emptyList()) }
-            is ChatIntent.ForwardSelectedMessages -> forwardSelectedMessages(intent.targetConversationId)
+            is ChatIntent.ForwardSelectedMessages -> forwardDelegate.forwardSelectedMessages(intent.targetConversationId)
             is ChatIntent.SendLocation -> sendLocationMessage(intent.mapsUrl)
             is ChatIntent.FetchAndSendLocation -> fetchAndSendLocation()
             is ChatIntent.TranslateMessage -> translationDelegate.translateMessage(intent.messageId, intent.text)
@@ -964,63 +972,6 @@ class ChatViewModel(
         viewModelScope.launch {
             messageRepository.deleteMessage(messageId)
                 .onFailure { e -> AppLogger.e(TAG, "deleteMessage failed", e); updateState { it.copy(error = "No se pudo eliminar") } }
-        }
-    }
-
-    private fun showForwardDialog(message: MessageBO) {
-        val uid = currentUserId ?: return
-        viewModelScope.launch {
-            catchResult {
-                val conversations = conversationRepository.observeConversations(uid).first().filter { it.id != conversationId }
-                updateState { it.copy(showForwardDialog = true, forwardingMessage = message, forwardableConversations = conversations) }
-            }.onFailure { updateState { it.copy(error = "No se pudo cargar las conversaciones") } }
-        }
-    }
-
-    private fun forwardMessage(targetConversationId: String) {
-        val uid = currentUserId ?: return
-        val message = state.value.forwardingMessage ?: return
-        updateState { it.copy(showForwardDialog = false, forwardingMessage = null, forwardableConversations = emptyList()) }
-        viewModelScope.launch {
-            catchResult {
-                messageRepository.sendMessage(conversationId = targetConversationId, senderId = uid, content = message.content,
-                    imageUrl = message.imageUrl, audioUrl = message.audioUrl, audioDurationMs = message.audioDurationMs,
-                    gifUrl = message.gifUrl, stickerUrl = message.stickerUrl,
-                )
-                sendEffect(ChatEffect.ShowSnackbar("Mensaje reenviado"))
-            }.onFailure { updateState { it.copy(error = "No se pudo reenviar") } }
-        }
-    }
-
-    private fun showForwardSelectionDialog() {
-        val uid = currentUserId ?: return
-        viewModelScope.launch {
-            catchResult {
-                val conversations = conversationRepository.observeConversations(uid).first().filter { it.id != conversationId }
-                updateState { it.copy(showForwardSelectionDialog = true, forwardableConversations = conversations) }
-            }.onFailure { updateState { it.copy(error = "No se pudo cargar las conversaciones") } }
-        }
-    }
-
-    private fun forwardSelectedMessages(targetConversationId: String) {
-        val uid = currentUserId ?: return
-        val ids = state.value.selectedMessageIds.toSet()
-        updateState { it.copy(showForwardSelectionDialog = false, forwardableConversations = emptyList(), selectedMessageIds = emptySet()) }
-        viewModelScope.launch {
-            val allMessages = catchResult { withContext(Dispatchers.IO) { messageRepository.getAllMessages(conversationId, uid) } }.getOrDefault(emptyList())
-            val toForward = allMessages.filter { it.id in ids }
-            var forwarded = 0
-            for (message in toForward) {
-                catchResult {
-                    messageRepository.sendMessage(conversationId = targetConversationId, senderId = uid, content = message.content,
-                        imageUrl = message.imageUrl, audioUrl = message.audioUrl, audioDurationMs = message.audioDurationMs,
-                    gifUrl = message.gifUrl, stickerUrl = message.stickerUrl,
-                    )
-                    forwarded++
-                }
-            }
-            if (forwarded > 0) sendEffect(ChatEffect.ShowSnackbar("$forwarded mensaje(s) reenviado(s)"))
-            else updateState { it.copy(error = "No se pudieron reenviar") }
         }
     }
 
