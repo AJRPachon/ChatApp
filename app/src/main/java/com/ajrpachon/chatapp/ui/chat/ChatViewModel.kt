@@ -127,6 +127,17 @@ class ChatViewModel(
     val pinnedMessages: Flow<List<MessageBO>> =
         messageRepository.getPinnedMessages(conversationId, currentUserId ?: "")
 
+    // See docs/chat-viewmodel-decomposition.md — the first concern extracted out of this
+    // class's flat method list. More delegates will follow the same pattern.
+    private val aiDelegate = ChatAiDelegate(
+        conversationId = conversationId,
+        currentUserId = { currentUserId },
+        messageRepository = messageRepository,
+        aiAssistantRepository = aiAssistantRepository,
+        scope = viewModelScope,
+        updateState = ::updateState,
+    )
+
     private var groupMembers: List<GroupMemberBO> = emptyList()
     private var recorder: MediaRecorder? = null
     private var recordingTimerJob: Job? = null
@@ -409,9 +420,9 @@ class ChatViewModel(
             is ChatIntent.CancelScheduledMessage -> cancelScheduledMessage(intent.id)
             is ChatIntent.OpenAiSheet -> updateState { it.copy(showAiSheet = true, aiSuggestion = null) }
             is ChatIntent.DismissAiSheet -> updateState { it.copy(showAiSheet = false, aiSuggestion = null) }
-            is ChatIntent.AiSummarize -> aiSummarize()
-            is ChatIntent.AiSuggestReply -> aiSuggestReply()
-            is ChatIntent.AiFreeform -> aiFreeform(intent.prompt)
+            is ChatIntent.AiSummarize -> aiDelegate.summarize()
+            is ChatIntent.AiSuggestReply -> aiDelegate.suggestReply()
+            is ChatIntent.AiFreeform -> aiDelegate.freeform(intent.prompt)
             is ChatIntent.InsertAiSuggestion -> {
                 val suggestion = state.value.aiSuggestion ?: return
                 updateState { it.copy(inputText = suggestion, showAiSheet = false, aiSuggestion = null) }
@@ -1144,37 +1155,6 @@ class ChatViewModel(
         viewModelScope.launch {
             workManager.cancelAllWorkByTag("scheduled_$id")
             catchResult { scheduledMessageRepository.deleteById(id) }
-        }
-    }
-
-    private fun aiSummarize() {
-        val uid = currentUserId ?: return
-        updateState { it.copy(isAiLoading = true) }
-        viewModelScope.launch {
-            val snippets = catchResult { messageRepository.getAllMessages(conversationId, uid).takeLast(20).map { it.content } }.getOrDefault(emptyList())
-            aiAssistantRepository.summarize(snippets)
-                .onSuccess { result -> updateState { it.copy(aiSuggestion = result, isAiLoading = false) } }
-                .onFailure { e -> updateState { it.copy(isAiLoading = false, error = e.message) } }
-        }
-    }
-
-    private fun aiSuggestReply() {
-        val uid = currentUserId ?: return
-        updateState { it.copy(isAiLoading = true) }
-        viewModelScope.launch {
-            val last = catchResult { messageRepository.getAllMessages(conversationId, uid).lastOrNull { it.senderId != uid }?.content ?: "" }.getOrDefault("")
-            aiAssistantRepository.suggestReply(last)
-                .onSuccess { result -> updateState { it.copy(aiSuggestion = result, isAiLoading = false) } }
-                .onFailure { e -> updateState { it.copy(isAiLoading = false, error = e.message) } }
-        }
-    }
-
-    private fun aiFreeform(prompt: String) {
-        updateState { it.copy(isAiLoading = true) }
-        viewModelScope.launch {
-            aiAssistantRepository.freeform(prompt)
-                .onSuccess { result -> updateState { it.copy(aiSuggestion = result, isAiLoading = false) } }
-                .onFailure { e -> updateState { it.copy(isAiLoading = false, error = e.message) } }
         }
     }
 
