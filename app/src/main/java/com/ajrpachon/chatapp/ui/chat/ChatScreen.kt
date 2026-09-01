@@ -22,9 +22,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.union
@@ -49,10 +47,8 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.NotificationsOff
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.PhoneInTalk
@@ -81,7 +77,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.SnackbarHost
@@ -89,7 +84,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.DisposableEffect
@@ -109,9 +103,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -170,7 +162,9 @@ fun ChatScreen(
 
     val scope = rememberCoroutineScope()
     var highlightedMessageId by remember { mutableStateOf<String?>(null) }
-    var reactionDetailMessageId by remember { mutableStateOf<String?>(null) }
+    // MutableState (not `by remember`) because ChatDialogHost also reads/writes this one —
+    // see its own doc for why.
+    val reactionDetailMessageId = remember { mutableStateOf<String?>(null) }
     val showScrollToBottom by remember { derivedStateOf { listState.firstVisibleItemIndex > 2 } }
 
     val onScrollToMessage: (String) -> Unit = { messageId ->
@@ -192,9 +186,11 @@ fun ChatScreen(
         onScrollToMessage(id)
     }
 
-    var viewerUrls by remember { mutableStateOf<List<String>>(emptyList()) }
-    var viewerInitialIndex by rememberSaveable { mutableStateOf(0) }
-    var showViewer by rememberSaveable { mutableStateOf(false) }
+    // MutableState (not `by remember`/`by rememberSaveable`) because ChatDialogHost also
+    // reads/writes these — see its own doc for why.
+    val viewerUrls = remember { mutableStateOf<List<String>>(emptyList()) }
+    val viewerInitialIndex = rememberSaveable { mutableStateOf(0) }
+    val showViewer = rememberSaveable { mutableStateOf(false) }
 
     // Tracks whether a send-triggered scroll is pending (waits for Paging to deliver the new item).
     val pendingSendScroll = remember { mutableStateOf(false) }
@@ -267,25 +263,9 @@ fun ChatScreen(
         }
     }
 
-    var showDeleteSelectionConfirm by remember { mutableStateOf(false) }
-
-    if (showDeleteSelectionConfirm) {
-        val count = state.selectedMessageIds.size
-        AlertDialog(
-            onDismissRequest = { showDeleteSelectionConfirm = false },
-            title = { Text(stringResource(R.string.chat_delete_messages_title)) },
-            text = { Text(pluralStringResource(R.plurals.chat_delete_messages_confirm, count, count)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    showDeleteSelectionConfirm = false
-                    vm.onIntent(ChatIntent.DeleteSelectedMessages)
-                }) { Text(stringResource(R.string.chat_delete), color = MaterialTheme.colorScheme.error) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteSelectionConfirm = false }) { Text(stringResource(R.string.chat_cancel)) }
-            },
-        )
-    }
+    // MutableState (not `by remember`) because ChatDialogHost also reads/writes this — see
+    // its own doc for why.
+    val showDeleteSelectionConfirm = remember { mutableStateOf(false) }
 
     var cameraUri by rememberSaveable { mutableStateOf<Uri?>(null) }
     var videoUri by rememberSaveable { mutableStateOf<Uri?>(null) }
@@ -356,247 +336,19 @@ fun ChatScreen(
         }
     }
 
-    if (showViewer && viewerUrls.isNotEmpty()) {
-        ImageViewerDialog(
-            imageUrls = viewerUrls,
-            initialIndex = viewerInitialIndex,
-            onDismiss = { showViewer = false },
-        )
-    }
+    ChatDialogHost(
+        state = state,
+        vm = vm,
+        conversationId = conversationId,
+        reactions = reactions,
+        showDeleteSelectionConfirm = showDeleteSelectionConfirm,
+        showViewer = showViewer,
+        viewerUrls = viewerUrls,
+        viewerInitialIndex = viewerInitialIndex,
+        reactionDetailMessageId = reactionDetailMessageId,
+    )
 
-    state.expiryDialogMessageId?.let { msgId ->
-        ExpiryDurationDialog(
-            onDismiss = { vm.onIntent(ChatIntent.DismissExpiryDialog) },
-            onSelect = { vm.onIntent(ChatIntent.SetExpiry(msgId, it)) },
-        )
-    }
-
-    if (state.showForwardDialog) {
-        ForwardConversationDialog(
-            conversations = state.forwardableConversations,
-            onDismiss = { vm.onIntent(ChatIntent.DismissForwardDialog) },
-            onSelect = { targetConversationId ->
-                val forwardingMsg = state.forwardingMessage
-                if (forwardingMsg != null) {
-                    vm.onIntent(ChatIntent.ForwardMessage(forwardingMsg.id, targetConversationId))
-                } else {
-                    vm.onIntent(ChatIntent.ForwardSelectedMessages(targetConversationId))
-                }
-            },
-        )
-    }
-
-    if (state.showIncognitoInfoDialog) {
-        AlertDialog(
-            onDismissRequest = { vm.onIntent(ChatIntent.DismissIncognitoDialog) },
-            title = { Text(stringResource(R.string.chat_incognito_mode)) },
-            text = {
-                Text(stringResource(R.string.chat_incognito_mode_description))
-            },
-            confirmButton = {
-                TextButton(onClick = { vm.onIntent(ChatIntent.ConfirmIncognito) }) {
-                    Text(stringResource(R.string.chat_incognito_confirm_activate))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { vm.onIntent(ChatIntent.DismissIncognitoDialog) }) {
-                    Text(stringResource(R.string.chat_cancel))
-                }
-            },
-        )
-    }
-
-    if (state.showForwardSelectionDialog) {
-        ForwardConversationDialog(
-            conversations = state.forwardableConversations,
-            onDismiss = { vm.onIntent(ChatIntent.DismissForwardSelectionDialog) },
-            onSelect = { targetConversationId ->
-                vm.onIntent(ChatIntent.ForwardSelectedMessages(targetConversationId))
-            },
-        )
-    }
-
-    if (state.showForwardSelectionDialog) {
-        ForwardConversationDialog(
-            conversations = state.forwardableConversations,
-            onDismiss = { vm.onIntent(ChatIntent.DismissForwardSelectionDialog) },
-            onSelect = { targetConversationId ->
-                vm.onIntent(ChatIntent.ForwardSelectedMessages(targetConversationId))
-            },
-        )
-    }
-
-    if (state.showMuteDialog) {
-        MuteDurationDialog(
-            onDismiss = { vm.onIntent(ChatIntent.DismissMuteDialog) },
-            onSelect = { vm.onIntent(ChatIntent.MuteFor(it)) },
-        )
-    }
-
-    var showStickerStore by remember { mutableStateOf(false) }
-
-    if (state.showStickerPicker) {
-        StickerGifPicker(
-            onStickerSelected = { vm.onIntent(ChatIntent.SendSticker(it)) },
-            onGifSelected = { vm.onIntent(ChatIntent.SendGif(it)) },
-            onOpenStore = {
-                vm.onIntent(ChatIntent.CloseStickerPicker)
-                showStickerStore = true
-            },
-            onDismiss = { vm.onIntent(ChatIntent.CloseStickerPicker) },
-        )
-    }
-
-    if (showStickerStore) {
-        StickerStoreSheet(onDismiss = { showStickerStore = false })
-    }
-
-    val chatTheme = state.chatTheme
-    val chatThemeColors = chatTheme.toColors()
-
-    if (state.showThemePicker) {
-        ChatThemePickerSheet(
-            currentTheme = chatTheme,
-            onSelect = { vm.onIntent(ChatIntent.SetChatTheme(it)) },
-            onDismiss = { vm.onIntent(ChatIntent.DismissThemePicker) },
-        )
-    }
-
-    if (state.showDisappearingModeSheet) {
-        DisappearingModeSheet(
-            currentSeconds = state.disappearingModeSeconds,
-            onDismiss = { vm.onIntent(ChatIntent.DismissDisappearingModeSheet) },
-            onSelect = { seconds -> vm.onIntent(ChatIntent.SetDisappearingMode(conversationId, seconds)) },
-        )
-    }
-
-    if (state.showScheduleDialog) {
-        ScheduleMessageDialog(
-            onDismiss = { vm.onIntent(ChatIntent.DismissScheduleDialog) },
-            onConfirm = { scheduledAtMs -> vm.onIntent(ChatIntent.ScheduleMessage(scheduledAtMs)) },
-        )
-    }
-
-    if (state.showScheduledSheet) {
-        val scheduledSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ModalBottomSheet(
-            onDismissRequest = { vm.onIntent(ChatIntent.DismissScheduledSheet) },
-            sheetState = scheduledSheetState,
-        ) {
-            Text(
-                text = stringResource(R.string.chat_scheduled_messages),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            )
-            if (state.scheduledMessages.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.Default.Schedule,
-                            contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.outlineVariant,
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            stringResource(R.string.chat_no_scheduled_messages),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            } else {
-                LazyColumn {
-                    items(state.scheduledMessages, key = { it.id }) { msg ->
-                        val formatter = remember { java.text.SimpleDateFormat("dd MMM HH:mm", java.util.Locale.getDefault()) }
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = msg.text,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                                Text(
-                                    text = formatter.format(java.util.Date(msg.scheduledAtMs)),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                            IconButton(onClick = { vm.onIntent(ChatIntent.CancelScheduledMessage(msg.id)) }) {
-                                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.chat_cancel_scheduled_message))
-                            }
-                        }
-                    }
-                }
-            }
-            Spacer(
-                Modifier.padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
-            )
-        }
-    }
-
-    if (state.showAiSheet) {
-        AiAssistantSheet(
-            aiSuggestion = state.aiSuggestion,
-            isAiLoading = state.isAiLoading,
-            onDismiss = { vm.onIntent(ChatIntent.DismissAiSheet) },
-            onSuggestReply = { vm.onIntent(ChatIntent.AiSuggestReply) },
-            onFreeform = { prompt -> vm.onIntent(ChatIntent.AiFreeform(prompt)) },
-            onInsert = { vm.onIntent(ChatIntent.InsertAiSuggestion) },
-        )
-    }
-
-    if (state.showCreatePollSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { vm.onIntent(ChatIntent.DismissCreatePollSheet) },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        ) {
-            CreatePollSheetContent(
-                onDismiss = { vm.onIntent(ChatIntent.DismissCreatePollSheet) },
-                onCreate = { question, options, allowMultiple ->
-                    vm.onIntent(ChatIntent.CreatePoll(question, options, allowMultiple))
-                },
-            )
-        }
-    }
-
-    reactionDetailMessageId?.let { msgId ->
-        val msgReactions = reactions[msgId] ?: emptyList()
-        if (msgReactions.isNotEmpty()) {
-            ModalBottomSheet(
-                onDismissRequest = { reactionDetailMessageId = null },
-                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-            ) {
-                ReactionDetailsSheet(
-                    reactions = msgReactions,
-                    onDismiss = { reactionDetailMessageId = null },
-                )
-            }
-        }
-    }
-
-    if (state.showWallpaperPicker) {
-        WallpaperPickerSheet(
-            currentColor = state.wallpaperColor,
-            onSelect = { colorValue: Long? ->
-                vm.onIntent(ChatIntent.SetWallpaperColor(colorValue))
-                vm.onIntent(ChatIntent.DismissWallpaperPicker)
-            },
-            onDismiss = { vm.onIntent(ChatIntent.DismissWallpaperPicker) },
-        )
-    }
+    val chatThemeColors = state.chatTheme.toColors()
 
     val latestPinned = state.latestPinnedMessage
     var pinnedBannerVisible by rememberSaveable(latestPinned?.id) { mutableStateOf(true) }
@@ -640,7 +392,7 @@ fun ChatScreen(
                         IconButton(onClick = { vm.onIntent(ChatIntent.ShowForwardSelectionDialog) }) {
                             Icon(Icons.AutoMirrored.Filled.Forward, contentDescription = stringResource(R.string.chat_forward_selected))
                         }
-                        IconButton(onClick = { showDeleteSelectionConfirm = true }) {
+                        IconButton(onClick = { showDeleteSelectionConfirm.value = true }) {
                             Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.chat_delete_selected))
                         }
                     },
@@ -1165,9 +917,9 @@ fun ChatScreen(
                                 ImageGroupBubble(
                                     messages = group,
                                     onImageClick = { idx ->
-                                        viewerUrls = group.mapNotNull { it.imageUrl }
-                                        viewerInitialIndex = idx
-                                        showViewer = true
+                                        viewerUrls.value = group.mapNotNull { it.imageUrl }
+                                        viewerInitialIndex.value = idx
+                                        showViewer.value = true
                                     },
                                     onReply = { vm.onIntent(ChatIntent.SetReply(group.first())) },
                                 )
@@ -1176,9 +928,9 @@ fun ChatScreen(
                                     message = message,
                                     isGroup = state.isGroup,
                                     onImageClick = { url ->
-                                        viewerUrls = listOf(url)
-                                        viewerInitialIndex = 0
-                                        showViewer = true
+                                        viewerUrls.value = listOf(url)
+                                        viewerInitialIndex.value = 0
+                                        showViewer.value = true
                                     },
                                     onReply = { vm.onIntent(ChatIntent.SetReply(message)) },
                                     isHighlighted = message.id == highlightedMessageId,
@@ -1213,9 +965,9 @@ fun ChatScreen(
                                 message = message,
                                 isGroup = state.isGroup,
                                 onImageClick = { url ->
-                                    viewerUrls = listOf(url)
-                                    viewerInitialIndex = 0
-                                    showViewer = true
+                                    viewerUrls.value = listOf(url)
+                                    viewerInitialIndex.value = 0
+                                    showViewer.value = true
                                 },
                                 onReply = { vm.onIntent(ChatIntent.SetReply(message)) },
                                 isHighlighted = message.id == highlightedMessageId,
@@ -1233,7 +985,7 @@ fun ChatScreen(
                                 outgoingBubbleColor = chatThemeColors.bubbleColor,
                                 onOpenPdf = onOpenPdf,
                                 onVote = { optionId -> vm.onIntent(ChatIntent.VotePoll(message.content.removePrefix("poll:"), optionId)) },
-                                onShowReactionDetails = { reactionDetailMessageId = message.id },
+                                onShowReactionDetails = { reactionDetailMessageId.value = message.id },
                                 onRetryMessage = { vm.onIntent(ChatIntent.RetryMessage(it)) },
                                 onCopy = { vm.onIntent(ChatIntent.CopyMessageContent(it)) },
                                 contactPhoneLookups = contactPhoneOf(message.content)?.let { phone ->

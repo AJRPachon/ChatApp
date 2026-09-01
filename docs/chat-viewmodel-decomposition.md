@@ -180,6 +180,41 @@ Also found and fixed in passing (real, not baseline noise): a genuinely dead
 never caught by detekt before this move surfaced it standalone. Removed along with its
 now-unused import.
 
+**Done (third pass — the dialog/sheet host):** `ChatScreen`'s own body, after the previous two
+passes, was still one ~1150-line composable: setup (state collection, effects, permission
+launchers), a flat sequence of ~16 independent `if (state.showX) { XDialog(...) }` blocks, the
+`Scaffold` (`topBar` with its own large dropdown-menu block, `bottomBar`, message-list
+content). Of these, the dialog/sheet sequence was the one genuinely self-contained region —
+extracted to `ChatDialogHost.kt` as a single composable. `ChatScreen.kt`: 1317 → 1069 lines.
+
+Found and fixed in passing (real bug, not a refactor artifact): `ForwardConversationDialog` for
+`state.showForwardSelectionDialog` was duplicated verbatim as two consecutive identical `if`
+blocks, so it composed twice (stacked) whenever that flag was true. Collapsed to one during the
+move.
+
+Five pieces of local UI state are read *and* written from both inside the extracted host and
+from `ChatScreen`'s own message-list content further down (opening the image viewer or the
+reaction-details sheet from a tapped bubble): `showDeleteSelectionConfirm`, `showViewer`,
+`viewerUrls`, `viewerInitialIndex`, `reactionDetailMessageId`. Rather than threading get/set
+callback pairs for each (10 extra params) they're passed as the raw `MutableState<T>` objects
+`remember`/`rememberSaveable` already produce — changing their declarations from `var x by
+remember { mutableStateOf(v) }` to `val xState = remember { mutableStateOf(v) }` and every
+`x = y` call site (in both the moved and the staying code) to `xState.value = y`. Idiomatic
+Compose state-hoisting; keeps both sides of the split reading/writing the exact same state
+identity instead of two independent copies.
+
+Left in `ChatScreen.kt`, not attempted this pass: the `topBar` (incognito banner + the
+`TopAppBar` with its own sizeable dropdown-menu block + `PinnedMessageBanner`), `bottomBar`
+(offline banner, editing/reply preview bars, typing indicator, the audio-state
+recording/preview/normal-input switch), and the message-list content (`LazyColumn` with the
+image-group/suppressed-message paging logic, scroll-to-bottom FAB, search overlay). Unlike the
+dialog host, these three don't have a clean boundary the way the `if (state.showX)` sequence
+did — they share numerous `remember`-scoped locals declared once at the top of `ChatScreen`
+(the permission-launchers alone are read from both `bottomBar`'s `NormalInputBar` callbacks and
+inline `onClick`s elsewhere), so splitting any one of them means either a `MutableState`-hoisting
+pass similar to this one but larger, or accepting a long callback-param list. Worth another
+pass, but a bigger one than any single slice so far — not attempted in this session.
+
 ### Shrinking `ChatState`/`ChatIntent`
 
 Not started. Only once the composable split above is further along does it make sense to
