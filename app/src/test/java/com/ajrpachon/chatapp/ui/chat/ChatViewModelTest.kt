@@ -32,7 +32,9 @@ import com.ajrpachon.chatapp.utils.TranslationManager
 import androidx.work.WorkManager
 import com.ajrpachon.chatapp.domain.usecase.ExportConversationUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetGroupMembersUseCase
+import com.ajrpachon.chatapp.domain.usecase.GetUriMetadataUseCase
 import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
+import com.ajrpachon.chatapp.domain.usecase.ReadUriAsBytesUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
 import com.ajrpachon.chatapp.util.MainDispatcherRule
@@ -88,6 +90,8 @@ class ChatViewModelTest {
     private val clipboardProtection = mockk<ClipboardProtection>(relaxed = true)
     private val exportConversationUseCase = mockk<ExportConversationUseCase>(relaxed = true)
     private val linkPreviewFetcher = mockk<LinkPreviewFetcher>(relaxed = true)
+    private val getUriMetadataUseCase = mockk<GetUriMetadataUseCase>(relaxed = true)
+    private val readUriAsBytesUseCase = mockk<ReadUriAsBytesUseCase>(relaxed = true)
 
     private val membersFlow = MutableStateFlow<List<GroupMemberBO>>(emptyList())
 
@@ -169,6 +173,8 @@ class ChatViewModelTest {
             sendInvitationUseCase = sendInvitationUseCase,
             exportConversationUseCase = exportConversationUseCase,
             linkPreviewFetcher = linkPreviewFetcher,
+            getUriMetadataUseCase = getUriMetadataUseCase,
+            readUriAsBytesUseCase = readUriAsBytesUseCase,
         )
 
     // ── isCurrentUserMember ───────────────────────────────────────────────────

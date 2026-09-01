@@ -1,4 +1,4 @@
-﻿package com.ajrpachon.chatapp.di
+package com.ajrpachon.chatapp.di
 
 import com.ajrpachon.chatapp.BuildConfig
 import com.ajrpachon.chatapp.data.local.buildChatDatabase
@@ -146,6 +146,8 @@ val viewModelModule = module {
             sendInvitationUseCase = get(),
             exportConversationUseCase = get(),
             linkPreviewFetcher = get(),
+            getUriMetadataUseCase = get(),
+            readUriAsBytesUseCase = get(),
         )
     }
     viewModelOf(::GroupInfoViewModel)

@@ -1,13 +1,11 @@
-﻿package com.ajrpachon.chatapp.ui.chat
+package com.ajrpachon.chatapp.ui.chat
 
 import android.annotation.SuppressLint
 import android.app.Application
-import android.content.Context
 import android.location.LocationManager
 import android.media.MediaRecorder
 import android.net.Uri
 import android.os.Build
-import android.provider.OpenableColumns
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
@@ -27,6 +25,7 @@ import com.ajrpachon.chatapp.domain.repository.PollRepository
 import com.ajrpachon.chatapp.domain.repository.WallpaperRepository
 import com.ajrpachon.chatapp.domain.model.CallType
 import com.ajrpachon.chatapp.domain.model.GroupMemberBO
+import com.ajrpachon.chatapp.domain.model.LocationMessageFormat
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
@@ -39,7 +38,9 @@ import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.model.UserRelationship
 import com.ajrpachon.chatapp.domain.usecase.ExportConversationUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetGroupMembersUseCase
+import com.ajrpachon.chatapp.domain.usecase.GetUriMetadataUseCase
 import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
+import com.ajrpachon.chatapp.domain.usecase.ReadUriAsBytesUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationResult
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
@@ -102,6 +103,8 @@ class ChatViewModel(
     private val sendInvitationUseCase: SendInvitationUseCase,
     private val exportConversationUseCase: ExportConversationUseCase,
     private val linkPreviewFetcher: LinkPreviewFetcher,
+    private val getUriMetadataUseCase: GetUriMetadataUseCase,
+    private val readUriAsBytesUseCase: ReadUriAsBytesUseCase,
 ) : BaseViewModel<ChatState, ChatEffect>(ChatState()) {
 
     private val conversationId = args.conversationId
@@ -330,9 +333,9 @@ class ChatViewModel(
                 }
             }
             is ChatIntent.Send -> if (state.value.editingMessage != null) confirmEdit() else sendMessage()
-            is ChatIntent.SendImages -> sendImages(intent.context, intent.uris)
-            is ChatIntent.SendFile -> sendFile(intent.context, intent.uri)
-            is ChatIntent.SendVideo -> sendVideo(intent.context, intent.uri)
+            is ChatIntent.SendImages -> sendImages(intent.uris)
+            is ChatIntent.SendFile -> sendFile(intent.uri)
+            is ChatIntent.SendVideo -> sendVideo(intent.uri)
             is ChatIntent.StartRecording -> startRecording()
             is ChatIntent.StopRecording -> stopRecording()
             is ChatIntent.DiscardAudio -> discardAudio()
@@ -606,7 +609,7 @@ class ChatViewModel(
         viewModelScope.launch {
             sendEffect(ChatEffect.ScrollToBottom)
             updateState { it.copy(replyingTo = null) }
-            sendMessageUseCase(conversationId, userId, "📍 Mi ubicación: $mapsUrl",
+            sendMessageUseCase(conversationId, userId, LocationMessageFormat.format(mapsUrl),
                 replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
             ).onFailure { e -> updateState { it.copy(error = e.message ?: "Error") } }
         }
@@ -719,40 +722,38 @@ class ChatViewModel(
         }
     }
 
-    private fun sendImages(context: Context, uris: List<Uri>) {
+    private fun sendImages(uris: List<Uri>) {
         val userId = state.value.currentUserId ?: return
         val reply = state.value.replyingTo
         viewModelScope.launch {
             sendEffect(ChatEffect.ScrollToBottom)
             updateState { it.copy(replyingTo = null) }
-            val sizedUris = uris.map { uri ->
-                val size = catchResult {
-                    withContext(Dispatchers.IO) {
-                        context.contentResolver.openAssetFileDescriptor(uri, "r")?.use { it.length }
-                    }
-                }.getOrNull()?.takeIf { it >= 0 } ?: 0L
-                uri to size
+            val metadataByUri = uris.map { uri ->
+                val metadata = catchResult {
+                    withContext(Dispatchers.IO) { getUriMetadataUseCase(uri.toString()) }
+                }.getOrNull()
+                uri to metadata
             }
-            val totalBytes = sizedUris.sumOf { it.second }
+            val totalBytes = metadataByUri.sumOf { (_, metadata) -> metadata?.size?.takeIf { it >= 0 } ?: 0L }
             // Only smooth batches that would render as ImageGroupBubble (>2 images) — that's
             // where the per-message paging updates cause the reported bubble-shape jumping.
             // Single/double sends already render fine as each message lands.
-            val showBatchPlaceholder = sizedUris.size > 2
+            val showBatchPlaceholder = metadataByUri.size > 2
             updateState {
                 it.copy(
-                    mediaUploadProgress = MediaUploadProgress(totalCount = sizedUris.size, completedCount = 0, totalBytes = totalBytes),
-                    pendingImageUris = if (showBatchPlaceholder) sizedUris.map { sized -> sized.first } else emptyList(),
+                    mediaUploadProgress = MediaUploadProgress(totalCount = metadataByUri.size, completedCount = 0, totalBytes = totalBytes),
+                    pendingImageUris = if (showBatchPlaceholder) metadataByUri.map { (uri, _) -> uri } else emptyList(),
                     suppressedImageMessageIds = emptySet(),
                 )
             }
-            for ((index, sizedUri) in sizedUris.withIndex()) {
-                val uri = sizedUri.first
+            for ((index, entry) in metadataByUri.withIndex()) {
+                val (uri, metadata) = entry
                 val bytes = catchResult {
-                    withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { stream -> stream.readBytes() } }
+                    readUriAsBytesUseCase(uri.toString())
                 }.getOrNull()
                 if (bytes != null) {
                     catchResult {
-                        val mimeType = context.contentResolver.getType(uri) ?: "image/jpeg"
+                        val mimeType = metadata?.mimeType ?: "image/jpeg"
                         val imageUrl = messageRepository.uploadImage(conversationId, bytes, mimeType)
                         val replyForImage = if (index == 0) reply else null
                         sendMessageUseCase(conversationId, userId, "", imageUrl,
@@ -764,7 +765,7 @@ class ChatViewModel(
                         }
                     }.onFailure { e -> AppLogger.e(TAG, "sendImages failed", e); updateState { it.copy(error = e.message ?: "Error uploading image") } }
                 } else {
-                    AppLogger.e(TAG, "sendImages: openInputStream returned null for $uri")
+                    AppLogger.e(TAG, "sendImages: could not read bytes for $uri")
                     updateState { it.copy(error = "No se pudo leer la imagen") }
                 }
                 updateState { it.copy(mediaUploadProgress = it.mediaUploadProgress?.copy(completedCount = index + 1)) }
@@ -845,24 +846,18 @@ class ChatViewModel(
         }
     }
 
-    private fun sendFile(context: Context, uri: Uri) {
+    private fun sendFile(uri: Uri) {
         val userId = state.value.currentUserId ?: return
         val reply = state.value.replyingTo
         viewModelScope.launch {
             sendEffect(ChatEffect.ScrollToBottom)
             updateState { it.copy(isUploadingFile = true, replyingTo = null) }
             catchResult {
-                val mimeType = context.contentResolver.getType(uri) ?: "application/octet-stream"
-                val displayName = context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                    val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                    cursor.moveToFirst(); if (idx >= 0) cursor.getString(idx) else null
-                } ?: "archivo"
-                val fileSize = context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                    val idx = cursor.getColumnIndex(OpenableColumns.SIZE)
-                    cursor.moveToFirst(); if (idx >= 0) cursor.getLong(idx) else null
-                }
-                val bytes = withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { stream -> stream.readBytes() } }
-                    ?: error("No se pudo leer el archivo")
+                val metadata = withContext(Dispatchers.IO) { getUriMetadataUseCase(uri.toString()) }
+                val mimeType = metadata.mimeType ?: "application/octet-stream"
+                val displayName = metadata.displayName ?: "archivo"
+                val fileSize = metadata.size
+                val bytes = readUriAsBytesUseCase(uri.toString())
                 val fileUrl = messageRepository.uploadFile(conversationId, bytes, displayName, mimeType)
                 sendMessageUseCase(conversationId, userId, "", fileUrl = fileUrl, fileName = displayName,
                     fileSize = fileSize, fileMimeType = mimeType,
@@ -873,22 +868,18 @@ class ChatViewModel(
         }
     }
 
-    private fun sendVideo(context: Context, uri: Uri) {
+    private fun sendVideo(uri: Uri) {
         val userId = state.value.currentUserId ?: return
         val reply = state.value.replyingTo
         viewModelScope.launch {
             sendEffect(ChatEffect.ScrollToBottom)
             updateState { it.copy(isUploadingFile = true, replyingTo = null) }
             catchResult {
-                val fileSize = context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                    val idx = cursor.getColumnIndex(OpenableColumns.SIZE)
-                    cursor.moveToFirst(); if (idx >= 0) cursor.getLong(idx) else null
-                }
+                val fileSize = withContext(Dispatchers.IO) { getUriMetadataUseCase(uri.toString()) }.size
                 check(fileSize == null || fileSize <= UploadLimits.VIDEO_MAX_BYTES) {
                     "El video supera el tamaño máximo permitido (50 MB)"
                 }
-                val bytes = withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { stream -> stream.readBytes() } }
-                    ?: error("No se pudo leer el video")
+                val bytes = readUriAsBytesUseCase(uri.toString())
                 val videoUrl = messageRepository.uploadVideo(conversationId, bytes)
                 sendMessageUseCase(conversationId, userId, "", videoUrl = videoUrl,
                     replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,

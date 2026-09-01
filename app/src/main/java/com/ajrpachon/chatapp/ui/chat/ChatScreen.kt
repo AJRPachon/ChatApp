@@ -1,4 +1,4 @@
-﻿package com.ajrpachon.chatapp.ui.chat
+package com.ajrpachon.chatapp.ui.chat
 
 import android.Manifest
 import android.content.Context
@@ -113,6 +113,9 @@ import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.service.ActiveChatTracker
 import com.ajrpachon.chatapp.ui.components.ChatMessagesSkeleton
 import com.ajrpachon.chatapp.ui.components.OfflineBanner
+import com.ajrpachon.chatapp.ui.theme.CallAcceptedGreen
+import com.ajrpachon.chatapp.ui.theme.IncognitoAccent
+import com.ajrpachon.chatapp.ui.theme.IncognitoBannerBackground
 import com.ajrpachon.chatapp.ui.components.EmojiPickerBottomSheet
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -179,6 +182,7 @@ import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.domain.model.CallBO
 import com.ajrpachon.chatapp.domain.model.ChatTheme
 import com.ajrpachon.chatapp.domain.model.ConversationBO
+import com.ajrpachon.chatapp.domain.model.LocationMessageFormat
 import com.ajrpachon.chatapp.domain.model.MediaUrlValidator
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.PollOptionBO
@@ -359,15 +363,15 @@ fun ChatScreen(
 
     val galleryLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickMultipleVisualMedia()
-    ) { uris -> if (uris.isNotEmpty()) vm.onIntent(ChatIntent.SendImages(context, uris)) }
+    ) { uris -> if (uris.isNotEmpty()) vm.onIntent(ChatIntent.SendImages(uris)) }
 
     val fileLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
-    ) { uri -> if (uri != null) vm.onIntent(ChatIntent.SendFile(context, uri)) }
+    ) { uri -> if (uri != null) vm.onIntent(ChatIntent.SendFile(uri)) }
 
     val videoLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CaptureVideo()
-    ) { success -> if (success) videoUri?.let { vm.onIntent(ChatIntent.SendVideo(context, it)) } }
+    ) { success -> if (success) videoUri?.let { vm.onIntent(ChatIntent.SendVideo(it)) } }
 
     val videoPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -380,7 +384,7 @@ fun ChatScreen(
 
     val cameraLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()
-    ) { success -> if (success) cameraUri?.let { vm.onIntent(ChatIntent.SendImages(context, listOf(it))) } }
+    ) { success -> if (success) cameraUri?.let { vm.onIntent(ChatIntent.SendImages(listOf(it))) } }
 
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -683,7 +687,7 @@ fun ChatScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(androidx.compose.ui.graphics.Color(0xFF4A148C))
+                        .background(IncognitoBannerBackground)
                         .padding(horizontal = 16.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center,
@@ -940,7 +944,7 @@ fun ChatScreen(
                                     Icon(
                                         Icons.Default.Lock,
                                         contentDescription = null,
-                                        tint = if (state.isIncognito) androidx.compose.ui.graphics.Color(0xFF7B1FA2) else MaterialTheme.colorScheme.onSurface,
+                                        tint = if (state.isIncognito) IncognitoAccent else MaterialTheme.colorScheme.onSurface,
                                     )
                                 },
                                 onClick = {
@@ -1262,10 +1266,14 @@ fun ChatScreen(
                                     onVote = { optionId -> vm.onIntent(ChatIntent.VotePoll(message.content.removePrefix("poll:"), optionId)) },
                                     onRetryMessage = { vm.onIntent(ChatIntent.RetryMessage(it)) },
                                     onCopy = { vm.onIntent(ChatIntent.CopyMessageContent(it)) },
-                                    contactPhoneLookups = state.contactPhoneLookups,
+                                    contactPhoneLookups = contactPhoneOf(message.content)?.let { phone ->
+                                        state.contactPhoneLookups[phone]?.let { mapOf(phone to it) }
+                                    } ?: emptyMap(),
                                     onCheckContactRelationship = { vm.onIntent(ChatIntent.CheckContactRelationship(it)) },
                                     onContactCardPrimaryAction = { vm.onIntent(ChatIntent.ContactCardPrimaryAction(it)) },
-                                    pollUiStates = state.pollUiStates,
+                                    pollUiStates = pollIdOf(message.content)?.let { id ->
+                                        state.pollUiStates[id]?.let { mapOf(id to it) }
+                                    } ?: emptyMap(),
                                     onObservePoll = { pollId -> vm.onIntent(ChatIntent.ObservePoll(pollId)) },
                                     linkPreviews = state.linkPreviews,
                                     onDetectedUrl = { url -> vm.onIntent(ChatIntent.DetectedUrlChanged(url)) },
@@ -1299,10 +1307,14 @@ fun ChatScreen(
                                 onShowReactionDetails = { reactionDetailMessageId = message.id },
                                 onRetryMessage = { vm.onIntent(ChatIntent.RetryMessage(it)) },
                                 onCopy = { vm.onIntent(ChatIntent.CopyMessageContent(it)) },
-                                contactPhoneLookups = state.contactPhoneLookups,
+                                contactPhoneLookups = contactPhoneOf(message.content)?.let { phone ->
+                                    state.contactPhoneLookups[phone]?.let { mapOf(phone to it) }
+                                } ?: emptyMap(),
                                 onCheckContactRelationship = { vm.onIntent(ChatIntent.CheckContactRelationship(it)) },
                                 onContactCardPrimaryAction = { vm.onIntent(ChatIntent.ContactCardPrimaryAction(it)) },
-                                pollUiStates = state.pollUiStates,
+                                pollUiStates = pollIdOf(message.content)?.let { id ->
+                                    state.pollUiStates[id]?.let { mapOf(id to it) }
+                                } ?: emptyMap(),
                                 onObservePoll = { pollId -> vm.onIntent(ChatIntent.ObservePoll(pollId)) },
                                 linkPreviews = state.linkPreviews,
                                 onDetectedUrl = { url -> vm.onIntent(ChatIntent.DetectedUrlChanged(url)) },
@@ -1475,11 +1487,10 @@ private fun CallMessageBubble(message: MessageBO) {
     }
     val isVideo = message.callType == "video"
     val status = message.callStatus ?: "ended"
-    val callGreen = Color(0xFF2E7D32)
 
     val iconTint = when {
         status == "missed" && !message.isFromMe -> MaterialTheme.colorScheme.error
-        status == "ended" -> callGreen
+        status == "ended" -> CallAcceptedGreen
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
     }
     val statusText = when {
@@ -1490,7 +1501,7 @@ private fun CallMessageBubble(message: MessageBO) {
     }
     val statusColor = when {
         status == "missed" && !message.isFromMe -> MaterialTheme.colorScheme.error
-        status == "ended" -> callGreen
+        status == "ended" -> CallAcceptedGreen
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
     }
 
@@ -1821,6 +1832,22 @@ private fun DeletedMessageBubble(message: MessageBO) {
 
 // ── MessageBubble ─────────────────────────────────────────────────────────────
 
+/**
+ * Cheap, pure key extraction shared between MessageBubble's own content-type branching and its
+ * call site (which uses these to narrow the whole-conversation pollUiStates/contactPhoneLookups
+ * maps down to just the single entry a given message needs, before passing them down — a
+ * MessageBubble instance should only recompose when the poll/contact data IT depends on
+ * changes, not whenever any other message's poll/contact data changes elsewhere in the map).
+ */
+private fun pollIdOf(content: String): String? =
+    content.takeIf { it.startsWith("poll:") }?.removePrefix("poll:")
+
+private fun contactPhoneOf(content: String): String? {
+    if (!content.startsWith("contact:{")) return null
+    val json = content.removePrefix("contact:")
+    return runCatching { org.json.JSONObject(json).optString("phone", "") }.getOrNull()
+}
+
 @Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList", "ReturnCount")
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -1874,7 +1901,7 @@ private fun MessageBubble(
     if (message.content.startsWith("contact:{")) {
         val json = message.content.removePrefix("contact:")
         val contactName = runCatching { org.json.JSONObject(json).getString("name") }.getOrNull()
-        val contactPhone = runCatching { org.json.JSONObject(json).optString("phone", "") }.getOrNull()
+        val contactPhone = contactPhoneOf(message.content)
         if (contactName != null) {
             ReplySelectContainer(message.isFromMe, isSelected, isMultiSelectActive, onToggleSelect, onReply) {
                 ContactBubble(
@@ -1902,7 +1929,7 @@ private fun MessageBubble(
         return
     }
     if (message.content.startsWith("poll:")) {
-        val pollId = remember(message.content) { message.content.removePrefix("poll:") }
+        val pollId = remember(message.content) { pollIdOf(message.content) ?: "" }
         ReplySelectContainer(message.isFromMe, isSelected, isMultiSelectActive, onToggleSelect, onReply) {
             PollBubble(
                 pollId = pollId,
@@ -2180,9 +2207,7 @@ private fun MessageFooterContent(
         var showEmojiPicker by remember { mutableStateOf(false) }
         val emojiSheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
         val locationUrl = remember(message.content) {
-            if (message.content.startsWith("📍 Mi ubicación: https://maps.google.com/?q=")) {
-                message.content.substringAfter("📍 Mi ubicación: ")
-            } else null
+            LocationMessageFormat.parseMapsUrl(message.content)
         }
         if (locationUrl != null) {
             LocationMessageCard(mapsUrl = locationUrl)
@@ -2611,7 +2636,7 @@ private fun ImageGroupBubble(
             ) {
                 AsyncImage(
                     model = urls[0],
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.chat_image_content_description),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .weight(1f)
@@ -2626,7 +2651,7 @@ private fun ImageGroupBubble(
                 ) {
                     AsyncImage(
                         model = urls[1],
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.chat_image_content_description),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
                     )
@@ -2809,7 +2834,7 @@ private fun ImageViewerDialog(
             ) { page ->
                 AsyncImage(
                     model = imageUrls[page],
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.userinfo_fullscreen_image_cd),
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -3547,7 +3572,7 @@ private fun PinnedMessageBanner(
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
             }
-            IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
+            IconButton(onClick = onDismiss) {
                 Icon(Icons.Default.Close, contentDescription = stringResource(R.string.chat_unpin), modifier = Modifier.size(16.dp))
             }
         }
