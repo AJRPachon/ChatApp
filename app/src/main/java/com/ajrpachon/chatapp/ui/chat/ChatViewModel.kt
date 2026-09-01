@@ -56,7 +56,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
@@ -204,24 +203,34 @@ class ChatViewModel(
         scope = viewModelScope,
         context = delegateContext,
     )
+    private val groupPresenceDelegate = ChatGroupPresenceDelegate(
+        conversationId = conversationId,
+        groupRepository = groupRepository,
+        getGroupMembersUseCase = getGroupMembersUseCase,
+        userRepository = userRepository,
+        scope = viewModelScope,
+        context = delegateContext,
+        onMembershipChanged = { isMember ->
+            if (isMember) {
+                val since = conversationRepository.getById(conversationId)?.historyVisibleFrom ?: 0L
+                catchResult { messageRepository.syncMessages(conversationId, since) }
+                _historyVisibleFrom.value = since
+                startRemoteSync(since)
+            } else {
+                catchResult { messageRepository.clearMessages(conversationId) }
+            }
+        },
+    )
 
-    private var groupMembers: List<GroupMemberBO> = emptyList()
     private var remoteSyncJob: Job? = null
     private var typingResetJob: Job? = null
     private var typingPresenceJob: Job? = null
     private var draftSaveJob: Job? = null
-    private val memberOnlineStatuses = MutableStateFlow<Map<String, Boolean>>(emptyMap())
-    private var memberObserveJob: Job? = null
     private val requestedLinkPreviewUrls = mutableSetOf<String>()
 
     init {
         viewModelScope.launch {
             networkMonitor.isOnline.collect { online -> updateState { it.copy(isOnline = online) } }
-        }
-        viewModelScope.launch {
-            memberOnlineStatuses.collect { map ->
-                updateState { it.copy(onlineMemberCount = map.values.count { v -> v }) }
-            }
         }
         viewModelScope.launch { catchResult { messageRepository.deleteExpiredMessages() } }
         viewModelScope.launch {
@@ -299,48 +308,7 @@ class ChatViewModel(
                     }
                 }
                 if (isGroup) {
-                    launch {
-                        catchResult { groupRepository.syncMembership(conversationId) }
-                        while (isActive) {
-                            delay(3_000)
-                            catchResult { groupRepository.syncMembership(conversationId) }
-                        }
-                    }
-                    var previousIsMember = true
-                    catchResult {
-                        getGroupMembersUseCase(conversationId).collect { members ->
-                            groupMembers = members
-                            val isMember = members.any { it.userId == uid }
-                            updateState { it.copy(isCurrentUserMember = isMember, groupMemberCount = members.size) }
-                            memberObserveJob?.cancel()
-                            memberObserveJob = launch {
-                                memberOnlineStatuses.value = emptyMap()
-                                for (member in members) {
-                                    launch {
-                                        catchResult {
-                                            userRepository.observeUserById(member.userId).collect { user ->
-                                                memberOnlineStatuses.value = memberOnlineStatuses.value + (member.userId to (user?.isOnline() == true))
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            when {
-                                isMember && !previousIsMember -> {
-                                    launch {
-                                        val since = conversationRepository.getById(conversationId)?.historyVisibleFrom ?: 0L
-                                        catchResult { messageRepository.syncMessages(conversationId, since) }
-                                        _historyVisibleFrom.value = since
-                                        startRemoteSync(since)
-                                    }
-                                }
-                                !isMember && previousIsMember -> {
-                                    launch { catchResult { messageRepository.clearMessages(conversationId) } }
-                                }
-                            }
-                            previousIsMember = isMember
-                        }
-                    }.onFailure { e -> AppLogger.e(TAG, "getGroupMembers FAILED", e) }
+                    groupPresenceDelegate.start(uid)
                 }
             }
         } else {
@@ -394,7 +362,7 @@ class ChatViewModel(
                 val lastWord = intent.text.substringAfterLast(' ')
                 if (state.value.isGroup && lastWord.startsWith("@") && lastWord.length > 1) {
                     val partial = lastWord.removePrefix("@").lowercase()
-                    val matches = groupMembers.filter { m ->
+                    val matches = groupPresenceDelegate.groupMembers.filter { m ->
                         m.username.lowercase().contains(partial) || m.displayName.lowercase().contains(partial)
                     }
                     updateState { it.copy(mentionSuggestions = matches, showMentionSuggestions = matches.isNotEmpty()) }

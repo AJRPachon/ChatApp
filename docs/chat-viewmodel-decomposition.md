@@ -73,13 +73,20 @@ carelessly):
 | 8a | `ChatMediaUploadDelegate` | `sendImages`, `sendFile`, `sendVideo` | `messageRepository`, `sendMessageUseCase`, `getUriMetadataUseCase`, `readUriAsBytesUseCase` | **Done** |
 | 8b | `ChatQuickSendDelegate` | `sendGif`, `sendSticker`, `sendContact`, `handleContactSelected`, `fetchAndSendLocation`, `sendLocationMessage` | `application` (LocationManager), `sendMessageUseCase`, `contactRepository` | **Done** |
 | 8c | `ChatAudioRecordingDelegate` | `startRecording`, `stopRecording`, `discardAudio`, `sendAudio`, + `cleanup()` for `onCleared()` | `application`, `messageRepository`, `sendMessageUseCase` | **Done** — originally planned as one "ChatMediaDelegate"; split into 8a/8b/8c once a single delegate covering all of it (9+ constructor params) tripped `LongParameterList` — the three really are distinct concerns (batch upload progress vs. one-shot sends vs. a `MediaRecorder` resource lifecycle) so the split reads better anyway |
-| 9 | init-block group-presence/membership logic (the `init { ... }` block) | not a delegate — this is `init` wiring with heavy cross-references to other state (`groupMembers`, `memberOnlineStatuses`, `_historyVisibleFrom`) | most repositories | **Not planned yet** — highest risk, needs its own design pass |
+| 9 | `ChatGroupPresenceDelegate` | the `if (isGroup) { ... }` block: membership-sync polling, live member-list + per-member online-status observation, reacting to join/leave | `groupRepository`, `getGroupMembersUseCase`, `userRepository` | **Done** |
 
-All of Phase 1's "planned" delegates (rows 1-8c) are now done — row 9 (the `init`-block
-group-presence/membership logic) is the only remaining item, and stays deliberately
-unscheduled per its own note below. `ChatViewModel.kt` went from 1194 lines/57 functions to
-~720 lines/~30 functions across the ten delegates above, with zero changes to `ChatState`/
-`ChatIntent`/`ChatScreen` throughout.
+All 11 of Phase 1's delegates (rows 1-9) are now done. `ChatViewModel.kt` went from
+1194 lines/57 functions to ~690 lines/~25 functions across all of them, with zero changes to
+`ChatState`/`ChatIntent`/`ChatScreen` throughout. Row 9 was the one genuinely different from
+the rest: not triggered by a `ChatIntent` (its `start(uid)` is called once from `init`, only
+for group conversations) and it couldn't take full ownership of everything it touches —
+`onMembershipChanged` is a callback into ChatViewModel rather than a repository dependency,
+because syncing/clearing local messages on join/leave has to update `_historyVisibleFrom` and
+restart the remote-sync subscription that back the `messages` Flow ChatScreen collects, and
+duplicating ownership of that into the delegate would've meant ChatScreen having two paths to
+the same state. `groupMembers` is exposed as a read-only property for the same reason: the
+`@mention` suggestion matcher in `onIntent`'s `InputChanged` handler (staying on
+ChatViewModel per the "what stays" list below) still needs to read it.
 
 One more param-budget lesson from 8c: when a delegate's own constructor would hit 8 params,
 prefer folding two *narrow, related* callbacks into one (e.g. "cancel the pending draft-save
@@ -88,13 +95,16 @@ of separate `draftRepository`/`cancelDraftSave` params) over reaching for a seco
 class — only introduce another `*Context`-style bundle if the delegate genuinely needs 3+ of
 these hooks, the way `ChatDelegateContext` bundles state/effect access.
 
-What stays directly on `ChatViewModel` after all of the above: `onIntent` dispatch, `init`
-wiring (conversation/user/group loading — see row 9), core send/edit/delete/reaction
-handlers (`sendMessage`, `confirmEdit`, `deleteMessage`, `toggleReaction`, `setExpiry`,
-`toggleMessageSelection`, `deleteSelectedMessages`), mute/leave-group, incognito, chat theme,
-wallpaper, typing presence (`startTypingPresence`/`sendTypingPresence`), mention selection,
-draft saving. That's still a real ViewModel, but one whose job is "core conversation
-messaging" instead of "everything the chat screen can possibly do."
+What stays directly on `ChatViewModel`: `onIntent` dispatch, `init` wiring (conversation/user
+loading, the various `observe*`/state-projector subscriptions, and calling
+`groupPresenceDelegate.start(uid)` when the conversation is a group), core
+send/edit/delete/reaction handlers (`sendMessage`, `confirmEdit`, `deleteMessage`,
+`toggleReaction`, `setExpiry`, `toggleMessageSelection`, `deleteSelectedMessages`),
+mute/leave-group, incognito, chat theme, wallpaper, typing presence
+(`startTypingPresence`/`sendTypingPresence`), `@mention` selection/matching, draft saving,
+`startRemoteSync`/`_historyVisibleFrom` (backing the `messages` Flow). That's still a real
+ViewModel, but one whose job is "core conversation messaging" instead of "everything the chat
+screen can possibly do."
 
 ## Phase 2 (later, not started): shrink State/Intent, split ChatScreen
 
