@@ -6,18 +6,6 @@ import io.livekit.android.room.track.VideoTrack
 
 enum class CallPhase { CONNECTING, RINGING, ACTIVE, ENDED, ERROR }
 
-/**
- * Represents a single remote participant in a call.
- * Used for group call grid rendering. [videoTrack] is null when the participant's camera is off.
- */
-data class ParticipantState(
-    val identity: String,
-    val displayName: String,
-    val videoTrack: VideoTrack?,
-    val isMuted: Boolean,
-    val isSpeaking: Boolean,
-)
-
 data class InCallMessage(
     val sender: String,
     val text: String,
@@ -32,8 +20,6 @@ data class CallState(
     val isFrontCamera: Boolean = true,
     val remoteVideoTrack: VideoTrack? = null,
     val remoteVideoTracks: List<VideoTrack> = emptyList(),
-    /** Structured participant list for group call grid UI. */
-    val participants: List<ParticipantState> = emptyList(),
     val localVideoTrack: LocalVideoTrack? = null,
     val durationSeconds: Int = 0,
     val error: String? = null,

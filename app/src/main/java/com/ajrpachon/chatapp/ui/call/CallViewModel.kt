@@ -194,16 +194,23 @@ class CallViewModel(
                 missedCallJob?.cancel()
                 updateState { it.copy(phase = CallPhase.ACTIVE) }
                 startDurationTimer()
-                livekitRoom.remoteParticipants.values.forEach { p ->
+                // Also append to remoteVideoTracks (not just the singular remoteVideoTrack) —
+                // the group grid renders from remoteVideoTracks, so a participant already in the
+                // room at connect time was previously invisible in the grid.
+                val existingTracks = livekitRoom.remoteParticipants.values.mapNotNull { p ->
                     p.videoTrackPublications
                         .mapNotNull { (_, track) -> track as? VideoTrack }
                         .firstOrNull()
-                        ?.let { track -> updateState { s -> s.copy(remoteVideoTrack = track) } }
+                }
+                if (existingTracks.isNotEmpty()) {
+                    updateState { s ->
+                        s.copy(
+                            remoteVideoTrack = existingTracks.first(),
+                            remoteVideoTracks = (s.remoteVideoTracks + existingTracks).distinct(),
+                        )
+                    }
                 }
             }
-
-            // Populate participants list with anyone already in the room at connect time.
-            rebuildParticipants()
 
         }.onFailure { e ->
             AppLogger.e(TAG, "joinCall: FAILED", e)
@@ -303,22 +310,6 @@ class CallViewModel(
             callDuration = duration,
         ).onFailure { e -> AppLogger.e(TAG, "sendCallSummaryMessage: FAILED", e) }
          .onSuccess { AppLogger.d(TAG, "sendCallSummaryMessage: OK status=$status") }
-    }
-
-    private fun rebuildParticipants() {
-        val remotes = room?.remoteParticipants?.values ?: return
-        val list = remotes.map { p ->
-            ParticipantState(
-                identity = p.identity?.value ?: "",
-                displayName = p.name?.takeIf { it.isNotBlank() } ?: p.identity?.value ?: "",
-                videoTrack = p.videoTrackPublications
-                    .mapNotNull { (_, track) -> track as? VideoTrack }
-                    .firstOrNull(),
-                isMuted = p.audioTrackPublications.firstOrNull()?.first?.muted ?: false,
-                isSpeaking = p.isSpeaking,
-            )
-        }
-        updateState { it.copy(participants = list) }
     }
 
     private fun startDurationTimer() {
