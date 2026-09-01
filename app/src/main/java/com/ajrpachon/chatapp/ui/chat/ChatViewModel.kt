@@ -269,8 +269,7 @@ class ChatViewModel(
                         isGroup = isGroup,
                         groupAvatarUrl = conv?.groupAvatarUrl,
                         isCurrentUserMember = true,
-                        isMuted = conv?.isMuted == true,
-                        mutedUntil = conv?.mutedUntil ?: 0L,
+                        mute = it.mute.copy(isMuted = conv?.isMuted == true, mutedUntil = conv?.mutedUntil ?: 0L),
                         disappearingModeSeconds = conv?.disappearingModeSeconds ?: 0L,
                     )
                 }
@@ -394,8 +393,8 @@ class ChatViewModel(
             is ChatIntent.SendGif -> quickSendDelegate.sendGif(intent.url)
             is ChatIntent.SendSticker -> quickSendDelegate.sendSticker(intent.emoji)
             is ChatIntent.ToggleMute -> toggleMute()
-            is ChatIntent.ShowMuteDialog -> updateState { it.copy(showMuteDialog = true) }
-            is ChatIntent.DismissMuteDialog -> updateState { it.copy(showMuteDialog = false) }
+            is ChatIntent.ShowMuteDialog -> updateState { it.copy(mute = it.mute.copy(showDialog = true)) }
+            is ChatIntent.DismissMuteDialog -> updateState { it.copy(mute = it.mute.copy(showDialog = false)) }
             is ChatIntent.MuteFor -> muteFor(intent.mutedUntil)
             is ChatIntent.LeaveGroup -> leaveGroup()
             is ChatIntent.DeleteMessage -> deleteMessage(intent.messageId)
@@ -598,16 +597,16 @@ class ChatViewModel(
     }
 
     private fun toggleMute() {
-        val newMuted = !state.value.isMuted
-        updateState { it.copy(isMuted = newMuted) }
+        val newMuted = !state.value.mute.isMuted
+        updateState { it.copy(mute = it.mute.copy(isMuted = newMuted)) }
         viewModelScope.launch {
             catchResult { conversationRepository.toggleMute(conversationId, newMuted) }
-                .onFailure { updateState { it.copy(isMuted = !newMuted) } }
+                .onFailure { updateState { it.copy(mute = it.mute.copy(isMuted = !newMuted)) } }
         }
     }
 
     private fun muteFor(mutedUntil: Long) {
-        updateState { it.copy(showMuteDialog = false, isMuted = mutedUntil != 0L, mutedUntil = mutedUntil) }
+        updateState { it.copy(mute = it.mute.copy(showDialog = false, isMuted = mutedUntil != 0L, mutedUntil = mutedUntil)) }
         viewModelScope.launch { catchResult { conversationRepository.muteFor(conversationId, mutedUntil) } }
     }
 

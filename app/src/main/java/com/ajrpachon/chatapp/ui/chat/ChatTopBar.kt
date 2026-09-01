@@ -288,17 +288,17 @@ internal fun ChatTopBar(
                         )
                         DropdownMenuItem(
                             text = {
-                                Text(if (state.isMuted) stringResource(R.string.chat_enable_notifications) else stringResource(R.string.chat_mute))
+                                Text(if (state.mute.isMuted) stringResource(R.string.chat_enable_notifications) else stringResource(R.string.chat_mute))
                             },
                             leadingIcon = {
                                 Icon(
-                                    if (state.isMuted) Icons.Default.NotificationsActive else Icons.Default.NotificationsOff,
+                                    if (state.mute.isMuted) Icons.Default.NotificationsActive else Icons.Default.NotificationsOff,
                                     contentDescription = null,
                                 )
                             },
                             onClick = {
                                 menuExpanded = false
-                                if (state.isMuted) {
+                                if (state.mute.isMuted) {
                                     vm.onIntent(ChatIntent.MuteFor(0L))
                                 } else {
                                     vm.onIntent(ChatIntent.ShowMuteDialog)

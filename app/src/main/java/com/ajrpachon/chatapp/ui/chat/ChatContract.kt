@@ -180,6 +180,18 @@ data class ChatGroupPresenceUiState(
     val memberCount: Int = 0,
 )
 
+/**
+ * Mute state + its confirmation dialog, owned directly by `ChatViewModel` (no delegate — see
+ * `toggleMute`/`muteFor`). Eleventh of the nested groups in
+ * docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan.
+ */
+data class ChatMuteUiState(
+    val isMuted: Boolean = false,
+    // -1L = forever, 0L = unmute, positive = until epoch millis
+    val mutedUntil: Long = 0L,
+    val showDialog: Boolean = false,
+)
+
 data class ChatState(
     val inputText: String = "",
     val isSending: Boolean = false,
@@ -197,9 +209,7 @@ data class ChatState(
     val isCurrentUserMember: Boolean = true,
     val replyingTo: MessageBO? = null,
     val showStickerPicker: Boolean = false,
-    val isMuted: Boolean = false,
-    val mutedUntil: Long = 0L,
-    val showMuteDialog: Boolean = false,
+    val mute: ChatMuteUiState = ChatMuteUiState(),
     val editingMessage: MessageBO? = null,
     val search: ChatSearchUiState = ChatSearchUiState(),
     val expiryDialogMessageId: String? = null,

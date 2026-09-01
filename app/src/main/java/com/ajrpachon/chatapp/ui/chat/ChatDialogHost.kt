@@ -145,7 +145,7 @@ internal fun ChatDialogHost(
         )
     }
 
-    if (state.showMuteDialog) {
+    if (state.mute.showDialog) {
         MuteDurationDialog(
             onDismiss = { vm.onIntent(ChatIntent.DismissMuteDialog) },
             onSelect = { vm.onIntent(ChatIntent.MuteFor(it)) },

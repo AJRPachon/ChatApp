@@ -281,7 +281,7 @@ identity set once in `init`) are grouped by UI feature instead.
 | 8 | `state.mediaUpload: ChatMediaUploadUiState` | `isUploadingFile`, `mediaUploadProgress`→`progress`, `pendingImageUris`, `suppressedImageMessageIds` | `ChatMediaUploadDelegate` | **Done** |
 | 9 | `state.audioState: AudioState` | (unchanged — already grouped since before Phase 1) | `ChatAudioRecordingDelegate` | Already done |
 | 10 | `state.groupPresence: ChatGroupPresenceUiState` | `onlineMemberCount`, `groupMemberCount`→`memberCount` (**not** `isOnline` — that's `NetworkMonitor`, a different concern despite the similar name; **not** `isGroup`/`isCurrentUserMember`/`groupAvatarUrl` — conversation identity, set once from `conversationRepository` in `init`, not by this delegate) | `ChatGroupPresenceDelegate` | **Done** |
-| 11 | `state.mute: ChatMuteUiState` | `isMuted`, `mutedUntil`, `showMuteDialog` | none (`toggleMute`/`muteFor` on `ChatViewModel`) | Not started |
+| 11 | `state.mute: ChatMuteUiState` | `isMuted`, `mutedUntil`, `showMuteDialog`→`showDialog` | none (`toggleMute`/`muteFor` on `ChatViewModel`) | **Done** |
 | 12 | `state.theme: ChatThemeUiState` | `chatTheme`, `showThemePicker` | none | Not started |
 | 13 | `state.disappearing: ChatDisappearingUiState` | `disappearingModeSeconds`, `showDisappearingModeSheet` | none | Not started |
 | 14 | `state.mention: ChatMentionUiState` | `mentionSuggestions`, `showMentionSuggestions` | none | Not started |
@@ -442,6 +442,19 @@ in the target-shape table before any code was touched. 3 files: `ChatContract.kt
 updated the `subtitleText` computed property, the one non-delegate read of these fields),
 `ChatGroupPresenceDelegate.kt` (2 call sites), `ChatTopBar.kt` (1 read, the presence-dot color
 check).
+
+**Slice 10 (`ChatMuteUiState`) — first non-delegate-owned group:** `isMuted`/`mutedUntil`/
+`showMuteDialog` → `state.mute.{isMuted,mutedUntil,showDialog}`. First slice with no owning
+delegate (`toggleMute`/`muteFor` live directly on `ChatViewModel`, per the "what stays"
+list from Phase 1) — same mechanical move regardless, just no delegate file in the touched
+set. One thing to watch that didn't bite here but is worth naming: `ChatIntent.MuteFor(val
+mutedUntil: Long)` and `ConversationBO.isMuted`/`mutedUntil` are same-named fields on
+*different* types (an intent payload and a domain model, respectively) — neither should be
+touched by this slice, and grepping bare `mutedUntil` without checking each hit's surrounding
+type would have flagged both as false positives. 4 files: `ChatContract.kt`,
+`ChatViewModel.kt` (the `init` block's conversation-load `updateState`, `ShowMuteDialog`/
+`DismissMuteDialog`, `toggleMute`/`muteFor`), `ChatDialogHost.kt` (1 read), `ChatTopBar.kt` (3
+reads in the mute/unmute menu item).
 
 ## Non-goals
 
