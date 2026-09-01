@@ -313,9 +313,9 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 
 | Fichero | Tests |
 |---|---|
-| `ChatViewModelTest` | 21 |
-| `StatusViewModelTest` | 14 |
-| `GroupInfoViewModelTest` | 12 |
+| `ChatViewModelTest` | 24 |
+| `StatusViewModelTest` | 16 |
+| `GroupInfoViewModelTest` | 4 |
 | `CreateGroupViewModelTest` | 11 |
 | `NewChatViewModelTest` | 10 |
 | `InvitationsViewModelTest` | 7 |
@@ -346,7 +346,7 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | `ReactionRepositoryImplTest` | 5 |
 | `BroadcastListRepositoryImplTest` | 5 |
 | `CallRepositoryImplTest` | 3 |
-| `MessageRepositoryImplTest` | 3 |
+| `MessageRepositoryImplTest` | 5 |
 
 **Use Cases**
 
