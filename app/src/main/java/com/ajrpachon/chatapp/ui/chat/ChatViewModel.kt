@@ -178,6 +178,13 @@ class ChatViewModel(
         scope = viewModelScope,
         context = delegateContext,
     )
+    private val searchDelegate = ChatSearchDelegate(
+        conversationId = conversationId,
+        currentUserId = { currentUserId },
+        messageRepository = messageRepository,
+        scope = viewModelScope,
+        context = delegateContext,
+    )
 
     private var groupMembers: List<GroupMemberBO> = emptyList()
     private var recorder: MediaRecorder? = null
@@ -412,9 +419,9 @@ class ChatViewModel(
             is ChatIntent.ConfirmEdit -> confirmEdit()
             is ChatIntent.OpenSearch -> updateState { it.copy(isSearchActive = true, searchQuery = "", searchResults = emptyList()) }
             is ChatIntent.CloseSearch -> updateState { it.copy(isSearchActive = false, searchQuery = "", searchResults = emptyList()) }
-            is ChatIntent.SearchQueryChanged -> searchMessages(intent.query)
+            is ChatIntent.SearchQueryChanged -> searchDelegate.searchMessages(intent.query)
             is ChatIntent.ToggleReaction -> toggleReaction(intent.messageId, intent.emoji)
-            is ChatIntent.JumpToMessage -> jumpToMessage(intent.messageId)
+            is ChatIntent.JumpToMessage -> searchDelegate.jumpToMessage(intent.messageId)
             is ChatIntent.ShowExpiryDialog -> updateState { it.copy(expiryDialogMessageId = intent.messageId) }
             is ChatIntent.DismissExpiryDialog -> updateState { it.copy(expiryDialogMessageId = null) }
             is ChatIntent.SetExpiry -> setExpiry(intent.messageId, intent.expiresAt)
@@ -563,21 +570,6 @@ class ChatViewModel(
         }
     }
 
-    private var searchJob: Job? = null
-
-    private fun searchMessages(query: String) {
-        updateState { it.copy(searchQuery = query) }
-        searchJob?.cancel()
-        if (query.isBlank()) { updateState { it.copy(searchResults = emptyList(), isSearching = false) }; return }
-        searchJob = viewModelScope.launch {
-            updateState { it.copy(isSearching = true) }
-            delay(300L)
-            val uid = currentUserId ?: return@launch
-            val results = catchResult { messageRepository.searchMessages(conversationId, uid, query) }.getOrDefault(emptyList())
-            updateState { it.copy(searchResults = results, isSearching = false) }
-        }
-    }
-
     private fun setExpiry(messageId: String, expiresAt: Long?) {
         updateState { it.copy(expiryDialogMessageId = null) }
         viewModelScope.launch {
@@ -600,14 +592,6 @@ class ChatViewModel(
             for (id in ids) {
                 messageRepository.deleteMessage(id).onFailure { e -> AppLogger.e(TAG, "deleteMessage $id failed", e) }
             }
-        }
-    }
-
-    private fun jumpToMessage(messageId: String) {
-        updateState { it.copy(isSearchActive = false, searchQuery = "", searchResults = emptyList(), highlightedMessageId = messageId) }
-        viewModelScope.launch {
-            delay(2_000)
-            updateState { if (it.highlightedMessageId == messageId) it.copy(highlightedMessageId = null) else it }
         }
     }
 

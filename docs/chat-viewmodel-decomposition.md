@@ -69,7 +69,7 @@ carelessly):
 | 4 | `ChatSchedulingDelegate` | `scheduleMessage`, `cancelScheduledMessage` | `scheduledMessageRepository`, `workManager`, `draftRepository` | **Done** |
 | 5 | `ChatForwardDelegate` | `showForwardDialog`, `forwardMessage`, `showForwardSelectionDialog`, `forwardSelectedMessages` | `conversationRepository`, `messageRepository` | **Done** |
 | 6 | `ChatContactCardDelegate` | `checkContactRelationship`, `contactCardPrimaryAction` | `userRepository`, `sendInvitationUseCase` | **Done** |
-| 7 | `ChatSearchDelegate` | `searchMessages`, `jumpToMessage` | `messageRepository` | Planned |
+| 7 | `ChatSearchDelegate` | `searchMessages`, `jumpToMessage` | `messageRepository` | **Done** |
 | 8 | `ChatMediaDelegate` | `sendImages`, `sendFile`, `sendVideo`, `startRecording`, `stopRecording`, `discardAudio`, `sendAudio`, `sendGif`, `sendSticker`, `sendContact`, `handleContactSelected`, `fetchAndSendLocation`, `sendLocationMessage` | `messageRepository`, `sendMessageUseCase`, `getUriMetadataUseCase`, `readUriAsBytesUseCase`, `contactRepository` | Planned — largest slice, owns the `recorder`/`recordingTimerJob` fields, do last among the "planned" group |
 | 9 | init-block group-presence/membership logic (lines ~174-273) | not a delegate — this is `init` wiring with heavy cross-references to other state (`groupMembers`, `memberOnlineStatuses`, `_historyVisibleFrom`) | most repositories | **Not planned yet** — highest risk, needs its own design pass |
 
