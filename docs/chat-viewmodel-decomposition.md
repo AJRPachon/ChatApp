@@ -144,15 +144,41 @@ Two things this pass had to get right that a naive copy-paste doesn't:
   import at all**; explicitly importing `weight` breaks it. Same lesson as `LongParameterList`
   in Phase 1: verify against a real compile, don't assume a plausible-looking import is right.
 
-**Left for a later pass, higher risk, in the order noted originally:** the message-bubble
-rendering tree (`MessageBubble` and everything it dispatches to — `ChatBubbleSlot`,
-`CallMessageBubble`, `FileBubble`, `PdfFileCard`, `GenericFileBubble`, `VideoBubble`,
-`StickerBubble`, `DeletedMessageBubble`, `MessageFooterContent`, `LocationMessageCard`,
-`MediaMetaOverlay`, `PendingImageBatchBubble`, `ImageGroupBubble`, `ReplyQuote`,
-`LinkPreviewCard`, `ContactHeader`, `ContactBubble`, `PollBubble`, `PollOptionRow`,
-`ReplySelectContainer`) and the top-level `ChatScreen`/`ChatScreenContent` scaffold itself.
-`PollBubble`/`PollOptionRow` stayed in `ChatScreen.kt` in this pass specifically because they
-depend on `ChatBubbleSlot`, which lives in that higher-risk tree.
+**Done (second pass — the message-bubble rendering tree):** split into 6 files by cohesion
+rather than one, since the 22 composables involved are heavily interdependent:
+
+- `MessageBubble.kt` — `pollIdOf`/`contactPhoneOf`, `ReplySelectContainer`, `ChatBubbleSlot`
+  (the two building blocks nearly everything else renders through), `MessageBubble` itself.
+- `ChatFileBubbles.kt` — `CallMessageBubble`, `FileBubble`, `PdfFileCard`, `GenericFileBubble`,
+  `formatFileSize`, `VideoBubble`, `StickerBubble`, `DeletedMessageBubble`.
+- `ChatBubbleContent.kt` — `MessageFooterContent`, `LocationMessageCard`, `ReadReceiptIcon`,
+  `SendStatusIcon`, `MediaMetaOverlay`, `ReplyQuote`, `LinkPreviewCard`.
+- `ChatImageGroupBubbles.kt` — `PendingImageBatchBubble`, `ImageGroupBubble`.
+- `ContactBubble.kt` — `ContactHeader` (kept `private`, only used within this file),
+  `ContactBubble`.
+- `PollBubble.kt` — `PollBubble`, `PollOptionRow` (kept `private`, ditto).
+
+`ChatScreen.kt`: 3051 → 1317 lines (1194/57 → this file alone, across the whole plan). Unlike
+the first pass, most of these needed `internal` uniformly — the previous pass's instinct to
+minimize visibility widening by keeping call graphs within one file doesn't hold here, since
+`MessageBubble`, `PendingImageBatchBubble`, `ImageGroupBubble`, and `pollIdOf`/`contactPhoneOf`
+are called directly from `ChatScreen`'s `LazyColumn`, and `ChatBubbleSlot` is called from
+nearly every bubble type across every new file — so the pattern from pass one (mark it
+`internal`, don't try to cleverly co-locate to keep `private`) generalizes better than
+over-optimizing per-file visibility.
+
+New failure mode this pass, worth watching for on any future large deletion: **splicing a big
+line range by hand with an off-by-N line-number error silently deletes a legitimate
+neighboring line** (here, the outer composable's own closing brace, one screenful above where
+the actual bubble-tree section started) instead of just the intended range. A raw open-vs-close
+brace count over the whole file (`content.count('{')` vs `content.count('}')`) caught the
+one-brace imbalance immediately, before it reached a compile — cheap enough to run after any
+line-range deletion this size, not just when something looks wrong.
+
+Also found and fixed in passing (real, not baseline noise): a genuinely dead
+`val context = LocalContext.current` inside `MessageBubble` — declared, never read, evidently
+never caught by detekt before this move surfaced it standalone. Removed along with its
+now-unused import.
 
 ### Shrinking `ChatState`/`ChatIntent`
 
