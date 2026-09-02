@@ -17,15 +17,7 @@ appId: com.ajrpachon.chatapp
     file: ../../subflows/open_conversation.yaml
     env:
       CONTACT_NAME: ${CONTACT_NAME}
-- extendedWaitUntil:
-    visible:
-      id: "chat_input_field"
-    timeout: 10000
-- tapOn:
-    id: "chat_input_field"
-- inputText: "Maestro realtime ping"
-- tapOn:
-    id: "chat_send_button"
-- hideKeyboard
-- assertVisible:
-    text: "Maestro realtime ping"
+- runFlow:
+    file: ../../subflows/send_chat_message.yaml
+    env:
+      MESSAGE_TEXT: Maestro realtime ping

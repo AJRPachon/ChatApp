@@ -1,0 +1,20 @@
+appId: com.ajrpachon.chatapp
+---
+# Reusable building block — NOT meant to run standalone.
+# From an already-open conversation, types MESSAGE_TEXT into the input
+# field and sends it. Call it from a flow with:
+#   - runFlow:
+#       file: ../subflows/send_chat_message.yaml
+#       env:
+#         MESSAGE_TEXT: some text
+- extendedWaitUntil:
+    visible:
+      id: "chat_input_field"
+    timeout: 10000
+- tapOn:
+    id: "chat_input_field"
+- inputText: ${MESSAGE_TEXT}
+- tapOn:
+    id: "chat_send_button"
+- hideKeyboard
+- assertVisible: ${MESSAGE_TEXT}

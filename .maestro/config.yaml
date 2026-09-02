@@ -10,3 +10,4 @@ executionOrder:
     - flows/mute_unmute_roundtrip.yaml
     - flows/theme_toggle_roundtrip.yaml
     - flows/send_message.yaml
+    - flows/message_reaction_roundtrip.yaml

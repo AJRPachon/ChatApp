@@ -1,0 +1,32 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in as the QA account, sends a throwaway message to @claudeqa2,
+# reacts to it with 😃, confirms the reaction chip appears, taps the
+# chip again to remove the reaction (same tap target toggles it off),
+# confirms it's gone, then deletes the message — leaving no trace.
+# Run with:
+#   maestro test .maestro/flows/message_reaction_roundtrip.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- runFlow:
+    file: ../subflows/send_chat_message.yaml
+    env:
+      MESSAGE_TEXT: Maestro reaction target
+- runFlow:
+    file: ../subflows/react_to_message.yaml
+    env:
+      MESSAGE_TEXT: Maestro reaction target
+      EMOJI: "😃"
+- tapOn: "😃 1"
+- assertNotVisible: "😃 1"
+- runFlow:
+    file: ../subflows/delete_own_message.yaml
+    env:
+      MESSAGE_TEXT: Maestro reaction target

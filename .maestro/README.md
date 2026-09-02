@@ -27,6 +27,7 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     mute_unmute_roundtrip.yaml
     theme_toggle_roundtrip.yaml
     send_message.yaml
+    message_reaction_roundtrip.yaml
     realtime/              # flujo multi-dispositivo, fuera de la suite de un solo device
       01_recipient_wait.yaml
       02_sender_send.yaml
@@ -38,6 +39,8 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     logout.yaml
     open_conversation.yaml      # parametrizado: env CONTACT_NAME
     delete_own_message.yaml     # parametrizado: env MESSAGE_TEXT
+    send_chat_message.yaml      # parametrizado: env MESSAGE_TEXT
+    react_to_message.yaml       # parametrizado: env MESSAGE_TEXT, EMOJI
     open_new_chat_search.yaml     # parametrizado: env QUERY
     global_search.yaml             # parametrizado: env QUERY
     archive_conversation.yaml     # parametrizado: env CONTACT_NAME
@@ -115,10 +118,12 @@ IDs ya disponibles: `auth_email_field`, `auth_password_field`,
   propaga a esa ventana — comprobado en `chat_message_delete_menu_item`:
   el `testTag()` estaba puesto pero Maestro nunca lo encontraba, aunque
   el menú sí estaba abierto en la captura de pantalla. Dentro de un
-  `DropdownMenu`, selecciona por texto (`delete_own_message.yaml`) y
-  comprueba que el texto sea único en pantalla en ese momento concreto
-  del flow, ya que puede repetirse en otra parte de la UI que no esté
-  visible simultáneamente.
+  `DropdownMenu`/`ModalBottomSheet`, selecciona por texto
+  (`delete_own_message.yaml`, `react_to_message.yaml`) y comprueba que
+  el texto sea único en pantalla en ese momento concreto del flow, ya
+  que puede repetirse en otra parte de la UI que no esté visible
+  simultáneamente. Un emoji (`"😀"`) es texto normal para Compose/Maestro
+  y se selecciona igual — sin equivalente de `id` posible ahí.
 
 ## Subflows reutilizables
 
@@ -205,10 +210,10 @@ recargar ni relanzar la app.
 
 ## Higiene de datos
 
-`send_message.yaml` borra el mensaje que envía nada más verificarlo (vía
-`subflows/delete_own_message.yaml`), así que se puede correr en bucle sin
-ir acumulando mensajes de prueba **con contenido legible** en la
-conversación de QA. El borrado en la app es un soft-delete — deja un
+`send_message.yaml` y `message_reaction_roundtrip.yaml` borran el mensaje
+que envían nada más verificarlo (vía `subflows/delete_own_message.yaml`),
+así que se pueden correr en bucle sin ir acumulando mensajes de prueba
+**con contenido legible** en la conversación de QA. El borrado en la app es un soft-delete — deja un
 placeholder ("This message was deleted"/"Se eliminó este mensaje") en
 vez de desaparecer del todo — así que la conversación sí acumula esos
 placeholders con cada ejecución; es ruido inofensivo, no un dato
