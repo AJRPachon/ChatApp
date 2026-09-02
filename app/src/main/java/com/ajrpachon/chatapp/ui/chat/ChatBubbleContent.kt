@@ -27,13 +27,17 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -51,6 +55,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -88,6 +93,10 @@ internal fun MessageFooterContent(
     onToggleReaction: (String) -> Unit,
     linkPreviews: Map<String, LinkPreviewData?>,
     onDetectedUrl: (String) -> Unit,
+    translatedText: String? = null,
+    isTranslating: Boolean = false,
+    onTranslate: () -> Unit = {},
+    onDismissTranslation: () -> Unit = {},
 ) {
     if (message.audioUrl != null && MediaUrlValidator.isValid(message.audioUrl)) {
         RemoteAudioPlayer(
@@ -146,6 +155,13 @@ internal fun MessageFooterContent(
                     leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null) },
                     onClick = { showMsgMenu = false; onCopy(message.content) },
                 )
+                if (translatedText == null && !isTranslating) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.chat_translate)) },
+                        leadingIcon = { Icon(Icons.Default.Translate, contentDescription = null) },
+                        onClick = { showMsgMenu = false; onTranslate() },
+                    )
+                }
                 if (onDelete != null) {
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.chat_delete)) },
@@ -168,6 +184,34 @@ internal fun MessageFooterContent(
                 onDismiss = { showEmojiPicker = false },
                 onEmojiSelected = { emoji -> onToggleReaction(emoji) },
             )
+        }
+        if (isTranslating) {
+            Spacer(Modifier.height(4.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 1.5.dp)
+                Text(
+                    text = stringResource(R.string.chat_translating),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                )
+            }
+        } else if (translatedText != null) {
+            Spacer(Modifier.height(4.dp))
+            Row(verticalAlignment = Alignment.Top) {
+                Text(
+                    text = translatedText,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = onDismissTranslation, modifier = Modifier.size(20.dp)) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = stringResource(R.string.chat_hide_translation),
+                        modifier = Modifier.size(14.dp),
+                    )
+                }
+            }
         }
     }
     // Link preview — shown only for plain text messages (no image/audio/gif)

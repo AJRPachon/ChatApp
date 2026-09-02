@@ -80,6 +80,11 @@
     <string name="chat_ephemeral_message">Mensaje efímero</string>
     <string name="chat_copy">Copiar</string>
     <string name="chat_forward">Reenviar</string>
+    <string name="chat_translate">Traducir</string>
+    <string name="chat_translating">Traduciendo…</string>
+    <string name="chat_hide_translation">Ocultar traducción</string>
+    <string name="chat_transcribe">Transcribir</string>
+    <string name="chat_transcribing">Transcribiendo…</string>
     <string name="chat_edited_label">editado</string>
     <string name="chat_pending_send">Pendiente de envío</string>
     <string name="chat_send_error">Error al enviar</string>

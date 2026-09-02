@@ -201,6 +201,10 @@ internal fun ChatMessageList(
                                 onObservePoll = { pollId -> vm.onIntent(ChatIntent.ObservePoll(pollId)) },
                                 linkPreviews = state.linkPreviews,
                                 onDetectedUrl = { url -> vm.onIntent(ChatIntent.DetectedUrlChanged(url)) },
+                                translatedText = state.translation.translatedTexts[message.id],
+                                isTranslating = message.id in state.translation.translatingMessageIds,
+                                onTranslate = { vm.onIntent(ChatIntent.TranslateMessage(message.id, message.content)) },
+                                onDismissTranslation = { vm.onIntent(ChatIntent.DismissTranslation(message.id)) },
                             )
                         }
                     } else {
@@ -242,6 +246,10 @@ internal fun ChatMessageList(
                             onObservePoll = { pollId -> vm.onIntent(ChatIntent.ObservePoll(pollId)) },
                             linkPreviews = state.linkPreviews,
                             onDetectedUrl = { url -> vm.onIntent(ChatIntent.DetectedUrlChanged(url)) },
+                            translatedText = state.translation.translatedTexts[message.id],
+                            isTranslating = message.id in state.translation.translatingMessageIds,
+                            onTranslate = { vm.onIntent(ChatIntent.TranslateMessage(message.id, message.content)) },
+                            onDismissTranslation = { vm.onIntent(ChatIntent.DismissTranslation(message.id)) },
                         )
                     }
                 }

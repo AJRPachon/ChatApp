@@ -209,6 +209,10 @@ internal fun MessageBubble(
     onObservePoll: (String) -> Unit = {},
     linkPreviews: Map<String, LinkPreviewData?> = emptyMap(),
     onDetectedUrl: (String) -> Unit = {},
+    translatedText: String? = null,
+    isTranslating: Boolean = false,
+    onTranslate: () -> Unit = {},
+    onDismissTranslation: () -> Unit = {},
 ) {
     if (message.isDeleted) {
         DeletedMessageBubble(message)
@@ -377,6 +381,10 @@ internal fun MessageBubble(
                             onToggleReaction = onToggleReaction,
                             linkPreviews = linkPreviews,
                             onDetectedUrl = onDetectedUrl,
+                            translatedText = translatedText,
+                            isTranslating = isTranslating,
+                            onTranslate = onTranslate,
+                            onDismissTranslation = onDismissTranslation,
                         )
                     }
                 } else {
@@ -438,6 +446,10 @@ internal fun MessageBubble(
                                     onToggleReaction = onToggleReaction,
                                     linkPreviews = linkPreviews,
                                     onDetectedUrl = onDetectedUrl,
+                                    translatedText = translatedText,
+                                    isTranslating = isTranslating,
+                                    onTranslate = onTranslate,
+                                    onDismissTranslation = onDismissTranslation,
                                 )
                             }
                         }
