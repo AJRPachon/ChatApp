@@ -25,7 +25,8 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
   subflows/               # bloques reutilizables, solo vía `runFlow`, nunca standalone
     login_qa.yaml         # parametrizado: env LOGIN_EMAIL / LOGIN_PASSWORD
     logout.yaml
-    open_conversation.yaml  # parametrizado: env CONTACT_NAME
+    open_conversation.yaml   # parametrizado: env CONTACT_NAME
+    delete_own_message.yaml  # parametrizado: env MESSAGE_TEXT
 ```
 
 Siempre se ejecuta apuntando a `flows/` (archivo o carpeta), nunca a `.maestro`
@@ -81,11 +82,21 @@ IDs ya disponibles: `auth_email_field`, `auth_password_field`,
 (`ConversationListScreen`), `profile_sign_out_button` (`ProfileScreen`),
 `chat_input_field`, `chat_send_button` (`ChatInputBar`).
 
-**Excepción**: contenido generado por el usuario (nombre de un contacto,
-texto de un mensaje) no tiene ni puede tener un `testTag` estático — ahí
-se selecciona por texto a propósito (`open_conversation.yaml` hace
-`tapOn: ${CONTACT_NAME}`). Los nombres de usuario no se traducen, así que
-siguen siendo seguros entre locales.
+**Excepciones donde se usa texto en vez de `id`:**
+
+- Contenido generado por el usuario (nombre de un contacto, texto de un
+  mensaje): no tiene ni puede tener un `testTag` estático
+  (`open_conversation.yaml` hace `tapOn: ${CONTACT_NAME}`). Los nombres
+  de usuario no se traducen, así que siguen siendo seguros entre locales.
+- **`DropdownMenu` (Compose Material3)**: sus items se renderizan en un
+  `Popup` (ventana Android separada), y `testTagsAsResourceId` no se
+  propaga a esa ventana — comprobado en `chat_message_delete_menu_item`:
+  el `testTag()` estaba puesto pero Maestro nunca lo encontraba, aunque
+  el menú sí estaba abierto en la captura de pantalla. Dentro de un
+  `DropdownMenu`, selecciona por texto (`delete_own_message.yaml`) y
+  comprueba que el texto sea único en pantalla en ese momento concreto
+  del flow, ya que puede repetirse en otra parte de la UI que no esté
+  visible simultáneamente.
 
 ## Subflows reutilizables
 
@@ -127,6 +138,20 @@ pueda reutilizar con otra cuenta/contacto/valor.
 - No incluir datos que muten estado compartido de forma destructiva (usar
   siempre la cuenta QA, nunca `@ajrpachon`). `login_logout_roundtrip`
   deja la app deslogueada al terminar, igual que al empezar.
+
+## Higiene de datos
+
+`send_message.yaml` borra el mensaje que envía nada más verificarlo (vía
+`subflows/delete_own_message.yaml`), así que se puede correr en bucle sin
+ir acumulando mensajes de prueba **con contenido legible** en la
+conversación de QA. El borrado en la app es un soft-delete — deja un
+placeholder ("This message was deleted"/"Se eliminó este mensaje") en
+vez de desaparecer del todo — así que la conversación sí acumula esos
+placeholders con cada ejecución; es ruido inofensivo, no un dato
+sensible ni de prueba con contenido.
+
+Sigue el mismo principio en cualquier flow nuevo que escriba datos: si el
+flow los crea, el propio flow los borra al final.
 
 ## Pendiente / ideas
 

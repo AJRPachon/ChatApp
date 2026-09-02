@@ -1,9 +1,11 @@
 appId: com.ajrpachon.chatapp
 ---
 # Signs in as the QA account, opens the existing 1:1 conversation with
-# @claudeqa2, sends a short test message, and confirms it appears in the
-# thread. Requires the two QA accounts to already have a conversation
-# (see .maestro/README.md) — this flow does not create new chats/contacts.
+# @claudeqa2, sends a short test message, confirms it appears in the
+# thread, then deletes it again so repeated runs don't pile up messages
+# in the QA conversation. Requires the two QA accounts to already have a
+# conversation (see .maestro/README.md) — this flow does not create new
+# chats/contacts.
 # Run with:
 #   maestro test .maestro/flows/send_message.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
 - runFlow:
@@ -27,3 +29,7 @@ appId: com.ajrpachon.chatapp
 - hideKeyboard
 - assertVisible:
     text: "Maestro QA ping"
+- runFlow:
+    file: ../subflows/delete_own_message.yaml
+    env:
+      MESSAGE_TEXT: "Maestro QA ping"
