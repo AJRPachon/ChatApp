@@ -617,7 +617,8 @@ private fun ThemeSelector(
             Surface(
                 modifier = Modifier
                     .weight(1f)
-                    .clickable { onSelect(pref) },
+                    .clickable { onSelect(pref) }
+                    .testTag("profile_theme_${pref.name.lowercase()}_option"),
                 shape = RoundedCornerShape(8.dp),
                 color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
                         else MaterialTheme.colorScheme.surfaceVariant,

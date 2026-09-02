@@ -21,12 +21,19 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     smoke_launch.yaml
     login_email.yaml
     login_logout_roundtrip.yaml
+    new_chat_search.yaml
+    archive_unarchive_roundtrip.yaml
+    theme_toggle_roundtrip.yaml
     send_message.yaml
   subflows/               # bloques reutilizables, solo vía `runFlow`, nunca standalone
-    login_qa.yaml         # parametrizado: env LOGIN_EMAIL / LOGIN_PASSWORD
+    login_qa.yaml               # parametrizado: env LOGIN_EMAIL / LOGIN_PASSWORD
     logout.yaml
-    open_conversation.yaml   # parametrizado: env CONTACT_NAME
-    delete_own_message.yaml  # parametrizado: env MESSAGE_TEXT
+    open_conversation.yaml      # parametrizado: env CONTACT_NAME
+    delete_own_message.yaml     # parametrizado: env MESSAGE_TEXT
+    open_new_chat_search.yaml     # parametrizado: env QUERY
+    archive_conversation.yaml     # parametrizado: env CONTACT_NAME
+    unarchive_conversation.yaml   # parametrizado: env CONTACT_NAME
+    set_theme.yaml                 # parametrizado: env THEME_OPTION
 ```
 
 Siempre se ejecuta apuntando a `flows/` (archivo o carpeta), nunca a `.maestro`
@@ -78,8 +85,11 @@ flow. Preferir `id` sobre texto salvo que el texto sea:
   ejemplos de textos seguros porque no se tradujeron.
 
 IDs ya disponibles: `auth_email_field`, `auth_password_field`,
-`auth_submit_button` (`AuthScreen`), `conversation_list_profile_button`
-(`ConversationListScreen`), `profile_sign_out_button` (`ProfileScreen`),
+`auth_submit_button` (`AuthScreen`); `conversation_list_profile_button`,
+`conversation_list_new_chat_fab`, `conversation_list_archived_button`
+(`ConversationListScreen`); `profile_sign_out_button`,
+`profile_theme_system_option` / `_light_` / `_dark_option`
+(`ProfileScreen`); `newchat_search_field` (`NewChatScreen`);
 `chat_input_field`, `chat_send_button` (`ChatInputBar`).
 
 **Excepciones donde se usa texto en vez de `id`:**
@@ -155,8 +165,12 @@ flow los crea, el propio flow los borra al final.
 
 ## Pendiente / ideas
 
-- Flow de registro (`sign up`) con limpieza posterior de la cuenta creada.
-- Flow de creación de contacto/chat nuevo (`send_message.yaml` asume que
-  la conversación `@claudeqa` ↔ `@claudeqa2` ya existe).
+- Flow de registro (`sign up`) con limpieza posterior de la cuenta creada
+  (no cubierto: requiere verificar el email de forma asíncrona).
+- Flow de invitación/alta de contacto nuevo de verdad (enviar invitación
+  desde "New chat" a un usuario no conectado). No cubierto todavía:
+  toca el área donde hay un bug de deserialización conocido al conectar
+  cuentas — ver memoria del proyecto — y necesitaría una tercera cuenta
+  QA desechable para no ensuciar la relación `@claudeqa` ↔ `@claudeqa2`.
 - Integrar como job opcional de CI (requiere un emulador headless en el
   runner; de momento se ejecuta solo en local).

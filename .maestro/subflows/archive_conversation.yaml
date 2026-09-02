@@ -1,0 +1,17 @@
+appId: com.ajrpachon.chatapp
+---
+# Reusable building block — NOT meant to run standalone.
+# From the chat list, long-presses the conversation row for CONTACT_NAME
+# and archives it via the context menu. Call it from a flow with:
+#   - runFlow:
+#       file: ../subflows/archive_conversation.yaml
+#       env:
+#         CONTACT_NAME: claudeqa2
+#
+# Selected by text, not `id`: same DropdownMenu/Popup limitation as
+# subflows/delete_own_message.yaml (see .maestro/README.md) — the
+# "Archivar"/"Archive" menu entry text is unique on screen whenever this
+# menu is open, so it's a safe locale-aware selector here.
+- longPressOn: ${CONTACT_NAME}
+- tapOn: "Archivar|Archive"
+- assertNotVisible: ${CONTACT_NAME}

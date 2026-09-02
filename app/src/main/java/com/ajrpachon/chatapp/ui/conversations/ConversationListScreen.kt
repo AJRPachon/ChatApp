@@ -245,7 +245,10 @@ fun ConversationListScreen(
                     IconButton(onClick = dropUnlessResumed { onGoToGlobalSearch() }) {
                         Icon(Icons.Default.Search, contentDescription = stringResource(R.string.conversations_search_content_description))
                     }
-                    IconButton(onClick = { vm.onIntent(ConversationListIntent.ShowArchivedSheet) }) {
+                    IconButton(
+                        onClick = { vm.onIntent(ConversationListIntent.ShowArchivedSheet) },
+                        modifier = Modifier.testTag("conversation_list_archived_button"),
+                    ) {
                         BadgedBox(badge = {
                             if (state.archivedConversations.isNotEmpty()) {
                                 Badge { Text(state.archivedConversations.size.toString()) }
@@ -305,6 +308,7 @@ fun ConversationListScreen(
                     shape = MaterialTheme.shapes.small,
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.testTag("conversation_list_new_chat_fab"),
                 ) {
                     Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.conversations_new_chat_content_description))
                 }
