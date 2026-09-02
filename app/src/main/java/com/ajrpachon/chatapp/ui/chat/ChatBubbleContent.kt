@@ -204,7 +204,7 @@ internal fun MessageFooterContent(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
                     modifier = Modifier.weight(1f),
                 )
-                IconButton(onClick = onDismissTranslation, modifier = Modifier.size(20.dp)) {
+                IconButton(onClick = onDismissTranslation) {
                     Icon(
                         Icons.Default.Close,
                         contentDescription = stringResource(R.string.chat_hide_translation),

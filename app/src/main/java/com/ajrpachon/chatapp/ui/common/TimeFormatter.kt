@@ -40,6 +40,17 @@ fun formatDisappearingDuration(seconds: Long): String = when {
     else -> "${seconds / 604_800}s"
 }
 
+/** Formats an [Instant] for the "scheduled message" confirmation snackbar (dd/MM HH:mm). */
+@Suppress("DEPRECATION")
+fun formatScheduledMessageTime(instant: Instant): String {
+    val dt = instant.toLocalDateTime(TimeZone.currentSystemDefault())
+    val day = dt.day.toString().padStart(2, '0')
+    val month = dt.monthNumber.toString().padStart(2, '0')
+    val hour = dt.hour.toString().padStart(2, '0')
+    val minute = dt.minute.toString().padStart(2, '0')
+    return "$day/$month $hour:$minute"
+}
+
 /** Formats an [Instant] into a conversation-list time label (HH:mm, "Ayer", dd/MM, dd/MM/yy). */
 @Suppress("DEPRECATION")
 fun formatConversationTime(instant: Instant): String {

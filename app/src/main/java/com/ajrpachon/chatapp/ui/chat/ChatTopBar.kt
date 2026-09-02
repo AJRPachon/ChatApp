@@ -80,7 +80,8 @@ internal fun ChatTopBar(
     state: ChatState,
     vm: ChatViewModel,
     latestPinned: MessageBO?,
-    pinnedBannerVisible: MutableState<Boolean>,
+    pinnedBannerVisible: Boolean,
+    onHidePinnedBanner: () -> Unit,
     showDeleteSelectionConfirm: MutableState<Boolean>,
     onBack: () -> Unit,
     onGroupInfo: () -> Unit,
@@ -396,14 +397,14 @@ internal fun ChatTopBar(
                 }
             },
         )
-        if (latestPinned != null && pinnedBannerVisible.value) {
+        if (latestPinned != null && pinnedBannerVisible) {
             PinnedMessageBanner(
                 message = latestPinned,
                 pinnedCount = state.pinnedMessages.size,
                 onTap = {
                     onScrollToMessage(latestPinned.id)
                 },
-                onHide = { pinnedBannerVisible.value = false },
+                onHide = onHidePinnedBanner,
                 onDismiss = { vm.onIntent(ChatIntent.UnpinMessage(latestPinned.id)) },
             )
         }

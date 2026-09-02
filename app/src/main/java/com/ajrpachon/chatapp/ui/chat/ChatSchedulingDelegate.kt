@@ -4,10 +4,12 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.ajrpachon.chatapp.domain.repository.DraftRepository
 import com.ajrpachon.chatapp.domain.repository.ScheduledMessageRepository
+import com.ajrpachon.chatapp.ui.common.formatScheduledMessageTime
 import com.ajrpachon.chatapp.utils.catchResult
 import com.ajrpachon.chatapp.worker.ScheduledMessageWorker
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import kotlin.time.Instant
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -69,8 +71,8 @@ class ChatSchedulingDelegate(
                     // written — same value either way today, but this is what turns the field from
                     // write-only into something the UI actually depends on.
                     val whenMs = getState().scheduling.scheduledAtMs ?: scheduledAt
-                    val formatter = java.text.SimpleDateFormat("dd MMM HH:mm", java.util.Locale.getDefault())
-                    sendEffect(ChatEffect.ShowSnackbar("Mensaje programado para ${formatter.format(java.util.Date(whenMs))}"))
+                    val whenLabel = formatScheduledMessageTime(Instant.fromEpochMilliseconds(whenMs))
+                    sendEffect(ChatEffect.ShowSnackbar("Mensaje programado para $whenLabel"))
                 }
                 .onFailure { updateState { it.copy(error = "No se pudo programar el mensaje", inputText = text) } }
         }
