@@ -20,7 +20,6 @@ import com.ajrpachon.chatapp.domain.repository.IncognitoRepository
 import com.ajrpachon.chatapp.domain.repository.PollRepository
 import com.ajrpachon.chatapp.domain.repository.WallpaperRepository
 import com.ajrpachon.chatapp.domain.model.CallType
-import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
@@ -358,16 +357,6 @@ class ChatViewModel(
                     delay(500)
                     draftRepository.saveDraft(conversationId, intent.text)
                 }
-                val lastWord = intent.text.substringAfterLast(' ')
-                if (state.value.isGroup && lastWord.startsWith("@") && lastWord.length > 1) {
-                    val partial = lastWord.removePrefix("@").lowercase()
-                    val matches = groupPresenceDelegate.groupMembers.filter { m ->
-                        m.username.lowercase().contains(partial) || m.displayName.lowercase().contains(partial)
-                    }
-                    updateState { it.copy(mention = it.mention.copy(suggestions = matches, showSuggestions = matches.isNotEmpty())) }
-                } else {
-                    updateState { it.copy(mention = it.mention.copy(suggestions = emptyList(), showSuggestions = false)) }
-                }
                 if (intent.text.isNotEmpty()) {
                     sendTypingPresence(true)
                     typingResetJob?.cancel()
@@ -439,7 +428,6 @@ class ChatViewModel(
             is ChatIntent.ShowDisappearingModeSheet -> updateState { it.copy(disappearing = it.disappearing.copy(showSheet = true)) }
             is ChatIntent.DismissDisappearingModeSheet -> updateState { it.copy(disappearing = it.disappearing.copy(showSheet = false)) }
             is ChatIntent.SetDisappearingMode -> setDisappearingMode(intent.conversationId, intent.seconds)
-            is ChatIntent.SelectMention -> selectMention(intent.member)
             is ChatIntent.ToggleIncognito -> toggleIncognito()
             is ChatIntent.DismissIncognitoDialog -> updateState { it.copy(incognito = it.incognito.copy(showInfoDialog = false)) }
             is ChatIntent.ConfirmIncognito -> confirmIncognito()
@@ -490,14 +478,6 @@ class ChatViewModel(
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
             .build()
         workManager.enqueueUniqueWork(MessageRetryWorker.WORK_NAME, ExistingWorkPolicy.KEEP, request)
-    }
-
-    private fun selectMention(member: GroupMemberBO) {
-        val currentText = state.value.inputText
-        val lastAtIndex = currentText.lastIndexOf('@')
-        val newText = if (lastAtIndex >= 0) currentText.substring(0, lastAtIndex) + "@${member.username} "
-                      else currentText + "@${member.username} "
-        updateState { it.copy(inputText = newText, mention = it.mention.copy(suggestions = emptyList(), showSuggestions = false)) }
     }
 
     private fun setExpiry(messageId: String, expiresAt: Long?) {

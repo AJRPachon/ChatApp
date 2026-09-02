@@ -7,7 +7,6 @@ import com.ajrpachon.chatapp.ui.common.formatLastSeen
 import com.ajrpachon.chatapp.domain.model.CallBO
 import com.ajrpachon.chatapp.domain.model.ScheduledMessage
 import com.ajrpachon.chatapp.domain.model.ConversationBO
-import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.model.UserRelationship
@@ -214,21 +213,6 @@ data class ChatDisappearingUiState(
 )
 
 /**
- * `@mention` autocomplete suggestions, owned directly by `ChatViewModel` (matched against
- * [ChatGroupPresenceDelegate.groupMembers] inside the `InputChanged` intent handler).
- * Fourteenth of the nested groups in docs/chat-viewmodel-decomposition.md's "Shrinking
- * ChatState/ChatIntent" plan.
- *
- * Like [ChatTranslationUiState], this has **no UI consumer today** — `InputChanged` populates
- * it, but no dropdown/overlay currently reads it to show the suggestions. Real feature gap,
- * not something this slice's pure move should paper over.
- */
-data class ChatMentionUiState(
-    val suggestions: List<GroupMemberBO> = emptyList(),
-    val showSuggestions: Boolean = false,
-)
-
-/**
  * Incognito mode (messages not persisted to local Room DB) + its explanatory confirm dialog,
  * owned directly by `ChatViewModel` (no delegate — `toggleIncognito`/`confirmIncognito`,
  * `isIncognito` itself observed from `incognitoRepository` in `init`). Fifteenth of the nested
@@ -280,7 +264,6 @@ data class ChatState(
     val isExporting: Boolean = false,
     val theme: ChatThemeUiState = ChatThemeUiState(),
     val disappearing: ChatDisappearingUiState = ChatDisappearingUiState(),
-    val mention: ChatMentionUiState = ChatMentionUiState(),
     val incognito: ChatIncognitoUiState = ChatIncognitoUiState(),
     val scheduling: ChatSchedulingUiState = ChatSchedulingUiState(),
     // AI Assistant
@@ -382,7 +365,6 @@ sealed interface ChatIntent {
     data object DismissDisappearingModeSheet : ChatIntent
     // seconds: 0 = off, positive = duration in seconds
     data class SetDisappearingMode(val conversationId: String, val seconds: Long) : ChatIntent
-    data class SelectMention(val member: GroupMemberBO) : ChatIntent
     data object ToggleIncognito : ChatIntent
     data object DismissIncognitoDialog : ChatIntent
     data object ConfirmIncognito : ChatIntent

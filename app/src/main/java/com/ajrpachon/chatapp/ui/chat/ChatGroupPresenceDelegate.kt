@@ -1,6 +1,5 @@
 package com.ajrpachon.chatapp.ui.chat
 
-import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.GetGroupMembersUseCase
@@ -18,9 +17,8 @@ private const val MEMBERSHIP_POLL_INTERVAL_MS = 3_000L
 
 /**
  * Handles group-conversation presence: polling membership sync, observing the live member list
- * (exposed as [groupMembers], read by ChatViewModel's `@mention` suggestion matching) and each
- * member's online status (for [ChatGroupPresenceUiState]'s `onlineMemberCount`/`memberCount`),
- * and reacting when the current user joins or leaves the group.
+ * and each member's online status (for [ChatGroupPresenceUiState]'s `onlineMemberCount`/
+ * `memberCount`), and reacting when the current user joins or leaves the group.
  *
  * Row 9 of docs/chat-viewmodel-decomposition.md — deliberately last and separately designed
  * (unlike delegates 1-8c). Two things keep this from being a mechanical move:
@@ -44,10 +42,6 @@ class ChatGroupPresenceDelegate(
 ) {
     private val updateState get() = context.updateState
 
-    /** Live group member list, kept for `@mention` suggestion matching (see ChatViewModel). */
-    var groupMembers: List<GroupMemberBO> = emptyList()
-        private set
-
     private val memberOnlineStatuses = MutableStateFlow<Map<String, Boolean>>(emptyMap())
     private var memberObserveJob: Job? = null
 
@@ -68,7 +62,6 @@ class ChatGroupPresenceDelegate(
             var previousIsMember = true
             catchResult {
                 getGroupMembersUseCase(conversationId).collect { members ->
-                    groupMembers = members
                     val isMember = members.any { it.userId == uid }
                     updateState { it.copy(isCurrentUserMember = isMember, groupPresence = it.groupPresence.copy(memberCount = members.size)) }
                     memberObserveJob?.cancel()
