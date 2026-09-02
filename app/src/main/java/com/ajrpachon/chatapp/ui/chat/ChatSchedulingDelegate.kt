@@ -64,7 +64,13 @@ class ChatSchedulingDelegate(
                             .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
                             .addTag(ScheduledMessageWorker.WORK_TAG).build()
                     )
-                    sendEffect(ChatEffect.ShowSnackbar("Mensaje programado"))
+                    // Reads scheduling.scheduledAtMs back from state (rather than closing over the
+                    // local scheduledAt param) so the confirmation genuinely reflects what got
+                    // written — same value either way today, but this is what turns the field from
+                    // write-only into something the UI actually depends on.
+                    val whenMs = getState().scheduling.scheduledAtMs ?: scheduledAt
+                    val formatter = java.text.SimpleDateFormat("dd MMM HH:mm", java.util.Locale.getDefault())
+                    sendEffect(ChatEffect.ShowSnackbar("Mensaje programado para ${formatter.format(java.util.Date(whenMs))}"))
                 }
                 .onFailure { updateState { it.copy(error = "No se pudo programar el mensaje", inputText = text) } }
         }

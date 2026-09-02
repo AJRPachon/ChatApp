@@ -138,9 +138,8 @@ data class ChatPollFeatureState(
  * [ChatSchedulingDelegate]. Fourth of the nested groups in
  * docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan.
  *
- * [scheduledAtMs] is set by [ChatSchedulingDelegate.scheduleMessage] but never read back
- * anywhere — same kind of write-only leftover as `pinnedBannerVisible` in `ChatScreen`, kept
- * as-is rather than guessed at during a pure-move slice.
+ * [scheduledAtMs] is set by [ChatSchedulingDelegate.scheduleMessage] and read back by that same
+ * function to format the "Mensaje programado para HH:mm" confirmation snackbar.
  */
 data class ChatSchedulingUiState(
     val showDialog: Boolean = false,

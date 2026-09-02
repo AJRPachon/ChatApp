@@ -274,7 +274,7 @@ fun ChatScreen(
     val chatThemeColors = state.theme.theme.toColors()
 
     val latestPinned = state.latestPinnedMessage
-    var pinnedBannerVisible by rememberSaveable(latestPinned?.id) { mutableStateOf(true) }
+    val pinnedBannerVisible = rememberSaveable(latestPinned?.id) { mutableStateOf(true) }
 
     val scaffoldContainerColor = if (chatThemeColors.backgroundTint == androidx.compose.ui.graphics.Color.Transparent) {
         MaterialTheme.colorScheme.background

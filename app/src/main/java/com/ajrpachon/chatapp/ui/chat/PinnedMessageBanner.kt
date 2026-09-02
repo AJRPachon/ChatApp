@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -28,11 +29,19 @@ import com.ajrpachon.chatapp.domain.model.MessageBO
 // Extracted per docs/chat-viewmodel-decomposition.md Phase 2 — self-contained, no dependency
 // on ChatViewModel or the message-bubble rendering tree.
 
+/**
+ * [onHide] collapses the banner locally for the current [message] without unpinning it (it
+ * comes back if the pinned message changes, or the screen is reopened — same
+ * `rememberSaveable(latestPinned?.id)` key `ChatScreen` already keyed the old dead
+ * `pinnedBannerVisible` field on). Distinct from [onDismiss], which actually unpins the message
+ * server-side via `ChatIntent.UnpinMessage`.
+ */
 @Composable
 internal fun PinnedMessageBanner(
     message: MessageBO,
     pinnedCount: Int,
     onTap: () -> Unit,
+    onHide: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     Surface(
@@ -66,6 +75,9 @@ internal fun PinnedMessageBanner(
                     overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
+            }
+            IconButton(onClick = onHide) {
+                Icon(Icons.Default.KeyboardArrowUp, contentDescription = stringResource(R.string.chat_hide_pinned_banner), modifier = Modifier.size(16.dp))
             }
             IconButton(onClick = onDismiss) {
                 Icon(Icons.Default.Close, contentDescription = stringResource(R.string.chat_unpin), modifier = Modifier.size(16.dp))
