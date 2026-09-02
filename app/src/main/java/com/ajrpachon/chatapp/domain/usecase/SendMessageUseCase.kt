@@ -1,4 +1,4 @@
-﻿package com.ajrpachon.chatapp.domain.usecase
+package com.ajrpachon.chatapp.domain.usecase
 
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.MessageLimits

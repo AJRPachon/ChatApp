@@ -86,7 +86,7 @@ fun EmojiPickerBottomSheet(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                     )
                     LazyVerticalGrid(
-                        columns = GridCells.Adaptive(minSize = 44.dp),
+                        columns = GridCells.Adaptive(minSize = 48.dp),
                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                         verticalArrangement = Arrangement.spacedBy(2.dp),
                         horizontalArrangement = Arrangement.spacedBy(2.dp),
@@ -98,7 +98,7 @@ fun EmojiPickerBottomSheet(
                             Box(
                                 contentAlignment = Alignment.Center,
                                 modifier = Modifier
-                                    .size(44.dp)
+                                    .size(48.dp)
                                     .clickable {
                                         vm.onIntent(EmojiPickerIntent.EmojiClicked(emoji))
                                     },

@@ -158,7 +158,7 @@ com.ajrpachon.chatapp/
 │   │                                 repositorios locales: DraftRepository, IncognitoRepository,
 │   │                                 WallpaperRepository, AiAssistantRepository, PollRepository,
 │   │                                 ContactRepository, ScheduledMessageRepository
-│   └── usecase/                      Un caso de uso por archivo (23 en total)
+│   └── usecase/                      Un caso de uso por archivo (20 en total)
 │
 ├── 🔵 data/                       ← Implementa las interfaces del dominio
 │   ├── local/
@@ -307,7 +307,7 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | **Robolectric** | 4.16.1 | Tests unitarios con contexto Android |
 | **Room Testing** | 2.8.4 | Tests de integración en memoria para DAOs |
 
-**488 tests** repartidos en 62 ficheros:
+**482 tests** repartidos en 60 ficheros:
 
 **ViewModels**
 
@@ -321,6 +321,7 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | `UserInfoViewModelTest` | 6 |
 | `ConversationListViewModelTest` | 5 |
 | `GlobalSearchViewModelTest` | 5 |
+| `GifPickerViewModelTest` | 5 |
 | `ChatMediaGalleryViewModelTest` | 4 |
 | `EmojiPickerViewModelTest` | 4 |
 | `GroupInfoViewModelTest` | 4 |
@@ -334,8 +335,8 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | `GroupMemberDaoTest` | 12 |
 | `StatusDaoTest` | 10 |
 | `ReactionDaoTest` | 9 |
-| `InvitationDaoTest` | 7 |
 | `UserDaoTest` | 8 |
+| `InvitationDaoTest` | 7 |
 
 **Repositorios**
 
@@ -345,10 +346,11 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | `GroupRepositoryImplTest` | 11 |
 | `UserRepositoryImplTest` | 8 |
 | `PollRepositoryImplTest` | 7 |
-| `BroadcastListRepositoryImplTest` | 5 |
-| `MessageRepositoryImplTest` | 5 |
 | `ReactionRepositoryImplTest` | 5 |
+| `BroadcastListRepositoryImplTest` | 5 |
+| `MessageRepositoryImplTest` | 3 |
 | `CallRepositoryImplTest` | 3 |
+| `PendingMessageRepositoryImplTest` | 2 |
 
 **Use Cases**
 
@@ -359,24 +361,21 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | `SendInvitationUseCaseTest` | 9 |
 | `CreateGroupUseCaseTest` | 8 |
 | `UpdateGroupUseCaseTest` | 7 |
-| `BlockUserUseCaseTest` | 6 |
 | `ExportConversationUseCaseTest` | 6 |
+| `BlockUserUseCaseTest` | 6 |
 | `RespondInvitationUseCaseTest` | 4 |
+| `PromoteGroupMemberUseCaseTest` | 4 |
 | `ObserveConversationsUseCaseTest` | 4 |
 | `GetCurrentUserUseCaseTest` | 4 |
-| `PromoteGroupMemberUseCaseTest` | 4 |
-| `GetOrCreateConversationUseCaseTest` | 3 |
-| `LeaveGroupUseCaseTest` | 3 |
-| `GetGroupMembersUseCaseTest` | 3 |
 | `SearchUsersUseCaseTest` | 3 |
-| `AddGroupMemberUseCaseTest` | 2 |
-| `GetCacheFileUseCaseTest` | 2 |
-| `GetDeviceContactsUseCaseTest` | 2 |
+| `LeaveGroupUseCaseTest` | 3 |
+| `GetOrCreateConversationUseCaseTest` | 3 |
+| `GetGroupMembersUseCaseTest` | 3 |
 | `ObserveInvitationsUseCaseTest` | 2 |
-| `ObserveMessagesUseCaseTest` | 2 |
-| `RemoveGroupMemberUseCaseTest` | 2 |
-| `GetUriMetadataUseCaseTest` | 1 |
+| `GetDeviceContactsUseCaseTest` | 2 |
+| `GetCacheFilePathUseCaseTest` | 2 |
 | `ReadUriAsBytesUseCaseTest` | 1 |
+| `GetUriMetadataUseCaseTest` | 1 |
 
 **Mappers y modelos**
 
@@ -385,8 +384,8 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | `MessageBOTest` | 22 |
 | `MediaUrlValidatorTest` | 17 |
 | `UserMapperTest` | 16 |
-| `ConversationMapperTest` | 13 |
 | `MessageMapperTest` | 13 |
+| `ConversationMapperTest` | 13 |
 | `InvitationMapperTest` | 10 |
 | `GroupMapperTest` | 8 |
 | `StatusMapperTest` | 5 |
@@ -398,7 +397,6 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | `FcmMessageHandlerTest` | 19 |
 | `UploadLimitsTest` | 18 |
 | `TimeFormatterTest` | 6 |
-| `GifPickerViewModelTest` | 5 |
 | `CatchResultTest` | 4 |
 
 ### CI/CD

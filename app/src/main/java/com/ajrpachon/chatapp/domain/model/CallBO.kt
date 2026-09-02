@@ -14,3 +14,14 @@ data class CallBO(
     val createdAt: Instant? = null,
 )
 
+/**
+ * Prefix LiveKit room names get for group calls (see CallRepositoryImpl.createGroupCall) — the
+ * single source of truth for "is this a group call" derived from a room name. Previously
+ * re-derived two different ways client-side: MainActivity checked this prefix for incoming
+ * calls, while the outgoing-call path used the conversation's own isGroup flag instead of the
+ * call itself.
+ */
+const val GROUP_CALL_ROOM_PREFIX = "group_"
+
+fun CallBO.isGroupCall(): Boolean = roomName.startsWith(GROUP_CALL_ROOM_PREFIX)
+

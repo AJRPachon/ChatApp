@@ -1,4 +1,4 @@
-﻿package com.ajrpachon.chatapp.di
+package com.ajrpachon.chatapp.di
 
 import com.ajrpachon.chatapp.BuildConfig
 import com.ajrpachon.chatapp.data.local.buildChatDatabase
@@ -42,7 +42,6 @@ import io.github.jan.supabase.storage.Storage
 import io.ktor.client.engine.okhttp.OkHttp
 import android.app.NotificationManager
 import android.content.Context
-import android.os.Environment
 import okhttp3.OkHttpClient
 import org.koin.android.ext.koin.androidApplication
 import org.koin.android.ext.koin.androidContext
@@ -123,6 +122,7 @@ val viewModelModule = module {
             clipboardProtection = get(),
             sendMessageUseCase = get(),
             messageRepository = get(),
+            pendingMessageRepository = get(),
             callRepository = get(),
             userRepository = get(),
             getGroupMembersUseCase = get(),
@@ -146,6 +146,8 @@ val viewModelModule = module {
             sendInvitationUseCase = get(),
             exportConversationUseCase = get(),
             linkPreviewFetcher = get(),
+            getUriMetadataUseCase = get(),
+            readUriAsBytesUseCase = get(),
         )
     }
     viewModelOf(::GroupInfoViewModel)
@@ -162,7 +164,6 @@ val viewModelModule = module {
             getCurrentUserUseCase = get(),
             sendMessageUseCase = get(),
             livekitUrl = BuildConfig.LIVEKIT_URL,
-            recordingsDir = androidContext().getExternalFilesDir(Environment.DIRECTORY_MUSIC) ?: androidContext().filesDir,
         )
     }
 }

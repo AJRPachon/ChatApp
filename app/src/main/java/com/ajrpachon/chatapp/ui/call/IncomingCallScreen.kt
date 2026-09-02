@@ -8,15 +8,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.PhoneDisabled
 import androidx.compose.material.icons.filled.Videocam
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,11 +20,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.CallBO
 import com.ajrpachon.chatapp.domain.model.CallType
+import com.ajrpachon.chatapp.ui.theme.CallAcceptedGreen
+import com.ajrpachon.chatapp.ui.theme.CallBackground
 
 @Composable
 fun IncomingCallScreen(
@@ -39,7 +36,7 @@ fun IncomingCallScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF1A1A2E).copy(alpha = 0.96f)),
+            .background(CallBackground.copy(alpha = 0.96f)),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -56,42 +53,21 @@ fun IncomingCallScreen(
                 color = Color.White.copy(alpha = 0.7f),
             )
 
-            Box(
-                modifier = Modifier
-                    .size(88.dp)
-                    .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = call.callerName.firstOrNull()?.uppercase() ?: "?",
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
-
-            Text(
-                text = call.callerName,
-                style = MaterialTheme.typography.headlineSmall,
-                color = Color.White,
-                fontWeight = FontWeight.SemiBold,
-            )
+            CallPartyHeader(call.callerName)
 
             Spacer(Modifier.height(24.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(48.dp)) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    FilledIconButton(
+                    CallControlButton(
                         onClick = onReject,
-                        modifier = Modifier.size(64.dp),
-                        colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.error,
-                        ),
+                        containerColor = MaterialTheme.colorScheme.error,
+                        iconTint = Color.White,
+                        size = 64.dp,
                     ) {
                         Icon(
                             Icons.Default.PhoneDisabled,
                             contentDescription = stringResource(R.string.incoming_call_reject_content_description),
-                            tint = Color.White,
                         )
                     }
                     Spacer(Modifier.height(8.dp))
@@ -103,17 +79,15 @@ fun IncomingCallScreen(
                 }
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    FilledIconButton(
+                    CallControlButton(
                         onClick = onAccept,
-                        modifier = Modifier.size(64.dp),
-                        colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = Color(0xFF2E7D32),
-                        ),
+                        containerColor = CallAcceptedGreen,
+                        iconTint = Color.White,
+                        size = 64.dp,
                     ) {
                         Icon(
                             if (call.type == CallType.VIDEO) Icons.Default.Videocam else Icons.Default.Phone,
                             contentDescription = stringResource(R.string.incoming_call_accept_content_description),
-                            tint = Color.White,
                         )
                     }
                     Spacer(Modifier.height(8.dp))

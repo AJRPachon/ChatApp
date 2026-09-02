@@ -67,6 +67,12 @@ naming:
     constantPattern: '[A-Z][_A-Z0-9]*'
     propertyPattern: '[a-z][A-Za-z0-9]*'
     privatePropertyPattern: '_?[a-z][A-Za-z0-9]*'
+    # ui/theme/Color.kt names Compose Color constants in PascalCase (Signal_Primary,
+    # CallAcceptedGreen, ...) matching the ecosystem-standard convention for Color tokens
+    # (e.g. Google's own Compose templates: Purple80, PurpleGrey40) rather than this
+    # project's default camelCase property rule. Scoped exception instead of baselining
+    # each entry — see chatapp-architecture-reviewer's recommendation.
+    excludes: ['**/ui/theme/Color.kt']
 
 performance:
   active: true

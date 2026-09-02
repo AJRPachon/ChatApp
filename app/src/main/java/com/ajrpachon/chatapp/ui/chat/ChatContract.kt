@@ -1,6 +1,5 @@
-﻿package com.ajrpachon.chatapp.ui.chat
+package com.ajrpachon.chatapp.ui.chat
 
-import android.content.Context
 import android.net.Uri
 import com.ajrpachon.chatapp.domain.model.ChatTheme
 import com.ajrpachon.chatapp.ui.common.formatDisappearingDuration
@@ -8,7 +7,6 @@ import com.ajrpachon.chatapp.ui.common.formatLastSeen
 import com.ajrpachon.chatapp.domain.model.CallBO
 import com.ajrpachon.chatapp.domain.model.ScheduledMessage
 import com.ajrpachon.chatapp.domain.model.ConversationBO
-import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.model.UserRelationship
@@ -28,7 +26,57 @@ data class ContactPhoneLookup(
     val isLoading: Boolean = false,
 )
 
-/** Poll data + the current user's vote(s), kept in [ChatState.pollUiStates] keyed by pollId. */
+/**
+ * Contact-card relationship lookups, owned by [ChatContactCardDelegate]. Sixth of the nested
+ * groups in docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan.
+ */
+data class ChatContactCardUiState(
+    // Keyed by phone (see ContactPhoneLookup doc).
+    val lookups: Map<String, ContactPhoneLookup> = emptyMap(),
+)
+
+/**
+ * In-conversation message search + jump-to-message highlighting, owned by
+ * [ChatSearchDelegate]. Seventh of the nested groups in
+ * docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan.
+ *
+ * [highlightedMessageId] lives here (not a separate top-level field) because it's only ever
+ * set by [ChatSearchDelegate.jumpToMessage] — reached both from a tapped search result and
+ * from a tapped reply-quote, but the highlight-and-fade-out behavior itself is this delegate's
+ * concern either way. Distinct from `ChatScreen`'s own local `highlightedMessageId` (`by
+ * remember`), which drives the actual scroll/visual-highlight animation and is set from the
+ * `LaunchedEffect(state.search.highlightedMessageId)` that observes this field.
+ */
+data class ChatSearchUiState(
+    val isActive: Boolean = false,
+    val query: String = "",
+    val results: List<MessageBO> = emptyList(),
+    val isSearching: Boolean = false,
+    val highlightedMessageId: String? = null,
+)
+
+/**
+ * Image-batch/file/video upload state, owned by [ChatMediaUploadDelegate]. Eighth of the
+ * nested groups in docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent"
+ * plan.
+ *
+ * [isUploadingFile] covers `sendFile`/`sendVideo` (a single upload, no per-item progress);
+ * [progress]/[pendingImageUris]/[suppressedImageMessageIds] cover `sendImages` (a batch, with
+ * a placeholder bubble and per-item completion tracking) — see their own docs below.
+ */
+data class ChatMediaUploadUiState(
+    val isUploadingFile: Boolean = false,
+    val progress: MediaUploadProgress? = null,
+    // Local URIs for the in-flight image batch, so the placeholder bubble can render
+    // thumbnails instantly (from device storage) without waiting on network uploads.
+    val pendingImageUris: List<Uri> = emptyList(),
+    // Ids of messages created by the current in-flight batch; hidden from the normal
+    // paging-based grouping until the whole batch finishes, so only the stable
+    // placeholder bubble is visible mid-upload instead of a growing/jumping bubble.
+    val suppressedImageMessageIds: Set<String> = emptySet(),
+)
+
+/** Poll data + the current user's vote(s), kept in [ChatPollFeatureState.uiStates] keyed by pollId. */
 data class PollUiState(
     val poll: PollBO? = null,
     val options: List<PollOptionBO> = emptyList(),
@@ -50,18 +98,148 @@ data class MediaUploadProgress(
     val totalBytes: Long,
 )
 
+/**
+ * AI-assistant sheet state, owned by [ChatAiDelegate]. First of the nested groups in
+ * docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan.
+ */
+data class ChatAiUiState(
+    val showSheet: Boolean = false,
+    val suggestion: String? = null,
+    val isLoading: Boolean = false,
+)
+
+/**
+ * Per-message translation/transcription state, owned by [ChatTranslationDelegate]. Second of
+ * the nested groups in docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent"
+ * plan.
+ */
+data class ChatTranslationUiState(
+    // messageId → translated text
+    val translatedTexts: Map<String, String> = emptyMap(),
+    val translatingMessageIds: Set<String> = emptySet(),
+    // messageId → transcribed text. No UI reads this yet, and the delegate that populates it
+    // has a real bug (transcribes the live mic, not the message's audio) — see
+    // docs/audio-transcription-todo.md before building UI on top of this field.
+    val transcriptions: Map<String, String> = emptyMap(),
+)
+
+/**
+ * Poll creation-sheet visibility + per-poll observed data, owned by [ChatPollDelegate]. Third
+ * of the nested groups in docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/
+ * ChatIntent" plan.
+ */
+data class ChatPollFeatureState(
+    val showCreateSheet: Boolean = false,
+    // pollId → poll/options/vote, populated on demand via ChatIntent.ObservePoll
+    val uiStates: Map<String, PollUiState> = emptyMap(),
+)
+
+/**
+ * Scheduled-message dialog/sheet visibility + the live list, owned by
+ * [ChatSchedulingDelegate]. Fourth of the nested groups in
+ * docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan.
+ *
+ * [scheduledAtMs] is set by [ChatSchedulingDelegate.scheduleMessage] and read back by that same
+ * function to format the "Mensaje programado para HH:mm" confirmation snackbar.
+ */
+data class ChatSchedulingUiState(
+    val showDialog: Boolean = false,
+    val scheduledAtMs: Long? = null,
+    val messageCount: Int = 0,
+    val showSheet: Boolean = false,
+    val messages: List<ScheduledMessage> = emptyList(),
+)
+
+/**
+ * Single-message forward dialog + multi-select forward-selection dialog, owned by
+ * [ChatForwardDelegate]. Fifth of the nested groups in
+ * docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan.
+ *
+ * [conversations] is shared by both dialogs (only one is ever shown at a time, per
+ * [ChatForwardDelegate]) rather than duplicated per-dialog.
+ */
+data class ChatForwardUiState(
+    val showDialog: Boolean = false,
+    val message: MessageBO? = null,
+    val showSelectionDialog: Boolean = false,
+    val conversations: List<ConversationBO> = emptyList(),
+)
+
+/**
+ * Live group-member presence, owned by [ChatGroupPresenceDelegate]. Tenth of the nested groups
+ * in docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan (there is no
+ * ninth row here — `audioState`/[AudioState] was already grouped before this plan started).
+ *
+ * Deliberately narrow: `isGroup`/`isCurrentUserMember`/`groupAvatarUrl` stay flat on
+ * [ChatState] — they're conversation identity set once from `conversationRepository` in
+ * `ChatViewModel.init`, not produced by this delegate. `state.isOnline` (network connectivity,
+ * from `NetworkMonitor`) also stays flat despite the similarly-shaped name — unrelated concern.
+ */
+data class ChatGroupPresenceUiState(
+    val onlineMemberCount: Int = 0,
+    val memberCount: Int = 0,
+)
+
+/**
+ * Mute state + its confirmation dialog, owned directly by `ChatViewModel` (no delegate — see
+ * `toggleMute`/`muteFor`). Eleventh of the nested groups in
+ * docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan.
+ */
+data class ChatMuteUiState(
+    val isMuted: Boolean = false,
+    // -1L = forever, 0L = unmute, positive = until epoch millis
+    val mutedUntil: Long = 0L,
+    val showDialog: Boolean = false,
+)
+
+/**
+ * Chat wallpaper theme (colors, bubble style) + its picker sheet, owned directly by
+ * `ChatViewModel` (no delegate — set via `setChatTheme`, observed from `chatThemeRepository`
+ * in `init`). Twelfth of the nested groups in docs/chat-viewmodel-decomposition.md's
+ * "Shrinking ChatState/ChatIntent" plan.
+ */
+data class ChatThemeUiState(
+    val theme: ChatTheme = ChatTheme.DEFAULT,
+    val showPicker: Boolean = false,
+)
+
+/**
+ * Disappearing-messages mode + its picker sheet, owned directly by `ChatViewModel` (no
+ * delegate — set via `setDisappearingMode`). Thirteenth of the nested groups in
+ * docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan.
+ */
+data class ChatDisappearingUiState(
+    // 0 = off, >0 = seconds for new messages to auto-expire
+    val seconds: Long = 0L,
+    val showSheet: Boolean = false,
+)
+
+/**
+ * Incognito mode (messages not persisted to local Room DB) + its explanatory confirm dialog,
+ * owned directly by `ChatViewModel` (no delegate — `toggleIncognito`/`confirmIncognito`,
+ * `isIncognito` itself observed from `incognitoRepository` in `init`). Fifteenth of the nested
+ * groups in docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan.
+ */
+data class ChatIncognitoUiState(
+    val isIncognito: Boolean = false,
+    val showInfoDialog: Boolean = false,
+)
+
+/**
+ * Chat wallpaper color + its picker sheet, owned directly by `ChatViewModel` (no delegate —
+ * `SetWallpaperColor` writes straight through `wallpaperRepository`, observed back in `init`).
+ * Sixteenth and last of the nested groups in docs/chat-viewmodel-decomposition.md's "Shrinking
+ * ChatState/ChatIntent" plan.
+ */
+data class ChatWallpaperUiState(
+    val color: Long? = null,
+    val showPicker: Boolean = false,
+)
+
 data class ChatState(
     val inputText: String = "",
     val isSending: Boolean = false,
-    val isUploadingFile: Boolean = false,
-    val mediaUploadProgress: MediaUploadProgress? = null,
-    // Local URIs for the in-flight image batch, so the placeholder bubble can render
-    // thumbnails instantly (from device storage) without waiting on network uploads.
-    val pendingImageUris: List<Uri> = emptyList(),
-    // Ids of messages created by the current in-flight batch; hidden from the normal
-    // paging-based grouping until the whole batch finishes, so only the stable
-    // placeholder bubble is visible mid-upload instead of a growing/jumping bubble.
-    val suppressedImageMessageIds: Set<String> = emptySet(),
+    val mediaUpload: ChatMediaUploadUiState = ChatMediaUploadUiState(),
     val currentUserId: String? = null,
     val conversationTitle: String = "",
     val error: String? = null,
@@ -75,61 +253,27 @@ data class ChatState(
     val isCurrentUserMember: Boolean = true,
     val replyingTo: MessageBO? = null,
     val showStickerPicker: Boolean = false,
-    val isMuted: Boolean = false,
-    val mutedUntil: Long = 0L,
-    val showMuteDialog: Boolean = false,
+    val mute: ChatMuteUiState = ChatMuteUiState(),
     val editingMessage: MessageBO? = null,
-    val isSearchActive: Boolean = false,
-    val searchQuery: String = "",
-    val searchResults: List<MessageBO> = emptyList(),
-    val isSearching: Boolean = false,
-    val highlightedMessageId: String? = null,
+    val search: ChatSearchUiState = ChatSearchUiState(),
     val expiryDialogMessageId: String? = null,
     val selectedMessageIds: Set<String> = emptySet(),
-    val showForwardDialog: Boolean = false,
-    val forwardingMessage: MessageBO? = null,
-    val forwardableConversations: List<ConversationBO> = emptyList(),
+    val forward: ChatForwardUiState = ChatForwardUiState(),
     val typingUserNames: List<String> = emptyList(),
-    // messageId → translated text
-    val translatedTexts: Map<String, String> = emptyMap(),
-    val translatingMessageIds: Set<String> = emptySet(),
-    val audioTranscriptions: Map<String, String> = emptyMap(),
+    val translation: ChatTranslationUiState = ChatTranslationUiState(),
     val pinnedMessages: List<MessageBO> = emptyList(),
-    val showCreatePollSheet: Boolean = false,
+    val poll: ChatPollFeatureState = ChatPollFeatureState(),
     val isExporting: Boolean = false,
-    val chatTheme: ChatTheme = ChatTheme.DEFAULT,
-    val showThemePicker: Boolean = false,
-    // 0 = off, >0 = seconds for new messages to auto-expire
-    val disappearingModeSeconds: Long = 0L,
-    val showDisappearingModeSheet: Boolean = false,
-    val mentionSuggestions: List<GroupMemberBO> = emptyList(),
-    val showMentionSuggestions: Boolean = false,
-    // Incognito mode: when true, messages are NOT persisted to local Room DB
-    val isIncognito: Boolean = false,
-    val showIncognitoInfoDialog: Boolean = false,
-    // Scheduled messages
-    val showScheduleDialog: Boolean = false,
-    val scheduledAtMs: Long? = null,
-    val scheduledMessageCount: Int = 0,
-    val showScheduledSheet: Boolean = false,
-    val scheduledMessages: List<ScheduledMessage> = emptyList(),
+    val theme: ChatThemeUiState = ChatThemeUiState(),
+    val disappearing: ChatDisappearingUiState = ChatDisappearingUiState(),
+    val incognito: ChatIncognitoUiState = ChatIncognitoUiState(),
+    val scheduling: ChatSchedulingUiState = ChatSchedulingUiState(),
     // AI Assistant
-    val showAiSheet: Boolean = false,
-    val aiSuggestion: String? = null,
-    val isAiLoading: Boolean = false,
-    // Wallpaper
-    val wallpaperColor: Long? = null,
-    val showWallpaperPicker: Boolean = false,
-    // Multi-forward
-    val showForwardSelectionDialog: Boolean = false,
-    // Group presence
-    val onlineMemberCount: Int = 0,
-    val groupMemberCount: Int = 0,
+    val ai: ChatAiUiState = ChatAiUiState(),
+    val wallpaper: ChatWallpaperUiState = ChatWallpaperUiState(),
+    val groupPresence: ChatGroupPresenceUiState = ChatGroupPresenceUiState(),
     val isOnline: Boolean = true,
-    // Contact-card relationship lookups, keyed by phone (see ContactPhoneLookup doc).
-    val contactPhoneLookups: Map<String, ContactPhoneLookup> = emptyMap(),
-    // Polls: pollId → poll/options/vote, populated on demand via ChatIntent.ObservePoll
-    val pollUiStates: Map<String, PollUiState> = emptyMap(),
+    val contactCard: ChatContactCardUiState = ChatContactCardUiState(),
     // Link previews: detected URL → fetched preview (null while loading or not found)
     val linkPreviews: Map<String, LinkPreviewData?> = emptyMap(),
 ) {
@@ -137,7 +281,7 @@ data class ChatState(
     val latestPinnedMessage: MessageBO? get() = pinnedMessages.firstOrNull()
 
     /** Formatted label for the disappearing-mode timer shown in the app bar. */
-    val disappearingDurationLabel: String get() = formatDisappearingDuration(disappearingModeSeconds)
+    val disappearingDurationLabel: String get() = formatDisappearingDuration(disappearing.seconds)
 
     /** Formatted presence text for 1-1 chats ("En línea" or "última vez hace X"). */
     val presenceText: String?
@@ -153,8 +297,8 @@ data class ChatState(
     val subtitleText: String?
         get() = when {
             !isGroup -> null
-            onlineMemberCount > 0 -> "$onlineMemberCount en línea"
-            groupMemberCount > 0 -> "$groupMemberCount miembros"
+            groupPresence.onlineMemberCount > 0 -> "${groupPresence.onlineMemberCount} en línea"
+            groupPresence.memberCount > 0 -> "${groupPresence.memberCount} miembros"
             else -> null
         }
 }
@@ -162,9 +306,9 @@ data class ChatState(
 sealed interface ChatIntent {
     data class InputChanged(val text: String) : ChatIntent
     data object Send : ChatIntent
-    data class SendImages(val context: Context, val uris: List<Uri>) : ChatIntent
-    data class SendFile(val context: Context, val uri: Uri) : ChatIntent
-    data class SendVideo(val context: Context, val uri: Uri) : ChatIntent
+    data class SendImages(val uris: List<Uri>) : ChatIntent
+    data class SendFile(val uri: Uri) : ChatIntent
+    data class SendVideo(val uri: Uri) : ChatIntent
     data object StartRecording : ChatIntent
     data object StopRecording : ChatIntent
     data object DiscardAudio : ChatIntent
@@ -206,7 +350,7 @@ sealed interface ChatIntent {
     data class SendLocation(val mapsUrl: String) : ChatIntent
     data class TranslateMessage(val messageId: String, val text: String) : ChatIntent
     data class DismissTranslation(val messageId: String) : ChatIntent
-    data class TranscribeAudio(val context: Context, val messageId: String) : ChatIntent
+    data class TranscribeAudio(val messageId: String) : ChatIntent
     data class PinMessage(val messageId: String) : ChatIntent
     data class UnpinMessage(val messageId: String) : ChatIntent
     data class SaveMessage(val messageId: String) : ChatIntent
@@ -223,7 +367,6 @@ sealed interface ChatIntent {
     data object DismissDisappearingModeSheet : ChatIntent
     // seconds: 0 = off, positive = duration in seconds
     data class SetDisappearingMode(val conversationId: String, val seconds: Long) : ChatIntent
-    data class SelectMention(val member: GroupMemberBO) : ChatIntent
     data object ToggleIncognito : ChatIntent
     data object DismissIncognitoDialog : ChatIntent
     data object ConfirmIncognito : ChatIntent

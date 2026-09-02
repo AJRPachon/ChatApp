@@ -31,6 +31,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -225,6 +226,11 @@ private fun MyStatusAvatar(
                     .size(20.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primaryContainer)
+                    // Visual size stays 20dp; this expands only the touch target to the 48dp
+                    // accessibility minimum. Must come after the visual modifiers (size/clip/
+                    // background) and before clickable, so clip/background paint only the small
+                    // circle while clickable binds to the full enlarged bounds.
+                    .minimumInteractiveComponentSize()
                     .clickable { showAddMenu = true },
             ) {
                 Icon(
