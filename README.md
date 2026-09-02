@@ -307,7 +307,7 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | **Robolectric** | 4.16.1 | Tests unitarios con contexto Android |
 | **Room Testing** | 2.8.4 | Tests de integración en memoria para DAOs |
 
-**482 tests** repartidos en 59 ficheros:
+**482 tests** repartidos en 60 ficheros:
 
 **ViewModels**
 
@@ -322,6 +322,7 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | `UserInfoViewModelTest` | 6 |
 | `ConversationListViewModelTest` | 5 |
 | `GlobalSearchViewModelTest` | 5 |
+| `ChatMediaGalleryViewModelTest` | 4 |
 
 **DAOs (Room in-memory)**
 
@@ -346,7 +347,8 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | `ReactionRepositoryImplTest` | 5 |
 | `BroadcastListRepositoryImplTest` | 5 |
 | `CallRepositoryImplTest` | 3 |
-| `MessageRepositoryImplTest` | 5 |
+| `MessageRepositoryImplTest` | 3 |
+| `PendingMessageRepositoryImplTest` | 2 |
 
 **Use Cases**
 
@@ -394,6 +396,8 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | `FcmMessageHandlerTest` | 19 |
 | `GifPickerViewModelTest` | 5 |
 | `CatchResultTest` | 4 |
+| `TimeFormatterTest` | 6 |
+| `EmojiPickerViewModelTest` | 4 |
 
 ### CI/CD
 
