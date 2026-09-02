@@ -1,11 +1,13 @@
 appId: com.ajrpachon.chatapp
 ---
 # Reusable building block — NOT meant to run standalone.
-# Signs in as the persistent QA account (@claudeqa) and waits for the
-# chat list to appear. Call it from a flow with:
-#   - runFlow: ../subflows/login_qa.yaml
-# Requires QA_EMAIL / QA_PASSWORD env vars, e.g.:
-#   maestro test .maestro/flows -e QA_EMAIL=... -e QA_PASSWORD=...
+# Signs in with the given account and waits for the chat list to appear.
+# Call it from a flow with:
+#   - runFlow:
+#       file: ../subflows/login_qa.yaml
+#       env:
+#         LOGIN_EMAIL: ${QA_EMAIL}
+#         LOGIN_PASSWORD: ${QA_PASSWORD}
 # Selectors use `id` (Compose testTag exposed via testTagsAsResourceId
 # in MainActivity), not text — the sign-in tab and the submit button
 # share the same literal label, and the label text itself is
@@ -18,10 +20,10 @@ appId: com.ajrpachon.chatapp
     timeout: 20000
 - tapOn:
     id: "auth_email_field"
-- inputText: ${QA_EMAIL}
+- inputText: ${LOGIN_EMAIL}
 - tapOn:
     id: "auth_password_field"
-- inputText: ${QA_PASSWORD}
+- inputText: ${LOGIN_PASSWORD}
 - hideKeyboard
 - tapOn:
     id: "auth_submit_button"

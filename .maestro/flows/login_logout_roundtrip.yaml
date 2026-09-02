@@ -5,5 +5,9 @@ appId: com.ajrpachon.chatapp
 # leaves the app logged out, matching how it started.
 # Run with:
 #   maestro test .maestro/flows/login_logout_roundtrip.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
-- runFlow: ../subflows/login_qa.yaml
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
 - runFlow: ../subflows/logout.yaml

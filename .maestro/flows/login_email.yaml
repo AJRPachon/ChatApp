@@ -4,4 +4,8 @@ appId: com.ajrpachon.chatapp
 # Run with:
 #   maestro test .maestro/flows/login_email.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
 # or see .maestro/README.md for the .env-based shortcut.
-- runFlow: ../subflows/login_qa.yaml
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}

@@ -21,9 +21,11 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     smoke_launch.yaml
     login_email.yaml
     login_logout_roundtrip.yaml
+    send_message.yaml
   subflows/               # bloques reutilizables, solo vía `runFlow`, nunca standalone
-    login_qa.yaml
+    login_qa.yaml         # parametrizado: env LOGIN_EMAIL / LOGIN_PASSWORD
     logout.yaml
+    open_conversation.yaml  # parametrizado: env CONTACT_NAME
 ```
 
 Siempre se ejecuta apuntando a `flows/` (archivo o carpeta), nunca a `.maestro`
@@ -74,26 +76,45 @@ flow. Preferir `id` sobre texto salvo que el texto sea:
   "Correo electrónico" falla contra "Email". "Chats" y "ChatApp" son
   ejemplos de textos seguros porque no se tradujeron.
 
-IDs ya disponibles (`AuthScreen`, `ConversationListScreen`, `ProfileScreen`):
-`auth_email_field`, `auth_password_field`, `auth_submit_button`,
-`conversation_list_profile_button`, `profile_sign_out_button`.
+IDs ya disponibles: `auth_email_field`, `auth_password_field`,
+`auth_submit_button` (`AuthScreen`), `conversation_list_profile_button`
+(`ConversationListScreen`), `profile_sign_out_button` (`ProfileScreen`),
+`chat_input_field`, `chat_send_button` (`ChatInputBar`).
+
+**Excepción**: contenido generado por el usuario (nombre de un contacto,
+texto de un mensaje) no tiene ni puede tener un `testTag` estático — ahí
+se selecciona por texto a propósito (`open_conversation.yaml` hace
+`tapOn: ${CONTACT_NAME}`). Los nombres de usuario no se traducen, así que
+siguen siendo seguros entre locales.
 
 ## Subflows reutilizables
 
-`subflows/login_qa.yaml` y `subflows/logout.yaml` son bloques de pasos, no
-escenarios en sí — se componen desde un flow con `runFlow`:
+Bloques de pasos, no escenarios en sí — se componen desde un flow con
+`runFlow`. Un subflow que necesita datos de quien lo llama declara sus
+propias variables de entorno (p. ej. `LOGIN_EMAIL`/`LOGIN_PASSWORD`,
+`CONTACT_NAME`) y el flow se las pasa con la forma larga de `runFlow`:
 
 ```yaml
 appId: com.ajrpachon.chatapp
 ---
-- runFlow: ../subflows/login_qa.yaml
-- runFlow: ../subflows/logout.yaml
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- runFlow: ../subflows/logout.yaml   # sin params, forma corta
 ```
 
 Al añadir un flow nuevo que necesite partir de una sesión iniciada,
 reutiliza `login_qa.yaml` en vez de repetir los pasos de login. Si un paso
 nuevo (navegar a una pantalla, abrir un diálogo) se va a repetir en más de
-un flow, extráelo a `subflows/` siguiendo el mismo patrón.
+un flow, extráelo a `subflows/` siguiendo el mismo patrón — parametrízalo
+con `env` en vez de hardcodear datos concretos, para que otro flow lo
+pueda reutilizar con otra cuenta/contacto/valor.
 
 ## Convenciones
 
@@ -110,7 +131,7 @@ un flow, extráelo a `subflows/` siguiendo el mismo patrón.
 ## Pendiente / ideas
 
 - Flow de registro (`sign up`) con limpieza posterior de la cuenta creada.
-- Flow de envío de mensaje entre `@claudeqa` y `@claudeqa2` (dos instancias),
-  reutilizando `login_qa.yaml` parametrizado por cuenta.
+- Flow de creación de contacto/chat nuevo (`send_message.yaml` asume que
+  la conversación `@claudeqa` ↔ `@claudeqa2` ya existe).
 - Integrar como job opcional de CI (requiere un emulador headless en el
   runner; de momento se ejecuta solo en local).

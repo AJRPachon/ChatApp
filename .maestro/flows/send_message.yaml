@@ -1,0 +1,29 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in as the QA account, opens the existing 1:1 conversation with
+# @claudeqa2, sends a short test message, and confirms it appears in the
+# thread. Requires the two QA accounts to already have a conversation
+# (see .maestro/README.md) — this flow does not create new chats/contacts.
+# Run with:
+#   maestro test .maestro/flows/send_message.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- extendedWaitUntil:
+    visible:
+      id: "chat_input_field"
+    timeout: 10000
+- tapOn:
+    id: "chat_input_field"
+- inputText: "Maestro QA ping"
+- tapOn:
+    id: "chat_send_button"
+- hideKeyboard
+- assertVisible:
+    text: "Maestro QA ping"
