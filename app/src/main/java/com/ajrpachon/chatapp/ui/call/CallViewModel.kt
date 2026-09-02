@@ -23,6 +23,7 @@ import io.livekit.android.room.track.screencapture.ScreenCaptureParams
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -115,8 +116,18 @@ class CallViewModel(
     private suspend fun joinCall() {
         catchResult {
             AppLogger.d(TAG, "joinCall: fetching user")
-            val user = withTimeout(5_000L) {
-                getCurrentUserUseCase().filterNotNull().first()
+            // withTimeout throws TimeoutCancellationException, a CancellationException subtype
+            // that catchResult (correctly, for real coroutine cancellation) rethrows instead of
+            // wrapping as a failure. Left uncaught here, a timeout on this call would propagate
+            // as a plain cancellation of the enclosing viewModelScope.launch { joinCall() } —
+            // no onFailure, no CallPhase.ERROR, no message — leaving the UI stuck on
+            // "Connecting..." forever with no way to retry. Converting it to a regular
+            // exception first lets catchResult's onFailure below handle it like any other
+            // join failure.
+            val user = try {
+                withTimeout(5_000L) { getCurrentUserUseCase().filterNotNull().first() }
+            } catch (e: TimeoutCancellationException) {
+                throw IllegalStateException("Timed out waiting for current user", e)
             }
             currentUserId = user.id
             AppLogger.d(TAG, "joinCall: userId=${user.id} roomName=$roomName livekitUrl=$livekitUrl")
