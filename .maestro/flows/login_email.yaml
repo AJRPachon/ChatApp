@@ -3,22 +3,5 @@ appId: com.ajrpachon.chatapp
 # Email/password sign-in against the persistent QA account.
 # Run with:
 #   maestro test .maestro/flows/login_email.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
-# or source .maestro/.env first (see .maestro/README.md).
-- launchApp:
-    clearState: true
-- extendedWaitUntil:
-    visible:
-      id: "auth_email_field"
-    timeout: 20000
-- tapOn:
-    id: "auth_email_field"
-- inputText: ${QA_EMAIL}
-- tapOn:
-    id: "auth_password_field"
-- inputText: ${QA_PASSWORD}
-- hideKeyboard
-- tapOn:
-    id: "auth_submit_button"
-- extendedWaitUntil:
-    visible: "Chats"
-    timeout: 15000
+# or see .maestro/README.md for the .env-based shortcut.
+- runFlow: ../subflows/login_qa.yaml

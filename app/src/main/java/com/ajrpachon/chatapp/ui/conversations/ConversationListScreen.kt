@@ -69,6 +69,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -253,7 +254,10 @@ fun ConversationListScreen(
                             Icon(Icons.Default.Inventory2, contentDescription = stringResource(R.string.conversations_archived_content_description))
                         }
                     }
-                    IconButton(onClick = dropUnlessResumed { onOpenProfile() }) {
+                    IconButton(
+                        onClick = dropUnlessResumed { onOpenProfile() },
+                        modifier = Modifier.testTag("conversation_list_profile_button"),
+                    ) {
                         Icon(
                             Icons.Default.Person,
                             contentDescription = stringResource(R.string.conversations_profile_content_description),

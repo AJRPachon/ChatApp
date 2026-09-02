@@ -1,0 +1,9 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in as the QA account, then signs out again, verifying we land
+# back on the auth screen. Exercises both reusable subflows together and
+# leaves the app logged out, matching how it started.
+# Run with:
+#   maestro test .maestro/flows/login_logout_roundtrip.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow: ../subflows/login_qa.yaml
+- runFlow: ../subflows/logout.yaml

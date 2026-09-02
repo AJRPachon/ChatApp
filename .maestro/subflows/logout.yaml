@@ -1,0 +1,19 @@
+appId: com.ajrpachon.chatapp
+---
+# Reusable building block — NOT meant to run standalone.
+# From the chat list, opens the profile screen and signs out (single
+# device only, not "sign out all devices"), landing back on the auth
+# screen. Call it from a flow with:
+#   - runFlow: ../subflows/logout.yaml
+- tapOn:
+    id: "conversation_list_profile_button"
+- extendedWaitUntil:
+    visible:
+      id: "profile_sign_out_button"
+    timeout: 10000
+- tapOn:
+    id: "profile_sign_out_button"
+- extendedWaitUntil:
+    visible:
+      id: "auth_email_field"
+    timeout: 15000
