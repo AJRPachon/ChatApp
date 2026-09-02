@@ -7,6 +7,7 @@ import com.ajrpachon.chatapp.ui.applock.AppLockScreen
 import com.ajrpachon.chatapp.ui.auth.AuthScreen
 import com.ajrpachon.chatapp.ui.backup.BackupScreen
 import com.ajrpachon.chatapp.ui.broadcast.BroadcastListScreen
+import com.ajrpachon.chatapp.domain.model.isGroupCall
 import com.ajrpachon.chatapp.ui.call.CallScreen
 import com.ajrpachon.chatapp.ui.chat.ChatMediaGalleryScreen
 import com.ajrpachon.chatapp.ui.chat.ChatScreen
@@ -130,10 +131,10 @@ fun chatNavEntry(
                         callId = call.id,
                         conversationId = call.conversationId,
                         roomName = call.roomName,
-                        callType = call.type.name.lowercase(),
+                        callType = call.type.wireValue,
                         otherUserName = key.otherUserName,
                         isOutgoing = true,
-                        isGroup = key.isGroup,
+                        isGroup = call.isGroupCall(),
                     )
                 )
             },

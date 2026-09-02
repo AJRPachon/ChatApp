@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -21,8 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-
-private val ButtonShape = RoundedCornerShape(50)
 
 /**
  * Full-width primary action button. Use for the main CTA on each screen.
@@ -40,7 +37,7 @@ fun ChatAppPrimaryButton(
         onClick = onClick,
         modifier = modifier,
         enabled = enabled && !isLoading,
-        shape = ButtonShape,
+        shape = MaterialTheme.shapes.small,
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp),
     ) {
         if (isLoading) {
@@ -74,7 +71,7 @@ fun ChatAppSecondaryButton(
         onClick = onClick,
         modifier = modifier,
         enabled = enabled,
-        shape = ButtonShape,
+        shape = MaterialTheme.shapes.small,
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp),
     ) {
         if (leadingIcon != null) {
@@ -100,7 +97,7 @@ fun ChatAppOutlinedButton(
         onClick = onClick,
         modifier = modifier,
         enabled = enabled,
-        shape = ButtonShape,
+        shape = MaterialTheme.shapes.small,
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp),
     ) {
         if (leadingIcon != null) {
@@ -126,7 +123,7 @@ fun ChatAppDestructiveButton(
         onClick = onClick,
         modifier = modifier,
         enabled = enabled,
-        shape = ButtonShape,
+        shape = MaterialTheme.shapes.small,
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp),
         colors = ButtonDefaults.outlinedButtonColors(
             contentColor = MaterialTheme.colorScheme.error,

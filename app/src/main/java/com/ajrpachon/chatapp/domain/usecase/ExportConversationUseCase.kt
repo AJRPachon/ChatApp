@@ -6,9 +6,8 @@ import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import com.ajrpachon.chatapp.utils.catchResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 class ExportConversationUseCase(
     private val messageRepository: MessageRepository,
@@ -31,11 +30,14 @@ class ExportConversationUseCase(
     }
 
     private fun formatMessages(messages: List<MessageBO>): String {
-        val formatter = SimpleDateFormat("HH:mm dd/MM/yyyy", Locale.getDefault())
+        val timeZone = TimeZone.currentSystemDefault()
         return buildString {
             for (msg in messages) {
                 if (msg.isDeleted) continue
-                val date = formatter.format(Date(msg.createdAt.toEpochMilliseconds()))
+                val local = msg.createdAt.toLocalDateTime(timeZone)
+                val date = "%02d:%02d %02d/%02d/%04d".format(
+                    local.hour, local.minute, local.dayOfMonth, local.monthNumber, local.year,
+                )
                 val line = when {
                     msg.content.isNotBlank() -> "[$date] ${msg.senderName}: ${msg.content}"
                     msg.imageUrl != null -> "[$date] ${msg.senderName}: [Imagen]"

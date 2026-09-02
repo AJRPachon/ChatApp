@@ -1,4 +1,4 @@
-﻿package com.ajrpachon.chatapp.data.repository
+package com.ajrpachon.chatapp.data.repository
 
 import com.ajrpachon.chatapp.domain.repository.TypingRepository
 import io.github.jan.supabase.SupabaseClient

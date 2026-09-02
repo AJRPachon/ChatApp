@@ -5,135 +5,24 @@
     <ID>ComplexCondition:ChatItem.kt$j &lt; size &amp;&amp; this[j].imageUrl != null &amp;&amp; this[j].audioUrl == null &amp;&amp; this[j].senderId == message.senderId</ID>
     <ID>ComplexCondition:MessageRepositoryImpl.kt$MessageRepositoryImpl$otherUserId != null &amp;&amp; content.isNotBlank() &amp;&amp; imageUrl == null &amp;&amp; audioUrl == null &amp;&amp; callType == null &amp;&amp; gifUrl == null &amp;&amp; stickerUrl == null &amp;&amp; fileUrl == null &amp;&amp; videoUrl == null</ID>
     <ID>CyclomaticComplexMethod:CallViewModel.kt$CallViewModel$private fun handleRoomEvent(event: RoomEvent)</ID>
-    <ID>CyclomaticComplexMethod:ChatScreen.kt$@Composable private fun CallMessageBubble(message: MessageBO)</ID>
-    <ID>CyclomaticComplexMethod:ChatScreen.kt$@NavEdge(to = CallRoute::class, label = "Start Call") @NavEdge(to = GroupInfoRoute::class, label = "Group Info") @NavEdge(to = UserInfoRoute::class, label = "User Info") @NavDestination(route = ChatRoute::class) @OptIn(ExperimentalMaterial3Api::class) @Composable fun ChatScreen( conversationId: String, otherUserName: String, onBack: () -&gt; Unit, onStartCall: (CallBO) -&gt; Unit = {}, onGroupInfo: () -&gt; Unit = {}, onUserInfo: (userId: String) -&gt; Unit = {}, onOpenPdf: (url: String, filename: String) -&gt; Unit = { _, _ -&gt; }, onOpenMediaGallery: () -&gt; Unit = {}, onNavigateToConversation: (conversationId: String, otherUserName: String) -&gt; Unit = { _, _ -&gt; }, )</ID>
     <ID>CyclomaticComplexMethod:ConversationListViewModel.kt$ConversationListViewModel$fun onIntent(intent: ConversationListIntent)</ID>
     <ID>CyclomaticComplexMethod:GroupInfoViewModel.kt$GroupInfoViewModel$fun onIntent(intent: GroupInfoIntent)</ID>
     <ID>CyclomaticComplexMethod:MainActivity.kt$MainActivity$override fun onCreate(savedInstanceState: Bundle?)</ID>
-    <ID>LargeClass:ChatViewModel.kt$ChatViewModel : BaseViewModel</ID>
-    <ID>LongMethod:ChatScreen.kt$@Composable @OptIn(ExperimentalMaterial3Api::class) private fun AiAssistantSheet( aiSuggestion: String?, isAiLoading: Boolean, onDismiss: () -&gt; Unit, onSuggestReply: () -&gt; Unit, onFreeform: (String) -&gt; Unit, onInsert: () -&gt; Unit, )</ID>
-    <ID>LongMethod:ChatScreen.kt$@Composable private fun ImageGroupBubble( messages: List&lt;MessageBO&gt;, onImageClick: (index: Int) -&gt; Unit, onReply: () -&gt; Unit, )</ID>
-    <ID>LongMethod:ChatScreen.kt$@Composable private fun PollBubble( pollId: String, isFromMe: Boolean, pollRepository: PollRepository, currentUserId: String?, onVote: (optionId: String) -&gt; Unit, )</ID>
-    <ID>LongMethod:ChatScreen.kt$@NavEdge(to = CallRoute::class, label = "Start Call") @NavEdge(to = GroupInfoRoute::class, label = "Group Info") @NavEdge(to = UserInfoRoute::class, label = "User Info") @NavDestination(route = ChatRoute::class) @OptIn(ExperimentalMaterial3Api::class) @Composable fun ChatScreen( conversationId: String, otherUserName: String, onBack: () -&gt; Unit, onStartCall: (CallBO) -&gt; Unit = {}, onGroupInfo: () -&gt; Unit = {}, onUserInfo: (userId: String) -&gt; Unit = {}, onOpenPdf: (url: String, filename: String) -&gt; Unit = { _, _ -&gt; }, onOpenMediaGallery: () -&gt; Unit = {}, onNavigateToConversation: (conversationId: String, otherUserName: String) -&gt; Unit = { _, _ -&gt; }, )</ID>
     <ID>LongMethod:ChatViewModel.kt$ChatViewModel$@Suppress("CyclomaticComplexMethod") fun onIntent(intent: ChatIntent)</ID>
     <ID>LongMethod:ConversationListViewModel.kt$ConversationListViewModel$fun onIntent(intent: ConversationListIntent)</ID>
     <ID>LongMethod:ConversationRepositoryImpl.kt$ConversationRepositoryImpl$override fun observeConversations(userId: String): Flow&lt;List&lt;ConversationBO&gt;&gt;</ID>
     <ID>LongMethod:MainActivity.kt$MainActivity$override fun onCreate(savedInstanceState: Bundle?)</ID>
-    <ID>LongParameterList:ChatScreen.kt$( conversationId: String, otherUserName: String, onBack: () -&gt; Unit, onStartCall: (CallBO) -&gt; Unit = {}, onGroupInfo: () -&gt; Unit = {}, onUserInfo: (userId: String) -&gt; Unit = {}, onOpenPdf: (url: String, filename: String) -&gt; Unit = { _, _ -&gt; }, onOpenMediaGallery: () -&gt; Unit = {}, onNavigateToConversation: (conversationId: String, otherUserName: String) -&gt; Unit = { _, _ -&gt; }, )</ID>
     <ID>LongParameterList:GroupInfoViewModel.kt$GroupInfoViewModel$( private val conversationId: String, private val userRepository: UserRepository, private val getGroupMembersUseCase: GetGroupMembersUseCase, private val updateGroupUseCase: UpdateGroupUseCase, private val leaveGroupUseCase: LeaveGroupUseCase, private val searchUsersUseCase: SearchUsersUseCase, private val groupRepository: GroupRepository, private val conversationRepository: ConversationRepository, )</ID>
-    <ID>LoopWithTooManyJumpStatements:ChatScreen.kt$while</ID>
-    <ID>LoopWithTooManyJumpStatements:ChatViewModel.kt$ChatViewModel$for</ID>
+    <ID>LoopWithTooManyJumpStatements:ChatMessageList.kt$while</ID>
     <ID>LoopWithTooManyJumpStatements:ContactRepositoryImpl.kt$ContactRepositoryImpl$while</ID>
     <ID>LoopWithTooManyJumpStatements:ExportConversationUseCase.kt$ExportConversationUseCase$for</ID>
     <ID>MatchingDeclarationName:StickerPacks.kt$StickerCategory</ID>
-    <ID>MissingPackageDeclaration:AppModule.kt$.AppModule.kt</ID>
-    <ID>MissingPackageDeclaration:AuthViewModel.kt$.AuthViewModel.kt</ID>
-    <ID>MissingPackageDeclaration:ChatContract.kt$.ChatContract.kt</ID>
-    <ID>MissingPackageDeclaration:ChatScreen.kt$.ChatScreen.kt</ID>
-    <ID>MissingPackageDeclaration:ChatViewModel.kt$.ChatViewModel.kt</ID>
-    <ID>MissingPackageDeclaration:ConversationBO.kt$.ConversationBO.kt</ID>
-    <ID>MissingPackageDeclaration:ConversationRemoteSource.kt$.ConversationRemoteSource.kt</ID>
-    <ID>MissingPackageDeclaration:ConversationRepository.kt$.ConversationRepository.kt</ID>
-    <ID>MissingPackageDeclaration:ConversationRepositoryImpl.kt$.ConversationRepositoryImpl.kt</ID>
-    <ID>MissingPackageDeclaration:E2EEKeyManager.kt$.E2EEKeyManager.kt</ID>
-    <ID>MissingPackageDeclaration:GroupInfoViewModel.kt$.GroupInfoViewModel.kt</ID>
-    <ID>MissingPackageDeclaration:MessageBO.kt$.MessageBO.kt</ID>
-    <ID>MissingPackageDeclaration:MessageDBO.kt$.MessageDBO.kt</ID>
-    <ID>MissingPackageDeclaration:MessageDTO.kt$.MessageDTO.kt</ID>
-    <ID>MissingPackageDeclaration:MessageMapper.kt$.MessageMapper.kt</ID>
-    <ID>MissingPackageDeclaration:MessageRemoteSource.kt$.MessageRemoteSource.kt</ID>
-    <ID>MissingPackageDeclaration:MessageRepository.kt$.MessageRepository.kt</ID>
-    <ID>MissingPackageDeclaration:MessageRepositoryImpl.kt$.MessageRepositoryImpl.kt</ID>
-    <ID>MissingPackageDeclaration:ProfileViewModel.kt$.ProfileViewModel.kt</ID>
-    <ID>MissingPackageDeclaration:ReactionRemoteSource.kt$.ReactionRemoteSource.kt</ID>
-    <ID>MissingPackageDeclaration:ScheduledMessageRepository.kt$.ScheduledMessageRepository.kt</ID>
-    <ID>MissingPackageDeclaration:ScheduledMessageRepositoryImpl.kt$.ScheduledMessageRepositoryImpl.kt</ID>
-    <ID>MissingPackageDeclaration:SendMessageUseCase.kt$.SendMessageUseCase.kt</ID>
-    <ID>MissingPackageDeclaration:SessionAuditViewModel.kt$.SessionAuditViewModel.kt</ID>
-    <ID>MissingPackageDeclaration:SharedModules.kt$.SharedModules.kt</ID>
-    <ID>MissingPackageDeclaration:StatusRemoteSource.kt$.StatusRemoteSource.kt</ID>
-    <ID>MissingPackageDeclaration:StickerStoreSheet.kt$.StickerStoreSheet.kt</ID>
-    <ID>MissingPackageDeclaration:TypingRepository.kt$.TypingRepository.kt</ID>
-    <ID>MissingPackageDeclaration:TypingRepositoryImpl.kt$.TypingRepositoryImpl.kt</ID>
-    <ID>MissingPackageDeclaration:UsageStatsViewModel.kt$.UsageStatsViewModel.kt</ID>
-    <ID>MissingPackageDeclaration:UserRemoteSource.kt$.UserRemoteSource.kt</ID>
-    <ID>MissingPackageDeclaration:UserRepository.kt$.UserRepository.kt</ID>
-    <ID>MissingPackageDeclaration:UserRepositoryImpl.kt$.UserRepositoryImpl.kt</ID>
     <ID>NestedBlockDepth:ChatItem.kt$internal fun List&lt;MessageBO&gt;.toChatItems(): List&lt;ChatItem&gt;</ID>
-    <ID>NewLineAtEndOfFile:ConversationRepository.kt$.ConversationRepository.kt</ID>
     <ID>NewLineAtEndOfFile:GroupRemoteSource.kt$com.ajrpachon.chatapp.data.remote.source.GroupRemoteSource.kt</ID>
-    <ID>NewLineAtEndOfFile:MessageRemoteSource.kt$.MessageRemoteSource.kt</ID>
-    <ID>NewLineAtEndOfFile:MessageRepository.kt$.MessageRepository.kt</ID>
-    <ID>NewLineAtEndOfFile:UserRepository.kt$.UserRepository.kt</ID>
     <ID>ReturnCount:BroadcastListViewModel.kt$BroadcastListViewModel$private fun sendBroadcast()</ID>
     <ID>ReturnCount:InvitationRepositoryImpl.kt$InvitationRepositoryImpl$override suspend fun getRelationship(currentUserId: String, otherUserId: String): UserRelationship</ID>
-    <ID>TooManyFunctions:CallViewModel.kt$CallViewModel : BaseViewModel</ID>
-    <ID>TooManyFunctions:ChatScreen.kt$.ChatScreen.kt</ID>
     <ID>TooManyFunctions:MessageRepositoryImpl.kt$MessageRepositoryImpl : MessageRepository</ID>
     <ID>TooManyFunctions:UserRepository.kt$UserRepository</ID>
-    <ID>TopLevelPropertyNaming:ChatAppButton.kt$private val ButtonShape = RoundedCornerShape(50)</ID>
-    <ID>TopLevelPropertyNaming:ChatAppTextField.kt$private val TextFieldShape = RoundedCornerShape(16.dp)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$// ── Avatar placeholder colors (pastel-tinted) ─────────────────────────────── val AvatarColors = listOf( Color(0xFF7986CB), // indigo Color(0xFF66BB6A), // green Color(0xFFEF5350), // red Color(0xFFAB47BC), // purple Color(0xFFFFA726), // orange Color(0xFF26C6DA), // cyan Color(0xFFEC407A), // pink Color(0xFF8D6E63), // brown )</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$// ── Dark scheme ───────────────────────────────────────────────────────────── val Pastel_PrimaryDark = Color(0xFFBFC2FF)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$// ── Light scheme — pastel lavender / sage / blush ────────────────────────── val Pastel_Primary = Color(0xFF6B71B8)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_Error = Color(0xFFBA1A1A)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_ErrorContainer = Color(0xFFFFDAD6)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_ErrorContainerDark = Color(0xFF93000A)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_ErrorDark = Color(0xFFFFB4AB)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_InverseOnSurface = Color(0xFFF3EFF7)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_InverseOnSurfaceDark = Color(0xFF303034)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_InversePrimary = Color(0xFFBFC2FF)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_InversePrimaryDark = Color(0xFF6B71B8)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_InverseSurface = Color(0xFF303034)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_InverseSurfaceDark = Color(0xFFE5E1EA)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnError = Color(0xFFFFFFFF)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnErrorContainer = Color(0xFF410002)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnErrorContainerDark = Color(0xFFFFDAD6)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnErrorDark = Color(0xFF690005)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnPrimary = Color(0xFFFFFFFF)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnPrimaryContainer = Color(0xFF141863)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnPrimaryContainerDark = Color(0xFFDFE0FF)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnPrimaryDark = Color(0xFF24287A)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnSecondary = Color(0xFFFFFFFF)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnSecondaryContainer = Color(0xFF0A2118)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnSecondaryContainerDark = Color(0xFFBCEDCE)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnSecondaryDark = Color(0xFF14392A)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnSurface = Color(0xFF1B1B1F)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnSurfaceDark = Color(0xFFE5E1EA)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnSurfaceVariant = Color(0xFF47464F)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnSurfaceVariantDark = Color(0xFFC8C5D0)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnTertiary = Color(0xFFFFFFFF)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnTertiaryContainer = Color(0xFF3E001F)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnTertiaryContainerDark = Color(0xFFFFD9E2)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OnTertiaryDark = Color(0xFF68122C)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_Outline = Color(0xFF787680)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OutlineDark = Color(0xFF928F9A)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OutlineVariant = Color(0xFFC8C5D0)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_OutlineVariantDark = Color(0xFF47464F)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_PrimaryContainer = Color(0xFFDFE0FF)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_PrimaryContainerDark = Color(0xFF4B509F)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_Secondary = Color(0xFF5E8B6D)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SecondaryContainer = Color(0xFFBCEDCE)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SecondaryContainerDark = Color(0xFF2B5C3E)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SecondaryDark = Color(0xFFA2D1B3)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_Surface = Color(0xFFFBF8FF)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SurfaceContainer = Color(0xFFEFECF5)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SurfaceContainerDark = Color(0xFF1F1F23)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SurfaceContainerHigh = Color(0xFFEAE7EF)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SurfaceContainerHighDark = Color(0xFF2A292D)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SurfaceContainerHighest = Color(0xFFE4E1EA)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SurfaceContainerHighestDark = Color(0xFF353438)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SurfaceContainerLow = Color(0xFFF5F2FB)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SurfaceContainerLowDark = Color(0xFF1B1B1F)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SurfaceContainerLowest = Color(0xFFFFFFFF)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SurfaceContainerLowestDark = Color(0xFF0E0E11)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SurfaceDark = Color(0xFF131316)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SurfaceVariant = Color(0xFFE4E1EC)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_SurfaceVariantDark = Color(0xFF47464F)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_Tertiary = Color(0xFFB5546A)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_TertiaryContainer = Color(0xFFFFD9E2)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_TertiaryContainerDark = Color(0xFF8E3B50)</ID>
-    <ID>TopLevelPropertyNaming:Color.kt$val Pastel_TertiaryDark = Color(0xFFFFB1C5)</ID>
     <ID>TopLevelPropertyNaming:DatabaseBuilder.kt$private val MIGRATION_10_11 = object : Migration(10, 11) { override fun migrate(connection: SQLiteConnection) { connection.execSQL("ALTER TABLE messages ADD COLUMN isEncrypted INTEGER NOT NULL DEFAULT 0") } }</ID>
     <ID>TopLevelPropertyNaming:DatabaseBuilder.kt$private val MIGRATION_1_2 = object : Migration(1, 2) { override fun migrate(connection: SQLiteConnection) { connection.execSQL("ALTER TABLE messages ADD COLUMN imageUrl TEXT") } }</ID>
     <ID>TopLevelPropertyNaming:DatabaseBuilder.kt$private val MIGRATION_2_3 = object : Migration(2, 3) { override fun migrate(connection: SQLiteConnection) { connection.execSQL("ALTER TABLE conversations ADD COLUMN otherUserId TEXT") } }</ID>
@@ -151,15 +40,12 @@
     <ID>TopLevelPropertyNaming:NavGraphPreviews.kt$private val PreviewPrimary = Color(0xFF6B71B8)</ID>
     <ID>TopLevelPropertyNaming:NavGraphPreviews.kt$private val PreviewSurface = Color(0xFFFBF8FF)</ID>
     <ID>TopLevelPropertyNaming:NavGraphPreviews.kt$private val PreviewSurfaceVariant = Color(0xFFE4E1EC)</ID>
-    <ID>TopLevelPropertyNaming:Shape.kt$val ChatAppShapes = Shapes( extraSmall = RoundedCornerShape(8.dp), small = RoundedCornerShape(12.dp), medium = RoundedCornerShape(20.dp), large = RoundedCornerShape(28.dp), extraLarge = RoundedCornerShape(36.dp), )</ID>
-    <ID>TopLevelPropertyNaming:Theme.kt$private val DarkColorScheme = darkColorScheme( primary = Pastel_PrimaryDark, onPrimary = Pastel_OnPrimaryDark, primaryContainer = Pastel_PrimaryContainerDark, onPrimaryContainer = Pastel_OnPrimaryContainerDark, secondary = Pastel_SecondaryDark, onSecondary = Pastel_OnSecondaryDark, secondaryContainer = Pastel_SecondaryContainerDark, onSecondaryContainer = Pastel_OnSecondaryContainerDark, tertiary = Pastel_TertiaryDark, onTertiary = Pastel_OnTertiaryDark, tertiaryContainer = Pastel_TertiaryContainerDark, onTertiaryContainer = Pastel_OnTertiaryContainerDark, error = Pastel_ErrorDark, onError = Pastel_OnErrorDark, errorContainer = Pastel_ErrorContainerDark, onErrorContainer = Pastel_OnErrorContainerDark, surface = Pastel_SurfaceDark, onSurface = Pastel_OnSurfaceDark, surfaceVariant = Pastel_SurfaceVariantDark, onSurfaceVariant = Pastel_OnSurfaceVariantDark, surfaceContainerLowest = Pastel_SurfaceContainerLowestDark, surfaceContainerLow = Pastel_SurfaceContainerLowDark, surfaceContainer = Pastel_SurfaceContainerDark, surfaceContainerHigh = Pastel_SurfaceContainerHighDark, surfaceContainerHighest = Pastel_SurfaceContainerHighestDark, outline = Pastel_OutlineDark, outlineVariant = Pastel_OutlineVariantDark, inverseSurface = Pastel_InverseSurfaceDark, inverseOnSurface = Pastel_InverseOnSurfaceDark, inversePrimary = Pastel_InversePrimaryDark, )</ID>
-    <ID>TopLevelPropertyNaming:Theme.kt$private val LightColorScheme = lightColorScheme( primary = Pastel_Primary, onPrimary = Pastel_OnPrimary, primaryContainer = Pastel_PrimaryContainer, onPrimaryContainer = Pastel_OnPrimaryContainer, secondary = Pastel_Secondary, onSecondary = Pastel_OnSecondary, secondaryContainer = Pastel_SecondaryContainer, onSecondaryContainer = Pastel_OnSecondaryContainer, tertiary = Pastel_Tertiary, onTertiary = Pastel_OnTertiary, tertiaryContainer = Pastel_TertiaryContainer, onTertiaryContainer = Pastel_OnTertiaryContainer, error = Pastel_Error, onError = Pastel_OnError, errorContainer = Pastel_ErrorContainer, onErrorContainer = Pastel_OnErrorContainer, surface = Pastel_Surface, onSurface = Pastel_OnSurface, surfaceVariant = Pastel_SurfaceVariant, onSurfaceVariant = Pastel_OnSurfaceVariant, surfaceContainerLowest = Pastel_SurfaceContainerLowest, surfaceContainerLow = Pastel_SurfaceContainerLow, surfaceContainer = Pastel_SurfaceContainer, surfaceContainerHigh = Pastel_SurfaceContainerHigh, surfaceContainerHighest = Pastel_SurfaceContainerHighest, outline = Pastel_Outline, outlineVariant = Pastel_OutlineVariant, inverseSurface = Pastel_InverseSurface, inverseOnSurface = Pastel_InverseOnSurface, inversePrimary = Pastel_InversePrimary, )</ID>
-    <ID>UnusedImports:StatusScreen.kt$import kotlinx.coroutines.delay</ID>
-    <ID>UnusedParameter:ChatScreen.kt$onDismiss: () -&gt; Unit</ID>
-    <ID>UnusedParameter:ChatScreen.kt$onRetryMessage: (String) -&gt; Unit = {}</ID>
-    <ID>VariableNaming:AppLockRepository.kt$AppLockRepository$private val BACKGROUNDED_AT_KEY = longPreferencesKey("app_lock_backgrounded_at")</ID>
-    <ID>VariableNaming:AppLockRepository.kt$AppLockRepository$private val IS_ENABLED_KEY = booleanPreferencesKey("app_lock_enabled")</ID>
+    <ID>TopLevelPropertyNaming:Shape.kt$/** * "Señal" shape scale: corners close to square rather than the fully rounded pills used * elsewhere in Material You. Components read this via [androidx.compose.material3.MaterialTheme.shapes] * — change a value here and every button, field, bubble and FAB that references it follows. */ val ChatAppShapes = Shapes( extraSmall = RoundedCornerShape(4.dp), small = RoundedCornerShape(8.dp), medium = RoundedCornerShape(12.dp), large = RoundedCornerShape(16.dp), extraLarge = RoundedCornerShape(24.dp), )</ID>
+    <ID>TopLevelPropertyNaming:Theme.kt$private val DarkColorScheme = darkColorScheme( primary = Signal_PrimaryDark, onPrimary = Signal_OnPrimaryDark, primaryContainer = Signal_PrimaryContainerDark, onPrimaryContainer = Signal_OnPrimaryContainerDark, secondary = Signal_SecondaryDark, onSecondary = Signal_OnSecondaryDark, secondaryContainer = Signal_SecondaryContainerDark, onSecondaryContainer = Signal_OnSecondaryContainerDark, tertiary = Signal_TertiaryDark, onTertiary = Signal_OnTertiaryDark, tertiaryContainer = Signal_TertiaryContainerDark, onTertiaryContainer = Signal_OnTertiaryContainerDark, error = Signal_ErrorDark, onError = Signal_OnErrorDark, errorContainer = Signal_ErrorContainerDark, onErrorContainer = Signal_OnErrorContainerDark, background = Signal_SurfaceDark, onBackground = Signal_OnSurfaceDark, surface = Signal_SurfaceDark, onSurface = Signal_OnSurfaceDark, surfaceVariant = Signal_SurfaceVariantDark, onSurfaceVariant = Signal_OnSurfaceVariantDark, surfaceContainerLowest = Signal_SurfaceContainerLowestDark, surfaceContainerLow = Signal_SurfaceContainerLowDark, surfaceContainer = Signal_SurfaceContainerDark, surfaceContainerHigh = Signal_SurfaceContainerHighDark, surfaceContainerHighest = Signal_SurfaceContainerHighestDark, outline = Signal_OutlineDark, outlineVariant = Signal_OutlineVariantDark, inverseSurface = Signal_InverseSurfaceDark, inverseOnSurface = Signal_InverseOnSurfaceDark, inversePrimary = Signal_InversePrimaryDark, )</ID>
+    <ID>TopLevelPropertyNaming:Theme.kt$private val LightColorScheme = lightColorScheme( primary = Signal_Primary, onPrimary = Signal_OnPrimary, primaryContainer = Signal_PrimaryContainer, onPrimaryContainer = Signal_OnPrimaryContainer, secondary = Signal_Secondary, onSecondary = Signal_OnSecondary, secondaryContainer = Signal_SecondaryContainer, onSecondaryContainer = Signal_OnSecondaryContainer, tertiary = Signal_Tertiary, onTertiary = Signal_OnTertiary, tertiaryContainer = Signal_TertiaryContainer, onTertiaryContainer = Signal_OnTertiaryContainer, error = Signal_Error, onError = Signal_OnError, errorContainer = Signal_ErrorContainer, onErrorContainer = Signal_OnErrorContainer, background = Signal_Surface, onBackground = Signal_OnSurface, surface = Signal_Surface, onSurface = Signal_OnSurface, surfaceVariant = Signal_SurfaceVariant, onSurfaceVariant = Signal_OnSurfaceVariant, surfaceContainerLowest = Signal_SurfaceContainerLowest, surfaceContainerLow = Signal_SurfaceContainerLow, surfaceContainer = Signal_SurfaceContainer, surfaceContainerHigh = Signal_SurfaceContainerHigh, surfaceContainerHighest = Signal_SurfaceContainerHighest, outline = Signal_Outline, outlineVariant = Signal_OutlineVariant, inverseSurface = Signal_InverseSurface, inverseOnSurface = Signal_InverseOnSurface, inversePrimary = Signal_InversePrimary, )</ID>
+    <ID>TopLevelPropertyNaming:Type.kt$/** * "Señal" type scale: monospace for structural / metadata text — screen titles, headlines, * timestamps, badges — so it reads as data rather than decoration. Anything read at length * (contact names, message bodies, button labels) stays on the platform sans for legibility. * * Built as a `copy()` of the M3 default so every other slot (sizes, line heights, letter * spacing) keeps its platform-correct value — only `fontFamily`/`fontWeight` are overridden. */ val ChatAppTypography = base.copy( headlineLarge = base.headlineLarge.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold), headlineMedium = base.headlineMedium.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold), headlineSmall = base.headlineSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold), titleLarge = base.titleLarge.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold), labelMedium = base.labelMedium.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.SemiBold), labelSmall = base.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.SemiBold), )</ID>
+    <ID>UnusedParameter:ChatBottomSheets.kt$onDismiss: () -&gt; Unit</ID>
+    <ID>UnusedParameter:MessageBubble.kt$onRetryMessage: (String) -&gt; Unit = {}</ID>
     <ID>VariableNaming:StatusRemoteSource.kt$StatusRemoteSource$private val STATUS_IMAGE_BUCKET = "status-images"</ID>
-    <ID>VariableNaming:ThemeRepository.kt$ThemeRepository$private val THEME_KEY = stringPreferencesKey("theme_preference")</ID>
   </CurrentIssues>
 </SmellBaseline>

@@ -158,7 +158,7 @@ com.ajrpachon.chatapp/
 │   │                                 repositorios locales: DraftRepository, IncognitoRepository,
 │   │                                 WallpaperRepository, AiAssistantRepository, PollRepository,
 │   │                                 ContactRepository, ScheduledMessageRepository
-│   └── usecase/                      Un caso de uso por archivo (24 en total)
+│   └── usecase/                      Un caso de uso por archivo (20 en total)
 │
 ├── 🔵 data/                       ← Implementa las interfaces del dominio
 │   ├── local/
@@ -167,8 +167,8 @@ com.ajrpachon.chatapp/
 │   │   │                             stickers, recibos de lectura, carpetas, difusión,
 │   │   │                             eventos de chat, sesiones y mensajes programados
 │   │   ├── dao/                      15 DAOs de acceso a la BD
-│   │   ├── ChatDatabase.kt           Base de datos Room (versión 34, cifrada con SQLCipher)
-│   │   ├── DatabaseBuilder.kt        Migraciones v1 → v34 (33 migraciones explícitas)
+│   │   ├── ChatDatabase.kt           Base de datos Room (versión 37, cifrada con SQLCipher)
+│   │   ├── DatabaseBuilder.kt        Migraciones v1 → v37 (36 migraciones explícitas)
 │   │   └── DatabaseKeyProvider.kt    Clave AES-256 en Android KeyStore
 │   ├── remote/
 │   │   ├── dto/                      Data Transfer Objects de Supabase
@@ -268,7 +268,7 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | ![Compose](https://img.shields.io/badge/-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white) **Jetpack Compose BOM** | 2026.06.01 | UI declarativa |
 | ![M3](https://img.shields.io/badge/-Material%203-757575?logo=materialdesign&logoColor=white) **Material 3** | (BOM) | Sistema de diseño |
 | **Navigation 3** | 1.1.3 | Navegación entre pantallas |
-| ![Room](https://img.shields.io/badge/-Room-FF6F00?logo=android&logoColor=white) **Room** | 2.8.4 | Base de datos local (v34, 21 entidades, 15 DAOs) |
+| ![Room](https://img.shields.io/badge/-Room-FF6F00?logo=android&logoColor=white) **Room** | 2.8.4 | Base de datos local (v37, 21 entidades, 15 DAOs) |
 | **SQLCipher** | 4.6.1 | Cifrado AES-256 de la base de datos Room |
 | ![Koin](https://img.shields.io/badge/-Koin-F97316?logoColor=white) **Koin** | 4.2.2 | Inyección de dependencias |
 | **Kotlin Coroutines + Flow** | 1.11.0 | Concurrencia y streams asíncronos |
@@ -307,21 +307,22 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | **Robolectric** | 4.16.1 | Tests unitarios con contexto Android |
 | **Room Testing** | 2.8.4 | Tests de integración en memoria para DAOs |
 
-**475 tests** repartidos en 59 ficheros:
+**482 tests** repartidos en 60 ficheros:
 
 **ViewModels**
 
 | Fichero | Tests |
 |---|---|
-| `ChatViewModelTest` | 21 |
-| `StatusViewModelTest` | 14 |
-| `GroupInfoViewModelTest` | 12 |
+| `ChatViewModelTest` | 24 |
+| `StatusViewModelTest` | 16 |
+| `GroupInfoViewModelTest` | 4 |
 | `CreateGroupViewModelTest` | 11 |
 | `NewChatViewModelTest` | 10 |
 | `InvitationsViewModelTest` | 7 |
 | `UserInfoViewModelTest` | 6 |
 | `ConversationListViewModelTest` | 5 |
 | `GlobalSearchViewModelTest` | 5 |
+| `ChatMediaGalleryViewModelTest` | 4 |
 
 **DAOs (Room in-memory)**
 
@@ -347,6 +348,7 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | `BroadcastListRepositoryImplTest` | 5 |
 | `CallRepositoryImplTest` | 3 |
 | `MessageRepositoryImplTest` | 3 |
+| `PendingMessageRepositoryImplTest` | 2 |
 
 **Use Cases**
 
@@ -367,12 +369,9 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | `LeaveGroupUseCaseTest` | 3 |
 | `GetGroupMembersUseCaseTest` | 3 |
 | `SearchUsersUseCaseTest` | 3 |
-| `AddGroupMemberUseCaseTest` | 2 |
-| `GetCacheFileUseCaseTest` | 2 |
+| `GetCacheFilePathUseCaseTest` | 2 |
 | `GetDeviceContactsUseCaseTest` | 2 |
 | `ObserveInvitationsUseCaseTest` | 2 |
-| `ObserveMessagesUseCaseTest` | 2 |
-| `RemoveGroupMemberUseCaseTest` | 2 |
 | `GetUriMetadataUseCaseTest` | 1 |
 | `ReadUriAsBytesUseCaseTest` | 1 |
 
@@ -397,6 +396,8 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | `FcmMessageHandlerTest` | 19 |
 | `GifPickerViewModelTest` | 5 |
 | `CatchResultTest` | 4 |
+| `TimeFormatterTest` | 6 |
+| `EmojiPickerViewModelTest` | 4 |
 
 ### CI/CD
 

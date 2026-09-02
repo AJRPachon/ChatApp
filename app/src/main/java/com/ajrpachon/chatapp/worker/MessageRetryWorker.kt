@@ -3,7 +3,7 @@ package com.ajrpachon.chatapp.worker
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.ajrpachon.chatapp.domain.repository.MessageRepository
+import com.ajrpachon.chatapp.domain.repository.PendingMessageRepository
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
 import com.ajrpachon.chatapp.utils.AppLogger
 import org.koin.core.component.KoinComponent
@@ -14,7 +14,7 @@ class MessageRetryWorker(
     params: WorkerParameters,
 ) : CoroutineWorker(appContext, params), KoinComponent {
 
-    private val messageRepository: MessageRepository by inject()
+    private val messageRepository: PendingMessageRepository by inject()
     private val sendMessageUseCase: SendMessageUseCase by inject()
 
     override suspend fun doWork(): Result {

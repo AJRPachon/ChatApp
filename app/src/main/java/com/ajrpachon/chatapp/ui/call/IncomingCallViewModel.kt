@@ -3,6 +3,7 @@ import com.ajrpachon.chatapp.utils.catchResult
 
 import android.app.NotificationManager
 import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.domain.model.CallStatus
 import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.service.FcmMessageHandler
@@ -61,7 +62,7 @@ class IncomingCallViewModel(
                 AppLogger.d(TAG, "observeCallerCancellation: listening status changes callId=$callId")
                 callRepository.observeCallStatus(callId).collect { status ->
                     AppLogger.d(TAG, "observeCallerCancellation: status=$status callId=$callId")
-                    if (status == "ended" || status == "rejected") dismissIfCurrent(callId)
+                    if (status == CallStatus.ENDED || status == CallStatus.REJECTED) dismissIfCurrent(callId)
                 }
             }.onFailure { e -> AppLogger.e(TAG, "observeCallStatus failed", e) }
         }

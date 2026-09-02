@@ -19,6 +19,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
@@ -38,10 +39,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.components.ChatAppSearchField
 import coil3.compose.AsyncImage
 import org.koin.androidx.compose.koinViewModel
@@ -201,8 +203,11 @@ private fun GifTab(onSelected: (String) -> Unit, vm: GifPickerViewModel = koinVi
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text("GIFs no disponibles", color = Color.Gray)
-                Text("Configura tu propia clave API de Giphy para activar esta función.", color = Color.Gray)
+                Text("GIFs no disponibles", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    "Configura tu propia clave API de Giphy para activar esta función.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 Button(onClick = { vm.onIntent(GifPickerIntent.ShowKeyDialog) }) {
                     Text("Configurar clave API")
                 }
@@ -210,7 +215,7 @@ private fun GifTab(onSelected: (String) -> Unit, vm: GifPickerViewModel = koinVi
             state.errorState == GifPickerError.NETWORK_ERROR -> Box(
                 Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center
             ) {
-                Text("Error de red. Inténtalo de nuevo.", color = Color.Gray)
+                Text("Error de red. Inténtalo de nuevo.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             else -> {
             LazyVerticalGrid(
@@ -219,16 +224,16 @@ private fun GifTab(onSelected: (String) -> Unit, vm: GifPickerViewModel = koinVi
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                items(state.gifs) { gif ->
+                items(state.gifs, key = { it.previewUrl }) { gif ->
                     AsyncImage(
                         model = gif.previewUrl,
-                        contentDescription = "GIF",
+                        contentDescription = stringResource(R.string.chat_gif_content_description),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .height(100.dp)
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(8.dp))
-                            .background(Color.Gray.copy(alpha = 0.15f))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f))
                             .clickable { onSelected(gif.fullUrl) },
                     )
                 }

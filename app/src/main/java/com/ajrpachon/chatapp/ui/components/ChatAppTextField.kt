@@ -1,21 +1,18 @@
 package com.ajrpachon.chatapp.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.unit.dp
-
-private val TextFieldShape = RoundedCornerShape(16.dp)
 
 @Composable
 fun ChatAppTextField(
@@ -50,7 +47,7 @@ fun ChatAppTextField(
         maxLines = maxLines,
         enabled = enabled,
         readOnly = readOnly,
-        shape = TextFieldShape,
+        shape = MaterialTheme.shapes.small,
         visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
@@ -75,7 +72,7 @@ fun ChatAppSearchField(
         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
         singleLine = true,
         enabled = enabled,
-        shape = TextFieldShape,
+        shape = MaterialTheme.shapes.small,
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
     )

@@ -43,8 +43,10 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.ajrpachon.chatapp.R
 import kotlinx.coroutines.delay
 
 // ── Audio helpers ─────────────────────────────────────────────────────────────
@@ -128,7 +130,7 @@ internal fun RecordingBar(
         IconButton(onClick = onStop) {
             Icon(
                 Icons.Default.Stop,
-                contentDescription = "Detener grabación",
+                contentDescription = stringResource(R.string.chat_stop_recording_cd),
                 tint = MaterialTheme.colorScheme.error,
             )
         }
@@ -157,13 +159,13 @@ internal fun AudioPreviewBar(
             modifier = Modifier.weight(1f),
         )
         IconButton(onClick = onDiscard, enabled = !isUploading) {
-            Icon(Icons.Default.Delete, contentDescription = "Descartar audio")
+            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.chat_discard_audio_cd))
         }
         if (isUploading) {
             CircularProgressIndicator(modifier = Modifier.size(40.dp).padding(8.dp))
         } else {
             IconButton(onClick = onSend) {
-                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar audio")
+                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.chat_send_audio_cd))
             }
         }
     }
