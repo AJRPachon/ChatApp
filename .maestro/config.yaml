@@ -11,3 +11,6 @@ executionOrder:
     - flows/theme_toggle_roundtrip.yaml
     - flows/send_message.yaml
     - flows/message_reaction_roundtrip.yaml
+    - flows/background_resume_chat_list.yaml
+    - flows/background_resume_chat_screen.yaml
+    - flows/background_resume_profile.yaml

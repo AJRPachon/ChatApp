@@ -28,6 +28,9 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     theme_toggle_roundtrip.yaml
     send_message.yaml
     message_reaction_roundtrip.yaml
+    background_resume_chat_list.yaml
+    background_resume_chat_screen.yaml
+    background_resume_profile.yaml
     realtime/              # flujo multi-dispositivo, fuera de la suite de un solo device
       01_recipient_wait.yaml
       02_sender_send.yaml
@@ -41,6 +44,7 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     delete_own_message.yaml     # parametrizado: env MESSAGE_TEXT
     send_chat_message.yaml      # parametrizado: env MESSAGE_TEXT
     react_to_message.yaml       # parametrizado: env MESSAGE_TEXT, EMOJI
+    background_and_resume.yaml  # sin parámetros
     open_new_chat_search.yaml     # parametrizado: env QUERY
     global_search.yaml             # parametrizado: env QUERY
     archive_conversation.yaml     # parametrizado: env CONTACT_NAME
@@ -165,6 +169,30 @@ pueda reutilizar con otra cuenta/contacto/valor.
 - No incluir datos que muten estado compartido de forma destructiva (usar
   siempre la cuenta QA, nunca `@ajrpachon`). `login_logout_roundtrip`
   deja la app deslogueada al terminar, igual que al empezar.
+
+## Background / resume
+
+`subflows/background_and_resume.yaml` manda la app a segundo plano
+(tecla Home) y la trae de vuelta **sin matar el proceso**
+(`launchApp: stopApp: false`), para comprobar que la pantalla actual
+sobrevive a un ciclo de segundo plano → primer plano — no que la app
+simplemente arranca bien desde cero.
+
+**Trampa real que encontré**: `launchApp` normal siempre hace
+force-stop de la app antes de lanzarla (comportamiento por defecto de
+Maestro, visible en el log como "Stopping app during launch" incluso
+sin `clearState`). Si usas `launchApp` a secas después de un `pressKey:
+Home` para "volver" a la app, en realidad la estás matando y
+reiniciando — el test pasaría igual, pero estarías probando un cold
+start, no un resume real, y no detectarías una regresión donde volver
+de segundo plano resetea la navegación. Hay que pasar `stopApp: false`
+explícitamente.
+
+Tres flows usan este subflow para tres pantallas distintas:
+`background_resume_chat_list.yaml` (lista de chats),
+`background_resume_chat_screen.yaml` (un chat abierto — la pantalla más
+profunda en el back stack, y la más fácil de perder si algo reconstruye
+mal el `NavBackStack`), `background_resume_profile.yaml` (perfil).
 
 ## Flujo multi-dispositivo (Realtime)
 

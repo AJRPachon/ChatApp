@@ -1,0 +1,21 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the profile screen, backgrounds the app and brings it
+# back, and confirms it's still showing the profile screen — not popped
+# back to the chat list.
+# Run with:
+#   maestro test .maestro/flows/background_resume_profile.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- tapOn:
+    id: "conversation_list_profile_button"
+- extendedWaitUntil:
+    visible:
+      id: "profile_sign_out_button"
+    timeout: 10000
+- runFlow: ../subflows/background_and_resume.yaml
+- assertVisible:
+    id: "profile_sign_out_button"

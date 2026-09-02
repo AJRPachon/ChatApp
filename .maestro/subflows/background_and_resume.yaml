@@ -1,0 +1,21 @@
+appId: com.ajrpachon.chatapp
+---
+# Reusable building block — NOT meant to run standalone.
+# Sends the app to the background (Home key) and brings it back to the
+# foreground WITHOUT killing the process (`stopApp: false`) or clearing
+# state — this is a real background/foreground cycle, not a relaunch.
+# Call it right after navigating to the screen you want to verify
+# survives backgrounding, then assert that screen's content is still
+# visible:
+#   - runFlow: ../subflows/background_and_resume.yaml
+#   - assertVisible:
+#       id: "some_id_on_that_screen"
+#
+# Note: plain `launchApp` always force-stops the app first (Maestro's
+# default), which would defeat this test by cold-starting the activity
+# instead of resuming it — that's why this uses `stopApp: false`
+# explicitly instead of reusing subflows/login_qa.yaml's launchApp step.
+- pressKey: Home
+- launchApp:
+    stopApp: false
+    clearState: false
