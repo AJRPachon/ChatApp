@@ -80,6 +80,9 @@
     <string name="chat_ephemeral_message">Ephemeral message</string>
     <string name="chat_copy">Copy</string>
     <string name="chat_forward">Forward</string>
+    <string name="chat_translate">Translate</string>
+    <string name="chat_translating">Translating…</string>
+    <string name="chat_hide_translation">Hide translation</string>
     <string name="chat_edited_label">edited</string>
     <string name="chat_pending_send">Pending send</string>
     <string name="chat_send_error">Send error</string>
@@ -149,6 +152,7 @@
     <string name="chat_pinned_message">Pinned message</string>
     <string name="chat_attachment_placeholder">[Attachment]</string>
     <string name="chat_unpin">Unpin</string>
+    <string name="chat_hide_pinned_banner">Hide banner</string>
 
     <!-- Poll bubble -->
     <string name="chat_poll">Poll</string>
