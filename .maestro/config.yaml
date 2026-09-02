@@ -5,6 +5,8 @@ executionOrder:
     - flows/login_email.yaml
     - flows/login_logout_roundtrip.yaml
     - flows/new_chat_search.yaml
+    - flows/global_search.yaml
     - flows/archive_unarchive_roundtrip.yaml
+    - flows/mute_unmute_roundtrip.yaml
     - flows/theme_toggle_roundtrip.yaml
     - flows/send_message.yaml

@@ -22,7 +22,9 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     login_email.yaml
     login_logout_roundtrip.yaml
     new_chat_search.yaml
+    global_search.yaml
     archive_unarchive_roundtrip.yaml
+    mute_unmute_roundtrip.yaml
     theme_toggle_roundtrip.yaml
     send_message.yaml
     realtime/              # flujo multi-dispositivo, fuera de la suite de un solo device
@@ -37,8 +39,11 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     open_conversation.yaml      # parametrizado: env CONTACT_NAME
     delete_own_message.yaml     # parametrizado: env MESSAGE_TEXT
     open_new_chat_search.yaml     # parametrizado: env QUERY
+    global_search.yaml             # parametrizado: env QUERY
     archive_conversation.yaml     # parametrizado: env CONTACT_NAME
     unarchive_conversation.yaml   # parametrizado: env CONTACT_NAME
+    mute_conversation.yaml        # parametrizado: env CONTACT_NAME
+    unmute_conversation.yaml      # parametrizado: env CONTACT_NAME
     set_theme.yaml                 # parametrizado: env THEME_OPTION
 ```
 
@@ -92,10 +97,11 @@ flow. Preferir `id` sobre texto salvo que el texto sea:
 
 IDs ya disponibles: `auth_email_field`, `auth_password_field`,
 `auth_submit_button` (`AuthScreen`); `conversation_list_profile_button`,
-`conversation_list_new_chat_fab`, `conversation_list_archived_button`
-(`ConversationListScreen`); `profile_sign_out_button`,
-`profile_theme_system_option` / `_light_` / `_dark_option`
-(`ProfileScreen`); `newchat_search_field` (`NewChatScreen`);
+`conversation_list_new_chat_fab`, `conversation_list_archived_button`,
+`conversation_list_search_button` (`ConversationListScreen`);
+`profile_sign_out_button`, `profile_theme_system_option` / `_light_` /
+`_dark_option` (`ProfileScreen`); `newchat_search_field`
+(`NewChatScreen`); `global_search_field` (`GlobalSearchScreen`);
 `chat_input_field`, `chat_send_button` (`ChatInputBar`).
 
 **Excepciones donde se usa texto en vez de `id`:**

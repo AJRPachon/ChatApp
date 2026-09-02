@@ -242,7 +242,10 @@ fun ConversationListScreen(
                     )
                 },
                 actions = {
-                    IconButton(onClick = dropUnlessResumed { onGoToGlobalSearch() }) {
+                    IconButton(
+                        onClick = dropUnlessResumed { onGoToGlobalSearch() },
+                        modifier = Modifier.testTag("conversation_list_search_button"),
+                    ) {
                         Icon(Icons.Default.Search, contentDescription = stringResource(R.string.conversations_search_content_description))
                     }
                     IconButton(

@@ -1,0 +1,20 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in as the QA account and exercises global message search:
+# searches for content nobody has sent, confirms the "no results" empty
+# state renders (instead of crashing/hanging), then goes back.
+# Run with:
+#   maestro test .maestro/flows/global_search.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/global_search.yaml
+    env:
+      QUERY: zzz-nonexistent-maestro-query
+- assertVisible: "zzz-nonexistent-maestro-query"
+- hideKeyboard
+- back
+- assertVisible: "Chats"
