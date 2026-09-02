@@ -14,3 +14,13 @@ executionOrder:
     - flows/background_resume_chat_list.yaml
     - flows/background_resume_chat_screen.yaml
     - flows/background_resume_profile.yaml
+    - flows/contact_info_navigation.yaml
+    - flows/chat_media_gallery_navigation.yaml
+    - flows/in_chat_search_navigation.yaml
+    - flows/incognito_mode_roundtrip.yaml
+    - flows/session_audit_navigation.yaml
+    - flows/invitations_screen_navigation.yaml
+    - flows/edit_message_roundtrip.yaml
+    - flows/sticker_picker_navigation.yaml
+    - flows/chat_theme_picker_navigation.yaml
+    - flows/disappearing_mode_navigation.yaml

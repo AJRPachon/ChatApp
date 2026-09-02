@@ -1,0 +1,15 @@
+appId: com.ajrpachon.chatapp
+---
+# Reusable building block — NOT meant to run standalone.
+# From an open chat screen, opens the "more options" overflow menu and
+# taps the item matching MENU_ITEM_TEXT. Call it from a flow with:
+#   - runFlow:
+#       file: ../subflows/open_chat_menu_item.yaml
+#       env:
+#         MENU_ITEM_TEXT: "Multimedia compartida|Shared media"
+#
+# Selected by text, not `id`: same DropdownMenu/Popup limitation as
+# archive_conversation.yaml.
+- tapOn:
+    id: "chat_top_bar_menu_button"
+- tapOn: ${MENU_ITEM_TEXT}

@@ -1,0 +1,40 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the conversation with @claudeqa2, enables incognito
+# mode from the overflow menu (confirming the one-time explanation
+# dialog), confirms the menu item's label flipped to "Disable
+# incognito", disables it again, confirms the label reverted — leaving
+# the conversation as it started.
+#
+# Note: does NOT assert the incognito banner text directly. It's
+# visually rendered (confirmed via screenshot) but absent from the
+# accessibility hierarchy Maestro reads — verified by inspecting a
+# hierarchy dump where a search for "ncognito" had zero matches despite
+# the banner being visible in the corresponding screenshot. The
+# DropdownMenu item's label is a reliable proxy for the same state.
+# Run with:
+#   maestro test .maestro/flows/incognito_mode_roundtrip.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- runFlow:
+    file: ../subflows/open_chat_menu_item.yaml
+    env:
+      MENU_ITEM_TEXT: "Modo incógnito|Incognito mode"
+# Turning incognito ON (but not off) shows a one-time explanation dialog
+# that must be confirmed before it actually activates.
+- tapOn: "Entendido, activar|Got it, activate"
+- tapOn:
+    id: "chat_top_bar_menu_button"
+- assertVisible: "Desactivar incógnito|Disable incognito"
+- tapOn: "Desactivar incógnito|Disable incognito"
+- tapOn:
+    id: "chat_top_bar_menu_button"
+- assertVisible: "Modo incógnito|Incognito mode"
+- back

@@ -277,7 +277,10 @@ fun ConversationListScreen(
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
                         )
                     }
-                    IconButton(onClick = dropUnlessResumed { onOpenInvitations() }) {
+                    IconButton(
+                        onClick = dropUnlessResumed { onOpenInvitations() },
+                        modifier = Modifier.testTag("conversation_list_invitations_button"),
+                    ) {
                         BadgedBox(badge = {
                             if (state.pendingInvitationsCount > 0) {
                                 Badge { Text(state.pendingInvitationsCount.toString()) }

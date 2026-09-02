@@ -552,7 +552,8 @@ fun ProfileScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onSessionAudit() }
-                    .padding(vertical = 12.dp),
+                    .padding(vertical = 12.dp)
+                    .testTag("profile_session_audit_row"),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {

@@ -31,6 +31,16 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     background_resume_chat_list.yaml
     background_resume_chat_screen.yaml
     background_resume_profile.yaml
+    contact_info_navigation.yaml
+    chat_media_gallery_navigation.yaml
+    in_chat_search_navigation.yaml
+    incognito_mode_roundtrip.yaml
+    session_audit_navigation.yaml
+    invitations_screen_navigation.yaml
+    edit_message_roundtrip.yaml
+    sticker_picker_navigation.yaml
+    chat_theme_picker_navigation.yaml
+    disappearing_mode_navigation.yaml
     realtime/              # flujo multi-dispositivo, fuera de la suite de un solo device
       01_recipient_wait.yaml
       02_sender_send.yaml
@@ -45,6 +55,7 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     send_chat_message.yaml      # parametrizado: env MESSAGE_TEXT
     react_to_message.yaml       # parametrizado: env MESSAGE_TEXT, EMOJI
     background_and_resume.yaml  # sin parámetros
+    open_chat_menu_item.yaml    # parametrizado: env MENU_ITEM_TEXT
     open_new_chat_search.yaml     # parametrizado: env QUERY
     global_search.yaml             # parametrizado: env QUERY
     archive_conversation.yaml     # parametrizado: env CONTACT_NAME
@@ -109,7 +120,11 @@ IDs ya disponibles: `auth_email_field`, `auth_password_field`,
 `profile_sign_out_button`, `profile_theme_system_option` / `_light_` /
 `_dark_option` (`ProfileScreen`); `newchat_search_field`
 (`NewChatScreen`); `global_search_field` (`GlobalSearchScreen`);
-`chat_input_field`, `chat_send_button` (`ChatInputBar`).
+`chat_input_field`, `chat_send_button` (`ChatInputBar`);
+`chat_top_bar_title`, `chat_top_bar_menu_button` (`ChatTopBar`);
+`chat_search_field` (`ChatSearchOverlay`); `profile_session_audit_row`
+(`ProfileScreen`); `conversation_list_invitations_button`
+(`ConversationListScreen`).
 
 **Excepciones donde se usa texto en vez de `id`:**
 
@@ -128,6 +143,15 @@ IDs ya disponibles: `auth_email_field`, `auth_password_field`,
   que puede repetirse en otra parte de la UI que no esté visible
   simultáneamente. Un emoji (`"😀"`) es texto normal para Compose/Maestro
   y se selecciona igual — sin equivalente de `id` posible ahí.
+- **Un elemento visible en pantalla puede no existir en el árbol que lee
+  Maestro**: el banner de "Modo incógnito" del chat se ve perfectamente
+  en una captura de pantalla, pero una búsqueda de su texto en el volcado
+  de jerarquía (`screen-hierarchy/*.json`) da cero resultados — probado
+  directamente, no es un fallo de regex. Es edge-to-edge sobre la
+  status bar, lo que probablemente lo saca del árbol que UiAutomator
+  captura. Cuando algo así pase, busca un efecto secundario reachable
+  en su lugar (aquí: el propio texto del ítem del menú cambia de "Modo
+  incógnito" a "Desactivar incógnito", y eso sí es seleccionable).
 
 ## Subflows reutilizables
 
@@ -236,6 +260,22 @@ Verificado end-to-end con dos emuladores reales (`Pixel9ProXL_API36_A` +
 `_B`): el mensaje enviado en el emisor apareció en el receptor sin
 recargar ni relanzar la app.
 
+## Hallazgo de UX real: cursor al editar un mensaje
+
+`edit_message_roundtrip.yaml` encontró que al pulsar "Editar" en un
+mensaje propio, el campo de texto se rellena con el contenido original
+**pero el cursor queda en la posición 0 (el principio)**, no al final
+como es el comportamiento estándar de un `EditText` de Android. Esto es
+un bug de UX real de la app (no del flow): cualquier usuario que edite
+un mensaje y empiece a escribir estará *insertando al principio*, no
+añadiendo al final, y `eraseText` (que borra hacia atrás desde el
+cursor) no borra nada porque no hay nada antes de la posición 0 —
+verificado directamente, el mensaje resultante fue
+`"Maestro edit updatedMaestro edit original"` en el primer intento. El
+flow evita el problema seleccionando todo el texto vía el menú
+contextual del sistema (`longPressOn` + `tapOn: "Select all"`) en vez de
+depender de la posición del cursor.
+
 ## Higiene de datos
 
 `send_message.yaml` y `message_reaction_roundtrip.yaml` borran el mensaje
@@ -261,5 +301,13 @@ flow los crea, el propio flow los borra al final.
   QA desechable (vía Supabase admin, no vía sign-up en la app) para no
   ensuciar la relación `@claudeqa` ↔ `@claudeqa2` — requiere confirmación
   antes de crearla, ya que toca el proyecto Supabase directamente.
+- Bloquear/desbloquear un usuario (`NewChatScreen`'s `BlockUser`/
+  `UnblockUser`): solo tiene botón de bloqueo para contactos con
+  relación `NONE`, y las únicas cuentas disponibles (`@claudeqa`,
+  `@claudeqa2`) ya están conectadas entre sí — necesitaría la misma
+  cuenta QA #3 desechable que la invitación de contacto.
+- Wallpaper picker: probablemente requiere un Intent de galería externo
+  (fuera del sandbox de Compose/Maestro) para elegir una imagen — no
+  investigado a fondo.
 - Integrar como job opcional de CI (requiere un emulador headless en el
   runner; de momento se ejecuta solo en local).

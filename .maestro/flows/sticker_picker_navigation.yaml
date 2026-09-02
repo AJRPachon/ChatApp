@@ -1,0 +1,27 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the conversation with @claudeqa2, opens the
+# sticker/GIF picker from the attach menu, confirms it renders (the
+# Stickers tab, not the GIF tab — that one needs a Giphy API key and live
+# network, out of scope here), then dismisses it via the back button
+# (ModalBottomSheet handles that itself, no close icon exists) without
+# picking anything.
+# Run with:
+#   maestro test .maestro/flows/sticker_picker_navigation.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- tapOn: "Adjuntar|Attach"
+- tapOn: "Stickers"
+- extendedWaitUntil:
+    visible: "Stickers"
+    timeout: 10000
+- back
+- assertVisible:
+    id: "chat_input_field"

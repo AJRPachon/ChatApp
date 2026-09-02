@@ -1,0 +1,46 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, sends a throwaway message, edits it via the per-message
+# context menu (edit pre-fills the input field; the same send button
+# confirms it), confirms the edited text replaced the original, then
+# deletes the message — leaving no trace.
+#
+# Real UX finding, not a flow quirk: tapping "Edit" pre-fills the input
+# field with the cursor at POSITION 0 (start), not at the end like a
+# normal Android EditText would. `eraseText` deletes backward from the
+# cursor, so with the cursor at the start there's nothing before it to
+# erase — verified: it silently does nothing, and typing then prepends
+# instead of replacing (e.g. "Maestro edit updatedMaestro edit
+# original"). This flow works around it via the system text-selection
+# toolbar ("Select all") instead of relying on cursor position.
+# Run with:
+#   maestro test .maestro/flows/edit_message_roundtrip.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- runFlow:
+    file: ../subflows/send_chat_message.yaml
+    env:
+      MESSAGE_TEXT: Maestro edit original
+- longPressOn: "Maestro edit original"
+- tapOn: "Editar|Edit"
+- assertVisible: "Editando mensaje|Editing message"
+- longPressOn:
+    id: "chat_input_field"
+- tapOn: "Select all"
+- inputText: Maestro edit updated
+- tapOn:
+    id: "chat_send_button"
+- hideKeyboard
+- assertVisible: "Maestro edit updated"
+- assertNotVisible: "Maestro edit original"
+- runFlow:
+    file: ../subflows/delete_own_message.yaml
+    env:
+      MESSAGE_TEXT: Maestro edit updated
