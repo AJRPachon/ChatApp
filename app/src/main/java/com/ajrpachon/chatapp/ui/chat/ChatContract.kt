@@ -117,7 +117,9 @@ data class ChatTranslationUiState(
     // messageId → translated text
     val translatedTexts: Map<String, String> = emptyMap(),
     val translatingMessageIds: Set<String> = emptySet(),
-    // messageId → transcribed text
+    // messageId → transcribed text. No UI reads this yet, and the delegate that populates it
+    // has a real bug (transcribes the live mic, not the message's audio) — see
+    // docs/audio-transcription-todo.md before building UI on top of this field.
     val transcriptions: Map<String, String> = emptyMap(),
 )
 
