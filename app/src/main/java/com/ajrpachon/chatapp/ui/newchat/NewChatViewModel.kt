@@ -11,6 +11,8 @@ import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.utils.ClipboardProtection
 import com.ajrpachon.chatapp.utils.ContactSyncManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import com.ajrpachon.chatapp.domain.usecase.BlockUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
@@ -37,6 +39,14 @@ class NewChatViewModel(
     private val getDeviceContactsUseCase: GetDeviceContactsUseCase,
 ) : BaseViewModel<NewChatState, NewChatEffect>(NewChatState()) {
 
+    // Cancelled and replaced on every keystroke (see QueryChanged) so rapid typing debounces
+    // into a single search instead of firing one overlapping network request per character —
+    // same pattern as ChatViewModel's draftSaveJob/typingResetJob. Without this, a burst of N
+    // concurrent searches to the same host was the real cause behind an intermittent "Expected
+    // start of the array '[', but had 'EOF' instead" crash on this screen: the request/response
+    // pairing isn't safe under that many simultaneous in-flight calls on the shared HTTP client.
+    private var searchJob: Job? = null
+
     init {
         viewModelScope.launch {
             catchResult {
@@ -51,7 +61,11 @@ class NewChatViewModel(
         when (intent) {
             is NewChatIntent.QueryChanged -> {
                 updateState { it.copy(query = intent.query) }
-                viewModelScope.launch { searchUsers(intent.query) }
+                searchJob?.cancel()
+                searchJob = viewModelScope.launch {
+                    delay(300)
+                    searchUsers(intent.query)
+                }
             }
             is NewChatIntent.ContactsLoaded -> {
                 updateState { it.copy(contacts = intent.contacts) }
