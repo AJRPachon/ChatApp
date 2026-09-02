@@ -57,6 +57,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -337,6 +338,7 @@ private fun EmailPasswordForm(
             imeAction = ImeAction.Next,
         ),
         keyboardActions = KeyboardActions(onNext = { passwordFocus.requestFocus() }),
+        modifier = Modifier.testTag("auth_email_field"),
     )
 
     Spacer(Modifier.height(8.dp))
@@ -370,7 +372,9 @@ private fun EmailPasswordForm(
                 onIntent(AuthIntent.SignInWithEmail)
             },
         ),
-        modifier = Modifier.focusRequester(passwordFocus),
+        modifier = Modifier
+            .focusRequester(passwordFocus)
+            .testTag("auth_password_field"),
     )
 
     AnimatedVisibility(visible = isSignUp) {
@@ -420,7 +424,9 @@ private fun EmailPasswordForm(
             if (isSignUp) onIntent(AuthIntent.SignUpWithEmail) else onIntent(AuthIntent.SignInWithEmail)
         },
         enabled = state.emailInput.isNotBlank() && state.passwordInput.isNotBlank(),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("auth_submit_button"),
     )
 
     if (!isSignUp) {
