@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 37,
-    "identityHash": "623f2486fc4f9cdc82095c4f6162a6f0",
+    "identityHash": "dc8443a6b1cb8992cedea33e704afc1e",
     "entities": [
       {
         "tableName": "users",
@@ -893,7 +893,18 @@
             "listId",
             "userId"
           ]
-        }
+        },
+        "indices": [
+          {
+            "name": "index_broadcast_list_members_listId",
+            "unique": false,
+            "columnNames": [
+              "listId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_broadcast_list_members_listId` ON `${TABLE_NAME}` (`listId`)"
+          }
+        ]
       },
       {
         "tableName": "chat_events",
@@ -1072,7 +1083,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '623f2486fc4f9cdc82095c4f6162a6f0')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'dc8443a6b1cb8992cedea33e704afc1e')"
     ]
   }
 }

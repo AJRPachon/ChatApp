@@ -234,4 +234,7 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.compose.ui.test.junit4)
+    // MigrationTestHelper needs Instrumentation in every constructor overload (even the
+    // driver/KMP-style one) — it cannot run as a local JVM/Robolectric unit test, only here.
+    androidTestImplementation(libs.androidx.room.testing)
 }
