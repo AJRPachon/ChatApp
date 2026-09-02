@@ -1,0 +1,28 @@
+appId: com.ajrpachon.chatapp
+---
+# Step 1 of 4 in the cross-device Realtime flow — see
+# ../../README.md "Flujo multi-dispositivo (Realtime)" for the full
+# choreography. Run this FIRST, on the device that will RECEIVE the
+# message: signs in and opens the conversation with the sender, then
+# leaves the app sitting on that screen. Don't relaunch/clearState this
+# device again until step 3 has run — the whole point is to have the app
+# already idle on screen when the message arrives, so step 3 proves a
+# live Realtime push instead of a normal fetch-on-open.
+#
+# Run with (recipient device, e.g. @claudeqa2 waiting for @claudeqa):
+#   maestro test .maestro/flows/realtime/01_recipient_wait.yaml --device <RECIPIENT_DEVICE_ID> \
+#     -e LOGIN_EMAIL=<recipient email> -e LOGIN_PASSWORD=<recipient password> \
+#     -e CONTACT_NAME=<sender's username>
+- runFlow:
+    file: ../../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${LOGIN_EMAIL}
+      LOGIN_PASSWORD: ${LOGIN_PASSWORD}
+- runFlow:
+    file: ../../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: ${CONTACT_NAME}
+- extendedWaitUntil:
+    visible:
+      id: "chat_input_field"
+    timeout: 10000

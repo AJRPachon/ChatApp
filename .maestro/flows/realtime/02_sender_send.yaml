@@ -1,0 +1,31 @@
+appId: com.ajrpachon.chatapp
+---
+# Step 2 of 4 — run on the SENDER device, after step 1 has the recipient
+# device idle on the conversation screen. See ../../README.md "Flujo
+# multi-dispositivo (Realtime)".
+#
+# Run with (sender device, e.g. @claudeqa sending to @claudeqa2):
+#   maestro test .maestro/flows/realtime/02_sender_send.yaml --device <SENDER_DEVICE_ID> \
+#     -e LOGIN_EMAIL=<sender email> -e LOGIN_PASSWORD=<sender password> \
+#     -e CONTACT_NAME=<recipient's username>
+- runFlow:
+    file: ../../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${LOGIN_EMAIL}
+      LOGIN_PASSWORD: ${LOGIN_PASSWORD}
+- runFlow:
+    file: ../../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: ${CONTACT_NAME}
+- extendedWaitUntil:
+    visible:
+      id: "chat_input_field"
+    timeout: 10000
+- tapOn:
+    id: "chat_input_field"
+- inputText: "Maestro realtime ping"
+- tapOn:
+    id: "chat_send_button"
+- hideKeyboard
+- assertVisible:
+    text: "Maestro realtime ping"

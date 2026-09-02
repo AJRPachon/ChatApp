@@ -1,0 +1,14 @@
+appId: com.ajrpachon.chatapp
+---
+# Step 3 of 4 — run on the RECIPIENT device right after step 2 completes
+# on the sender. Deliberately has NO launchApp: it continues from
+# wherever step 1 left the app (idle on the conversation screen), which
+# is what makes this an actual live-Realtime-push assertion rather than
+# a fetch-on-open. See ../../README.md "Flujo multi-dispositivo
+# (Realtime)".
+#
+# Run with (same recipient device as step 1, no env needed):
+#   maestro test .maestro/flows/realtime/03_recipient_verify.yaml --device <RECIPIENT_DEVICE_ID>
+- extendedWaitUntil:
+    visible: "Maestro realtime ping"
+    timeout: 15000

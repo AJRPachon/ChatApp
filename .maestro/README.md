@@ -25,6 +25,12 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     archive_unarchive_roundtrip.yaml
     theme_toggle_roundtrip.yaml
     send_message.yaml
+    realtime/              # flujo multi-dispositivo, fuera de la suite de un solo device
+      01_recipient_wait.yaml
+      02_sender_send.yaml
+      03_recipient_verify.yaml
+      04_sender_cleanup.yaml
+      run.sh
   subflows/               # bloques reutilizables, solo vía `runFlow`, nunca standalone
     login_qa.yaml               # parametrizado: env LOGIN_EMAIL / LOGIN_PASSWORD
     logout.yaml
@@ -149,6 +155,48 @@ pueda reutilizar con otra cuenta/contacto/valor.
   siempre la cuenta QA, nunca `@ajrpachon`). `login_logout_roundtrip`
   deja la app deslogueada al terminar, igual que al empezar.
 
+## Flujo multi-dispositivo (Realtime)
+
+`flows/realtime/` prueba algo que ningún flow de un solo dispositivo puede
+probar: que un mensaje llega **por Supabase Realtime**, no solo que se
+guarda. Necesita dos emuladores/dispositivos corriendo a la vez, uno por
+cada cuenta QA, y no encaja en `config.yaml`/`maestro test .maestro/flows`
+(que asume un solo dispositivo) — por eso vive en su propia carpeta,
+fuera de esa suite.
+
+Son 4 pasos secuenciales, cada uno apuntado a un dispositivo concreto con
+`--device`:
+
+1. **`01_recipient_wait.yaml`** (dispositivo receptor): login, abre la
+   conversación con el emisor y se queda ahí — deliberadamente sin volver
+   a lanzar la app después de esto.
+2. **`02_sender_send.yaml`** (dispositivo emisor): login, abre la
+   conversación, envía "Maestro realtime ping".
+3. **`03_recipient_verify.yaml`** (mismo dispositivo receptor, **sin
+   `launchApp`**): comprueba que el mensaje ya está visible. Al no
+   relanzar la app, esto prueba una recepción en vivo, no una carga al
+   abrir pantalla.
+4. **`04_sender_cleanup.yaml`** (mismo dispositivo emisor, sin
+   `launchApp`): borra el mensaje de prueba.
+
+`run.sh` orquesta los 4 pasos con un solo comando:
+
+```bash
+bash .maestro/flows/realtime/run.sh \
+  <sender_device> <sender_email> <sender_password> <sender_target_username> \
+  <recipient_device> <recipient_email> <recipient_password> <recipient_target_username>
+
+# Ejemplo real con las dos cuentas QA:
+set -a && source .maestro/.env && set +a
+bash .maestro/flows/realtime/run.sh \
+  emulator-5554 "$QA_EMAIL" "$QA_PASSWORD" claudeqa2 \
+  emulator-5556 claude.qa2.chatapp@gmail.com "$QA_PASSWORD" claudeqa
+```
+
+Verificado end-to-end con dos emuladores reales (`Pixel9ProXL_API36_A` +
+`_B`): el mensaje enviado en el emisor apareció en el receptor sin
+recargar ni relanzar la app.
+
 ## Higiene de datos
 
 `send_message.yaml` borra el mensaje que envía nada más verificarlo (vía
@@ -171,6 +219,8 @@ flow los crea, el propio flow los borra al final.
   desde "New chat" a un usuario no conectado). No cubierto todavía:
   toca el área donde hay un bug de deserialización conocido al conectar
   cuentas — ver memoria del proyecto — y necesitaría una tercera cuenta
-  QA desechable para no ensuciar la relación `@claudeqa` ↔ `@claudeqa2`.
+  QA desechable (vía Supabase admin, no vía sign-up en la app) para no
+  ensuciar la relación `@claudeqa` ↔ `@claudeqa2` — requiere confirmación
+  antes de crearla, ya que toca el proyecto Supabase directamente.
 - Integrar como job opcional de CI (requiere un emulador headless en el
   runner; de momento se ejecuta solo en local).
