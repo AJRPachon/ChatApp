@@ -7,11 +7,11 @@
 
 **Aplicación de mensajería instantánea para Android**
 
-![Kotlin](https://img.shields.io/badge/Kotlin-2.3.21-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)
-![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-2026.06.01-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)
-![Supabase](https://img.shields.io/badge/Supabase-3.6.0-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.4.10-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)
+![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-2026.08.00-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-3.8.0-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
 ![Firebase](https://img.shields.io/badge/Firebase-FCM-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
-![LiveKit](https://img.shields.io/badge/LiveKit-2.26.1-E5363B?style=for-the-badge&logo=webrtc&logoColor=white)
+![LiveKit](https://img.shields.io/badge/LiveKit-2.28.1-E5363B?style=for-the-badge&logo=webrtc&logoColor=white)
 ![CI](https://img.shields.io/github/actions/workflow/status/AJRPachon/ChatApp/ci.yml?style=for-the-badge&label=CI&logo=githubactions&logoColor=white)
 
 </div>
@@ -158,7 +158,7 @@ com.ajrpachon.chatapp/
 │   │                                 repositorios locales: DraftRepository, IncognitoRepository,
 │   │                                 WallpaperRepository, AiAssistantRepository, PollRepository,
 │   │                                 ContactRepository, ScheduledMessageRepository
-│   └── usecase/                      Un caso de uso por archivo (24 en total)
+│   └── usecase/                      Un caso de uso por archivo (23 en total)
 │
 ├── 🔵 data/                       ← Implementa las interfaces del dominio
 │   ├── local/
@@ -167,8 +167,8 @@ com.ajrpachon.chatapp/
 │   │   │                             stickers, recibos de lectura, carpetas, difusión,
 │   │   │                             eventos de chat, sesiones y mensajes programados
 │   │   ├── dao/                      15 DAOs de acceso a la BD
-│   │   ├── ChatDatabase.kt           Base de datos Room (versión 34, cifrada con SQLCipher)
-│   │   ├── DatabaseBuilder.kt        Migraciones v1 → v34 (33 migraciones explícitas)
+│   │   ├── ChatDatabase.kt           Base de datos Room (versión 37, cifrada con SQLCipher)
+│   │   ├── DatabaseBuilder.kt        Migraciones v1 → v37 (36 migraciones explícitas)
 │   │   └── DatabaseKeyProvider.kt    Clave AES-256 en Android KeyStore
 │   ├── remote/
 │   │   ├── dto/                      Data Transfer Objects de Supabase
@@ -263,36 +263,36 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 
 | Tecnología | Versión | Uso |
 |---|---|---|
-| ![Kotlin](https://img.shields.io/badge/-Kotlin-7F52FF?logo=kotlin&logoColor=white) **Kotlin** | 2.3.21 | Lenguaje principal |
-| ![AGP](https://img.shields.io/badge/-AGP-3DDC84?logo=android&logoColor=white) **Android Gradle Plugin** | 9.1.1 | Sistema de build |
+| ![Kotlin](https://img.shields.io/badge/-Kotlin-7F52FF?logo=kotlin&logoColor=white) **Kotlin** | 2.4.10 | Lenguaje principal |
+| ![AGP](https://img.shields.io/badge/-AGP-3DDC84?logo=android&logoColor=white) **Android Gradle Plugin** | 9.4.0 | Sistema de build |
 | ![Compose](https://img.shields.io/badge/-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white) **Jetpack Compose BOM** | 2026.08.00 | UI declarativa |
 | ![M3](https://img.shields.io/badge/-Material%203-757575?logo=materialdesign&logoColor=white) **Material 3** | (BOM) | Sistema de diseño |
-| **Navigation 3** | 1.1.3 | Navegación entre pantallas |
-| ![Room](https://img.shields.io/badge/-Room-FF6F00?logo=android&logoColor=white) **Room** | 2.8.4 | Base de datos local (v34, 21 entidades, 15 DAOs) |
-| **SQLCipher** | 4.6.1 | Cifrado AES-256 de la base de datos Room |
+| **Navigation 3** | 1.1.7 | Navegación entre pantallas |
+| ![Room](https://img.shields.io/badge/-Room-FF6F00?logo=android&logoColor=white) **Room** | 2.8.4 | Base de datos local (v37, 21 entidades, 15 DAOs) |
+| **SQLCipher** | 4.18.0 | Cifrado AES-256 de la base de datos Room |
 | ![Koin](https://img.shields.io/badge/-Koin-F97316?logoColor=white) **Koin** | 4.2.2 | Inyección de dependencias |
 | **Kotlin Coroutines + Flow** | 1.11.0 | Concurrencia y streams asíncronos |
 | **Kotlin Serialization** | 1.11.0 | Serialización JSON |
-| **DataStore Preferences** | 1.1.1 | Almacenamiento de preferencias de usuario |
+| **DataStore Preferences** | 1.2.1 | Almacenamiento de preferencias de usuario |
 | **WorkManager** | 2.11.2 | Ejecución de mensajes programados en background |
-| **Paging 3** | 3.5.0 | Carga paginada de mensajes |
-| **Biometric** | 1.2.0-alpha05 | Autenticación biométrica para el bloqueo de app |
-| ![Coil](https://img.shields.io/badge/-Coil-000000?logoColor=white) **Coil 3** | 3.5.0 | Carga de imágenes, GIFs, stickers y vídeo (disk cache 50 MB + memory cache 20% heap) |
+| **Paging 3** | 3.5.1 | Carga paginada de mensajes |
+| **Biometric** | 1.4.0-alpha07 | Autenticación biométrica para el bloqueo de app |
+| ![Coil](https://img.shields.io/badge/-Coil-000000?logoColor=white) **Coil 3** | 3.6.1 | Carga de imágenes, GIFs, stickers y vídeo (disk cache 50 MB + memory cache 20% heap) |
 | **ML Kit Translate** | 17.0.3 | Traducción offline de mensajes (sin conexión a internet) |
 | **QRCode Kotlin** | 4.1.1 | Generación de códigos QR de contacto |
 | **ZXing Android Embedded** | 4.3.0 | Escáner de códigos QR para añadir contactos |
 | **OkHttp** | 4.x | Cliente HTTP con certificate pinning |
-| **Play Integrity API** | 1.4.0 | Verificación de integridad del dispositivo y la app |
+| **Play Integrity API** | 1.6.0 | Verificación de integridad del dispositivo y la app |
 
 ### Backend / Servicios
 
 | Tecnología | Versión | Uso |
 |---|---|---|
-| ![Supabase](https://img.shields.io/badge/-Supabase-3ECF8E?logo=supabase&logoColor=white) **Supabase** | 3.6.0 | PostgreSQL, Auth, Realtime, Storage y Edge Functions |
+| ![Supabase](https://img.shields.io/badge/-Supabase-3ECF8E?logo=supabase&logoColor=white) **Supabase** | 3.8.0 | PostgreSQL, Auth, Realtime, Storage y Edge Functions |
 | ![Ktor](https://img.shields.io/badge/-Ktor-0095D5?logo=kotlin&logoColor=white) **Ktor Client** | 3.5.1 | Cliente HTTP |
-| ![Firebase](https://img.shields.io/badge/-Firebase%20FCM-FFCA28?logo=firebase&logoColor=black) **Firebase Cloud Messaging** | BOM 34.15.0 | Notificaciones push |
+| ![Firebase](https://img.shields.io/badge/-Firebase%20FCM-FFCA28?logo=firebase&logoColor=black) **Firebase Cloud Messaging** | BOM 34.18.0 | Notificaciones push |
 | ![Google](https://img.shields.io/badge/-Google%20Sign--In-4285F4?logo=google&logoColor=white) **Credential Manager** | 1.6.0 | Autenticación con Google |
-| ![LiveKit](https://img.shields.io/badge/-LiveKit-E5363B?logoColor=white) **LiveKit** | 2.26.1 | Llamadas de voz y vídeo WebRTC |
+| ![LiveKit](https://img.shields.io/badge/-LiveKit-E5363B?logoColor=white) **LiveKit** | 2.28.1 | Llamadas de voz y vídeo WebRTC |
 | **Giphy API** | — | Búsqueda y envío de GIFs |
 | ![Deno](https://img.shields.io/badge/-Deno%20%2F%20TypeScript-000000?logo=deno&logoColor=white) **Deno / TypeScript** | — | Supabase Edge Functions (FCM, LiveKit token, Play Integrity, IA, assetlinks) |
 
@@ -307,21 +307,23 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | **Robolectric** | 4.16.1 | Tests unitarios con contexto Android |
 | **Room Testing** | 2.8.4 | Tests de integración en memoria para DAOs |
 
-**475 tests** repartidos en 59 ficheros:
+**488 tests** repartidos en 62 ficheros:
 
 **ViewModels**
 
 | Fichero | Tests |
 |---|---|
-| `ChatViewModelTest` | 21 |
-| `StatusViewModelTest` | 14 |
-| `GroupInfoViewModelTest` | 12 |
+| `ChatViewModelTest` | 24 |
+| `StatusViewModelTest` | 16 |
 | `CreateGroupViewModelTest` | 11 |
 | `NewChatViewModelTest` | 10 |
 | `InvitationsViewModelTest` | 7 |
 | `UserInfoViewModelTest` | 6 |
 | `ConversationListViewModelTest` | 5 |
 | `GlobalSearchViewModelTest` | 5 |
+| `ChatMediaGalleryViewModelTest` | 4 |
+| `EmojiPickerViewModelTest` | 4 |
+| `GroupInfoViewModelTest` | 4 |
 
 **DAOs (Room in-memory)**
 
@@ -343,10 +345,10 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | `GroupRepositoryImplTest` | 11 |
 | `UserRepositoryImplTest` | 8 |
 | `PollRepositoryImplTest` | 7 |
-| `ReactionRepositoryImplTest` | 5 |
 | `BroadcastListRepositoryImplTest` | 5 |
+| `MessageRepositoryImplTest` | 5 |
+| `ReactionRepositoryImplTest` | 5 |
 | `CallRepositoryImplTest` | 3 |
-| `MessageRepositoryImplTest` | 3 |
 
 **Use Cases**
 
@@ -393,8 +395,9 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 
 | Fichero | Tests |
 |---|---|
-| `UploadLimitsTest` | 18 |
 | `FcmMessageHandlerTest` | 19 |
+| `UploadLimitsTest` | 18 |
+| `TimeFormatterTest` | 6 |
 | `GifPickerViewModelTest` | 5 |
 | `CatchResultTest` | 4 |
 
