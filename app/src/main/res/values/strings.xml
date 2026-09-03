@@ -74,6 +74,8 @@
     <string name="chat_record_audio_cd">Grabar audio</string>
     <string name="chat_clear_search_cd">Limpiar</string>
     <string name="chat_close_search_cd">Cerrar búsqueda</string>
+    <string name="chat_search_placeholder">Buscar mensajes...</string>
+    <string name="chat_search_no_results">Sin resultados</string>
     <string name="chat_react">Reaccionar</string>
     <string name="chat_edit">Editar</string>
     <string name="chat_remove_self_destruct">Quitar autodestrucción</string>

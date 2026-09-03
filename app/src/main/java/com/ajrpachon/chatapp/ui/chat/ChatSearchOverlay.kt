@@ -73,7 +73,7 @@ internal fun MessageSearchOverlay(
                     modifier = Modifier
                         .weight(1f)
                         .testTag("chat_search_field"),
-                    placeholder = { Text("Buscar mensajes...") },
+                    placeholder = { Text(stringResource(R.string.chat_search_placeholder)) },
                     singleLine = true,
                     leadingIcon = {
                         if (isSearching) {
@@ -98,7 +98,7 @@ internal fun MessageSearchOverlay(
             if (query.isNotBlank() && results.isEmpty() && !isSearching) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        "Sin resultados",
+                        stringResource(R.string.chat_search_no_results),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.outline,
                     )

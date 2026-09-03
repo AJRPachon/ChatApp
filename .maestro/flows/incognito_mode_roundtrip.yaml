@@ -7,10 +7,11 @@ appId: com.ajrpachon.chatapp
 # the conversation as it started.
 #
 # Note: does NOT assert the incognito banner text directly. It's
-# visually rendered (confirmed via screenshot) but absent from the
-# accessibility hierarchy Maestro reads — verified by inspecting a
-# hierarchy dump where a search for "ncognito" had zero matches despite
-# the banner being visible in the corresponding screenshot. The
+# visually rendered but absent from Maestro's own hierarchy dump — a
+# Maestro driver quirk, not an app accessibility bug: a direct
+# `adb shell uiautomator dump` of the same live screen DOES find the
+# text (real accessibility services like TalkBack read it fine).
+# See .maestro/README.md's selector-exceptions section. The
 # DropdownMenu item's label is a reliable proxy for the same state.
 # Run with:
 #   maestro test .maestro/flows/incognito_mode_roundtrip.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
