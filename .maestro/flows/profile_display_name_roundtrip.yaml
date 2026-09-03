@@ -1,0 +1,55 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the profile screen, changes the display name to a
+# throwaway value, confirms it saved (shown after re-entering the
+# screen), then changes it back to "claudeqa" (the QA account's real
+# display name) — leaving the account as it started.
+#
+# The `inputText: " "` + `pressKey: Backspace` pair after each real
+# `inputText` isn't decorative: reproduced directly that the on-device
+# keyboard's next-word prediction (polluted by this session typing
+# "claudeqa2" dozens of times for other flows) can hijack a bare
+# `pressKey: Enter` and commit that suggestion instead of the
+# literally-typed "claudeqa" — confirmed via a screenshot of the
+# suggestion strip showing "claudeqa2" as a candidate right after typing
+# "claudeqa". Typing a space forces the IME to commit the word exactly as
+# typed (autocomplete never fires on space), then backspace removes just
+# the space before submitting with Enter.
+# Run with:
+#   maestro test .maestro/flows/profile_display_name_roundtrip.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- tapOn:
+    id: "conversation_list_profile_button"
+- extendedWaitUntil:
+    visible:
+      id: "profile_sign_out_button"
+    timeout: 10000
+- longPressOn:
+    id: "profile_display_name_field"
+- tapOn: "Select all"
+- inputText: Maestro name test
+- inputText: " "
+- pressKey: Backspace
+- pressKey: Enter
+- back
+- tapOn:
+    id: "conversation_list_profile_button"
+- extendedWaitUntil:
+    visible: "Maestro name test"
+    timeout: 10000
+- longPressOn:
+    id: "profile_display_name_field"
+- tapOn: "Select all"
+- inputText: claudeqa
+- inputText: " "
+- pressKey: Backspace
+- pressKey: Enter
+- back
+- tapOn:
+    id: "conversation_list_profile_button"
+- assertVisible: "claudeqa"
+- back

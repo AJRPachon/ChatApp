@@ -21,7 +21,10 @@ appId: com.ajrpachon.chatapp
     env:
       QUERY: nonexistent-maestro-test-user
 - assertVisible: "@claudeqa"
-- assertVisible: "nonexistent-maestro-test-user"
+# Full node text required (Maestro text selectors are matches(), not
+# contains() — see .maestro/README.md) — this is the exact empty-state
+# sentence, not just the query substring.
+- assertVisible: "No user found with \"nonexistent-maestro-test-user\"|No se encontró ningún usuario con \"nonexistent-maestro-test-user\""
 - hideKeyboard
 - back
 - assertVisible: "Chats"

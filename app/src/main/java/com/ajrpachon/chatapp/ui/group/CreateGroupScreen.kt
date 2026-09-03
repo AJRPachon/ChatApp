@@ -36,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -142,7 +143,9 @@ private fun SelectMembersStep(
             value = state.query,
             onValueChange = { onIntent(CreateGroupIntent.QueryChanged(it)) },
             placeholder = stringResource(R.string.group_create_search_people_placeholder),
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .testTag("create_group_search_field"),
         )
 
         LazyColumn(modifier = Modifier.weight(1f)) {
@@ -162,7 +165,8 @@ private fun SelectMembersStep(
             modifier = Modifier
                 .fillMaxWidth()
                 .imePadding()
-                .padding(16.dp),
+                .padding(16.dp)
+                .testTag("create_group_next_button"),
         )
     }
 }

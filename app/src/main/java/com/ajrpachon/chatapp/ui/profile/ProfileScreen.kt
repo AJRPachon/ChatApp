@@ -367,7 +367,9 @@ fun ProfileScreen(
                     keyboard?.hide()
                     vm.onIntent(ProfileIntent.SaveDisplayName)
                 }),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("profile_display_name_field"),
             )
             if (state.isSavingDisplayName) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp))
@@ -592,7 +594,8 @@ fun ProfileScreen(
                 leadingIcon = Icons.AutoMirrored.Filled.Logout,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 24.dp),
+                    .padding(bottom = 24.dp)
+                    .testTag("profile_sign_out_all_button"),
             )
         }
     }

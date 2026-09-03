@@ -306,6 +306,7 @@ fun ConversationListScreen(
                     shape = MaterialTheme.shapes.small,
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.testTag("conversation_list_new_group_fab"),
                 ) {
                     Icon(Icons.Default.Group, contentDescription = stringResource(R.string.conversations_new_group_content_description))
                 }

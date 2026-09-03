@@ -14,7 +14,10 @@ appId: com.ajrpachon.chatapp
     file: ../subflows/global_search.yaml
     env:
       QUERY: zzz-nonexistent-maestro-query
-- assertVisible: "zzz-nonexistent-maestro-query"
+# Full node text required (Maestro text selectors are matches(), not
+# contains() — see .maestro/README.md) — this is the exact empty-state
+# sentence, not just the query substring.
+- assertVisible: "No results for \"zzz-nonexistent-maestro-query\"|Sin resultados para \"zzz-nonexistent-maestro-query\""
 - hideKeyboard
 - back
 - assertVisible: "Chats"
