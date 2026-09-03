@@ -3,12 +3,15 @@ package com.ajrpachon.chatapp.ui.chat
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
+import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.catchResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+private const val TAG = "ChatForwardDelegate"
 
 /**
  * Handles forwarding: a single message (forward dialog) or a multi-select batch (forward
@@ -33,7 +36,10 @@ class ChatForwardDelegate(
             catchResult {
                 val conversations = conversationRepository.observeConversations(uid).first().filter { it.id != conversationId }
                 updateState { it.copy(forward = it.forward.copy(showDialog = true, message = message, conversations = conversations)) }
-            }.onFailure { updateState { it.copy(error = "No se pudo cargar las conversaciones") } }
+            }.onFailure { e ->
+                AppLogger.e(TAG, "showForwardDialog failed", e)
+                updateState { it.copy(error = "No se pudo cargar las conversaciones") }
+            }
         }
     }
 
@@ -59,7 +65,10 @@ class ChatForwardDelegate(
             catchResult {
                 val conversations = conversationRepository.observeConversations(uid).first().filter { it.id != conversationId }
                 updateState { it.copy(forward = it.forward.copy(showSelectionDialog = true, conversations = conversations)) }
-            }.onFailure { updateState { it.copy(error = "No se pudo cargar las conversaciones") } }
+            }.onFailure { e ->
+                AppLogger.e(TAG, "showForwardSelectionDialog failed", e)
+                updateState { it.copy(error = "No se pudo cargar las conversaciones") }
+            }
         }
     }
 

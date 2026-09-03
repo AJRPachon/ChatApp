@@ -341,20 +341,52 @@ recargar ni relanzar la app.
   razón — usan el `id` del botón/icono en pantalla en su lugar. Podría
   valer la pena una auditoría general de pantallas con pasos/wizards
   internos para ver si el patrón se repite en más sitios.
-- **"Forward" no hace nada con una sola conversación (sin arreglar,
-  pendiente de decisión)**: `forward_message_dialog_navigation.yaml`
-  encontró que tocar "Reenviar" en el menú de un mensaje no abre ningún
-  diálogo cuando la cuenta solo tiene una conversación — sin diálogo, sin
-  snackbar, sin error en logcat, ni siquiera esperando varios segundos
-  (por si el `.first()` sobre `observeConversations` en
-  `ChatForwardDelegate.showForwardDialog` tardase). El propio código de
-  `ForwardConversationDialog` contempla explícitamente una lista vacía
-  (muestra "No hay otras conversaciones" en vez de un diálogo en blanco),
-  así que el diseño esperaba mostrar *algo* — no se llegó a identificar
-  la causa raíz exacta (¿excepción silenciosa antes de `catchResult`?
-  ¿`ChatDialogHost` no observando el `state.forward` actualizado?). El
-  flow actual solo comprueba que no cuelga ni crashea; no verifica que
-  reenviar funcione. Revisar cuando se decida arreglar el bug real.
+- **"Forward" no hacía nada observable (arreglado)**:
+  `forward_message_dialog_navigation.yaml` encontró que tocar "Reenviar"
+  en el menú de un mensaje no abría ningún diálogo — sin diálogo, sin
+  snackbar visible, sin crash. Causa raíz real, encontrada añadiendo un
+  `AppLogger.e` temporal en el `onFailure` de
+  `ChatForwardDelegate.showForwardDialog` (que antes tragaba la
+  excepción en silencio sin loguearla — por eso "sin error en logcat"
+  era literalmente cierto): `conversationRepository.observeConversations(uid)`
+  abre varios canales de Supabase Realtime con un topic **fijo** por
+  usuario (`"participants:$userId"`, `"messages:list:$userId"`). Si esa
+  Flow ya tiene un colector vivo para ese mismo usuario en el momento de
+  tocar "Reenviar" — típicamente `ConversationListViewModel`, que sigue
+  vivo en el back stack de Navigation 3 mientras el chat está abierto
+  encima — el segundo `.channel(...)` con el mismo nombre de topic
+  devuelve el mismo `RealtimeChannel` ya unido (`supabase-kt` busca
+  canales por topic), y su `postgresChangeFlow(...)` lanza
+  `IllegalStateException: You cannot call postgresChangeFlow after
+  joining the channel`. `catchResult` atrapaba esa excepción y el
+  `onFailure` solo ponía `state.error` (un snackbar fácil de perder en
+  una prueba manual rápida) sin tocar `state.forward.showDialog` — así
+  que el diálogo, poblado o vacío, nunca se llegaba a mostrar. El propio
+  código de `ForwardConversationDialog` sí contemplaba una lista vacía
+  correctamente (nunca fue un problema de `ChatDialogHost` ni de
+  observación de estado); el fallo ocurría antes, en el propio
+  repositorio. Arreglado en `ConversationRepositoryImpl.observeConversations`
+  dándole a los cuatro canales un sufijo único por suscripción
+  (`${System.nanoTime()}`) — patrón que ya se usaba en dos de los cuatro
+  canales (`conversationsUpdateChannel`, `profilesChannel`) pero no en
+  los otros dos (`participantsChannel`, `messagesChannel`), que eran los
+  que colisionaban. De paso, `showForwardDialog`/
+  `showForwardSelectionDialog` ahora loguean el error con `AppLogger.e`
+  en vez de tragarlo en silencio, para que un fallo futuro sea
+  diagnosticable desde logcat sin tener que añadir logging temporal.
+  `forward_message_dialog_navigation.yaml` ahora cubre las dos ramas de
+  `ForwardConversationDialog` con las dos cuentas QA: `@claudeqa2` (una
+  sola conversación total, con `@claudeqa`) ejercita la rama vacía
+  ("No hay otras conversaciones"), y `@claudeqa` (conversaciones con
+  `@claudeqa2` y con la cuenta real `@ajrpachon`, preexistente) ejercita
+  la rama poblada. La rama poblada solo comprueba que el diálogo
+  renderiza con un destino seleccionable y es cancelable — nunca llega a
+  tocar esa fila, porque el único destino disponible es `@ajrpachon`, y
+  la regla de higiene de datos de este README es no escribir datos de
+  prueba en esa cuenta real. Un reenvío real de extremo a extremo
+  (confirmar que el mensaje llega al destino) no es probable de forma
+  segura solo con las dos cuentas QA desechables, ya que solo se tienen
+  la una a la otra como destino.
 
 ## Higiene de datos
 

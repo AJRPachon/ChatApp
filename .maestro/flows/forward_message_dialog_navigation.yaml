@@ -1,20 +1,71 @@
 appId: com.ajrpachon.chatapp
 ---
-# Signs in, sends a throwaway message to @claudeqa2, taps "Forward" from
-# its context menu, then deletes the message.
+# Forward dialog, both the empty-target and populated-target branches.
 #
-# KNOWN APP BUG, not a flow issue — documenting rather than asserting a
-# false expectation: tapping "Forward" here does nothing observable.
-# ForwardConversationDialog's own code handles an empty conversations
-# list (shows "No other conversations" instead of a blank dialog), but
-# @claudeqa only has this one conversation, and no dialog — populated or
-# empty — ever appears. Reproduced repeatedly: no dialog, no snackbar, no
-# crash, no logcat error, even after waiting several seconds for
-# `ChatForwardDelegate.showForwardDialog`'s Supabase round-trip. This
-# flow only guards against a full crash/hang for now; it does NOT verify
-# forwarding actually works. Revisit once the underlying issue is fixed.
-# Run with:
+# FIXED (was a known app bug — see .maestro/README.md's "Hallazgos" section
+# for the root cause): tapping "Forward" used to do nothing observable
+# whenever `ChatForwardDelegate.showForwardDialog`'s
+# `conversationRepository.observeConversations(uid).first()` call raced
+# a second, still-live collector of the same flow for the same user
+# (typically `ConversationListViewModel`, still alive in the back
+# stack) — both tried to join Supabase Realtime channels sharing the
+# same fixed topic name, and the second join threw
+# `IllegalStateException: You cannot call postgresChangeFlow after
+# joining the channel`. `catchResult` swallowed it into `state.error`
+# (a snackbar easy to miss in a fast manual test) without ever setting
+# `state.forward.showDialog = true`, so no dialog — populated or
+# empty — ever appeared. Fixed in `ConversationRepositoryImpl` by
+# giving every Realtime channel opened inside `observeConversations` a
+# unique per-subscription topic suffix, matching the pattern already
+# used for two of its four channels.
+#
+# Two accounts, two branches of ForwardConversationDialog:
+# - @claudeqa2 has exactly one conversation total (with @claudeqa), so
+#   forwarding from it hits the *empty* branch — this is the exact
+#   scenario the original bug report reproduced against.
+# - @claudeqa has two conversations (@claudeqa2 and the real
+#   @ajrpachon account, pre-existing — not created by this flow), so
+#   forwarding from the @claudeqa2 conversation hits the *populated*
+#   branch. This flow only confirms the dialog renders with a
+#   selectable target and is cancelable — it does NOT tap the target
+#   row, because the only available target is @ajrpachon, and
+#   `.maestro/README.md`'s data-hygiene rule is to never write test
+#   data into that real personal account (QA accounts only). A genuine
+#   forward-and-verify-delivery round trip isn't safely testable with
+#   just the two disposable QA accounts, since they only have each
+#   other to forward between.
+# Run with (same as every other flow in this suite — no extra env needed):
 #   maestro test .maestro/flows/forward_message_dialog_navigation.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+#
+# @claudeqa2's email is hardcoded below rather than pulled from another
+# env var, matching flows/realtime/run.sh's precedent — both QA accounts
+# share one password (see .maestro/README.md), so only the email differs.
+
+# --- Empty-target branch: @claudeqa2 (only one conversation total) ---
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: claude.qa2.chatapp@gmail.com
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa
+- runFlow:
+    file: ../subflows/send_chat_message.yaml
+    env:
+      MESSAGE_TEXT: Maestro forward empty-target
+- longPressOn: "Maestro forward empty-target"
+- tapOn: "Reenviar|Forward"
+- assertVisible: "Reenviar a…|Forward to…"
+- assertVisible: "No hay otras conversaciones|No other conversations"
+- tapOn: "Cancelar|Cancel"
+- runFlow:
+    file: ../subflows/delete_own_message.yaml
+    env:
+      MESSAGE_TEXT: Maestro forward empty-target
+
+# --- Populated-target branch: @claudeqa (also has @ajrpachon) ---
 - runFlow:
     file: ../subflows/login_qa.yaml
     env:
@@ -27,12 +78,13 @@ appId: com.ajrpachon.chatapp
 - runFlow:
     file: ../subflows/send_chat_message.yaml
     env:
-      MESSAGE_TEXT: Maestro forward target
-- longPressOn: "Maestro forward target"
+      MESSAGE_TEXT: Maestro forward populated-target
+- longPressOn: "Maestro forward populated-target"
 - tapOn: "Reenviar|Forward"
-- assertVisible:
-    id: "chat_input_field"
+- assertVisible: "Reenviar a…|Forward to…"
+- assertNotVisible: "No hay otras conversaciones|No other conversations"
+- tapOn: "Cancelar|Cancel"
 - runFlow:
     file: ../subflows/delete_own_message.yaml
     env:
-      MESSAGE_TEXT: Maestro forward target
+      MESSAGE_TEXT: Maestro forward populated-target
