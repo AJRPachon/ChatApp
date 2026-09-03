@@ -1,0 +1,32 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the profile screen, toggles "Show online status" off,
+# confirms it, toggles it back on, confirms it — leaving the setting as
+# it started (on by default for the QA account).
+# Run with:
+#   maestro test .maestro/flows/profile_online_status_roundtrip.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- tapOn:
+    id: "conversation_list_profile_button"
+- extendedWaitUntil:
+    visible:
+      id: "profile_sign_out_button"
+    timeout: 10000
+- assertVisible:
+    id: "profile_online_status_switch"
+    checked: true
+- tapOn:
+    id: "profile_online_status_switch"
+- assertVisible:
+    id: "profile_online_status_switch"
+    checked: false
+- tapOn:
+    id: "profile_online_status_switch"
+- assertVisible:
+    id: "profile_online_status_switch"
+    checked: true
+- back

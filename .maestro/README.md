@@ -45,6 +45,12 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     notification_sound_picker_navigation.yaml
     sign_out_all_devices_cancel.yaml
     profile_display_name_roundtrip.yaml
+    profile_online_status_roundtrip.yaml
+    my_qr_code_navigation.yaml
+    forward_message_dialog_navigation.yaml
+    ephemeral_message_dialog_navigation.yaml
+    mute_duration_dialog_navigation.yaml
+    chat_wallpaper_picker_navigation.yaml
     realtime/              # flujo multi-dispositivo, fuera de la suite de un solo device
       01_recipient_wait.yaml
       02_sender_send.yaml
@@ -152,7 +158,8 @@ IDs ya disponibles: `auth_email_field`, `auth_password_field`,
 `chat_input_field`, `chat_send_button` (`ChatInputBar`);
 `chat_top_bar_title`, `chat_top_bar_menu_button` (`ChatTopBar`);
 `chat_search_field` (`ChatSearchOverlay`); `profile_session_audit_row`,
-`profile_sign_out_all_button`, `profile_display_name_field`
+`profile_sign_out_all_button`, `profile_display_name_field`,
+`profile_online_status_switch`, `profile_my_qr_code_button`
 (`ProfileScreen`); `conversation_list_invitations_button`,
 `conversation_list_new_group_fab` (`ConversationListScreen`);
 `create_group_search_field`, `create_group_next_button`
@@ -334,6 +341,20 @@ recargar ni relanzar la app.
   razón — usan el `id` del botón/icono en pantalla en su lugar. Podría
   valer la pena una auditoría general de pantallas con pasos/wizards
   internos para ver si el patrón se repite en más sitios.
+- **"Forward" no hace nada con una sola conversación (sin arreglar,
+  pendiente de decisión)**: `forward_message_dialog_navigation.yaml`
+  encontró que tocar "Reenviar" en el menú de un mensaje no abre ningún
+  diálogo cuando la cuenta solo tiene una conversación — sin diálogo, sin
+  snackbar, sin error en logcat, ni siquiera esperando varios segundos
+  (por si el `.first()` sobre `observeConversations` en
+  `ChatForwardDelegate.showForwardDialog` tardase). El propio código de
+  `ForwardConversationDialog` contempla explícitamente una lista vacía
+  (muestra "No hay otras conversaciones" en vez de un diálogo en blanco),
+  así que el diseño esperaba mostrar *algo* — no se llegó a identificar
+  la causa raíz exacta (¿excepción silenciosa antes de `catchResult`?
+  ¿`ChatDialogHost` no observando el `state.forward` actualizado?). El
+  flow actual solo comprueba que no cuelga ni crashea; no verifica que
+  reenviar funcione. Revisar cuando se decida arreglar el bug real.
 
 ## Higiene de datos
 

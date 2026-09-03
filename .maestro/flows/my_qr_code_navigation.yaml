@@ -1,0 +1,23 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the profile screen, opens "My QR code", confirms the
+# QR image and user id render, dismisses the sheet via back.
+# Run with:
+#   maestro test .maestro/flows/my_qr_code_navigation.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- tapOn:
+    id: "conversation_list_profile_button"
+- extendedWaitUntil:
+    visible:
+      id: "profile_sign_out_button"
+    timeout: 10000
+- tapOn:
+    id: "profile_my_qr_code_button"
+- assertVisible: "Código QR|QR code"
+- back
+- assertVisible:
+    id: "profile_sign_out_button"
