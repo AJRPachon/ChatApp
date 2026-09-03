@@ -1,0 +1,29 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the conversation with @claudeqa2, opens the AI
+# assistant sheet from the attach menu, confirms it renders, then
+# dismisses it via the back button — deliberately without tapping
+# "Suggest reply" or sending a freeform query.
+#
+# Both of those actions (see ChatAiDelegate.kt) make a real network
+# call to the AI assistant backend; this flow only covers the sheet
+# opening/closing cleanly, not an actual AI response, to avoid
+# depending on a live external call in the test.
+# Run with:
+#   maestro test .maestro/flows/ai_assistant_navigation.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- tapOn: "Adjuntar|Attach"
+- tapOn: "IA"
+- assertVisible: "Asistente IA|AI Assistant"
+- assertVisible: "Sugerir respuesta|Suggest reply"
+- back
+- assertVisible:
+    id: "chat_input_field"

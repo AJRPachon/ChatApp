@@ -1,0 +1,30 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the conversation with @claudeqa2, opens "Create poll"
+# from the attach menu, confirms the sheet renders (question field,
+# two blank option fields, allow-multiple switch), then dismisses it via
+# the back button without filling anything in — so no poll actually
+# gets created. Navigation-only coverage, matching the sticker/chat
+# theme/disappearing-mode pattern in this suite.
+#
+# The "Create poll" button stays disabled until a question and at least
+# two options are filled in, so there's no risk of accidentally tapping
+# it while exploring the sheet — but this flow never taps it regardless.
+# Run with:
+#   maestro test .maestro/flows/poll_create_navigation.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- tapOn: "Adjuntar|Attach"
+- tapOn: "Encuesta"
+- assertVisible: "Crear encuesta|Create poll"
+- assertVisible: "Pregunta|Question"
+- back
+- assertVisible:
+    id: "chat_input_field"

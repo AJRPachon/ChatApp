@@ -34,3 +34,7 @@ executionOrder:
     - flows/ephemeral_message_dialog_navigation.yaml
     - flows/mute_duration_dialog_navigation.yaml
     - flows/chat_wallpaper_picker_navigation.yaml
+    - flows/poll_create_navigation.yaml
+    - flows/ai_assistant_navigation.yaml
+    - flows/clear_chat_roundtrip.yaml
+    - flows/status_compose_navigation.yaml

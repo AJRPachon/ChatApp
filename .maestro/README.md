@@ -51,6 +51,10 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     ephemeral_message_dialog_navigation.yaml
     mute_duration_dialog_navigation.yaml
     chat_wallpaper_picker_navigation.yaml
+    poll_create_navigation.yaml
+    ai_assistant_navigation.yaml
+    clear_chat_roundtrip.yaml
+    status_compose_navigation.yaml
     realtime/              # flujo multi-dispositivo, fuera de la suite de un solo device
       01_recipient_wait.yaml
       02_sender_send.yaml
@@ -387,6 +391,26 @@ recargar ni relanzar la app.
   (confirmar que el mensaje llega al destino) no es probable de forma
   segura solo con las dos cuentas QA desechables, ya que solo se tienen
   la una a la otra como destino.
+- **"Clear chat" no tiene diálogo de confirmación**: a diferencia de
+  "Sign out on all devices" (que sí muestra un `AlertDialog` de
+  confirmación — ver `sign_out_all_devices_cancel.yaml`), el
+  `DropdownMenuItem` de `conversations_menu_clear_chat` en
+  `ConversationListScreen.kt` llama a `onClearChat` directamente al
+  tocarlo, sin ningún paso intermedio — un toque accidental borra el
+  historial local al instante. Verificado que el impacto real es menor
+  de lo que parece (ver `clear_chat_roundtrip.yaml` y "Higiene de
+  datos" más abajo: `clearChat` solo toca la caché local, no el
+  backend), pero la ausencia de confirmación en una acción con la
+  palabra "Clear"/destructiva en el nombre sigue siendo inconsistente
+  con el resto de la app y merece una segunda mirada fuera de esta
+  suite.
+- **`StatusIntent.DeleteStatus` no está conectado a ninguna UI**:
+  `StatusViewModel.deleteStatus()` existe y funciona (llama a
+  `statusRepository.deleteStatus`), pero `StatusScreen.kt` no lo
+  dispara desde ningún sitio — no hay botón/menú para borrar el propio
+  estado una vez publicado. Es la razón por la que
+  `status_compose_navigation.yaml` no publica un estado real: no habría
+  forma de limpiarlo después a través de la app.
 
 ## Higiene de datos
 
@@ -401,6 +425,17 @@ sensible ni de prueba con contenido.
 
 Sigue el mismo principio en cualquier flow nuevo que escriba datos: si el
 flow los crea, el propio flow los borra al final.
+
+`clear_chat_roundtrip.yaml` usa la misma cuenta y conversación compartidas,
+pero su "borrado" (`ConversationRepositoryImpl.clearChat` →
+`messageDao.deleteByConversation`) es local-only: no llama al backend, así
+que no afecta a `@claudeqa2` ni a la fila de Supabase. `ChatViewModel.init`
+vuelve a llamar a `messageRepository.syncRemote(...)` cada vez que se abre
+la conversación, así que reabrirla re-descarga y re-inserta todo el
+historial remoto en la caché local recién vaciada — el flow explota
+justamente esto para verificar el comportamiento (envía un mensaje único,
+vacía el chat, reabre, confirma que el mensaje reaparece) y borra ese
+mensaje de prueba al final igual que `send_message.yaml`.
 
 ## Pendiente / ideas
 
@@ -421,5 +456,59 @@ flow los crea, el propio flow los borra al final.
 - Wallpaper picker: probablemente requiere un Intent de galería externo
   (fuera del sandbox de Compose/Maestro) para elegir una imagen — no
   investigado a fondo.
+- **Compartir ubicación** (adjuntar → "Ubicación"): investigado a fondo,
+  no cubierto a propósito. `ChatScreen.kt`'s `onLocation` no abre ningún
+  diálogo de confirmación — si el permiso `ACCESS_FINE_LOCATION` ya está
+  concedido, toca directamente `ChatIntent.FetchAndSendLocation`, que
+  obtiene la ubicación real del dispositivo y envía el mensaje de una,
+  sin paso intermedio que cancelar. La única cobertura segura sería el
+  gate de permiso del sistema (si no está concedido, Android muestra su
+  propio diálogo de permiso) — pero eso depende del estado de permisos
+  ya otorgados en el dispositivo/emulador, que ni este flow ni Maestro
+  controlan de forma fiable entre ejecuciones; una vez concedido el
+  permiso una sola vez (a mano, por otro test, por otro agente), todas
+  las ejecuciones futuras enviarían una ubicación real sin que hubiera
+  forma de evitarlo desde el flow. Se descarta en vez de arriesgar un
+  envío real no reversible.
+- **Compartir contacto** (adjuntar → "Contacto"): investigado a fondo,
+  no cubierto. `onContact` en `ChatScreen.kt` lanza
+  `contactPickerLauncher` (`ActivityResultContracts.PickContact`), un
+  Intent real al selector de Contactos de Android — fuera del sandbox
+  de Compose/Maestro, misma categoría que el wallpaper picker.
+- **Activar verificación en dos pasos** (Profile → "Activate"):
+  investigado a fondo, no cubierto — tratado con la cautela extra que
+  pedía el encargo. Tocar "Activate" llama a
+  `ProfileViewModel.enroll2FA()`, que ejecuta
+  `authRepository.enrollTotp()`: una llamada real a Supabase Auth que
+  crea un factor TOTP pendiente en la cuenta. Verificado en
+  `ProfileScreen.kt` que cerrar la hoja de enrolamiento
+  (`Dismiss2FASheet`) solo oculta la UI — no hay ninguna acción que
+  desenrole ese factor sin verificar, porque el botón "Deactivate" solo
+  aparece cuando `state.twoFactor.isEnrolled == true`, y eso solo pasa
+  tras verificar un código TOTP real. Es decir: abrir la hoja dejaría un
+  factor huérfano sin verificar en la cuenta QA en cada ejecución, sin
+  ninguna vía de vuelta atrás a través de la propia app — exactamente el
+  riesgo que el encargo pedía descartar si no se podía verificar una
+  salida limpia. Se necesitaría limpiar el factor vía Supabase admin
+  (fuera del alcance de un flow de Maestro) para que esto fuera seguro
+  de automatizar.
+- **Backup a Google Drive** (Profile): no investigado a fondo más allá
+  de confirmar que `onBackup` existe — descartado directamente por
+  requerir casi con certeza un inicio de sesión real de Google, como ya
+  anticipaba el encargo.
+- **Crear grupo de verdad + Group info + salir del grupo**: investigado
+  a fondo, se decide NO cubrirlo con datos reales (más allá de la
+  navegación del wizard que ya cubre `create_group_navigation.yaml`).
+  `GroupRepositoryImpl.leaveGroup` solo hace
+  `remoteSource.removeMember` + borra la fila local del miembro — no
+  borra ni marca la conversación en sí. Aunque ambas cuentas QA
+  (`@claudeqa` y `@claudeqa2`) salieran del grupo al terminar el test,
+  la fila de esa conversación de grupo (y sus mensajes) seguiría
+  existiendo para siempre en Supabase, inalcanzable desde la UI de
+  cualquiera de las dos cuentas pero presente como suciedad permanente
+  en el backend compartido — el mismo tipo de huella que la razón
+  original para no crear el grupo en `create_group_navigation.yaml`,
+  solo que sin siquiera la mitigación de "sigue siendo visible para
+  @claudeqa2".
 - Integrar como job opcional de CI (requiere un emulador headless en el
   runner; de momento se ejecuta solo en local).
