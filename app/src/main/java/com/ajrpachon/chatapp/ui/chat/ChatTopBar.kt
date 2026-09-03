@@ -55,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -133,7 +134,8 @@ internal fun ChatTopBar(
                             if (state.isGroup) onGroupInfo()
                             else state.otherUserId?.let { onUserInfo(it) }
                         })
-                        .padding(vertical = 4.dp),
+                        .padding(vertical = 4.dp)
+                        .testTag("chat_top_bar_title"),
                 ) {
                     val avatarUrl = if (state.isGroup) state.groupAvatarUrl else state.otherUserAvatarUrl
                     if (avatarUrl != null) {
@@ -272,7 +274,10 @@ internal fun ChatTopBar(
                 }
                 var menuExpanded by remember { mutableStateOf(false) }
                 Box {
-                    IconButton(onClick = { menuExpanded = true }) {
+                    IconButton(
+                        onClick = { menuExpanded = true },
+                        modifier = Modifier.testTag("chat_top_bar_menu_button"),
+                    ) {
                         Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.chat_more_options))
                     }
                     DropdownMenu(

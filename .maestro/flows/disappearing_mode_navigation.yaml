@@ -1,0 +1,26 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the conversation with @claudeqa2, opens "Disappearing
+# mode" from the overflow menu, confirms the options render, then
+# dismisses the sheet via the back button without picking anything (so
+# the disappearing-message setting is left untouched — this is
+# navigation-only coverage, not a behavior change).
+# Run with:
+#   maestro test .maestro/flows/disappearing_mode_navigation.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- runFlow:
+    file: ../subflows/open_chat_menu_item.yaml
+    env:
+      MENU_ITEM_TEXT: "Modo desaparición|Disappearing mode"
+- assertVisible: "Los nuevos mensajes desaparecerán automáticamente.|New messages will disappear automatically."
+- back
+- assertVisible:
+    id: "chat_input_field"

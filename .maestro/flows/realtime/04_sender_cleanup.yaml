@@ -1,0 +1,13 @@
+appId: com.ajrpachon.chatapp
+---
+# Step 4 of 4 — run on the SENDER device after step 3 confirms delivery,
+# so the QA conversation doesn't accumulate test content. No launchApp:
+# continues from step 2's screen (same reasoning as step 3). See
+# ../../README.md "Flujo multi-dispositivo (Realtime)".
+#
+# Run with (same sender device as step 2, no env needed):
+#   maestro test .maestro/flows/realtime/04_sender_cleanup.yaml --device <SENDER_DEVICE_ID>
+- runFlow:
+    file: ../../subflows/delete_own_message.yaml
+    env:
+      MESSAGE_TEXT: "Maestro realtime ping"

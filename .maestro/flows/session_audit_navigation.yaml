@@ -1,0 +1,26 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the profile screen, opens "Active sessions", confirms
+# it renders (either the session list or the no-active-sessions empty
+# state), then goes back to the profile screen.
+# Run with:
+#   maestro test .maestro/flows/session_audit_navigation.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- tapOn:
+    id: "conversation_list_profile_button"
+- extendedWaitUntil:
+    visible:
+      id: "profile_sign_out_button"
+    timeout: 10000
+- tapOn:
+    id: "profile_session_audit_row"
+- extendedWaitUntil:
+    visible: "Sesiones activas|Active sessions"
+    timeout: 10000
+- back
+- assertVisible:
+    id: "profile_sign_out_button"

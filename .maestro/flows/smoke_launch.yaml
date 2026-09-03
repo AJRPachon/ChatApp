@@ -1,0 +1,11 @@
+appId: com.ajrpachon.chatapp
+---
+# Smoke test: the app launches and lands on either the auth screen
+# (no session, shows "ChatApp") or the chat list (existing session,
+# shows "Chats"), without crashing. Both strings are locale-independent
+# (identical in es/en), unlike the form labels.
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible: "ChatApp|Chats"
+    timeout: 20000

@@ -31,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
@@ -69,7 +70,9 @@ internal fun MessageSearchOverlay(
                 OutlinedTextField(
                     value = query,
                     onValueChange = onQueryChange,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("chat_search_field"),
                     placeholder = { Text("Buscar mensajes...") },
                     singleLine = true,
                     leadingIcon = {

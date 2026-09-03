@@ -1,0 +1,23 @@
+appId: com.ajrpachon.chatapp
+---
+# Reusable building block — NOT meant to run standalone.
+# From an open conversation, long-presses the bubble containing
+# MESSAGE_TEXT and deletes it via the per-message context menu (only
+# works for your own messages — that's the only case with a Delete
+# entry — and deletes immediately, no confirmation dialog). Call it
+# from a flow with:
+#   - runFlow:
+#       file: ../subflows/delete_own_message.yaml
+#       env:
+#         MESSAGE_TEXT: "Maestro QA ping"
+#
+# Selected by text, not `id`: Compose's DropdownMenu renders its items
+# in a separate Popup window, and testTagsAsResourceId does not carry
+# over into it (verified — the id is invisible to Maestro/UiAutomator
+# even though testTag() is set). "Eliminar|Delete" is safe here because,
+# while the chat_delete string is reused elsewhere (a bulk-delete confirm
+# dialog), that dialog is never on screen at the same time as this
+# per-message context menu.
+- longPressOn: ${MESSAGE_TEXT}
+- tapOn: "Eliminar|Delete"
+- assertNotVisible: ${MESSAGE_TEXT}

@@ -1,0 +1,18 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in and opens the Invitations screen from the chat list bell icon,
+# confirms it renders without hanging, then goes back to the chat list.
+# Run with:
+#   maestro test .maestro/flows/invitations_screen_navigation.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- tapOn:
+    id: "conversation_list_invitations_button"
+- extendedWaitUntil:
+    visible: "No tienes invitaciones pendientes|You have no pending invitations"
+    timeout: 10000
+- back
+- assertVisible: "Chats"

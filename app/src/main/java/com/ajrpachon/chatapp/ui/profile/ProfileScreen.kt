@@ -56,6 +56,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -551,7 +552,8 @@ fun ProfileScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onSessionAudit() }
-                    .padding(vertical = 12.dp),
+                    .padding(vertical = 12.dp)
+                    .testTag("profile_session_audit_row"),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
@@ -579,7 +581,9 @@ fun ProfileScreen(
                 text = stringResource(R.string.profile_sign_out),
                 onClick = { vm.signOut() },
                 leadingIcon = Icons.AutoMirrored.Filled.Logout,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("profile_sign_out_button"),
             )
             Spacer(Modifier.size(8.dp))
             ChatAppDestructiveButton(
@@ -614,7 +618,8 @@ private fun ThemeSelector(
             Surface(
                 modifier = Modifier
                     .weight(1f)
-                    .clickable { onSelect(pref) },
+                    .clickable { onSelect(pref) }
+                    .testTag("profile_theme_${pref.name.lowercase()}_option"),
                 shape = RoundedCornerShape(8.dp),
                 color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
                         else MaterialTheme.colorScheme.surfaceVariant,

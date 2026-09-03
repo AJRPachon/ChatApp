@@ -1,0 +1,23 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in as the QA account, switches the theme to Dark from the
+# profile screen, then back to System, confirming the app keeps working
+# (navigates back to the chat list) after each switch. Leaves the theme
+# preference as it started (System).
+# Run with:
+#   maestro test .maestro/flows/theme_toggle_roundtrip.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/set_theme.yaml
+    env:
+      THEME_OPTION: profile_theme_dark_option
+- assertVisible: "Chats"
+- runFlow:
+    file: ../subflows/set_theme.yaml
+    env:
+      THEME_OPTION: profile_theme_system_option
+- assertVisible: "Chats"

@@ -1,0 +1,14 @@
+appId: com.ajrpachon.chatapp
+---
+# Reusable building block — NOT meant to run standalone.
+# From the chat list, opens global search and types QUERY. Call it from
+# a flow with:
+#   - runFlow:
+#       file: ../subflows/global_search.yaml
+#       env:
+#         QUERY: some text
+- tapOn:
+    id: "conversation_list_search_button"
+- tapOn:
+    id: "global_search_field"
+- inputText: ${QUERY}

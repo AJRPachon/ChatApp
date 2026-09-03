@@ -1,0 +1,14 @@
+appId: com.ajrpachon.chatapp
+---
+# Reusable building block — NOT meant to run standalone.
+# From the chat list, opens "New chat" and types QUERY into the search
+# field. Call it from a flow with:
+#   - runFlow:
+#       file: ../subflows/open_new_chat_search.yaml
+#       env:
+#         QUERY: some-username
+- tapOn:
+    id: "conversation_list_new_chat_fab"
+- tapOn:
+    id: "newchat_search_field"
+- inputText: ${QUERY}
