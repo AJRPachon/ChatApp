@@ -41,6 +41,10 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     sticker_picker_navigation.yaml
     chat_theme_picker_navigation.yaml
     disappearing_mode_navigation.yaml
+    create_group_navigation.yaml
+    notification_sound_picker_navigation.yaml
+    sign_out_all_devices_cancel.yaml
+    profile_display_name_roundtrip.yaml
     realtime/              # flujo multi-dispositivo, fuera de la suite de un solo device
       01_recipient_wait.yaml
       02_sender_send.yaml
@@ -93,6 +97,31 @@ Este repo es público — nunca se commitea `.maestro/.env` (está en `.gitignor
 Las credenciales reales de `@claudeqa` viven solo en la memoria local de
 Claude Code / el usuario, no en el repo.
 
+## Los selectores de texto exigen coincidencia completa, no subcadena
+
+`assertVisible`/`assertNotVisible`/`tapOn` con una cadena de texto la
+tratan como un regex de Java evaluado con `matches()` — tiene que
+coincidir con **todo** el texto del nodo, no basta con que el nodo lo
+contenga. Verificado directamente: contra un botón mostrando
+literalmente "Next (1 selected)", ni `assertVisible: "selected"` ni
+`assertVisible: "Next"` (ninguno de los dos con nada especial de regex)
+encontraron el elemento — solo funcionó el texto completo, con los
+paréntesis escapados (`"Next \\(1 selected\\)"`; sin escapar, un
+paréntesis literal se interpreta como grupo de captura, no como
+carácter). Esto también explica por qué algunas aserciones de esta
+suite que parecían comprobar un mensaje más largo ("no se encontró
+usuario con...") en realidad solo confirman que el campo de búsqueda
+sigue mostrando el texto tecleado (que sí es el texto completo de
+*ese* nodo) — funcionan, pero no verifican lo que el comentario
+original decía.
+
+Al escribir una aserción nueva contra un texto con partes dinámicas
+incrustadas en una frase más larga (p. ej. un contador: "Next (N
+selected)"), o bien conoces el texto completo exacto y lo pones entero
+(escapando regex especiales como paréntesis), o usas `.*` alrededor de
+la parte que no controlas (`".*selected.*"`) — nunca asumas que un
+fragmento suelto bastará.
+
 ## Selectores: por qué `id` y no texto
 
 No hay `testTag` por defecto en Compose expuesto a UiAutomator/Maestro; hay
@@ -122,9 +151,14 @@ IDs ya disponibles: `auth_email_field`, `auth_password_field`,
 (`NewChatScreen`); `global_search_field` (`GlobalSearchScreen`);
 `chat_input_field`, `chat_send_button` (`ChatInputBar`);
 `chat_top_bar_title`, `chat_top_bar_menu_button` (`ChatTopBar`);
-`chat_search_field` (`ChatSearchOverlay`); `profile_session_audit_row`
-(`ProfileScreen`); `conversation_list_invitations_button`
-(`ConversationListScreen`).
+`chat_search_field` (`ChatSearchOverlay`); `profile_session_audit_row`,
+`profile_sign_out_all_button`, `profile_display_name_field`
+(`ProfileScreen`); `conversation_list_invitations_button`,
+`conversation_list_new_group_fab` (`ConversationListScreen`);
+`create_group_search_field`, `create_group_next_button`
+(`CreateGroupScreen`); `chat_app_top_bar_back_button` (`ChatAppTopBar`,
+compartido por varias pantallas: `NewChatScreen`, `InvitationsScreen`,
+`CreateGroupScreen`, `SessionAuditScreen`...).
 
 **Excepciones donde se usa texto en vez de `id`:**
 
@@ -160,6 +194,13 @@ IDs ya disponibles: `auth_email_field`, `auth_password_field`,
   busca un efecto secundario alcanzable en su lugar (aquí: el propio
   texto del ítem del menú cambia de "Modo incógnito" a "Desactivar
   incógnito", y eso sí es seleccionable).
+- **Un campo de búsqueda puede colisionar con su propio resultado**: en
+  "Nuevo grupo", buscar "claudeqa2" deja ese texto tanto en el campo de
+  búsqueda como en la fila de resultado — `tapOn: "claudeqa2"` es
+  ambiguo entre ambos y puede tocar el campo en vez de la fila (probado:
+  dejó "0 selected" en vez de seleccionar al usuario). Selecciona por
+  algo que solo esté en la fila, como el `@username` del subtítulo
+  (`tapOn: "@claudeqa2"`), no por el nombre a secas.
 
 ## Subflows reutilizables
 
@@ -268,21 +309,31 @@ Verificado end-to-end con dos emuladores reales (`Pixel9ProXL_API36_A` +
 `_B`): el mensaje enviado en el emisor apareció en el receptor sin
 recargar ni relanzar la app.
 
-## Hallazgo de UX real: cursor al editar un mensaje
+## Hallazgos de UX reales encontrados (y su estado)
 
-`edit_message_roundtrip.yaml` encontró que al pulsar "Editar" en un
-mensaje propio, el campo de texto se rellena con el contenido original
-**pero el cursor queda en la posición 0 (el principio)**, no al final
-como es el comportamiento estándar de un `EditText` de Android. Esto es
-un bug de UX real de la app (no del flow): cualquier usuario que edite
-un mensaje y empiece a escribir estará *insertando al principio*, no
-añadiendo al final, y `eraseText` (que borra hacia atrás desde el
-cursor) no borra nada porque no hay nada antes de la posición 0 —
-verificado directamente, el mensaje resultante fue
-`"Maestro edit updatedMaestro edit original"` en el primer intento. El
-flow evita el problema seleccionando todo el texto vía el menú
-contextual del sistema (`longPressOn` + `tapOn: "Select all"`) en vez de
-depender de la posición del cursor.
+- **Cursor al editar un mensaje (arreglado)**: `edit_message_roundtrip.yaml`
+  encontró que al pulsar "Editar" en un mensaje propio, el campo de texto
+  se rellenaba con el contenido original pero el cursor quedaba en la
+  posición 0 en vez de al final — cualquier edición insertaba al
+  principio en vez de añadir/reemplazar al final (verificado:
+  `"Maestro edit updatedMaestro edit original"`). Arreglado en
+  `ChatAppTextField` (ver historial de git); el flow ya no necesita el
+  workaround de "Select all" para funcionar, aunque lo sigue usando
+  porque es más explícito sobre la intención del test.
+- **`BackHandler` ausente en pantallas con navegación interna propia**:
+  el botón de sistema/gesto "atrás" de Android puede comportarse
+  distinto del botón "atrás" dibujado en pantalla cuando la pantalla
+  gestiona su propio estado de navegación interna sin un `BackHandler`
+  que intercepte el back del sistema. Visto dos veces en pantallas no
+  relacionadas: `ChatSearchOverlay` (el back del sistema cierra todo el
+  chat en vez de solo la búsqueda) y `CreateGroupScreen` (el back del
+  sistema en el paso "info del grupo" sale directamente a la lista de
+  chats, descartando la selección de miembros, en vez de volver al paso
+  de selección como sí hace la flecha de la topbar). Ningún flow de esta
+  suite usa `- back` de Maestro en ninguna de las dos pantallas por esta
+  razón — usan el `id` del botón/icono en pantalla en su lugar. Podría
+  valer la pena una auditoría general de pantallas con pasos/wizards
+  internos para ver si el patrón se repite en más sitios.
 
 ## Higiene de datos
 

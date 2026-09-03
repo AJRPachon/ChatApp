@@ -1,0 +1,17 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, long-presses the @claudeqa2 conversation row, opens
+# "Notification sound" from the context menu, confirms the picker
+# dialog renders, then cancels without changing anything.
+# Run with:
+#   maestro test .maestro/flows/notification_sound_picker_navigation.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- longPressOn: claudeqa2
+- tapOn: "Sonido de notificación|Notification sound"
+- assertVisible: "Sonido de notificación|Notification sound"
+- tapOn: "Cancelar|Cancel"
+- assertVisible: "Chats"

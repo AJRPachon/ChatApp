@@ -1,0 +1,56 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens "New group", selects @claudeqa2 as a member, confirms
+# the "Next" button reflects the selection count, advances to the group
+# info step, then backs all the way out WITHOUT creating the group.
+#
+# Deliberately stops short of tapping "Create": leaving a group doesn't
+# delete it for the other member, so an actual create+leave round trip
+# would permanently leave a stray group conversation in @claudeqa2's
+# chat list. This covers the wizard's navigation/selection UI instead.
+#
+# Uses the top bar's back arrow (id: chat_app_top_bar_back_button), not
+# Maestro's `- back` (Android system back): verified directly that
+# system back on the "group info" step exits the WHOLE screen straight
+# to the chat list instead of stepping back to member selection like the
+# on-screen arrow does — CreateGroupScreen has no BackHandler
+# intercepting it, same class of gap as ChatSearchOverlay's close
+# button (see .maestro/README.md).
+# Run with:
+#   maestro test .maestro/flows/create_group_navigation.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- tapOn:
+    id: "conversation_list_new_group_fab"
+- tapOn:
+    id: "create_group_search_field"
+- inputText: claudeqa2
+- extendedWaitUntil:
+    visible: "@claudeqa2"
+    timeout: 10000
+# Tap "@claudeqa2" (the row's username subtitle), not "claudeqa2" alone —
+# the search field's own typed text also literally reads "claudeqa2",
+# so that plain text would be ambiguous between the field and the row.
+- tapOn: "@claudeqa2"
+# Maestro's text selectors require a FULL match of the target node's
+# entire text (Java regex `matches()`), not a substring/contains check —
+# verified directly: `assertVisible: "selected"` and even
+# `assertVisible: "Next"` alone both failed against this exact button
+# while it was visibly showing "Next (1 selected)" on screen, and only
+# the complete, escaped string succeeded. The literal parentheses also
+# need escaping (`\(`, `\)`) — unescaped, they're regex grouping syntax,
+# not characters to match.
+- assertVisible: "Next \\(1 selected\\)|Siguiente \\(1 seleccionados\\)"
+- tapOn:
+    id: "create_group_next_button"
+- assertVisible: "Group name|Nombre del grupo"
+- tapOn:
+    id: "chat_app_top_bar_back_button"
+- assertVisible:
+    id: "create_group_next_button"
+- tapOn:
+    id: "chat_app_top_bar_back_button"
+- assertVisible: "Chats"

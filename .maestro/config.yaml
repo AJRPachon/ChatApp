@@ -24,3 +24,7 @@ executionOrder:
     - flows/sticker_picker_navigation.yaml
     - flows/chat_theme_picker_navigation.yaml
     - flows/disappearing_mode_navigation.yaml
+    - flows/create_group_navigation.yaml
+    - flows/notification_sound_picker_navigation.yaml
+    - flows/sign_out_all_devices_cancel.yaml
+    - flows/profile_display_name_roundtrip.yaml
