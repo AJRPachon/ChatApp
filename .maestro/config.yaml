@@ -28,3 +28,4 @@ executionOrder:
     - flows/notification_sound_picker_navigation.yaml
     - flows/sign_out_all_devices_cancel.yaml
     - flows/profile_display_name_roundtrip.yaml
+    - flows/forward_message_dialog_navigation.yaml
