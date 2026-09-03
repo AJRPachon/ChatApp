@@ -76,8 +76,19 @@ class ConversationRepositoryImpl(
         // Ensure user JWT is loaded so Realtime subscriptions are authenticated
         catchResult { supabase.auth.currentSessionOrNull() }
 
-        val participantsChannel = supabase.channel("participants:$userId")
-        val messagesChannel = supabase.channel("messages:list:$userId")
+        // Unique per-subscription suffix (matching conversationsUpdateChannel/profilesChannel
+        // below): observeConversations(userId) can be collected more than once concurrently for
+        // the same user (e.g. ConversationListViewModel's long-lived collection plus
+        // ChatForwardDelegate.showForwardDialog's one-shot `.first()` call while the list screen
+        // is still alive in the back stack). supabase-kt looks channels up by topic name, so two
+        // collectors sharing a fixed topic get the SAME RealtimeChannel instance — the second
+        // collector's postgresChangeFlow() call then throws
+        // "You cannot call postgresChangeFlow after joining the channel" because the first
+        // collector already joined it. That IllegalStateException was being swallowed by
+        // catchResult before ever reaching the UI, so e.g. ChatForwardDelegate.showForwardDialog
+        // silently failed to ever set showDialog = true.
+        val participantsChannel = supabase.channel("participants:$userId-${System.nanoTime()}")
+        val messagesChannel = supabase.channel("messages:list:$userId-${System.nanoTime()}")
 
         launch {
             val flow = participantsChannel.postgresChangeFlow<PostgresAction.Insert>(schema = "public") {

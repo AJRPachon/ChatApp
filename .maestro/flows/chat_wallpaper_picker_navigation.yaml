@@ -1,0 +1,25 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the conversation with @claudeqa2, opens "Chat
+# wallpaper" from the overflow menu, confirms the color options render,
+# then dismisses the sheet via back without picking anything (no
+# gallery/external intent involved — it's a fixed set of solid colors).
+# Run with:
+#   maestro test .maestro/flows/chat_wallpaper_picker_navigation.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- runFlow:
+    file: ../subflows/open_chat_menu_item.yaml
+    env:
+      MENU_ITEM_TEXT: "Fondo del chat|Chat wallpaper"
+- assertVisible: "Por defecto|Default"
+- back
+- assertVisible:
+    id: "chat_input_field"

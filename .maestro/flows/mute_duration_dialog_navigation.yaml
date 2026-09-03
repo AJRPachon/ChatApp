@@ -1,0 +1,26 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the conversation with @claudeqa2, opens "Mute" from
+# the overflow menu (only shown when not already muted — this flow
+# assumes that starting state, true after mute_unmute_roundtrip.yaml
+# leaves it unmuted), confirms the duration picker renders, cancels
+# without muting.
+# Run with:
+#   maestro test .maestro/flows/mute_duration_dialog_navigation.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- runFlow:
+    file: ../subflows/open_chat_menu_item.yaml
+    env:
+      MENU_ITEM_TEXT: "Silenciar|Mute"
+- assertVisible: "Silenciar notificaciones|Mute notifications"
+- tapOn: "Cancelar|Cancel"
+- assertVisible:
+    id: "chat_input_field"

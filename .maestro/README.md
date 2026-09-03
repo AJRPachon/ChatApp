@@ -45,6 +45,12 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     notification_sound_picker_navigation.yaml
     sign_out_all_devices_cancel.yaml
     profile_display_name_roundtrip.yaml
+    profile_online_status_roundtrip.yaml
+    my_qr_code_navigation.yaml
+    forward_message_dialog_navigation.yaml
+    ephemeral_message_dialog_navigation.yaml
+    mute_duration_dialog_navigation.yaml
+    chat_wallpaper_picker_navigation.yaml
     poll_create_navigation.yaml
     ai_assistant_navigation.yaml
     clear_chat_roundtrip.yaml
@@ -156,7 +162,8 @@ IDs ya disponibles: `auth_email_field`, `auth_password_field`,
 `chat_input_field`, `chat_send_button` (`ChatInputBar`);
 `chat_top_bar_title`, `chat_top_bar_menu_button` (`ChatTopBar`);
 `chat_search_field` (`ChatSearchOverlay`); `profile_session_audit_row`,
-`profile_sign_out_all_button`, `profile_display_name_field`
+`profile_sign_out_all_button`, `profile_display_name_field`,
+`profile_online_status_switch`, `profile_my_qr_code_button`
 (`ProfileScreen`); `conversation_list_invitations_button`,
 `conversation_list_new_group_fab` (`ConversationListScreen`);
 `create_group_search_field`, `create_group_next_button`
@@ -338,6 +345,52 @@ recargar ni relanzar la app.
   razón — usan el `id` del botón/icono en pantalla en su lugar. Podría
   valer la pena una auditoría general de pantallas con pasos/wizards
   internos para ver si el patrón se repite en más sitios.
+- **"Forward" no hacía nada observable (arreglado)**:
+  `forward_message_dialog_navigation.yaml` encontró que tocar "Reenviar"
+  en el menú de un mensaje no abría ningún diálogo — sin diálogo, sin
+  snackbar visible, sin crash. Causa raíz real, encontrada añadiendo un
+  `AppLogger.e` temporal en el `onFailure` de
+  `ChatForwardDelegate.showForwardDialog` (que antes tragaba la
+  excepción en silencio sin loguearla — por eso "sin error en logcat"
+  era literalmente cierto): `conversationRepository.observeConversations(uid)`
+  abre varios canales de Supabase Realtime con un topic **fijo** por
+  usuario (`"participants:$userId"`, `"messages:list:$userId"`). Si esa
+  Flow ya tiene un colector vivo para ese mismo usuario en el momento de
+  tocar "Reenviar" — típicamente `ConversationListViewModel`, que sigue
+  vivo en el back stack de Navigation 3 mientras el chat está abierto
+  encima — el segundo `.channel(...)` con el mismo nombre de topic
+  devuelve el mismo `RealtimeChannel` ya unido (`supabase-kt` busca
+  canales por topic), y su `postgresChangeFlow(...)` lanza
+  `IllegalStateException: You cannot call postgresChangeFlow after
+  joining the channel`. `catchResult` atrapaba esa excepción y el
+  `onFailure` solo ponía `state.error` (un snackbar fácil de perder en
+  una prueba manual rápida) sin tocar `state.forward.showDialog` — así
+  que el diálogo, poblado o vacío, nunca se llegaba a mostrar. El propio
+  código de `ForwardConversationDialog` sí contemplaba una lista vacía
+  correctamente (nunca fue un problema de `ChatDialogHost` ni de
+  observación de estado); el fallo ocurría antes, en el propio
+  repositorio. Arreglado en `ConversationRepositoryImpl.observeConversations`
+  dándole a los cuatro canales un sufijo único por suscripción
+  (`${System.nanoTime()}`) — patrón que ya se usaba en dos de los cuatro
+  canales (`conversationsUpdateChannel`, `profilesChannel`) pero no en
+  los otros dos (`participantsChannel`, `messagesChannel`), que eran los
+  que colisionaban. De paso, `showForwardDialog`/
+  `showForwardSelectionDialog` ahora loguean el error con `AppLogger.e`
+  en vez de tragarlo en silencio, para que un fallo futuro sea
+  diagnosticable desde logcat sin tener que añadir logging temporal.
+  `forward_message_dialog_navigation.yaml` ahora cubre las dos ramas de
+  `ForwardConversationDialog` con las dos cuentas QA: `@claudeqa2` (una
+  sola conversación total, con `@claudeqa`) ejercita la rama vacía
+  ("No hay otras conversaciones"), y `@claudeqa` (conversaciones con
+  `@claudeqa2` y con la cuenta real `@ajrpachon`, preexistente) ejercita
+  la rama poblada. La rama poblada solo comprueba que el diálogo
+  renderiza con un destino seleccionable y es cancelable — nunca llega a
+  tocar esa fila, porque el único destino disponible es `@ajrpachon`, y
+  la regla de higiene de datos de este README es no escribir datos de
+  prueba en esa cuenta real. Un reenvío real de extremo a extremo
+  (confirmar que el mensaje llega al destino) no es probable de forma
+  segura solo con las dos cuentas QA desechables, ya que solo se tienen
+  la una a la otra como destino.
 - **"Clear chat" no tiene diálogo de confirmación**: a diferencia de
   "Sign out on all devices" (que sí muestra un `AlertDialog` de
   confirmación — ver `sign_out_all_devices_cancel.yaml`), el
