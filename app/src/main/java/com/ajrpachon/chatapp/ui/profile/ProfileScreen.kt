@@ -410,6 +410,7 @@ fun ProfileScreen(
                 Switch(
                     checked = state.showOnlineStatus,
                     onCheckedChange = { vm.onIntent(ProfileIntent.ToggleOnlineStatus(it)) },
+                    modifier = Modifier.testTag("profile_online_status_switch"),
                 )
             }
 
@@ -438,7 +439,9 @@ fun ProfileScreen(
                 text = stringResource(R.string.profile_my_qr_code_button),
                 onClick = { showQrSheet = true },
                 leadingIcon = Icons.Default.QrCode,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("profile_my_qr_code_button"),
             )
 
             HorizontalDivider()

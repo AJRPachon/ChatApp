@@ -1,0 +1,38 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, sends a throwaway message to @claudeqa2, taps "Forward" from
+# its context menu, then deletes the message.
+#
+# KNOWN APP BUG, not a flow issue — documenting rather than asserting a
+# false expectation: tapping "Forward" here does nothing observable.
+# ForwardConversationDialog's own code handles an empty conversations
+# list (shows "No other conversations" instead of a blank dialog), but
+# @claudeqa only has this one conversation, and no dialog — populated or
+# empty — ever appears. Reproduced repeatedly: no dialog, no snackbar, no
+# crash, no logcat error, even after waiting several seconds for
+# `ChatForwardDelegate.showForwardDialog`'s Supabase round-trip. This
+# flow only guards against a full crash/hang for now; it does NOT verify
+# forwarding actually works. Revisit once the underlying issue is fixed.
+# Run with:
+#   maestro test .maestro/flows/forward_message_dialog_navigation.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- runFlow:
+    file: ../subflows/send_chat_message.yaml
+    env:
+      MESSAGE_TEXT: Maestro forward target
+- longPressOn: "Maestro forward target"
+- tapOn: "Reenviar|Forward"
+- assertVisible:
+    id: "chat_input_field"
+- runFlow:
+    file: ../subflows/delete_own_message.yaml
+    env:
+      MESSAGE_TEXT: Maestro forward target

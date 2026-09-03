@@ -1,0 +1,28 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, sends a throwaway message to @claudeqa2, opens "Ephemeral
+# message" from its context menu, confirms the self-destruct duration
+# options render, cancels without picking one, then deletes the message.
+# Run with:
+#   maestro test .maestro/flows/ephemeral_message_dialog_navigation.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- runFlow:
+    file: ../subflows/send_chat_message.yaml
+    env:
+      MESSAGE_TEXT: Maestro ephemeral target
+- longPressOn: "Maestro ephemeral target"
+- tapOn: "Mensaje efímero|Ephemeral message"
+- assertVisible: "Mensaje efímero|Ephemeral message"
+- tapOn: "Cancelar|Cancel"
+- runFlow:
+    file: ../subflows/delete_own_message.yaml
+    env:
+      MESSAGE_TEXT: Maestro ephemeral target
