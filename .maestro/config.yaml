@@ -28,3 +28,7 @@ executionOrder:
     - flows/notification_sound_picker_navigation.yaml
     - flows/sign_out_all_devices_cancel.yaml
     - flows/profile_display_name_roundtrip.yaml
+    - flows/poll_create_navigation.yaml
+    - flows/ai_assistant_navigation.yaml
+    - flows/clear_chat_roundtrip.yaml
+    - flows/status_compose_navigation.yaml
