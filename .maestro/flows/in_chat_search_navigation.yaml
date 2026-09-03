@@ -24,7 +24,7 @@ appId: com.ajrpachon.chatapp
 - tapOn:
     id: "chat_search_field"
 - inputText: zzz-nonexistent-maestro-query
-- assertVisible: "Sin resultados"
+- assertVisible: "Sin resultados|No results"
 - hideKeyboard
 - tapOn: "Cerrar búsqueda|Close search"
 - assertVisible:

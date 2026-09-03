@@ -144,14 +144,22 @@ IDs ya disponibles: `auth_email_field`, `auth_password_field`,
   simultáneamente. Un emoji (`"😀"`) es texto normal para Compose/Maestro
   y se selecciona igual — sin equivalente de `id` posible ahí.
 - **Un elemento visible en pantalla puede no existir en el árbol que lee
-  Maestro**: el banner de "Modo incógnito" del chat se ve perfectamente
-  en una captura de pantalla, pero una búsqueda de su texto en el volcado
-  de jerarquía (`screen-hierarchy/*.json`) da cero resultados — probado
-  directamente, no es un fallo de regex. Es edge-to-edge sobre la
-  status bar, lo que probablemente lo saca del árbol que UiAutomator
-  captura. Cuando algo así pase, busca un efecto secundario reachable
-  en su lugar (aquí: el propio texto del ítem del menú cambia de "Modo
-  incógnito" a "Desactivar incógnito", y eso sí es seleccionable).
+  Maestro, sin que sea un problema de accesibilidad real**: el banner de
+  "Modo incógnito" del chat se ve perfectamente en una captura de
+  pantalla, pero una búsqueda de su texto en el volcado de jerarquía de
+  Maestro (`screen-hierarchy/*.json`) da cero resultados. Verificado que
+  **no** es un bug de accesibilidad de la app: un `adb shell uiautomator
+  dump` directo sobre la misma pantalla, en el mismo momento, sí
+  encuentra el texto (`text="Incognito mode — messages are not
+  saved"`) — es decir, TalkBack y el resto de servicios de accesibilidad
+  reales lo leen bien. Es una inconsistencia del propio driver de
+  Maestro (probablemente por ser edge-to-edge sobre la status bar) frente
+  al UiAutomator del sistema, no algo que arreglar en el código de la
+  app. Cuando algo así pase, primero descarta con un `uiautomator dump`
+  directo si es un problema de Maestro o de la app, y si es de Maestro
+  busca un efecto secundario alcanzable en su lugar (aquí: el propio
+  texto del ítem del menú cambia de "Modo incógnito" a "Desactivar
+  incógnito", y eso sí es seleccionable).
 
 ## Subflows reutilizables
 
