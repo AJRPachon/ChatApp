@@ -28,4 +28,9 @@ executionOrder:
     - flows/notification_sound_picker_navigation.yaml
     - flows/sign_out_all_devices_cancel.yaml
     - flows/profile_display_name_roundtrip.yaml
+    - flows/profile_online_status_roundtrip.yaml
+    - flows/my_qr_code_navigation.yaml
     - flows/forward_message_dialog_navigation.yaml
+    - flows/ephemeral_message_dialog_navigation.yaml
+    - flows/mute_duration_dialog_navigation.yaml
+    - flows/chat_wallpaper_picker_navigation.yaml

@@ -45,7 +45,12 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     notification_sound_picker_navigation.yaml
     sign_out_all_devices_cancel.yaml
     profile_display_name_roundtrip.yaml
+    profile_online_status_roundtrip.yaml
+    my_qr_code_navigation.yaml
     forward_message_dialog_navigation.yaml
+    ephemeral_message_dialog_navigation.yaml
+    mute_duration_dialog_navigation.yaml
+    chat_wallpaper_picker_navigation.yaml
     realtime/              # flujo multi-dispositivo, fuera de la suite de un solo device
       01_recipient_wait.yaml
       02_sender_send.yaml
@@ -153,7 +158,8 @@ IDs ya disponibles: `auth_email_field`, `auth_password_field`,
 `chat_input_field`, `chat_send_button` (`ChatInputBar`);
 `chat_top_bar_title`, `chat_top_bar_menu_button` (`ChatTopBar`);
 `chat_search_field` (`ChatSearchOverlay`); `profile_session_audit_row`,
-`profile_sign_out_all_button`, `profile_display_name_field`
+`profile_sign_out_all_button`, `profile_display_name_field`,
+`profile_online_status_switch`, `profile_my_qr_code_button`
 (`ProfileScreen`); `conversation_list_invitations_button`,
 `conversation_list_new_group_fab` (`ConversationListScreen`);
 `create_group_search_field`, `create_group_next_button`
