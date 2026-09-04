@@ -17,3 +17,10 @@ LIVEKIT_API_SECRET=<your-api-secret>
 
 # Giphy
 GIPHY_API_KEY=<your-giphy-api-key>
+
+# Release signing (upload keystore for Play Store AABs) — see docs/release-signing.md.
+# Only needed to run assembleRelease/bundleRelease locally; safe to leave empty otherwise.
+RELEASE_STORE_FILE=upload-keystore.jks
+RELEASE_STORE_PASSWORD=<upload-keystore-password>
+RELEASE_KEY_ALIAS=upload
+RELEASE_KEY_PASSWORD=<upload-key-password>
