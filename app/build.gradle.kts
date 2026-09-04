@@ -38,44 +38,40 @@ android {
         buildConfigField("String", "GIPHY_API_KEY", secret("GIPHY_API_KEY"))
     }
 
-    signingConfigs {
-        create("release") {
-            // Local dev: read from local.properties (see local.properties.example).
-            // CI: fall back to environment variables so no secrets need to live in the repo.
-            // RELEASE_KEYSTORE_BASE64, if set, is decoded to a temp file — lets CI avoid
-            // committing/mounting a raw .jks file.
-            fun secret(propertyKey: String, envKey: String) =
-                localProperties.getProperty(propertyKey, "").ifBlank { System.getenv(envKey).orEmpty() }
+    // Local dev: read from local.properties (see local.properties.example).
+    // CI: fall back to environment variables so no secrets need to live in the repo.
+    // RELEASE_KEYSTORE_BASE64, if set, is decoded to a temp file — lets CI avoid
+    // committing/mounting a raw .jks file.
+    fun releaseSigningSecret(propertyKey: String, envKey: String) =
+        localProperties.getProperty(propertyKey, "").ifBlank { System.getenv(envKey).orEmpty() }
 
-            val storeFilePath = localProperties.getProperty("RELEASE_STORE_FILE", "").ifBlank {
-                System.getenv("RELEASE_KEYSTORE_BASE64")?.let { base64 ->
-                    if (base64.isBlank()) {
-                        null
-                    } else {
-                        val decoded = layout.buildDirectory.file("release-signing/upload-keystore.jks").get().asFile
-                        decoded.parentFile?.mkdirs()
-                        decoded.writeBytes(Base64.getDecoder().decode(base64))
-                        decoded.absolutePath
-                    }
-                }.orEmpty()
+    val releaseStoreFilePath = localProperties.getProperty("RELEASE_STORE_FILE", "").ifBlank {
+        System.getenv("RELEASE_KEYSTORE_BASE64")?.let { base64 ->
+            if (base64.isBlank()) {
+                null
+            } else {
+                val decoded = layout.buildDirectory.file("release-signing/upload-keystore.jks").get().asFile
+                decoded.parentFile?.mkdirs()
+                decoded.writeBytes(Base64.getDecoder().decode(base64))
+                decoded.absolutePath
             }
+        }.orEmpty()
+    }
+    // Whether we actually have a usable upload keystore (local.properties or CI secrets).
+    // Contributors/CI without one still build debug and an *unsigned* release APK — only
+    // assembling a real signed release/bundle needs this, per docs/release-signing.md.
+    val hasReleaseSigning = releaseStoreFilePath.isNotBlank()
 
-            val storePw = secret("RELEASE_STORE_PASSWORD", "RELEASE_KEYSTORE_PASSWORD")
-            val alias = secret("RELEASE_KEY_ALIAS", "RELEASE_KEY_ALIAS")
-            val keyPw = secret("RELEASE_KEY_PASSWORD", "RELEASE_KEY_PASSWORD")
-
-            // All fields are optional so the build doesn't break for contributors without a
-            // keystore (e.g. debug work, CI jobs that only assemble debug). assembleRelease
-            // will fail at sign time with a clear "keystore not found" if these are empty —
-            // see docs/release-signing.md.
-            if (storeFilePath.isNotBlank()) {
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
                 // Relative paths (e.g. "upload-keystore.jks" in local.properties) resolve
                 // against the project root, matching where the keystore is generated.
-                storeFile = rootProject.file(storeFilePath)
+                storeFile = rootProject.file(releaseStoreFilePath)
+                storePassword = releaseSigningSecret("RELEASE_STORE_PASSWORD", "RELEASE_KEYSTORE_PASSWORD")
+                keyAlias = releaseSigningSecret("RELEASE_KEY_ALIAS", "RELEASE_KEY_ALIAS")
+                keyPassword = releaseSigningSecret("RELEASE_KEY_PASSWORD", "RELEASE_KEY_PASSWORD")
             }
-            storePassword = storePw
-            keyAlias = alias
-            keyPassword = keyPw
         }
     }
 
@@ -86,7 +82,9 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            signingConfig = signingConfigs.getByName("release")
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
