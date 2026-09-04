@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.utils
 
 import android.util.LruCache
+import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.google.mlkit.nl.translate.TranslateLanguage
 import com.google.mlkit.nl.translate.Translation
 import com.google.mlkit.nl.translate.TranslatorOptions
@@ -10,7 +11,7 @@ import kotlinx.coroutines.tasks.await
  * On-device translation using ML Kit.
  * Caches up to 100 translations to avoid redundant model calls.
  */
-class TranslationManager {
+class TranslationManager(private val analyticsTracker: AnalyticsTracker) {
 
     private val cache = LruCache<String, String>(100)
 
@@ -20,7 +21,10 @@ class TranslationManager {
      */
     suspend fun translate(text: String, targetLang: String = TranslateLanguage.ENGLISH): String {
         val cacheKey = "$targetLang|$text"
-        cache.get(cacheKey)?.let { return it }
+        cache.get(cacheKey)?.let {
+            analyticsTracker.logEvent(AnalyticsEvents.TRANSLATION_USED)
+            return it
+        }
 
         val options = TranslatorOptions.Builder()
             .setSourceLanguage(TranslateLanguage.SPANISH)
@@ -31,6 +35,7 @@ class TranslationManager {
             translator.downloadModelIfNeeded().await()
             val result = translator.translate(text).await()
             cache.put(cacheKey, result)
+            analyticsTracker.logEvent(AnalyticsEvents.TRANSLATION_USED)
             result
         } finally {
             translator.close()

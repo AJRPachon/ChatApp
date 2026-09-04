@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.domain.usecase
 
 import com.ajrpachon.chatapp.domain.model.ConversationBO
+import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -13,7 +14,8 @@ import org.junit.Test
 class CreateGroupUseCaseTest {
 
     private val groupRepository = mockk<GroupRepository>()
-    private val useCase = CreateGroupUseCase(groupRepository)
+    private val analyticsTracker = mockk<AnalyticsTracker>(relaxed = true)
+    private val useCase = CreateGroupUseCase(groupRepository, analyticsTracker)
     private val fakeConversation = mockk<ConversationBO>(relaxed = true)
 
     @Test

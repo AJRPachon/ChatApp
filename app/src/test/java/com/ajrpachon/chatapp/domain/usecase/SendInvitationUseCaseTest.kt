@@ -4,6 +4,7 @@ import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.InvitationBO
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.model.UserRelationship
+import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.InvitationRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
@@ -20,7 +21,10 @@ class SendInvitationUseCaseTest {
     private val invitationRepository = mockk<InvitationRepository>()
     private val conversationRepository = mockk<ConversationRepository>()
     private val userRepository = mockk<UserRepository>()
-    private val useCase = SendInvitationUseCase(invitationRepository, conversationRepository, userRepository)
+    private val analyticsTracker = mockk<AnalyticsTracker>(relaxed = true)
+    private val useCase = SendInvitationUseCase(
+        invitationRepository, conversationRepository, userRepository, analyticsTracker,
+    )
 
     private val otherUser = mockk<UserBO>(relaxed = true).also {
         coEvery { it.id } returns "other-user-id"

@@ -5,7 +5,9 @@ import android.content.Context
 import com.ajrpachon.chatapp.data.local.dao.MessageDao
 import com.ajrpachon.chatapp.data.local.entity.MessageDBO
 import com.ajrpachon.chatapp.domain.model.BackupInfo
+import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.BackupRepository
+import com.ajrpachon.chatapp.utils.AnalyticsEvents
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -125,6 +127,7 @@ private fun MessageBackup.toDBO() = MessageDBO(
 class BackupRepositoryImpl(
     private val context: Context,
     private val messageDao: MessageDao,
+    private val analyticsTracker: AnalyticsTracker,
 ) : BackupRepository {
     private val httpClient = OkHttpClient.Builder()
         .connectTimeout(60, TimeUnit.SECONDS)
@@ -205,6 +208,7 @@ class BackupRepositoryImpl(
         }
 
         val sizeMb = "%.2f".format(jsonBytes.size.toDouble() / 1_048_576)
+        analyticsTracker.logEvent(AnalyticsEvents.BACKUP_CREATED)
         BackupInfo(
             lastBackupDate = dateFormat.format(Date()),
             backupSizeMb = sizeMb,
@@ -248,6 +252,7 @@ class BackupRepositoryImpl(
 
         val messages = json.decodeFromString<List<MessageBackup>>(jsonText)
         messageDao.upsertAll(messages.map { it.toDBO() })
+        analyticsTracker.logEvent(AnalyticsEvents.BACKUP_RESTORED)
     }
 
     override suspend fun getLatestBackupInfo(): BackupInfo? = withContext(Dispatchers.IO) {

@@ -1,5 +1,10 @@
 package com.ajrpachon.chatapp.data.repository
 
+import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
+// This class shares its simple name with the domain interface it implements — aliased to avoid
+// a same-name clash (there is no "...Impl" suffix on this one, unlike its sibling repositories).
+import com.ajrpachon.chatapp.domain.repository.AiAssistantRepository as AiAssistantRepositoryContract
+import com.ajrpachon.chatapp.utils.AnalyticsEvents
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.functions.functions
 import io.ktor.client.call.body
@@ -25,8 +30,10 @@ private data class AiResponse(val result: String)
 // requires the JSON content-type header to be set explicitly.
 private val jsonHeaders = Headers.build { append(HttpHeaders.ContentType, ContentType.Application.Json.toString()) }
 
-class AiAssistantRepository(private val supabaseClient: SupabaseClient) :
-    com.ajrpachon.chatapp.domain.repository.AiAssistantRepository {
+class AiAssistantRepository(
+    private val supabaseClient: SupabaseClient,
+    private val analyticsTracker: AnalyticsTracker,
+) : AiAssistantRepositoryContract {
 
     override suspend fun summarize(messageSnippets: List<String>): Result<String> = runCatching {
         val response = supabaseClient.functions.invoke(
@@ -35,7 +42,7 @@ class AiAssistantRepository(private val supabaseClient: SupabaseClient) :
             headers = jsonHeaders,
         )
         response.body<AiResponse>().result
-    }
+    }.onSuccess { logUsage(AnalyticsEvents.ACTION_SUMMARIZE) }
 
     override suspend fun suggestReply(lastMessage: String): Result<String> = runCatching {
         val response = supabaseClient.functions.invoke(
@@ -44,7 +51,7 @@ class AiAssistantRepository(private val supabaseClient: SupabaseClient) :
             headers = jsonHeaders,
         )
         response.body<AiResponse>().result
-    }
+    }.onSuccess { logUsage(AnalyticsEvents.ACTION_SUGGEST_REPLY) }
 
     override suspend fun freeform(prompt: String): Result<String> = runCatching {
         val response = supabaseClient.functions.invoke(
@@ -53,5 +60,9 @@ class AiAssistantRepository(private val supabaseClient: SupabaseClient) :
             headers = jsonHeaders,
         )
         response.body<AiResponse>().result
+    }.onSuccess { logUsage(AnalyticsEvents.ACTION_FREEFORM) }
+
+    private fun logUsage(action: String) {
+        analyticsTracker.logEvent(AnalyticsEvents.AI_ASSISTANT_USED, mapOf(AnalyticsEvents.PARAM_ACTION to action))
     }
 }

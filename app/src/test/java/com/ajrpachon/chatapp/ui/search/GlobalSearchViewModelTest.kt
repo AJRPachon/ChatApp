@@ -2,6 +2,7 @@ package com.ajrpachon.chatapp.ui.search
 
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.MessageBO
+import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import com.ajrpachon.chatapp.util.MainDispatcherRule
@@ -24,8 +25,10 @@ class GlobalSearchViewModelTest {
 
     private val messageRepository = mockk<MessageRepository>()
     private val conversationRepository = mockk<ConversationRepository>()
+    private val analyticsTracker = mockk<AnalyticsTracker>(relaxed = true)
 
-    private fun buildViewModel() = GlobalSearchViewModel(messageRepository, conversationRepository)
+    private fun buildViewModel() =
+        GlobalSearchViewModel(messageRepository, conversationRepository, analyticsTracker)
 
     private fun message(id: String, conversationId: String, content: String) = MessageBO(
         id = id,

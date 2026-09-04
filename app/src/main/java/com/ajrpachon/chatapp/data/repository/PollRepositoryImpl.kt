@@ -5,7 +5,9 @@ import com.ajrpachon.chatapp.data.local.entity.PollOptionDBO
 import com.ajrpachon.chatapp.domain.model.PollBO
 import com.ajrpachon.chatapp.domain.model.PollOptionBO
 import com.ajrpachon.chatapp.domain.model.PollVoteBO
+import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.PollRepository
+import com.ajrpachon.chatapp.utils.AnalyticsEvents
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.util.UUID
@@ -13,6 +15,7 @@ import com.ajrpachon.chatapp.data.local.PollRepository as PollLocalDataSource
 
 class PollRepositoryImpl(
     private val localDataSource: PollLocalDataSource,
+    private val analyticsTracker: AnalyticsTracker,
 ) : PollRepository {
 
     override suspend fun createPoll(
@@ -42,11 +45,13 @@ class PollRepositoryImpl(
                 )
             }
         )
+        analyticsTracker.logEvent(AnalyticsEvents.POLL_CREATED)
         return pollId
     }
 
     override suspend fun vote(pollId: String, userId: String, optionId: String) {
         localDataSource.vote(pollId, userId, optionId)
+        analyticsTracker.logEvent(AnalyticsEvents.POLL_VOTED)
     }
 
     override fun observePollById(pollId: String): Flow<PollBO?> =

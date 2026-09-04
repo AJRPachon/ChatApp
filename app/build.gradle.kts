@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.room)
     alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
     alias(libs.plugins.compose.nav.graph)
     jacoco
 }
@@ -48,6 +49,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            firebaseCrashlytics {
+                mappingFileUploadEnabled = true
+            }
         }
         create("benchmark") {
             initWith(getByName("release"))
@@ -220,6 +224,8 @@ dependencies {
     val firebaseBom = platform(libs.firebase.bom)
     implementation(firebaseBom)
     implementation(libs.firebase.messaging)
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
 
     // Baseline profiles — pre-compiles Compose hot paths for faster startup
     implementation(libs.profileinstaller)
