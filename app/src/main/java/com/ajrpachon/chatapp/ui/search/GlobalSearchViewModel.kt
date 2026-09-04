@@ -1,9 +1,11 @@
 package com.ajrpachon.chatapp.ui.search
 
+import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
+import com.ajrpachon.chatapp.utils.AnalyticsEvents
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
@@ -17,6 +19,7 @@ import kotlinx.coroutines.launch
 class GlobalSearchViewModel(
     private val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
+    private val analyticsTracker: AnalyticsTracker,
 ) : BaseViewModel<GlobalSearchState, Nothing>(GlobalSearchState()) {
 
     init {
@@ -43,6 +46,10 @@ class GlobalSearchViewModel(
                                 createdAtMs = msg.createdAt.toEpochMilliseconds(),
                             )
                         }
+                        analyticsTracker.logEvent(
+                            AnalyticsEvents.SEARCH_PERFORMED,
+                            mapOf(AnalyticsEvents.PARAM_RESULT_COUNT to results.size),
+                        )
                         emit(GlobalSearchState(query = query, results = results, isLoading = false))
                     }
                 }

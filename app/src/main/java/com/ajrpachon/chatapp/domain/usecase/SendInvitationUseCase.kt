@@ -3,9 +3,11 @@ import com.ajrpachon.chatapp.utils.catchResult
 
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.model.UserRelationship
+import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.InvitationRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
+import com.ajrpachon.chatapp.utils.AnalyticsEvents
 
 sealed interface SendInvitationResult {
     data object Sent : SendInvitationResult
@@ -20,6 +22,7 @@ class SendInvitationUseCase(
     private val invitationRepository: InvitationRepository,
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
+    private val analyticsTracker: AnalyticsTracker,
 ) {
     suspend fun checkRelationship(currentUserId: String, otherUserId: String): UserRelationship =
         invitationRepository.getRelationship(currentUserId, otherUserId)
@@ -42,6 +45,7 @@ class SendInvitationUseCase(
                 val inv = invitationRepository.getPendingReceivedInvitation(currentUserId, otherUser.id)
                 if (inv != null) {
                     invitationRepository.acceptInvitation(inv.id)
+                        .onSuccess { analyticsTracker.logEvent(AnalyticsEvents.INVITATION_ACCEPTED) }
                     val conv = catchResult {
                         conversationRepository.getOrCreateDirectConversation(currentUserId, otherUser.id)
                     }.getOrElse { return SendInvitationResult.Failure(it.message ?: "Error") }
@@ -53,7 +57,10 @@ class SendInvitationUseCase(
             UserRelationship.NONE -> {
                 invitationRepository.sendInvitation(currentUserId, otherUser.id)
                     .fold(
-                        onSuccess = { SendInvitationResult.Sent },
+                        onSuccess = {
+                            analyticsTracker.logEvent(AnalyticsEvents.INVITATION_SENT)
+                            SendInvitationResult.Sent
+                        },
                         onFailure = { SendInvitationResult.Failure(it.message ?: "Error al enviar invitación") },
                     )
             }

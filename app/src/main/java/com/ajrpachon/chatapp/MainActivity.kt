@@ -52,8 +52,12 @@ import kotlinx.coroutines.flow.first
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.handleDeeplinks
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.lifecycle.lifecycleScope
+import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
+import com.ajrpachon.chatapp.utils.AnalyticsEvents
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.get
@@ -86,6 +90,7 @@ class MainActivity : ComponentActivity() {
             pendingConversationId.value = intent.validatedConversationId()
             pendingOtherUserName.value = intent.validatedUserName()
         }
+        if (pendingConversationId.value != null) logNotificationOpened()
         val getCurrentUser: GetCurrentUserUseCase = get()
         val supabase: SupabaseClient = get()
         setContent {
@@ -140,6 +145,21 @@ class MainActivity : ComponentActivity() {
                 }
                 val resolvedRoute = initialRoute ?: return@ChatAppTheme
                 val backStack = rememberNavBackStack(resolvedRoute)
+
+                // Screen-view tracking: single chokepoint for every navigation change, no
+                // per-screen wiring needed. Route class name only — routes carry ids/names
+                // (ChatRoute, UserInfoRoute...) that must never reach analytics.
+                val analyticsTracker = remember { get<AnalyticsTracker>() }
+                LaunchedEffect(backStack.lastOrNull()) {
+                    val screenName = backStack.lastOrNull()?.let { it::class.simpleName } ?: return@LaunchedEffect
+                    analyticsTracker.logEvent(
+                        AnalyticsEvents.SCREEN_VIEW,
+                        mapOf(
+                            AnalyticsEvents.PARAM_SCREEN_NAME to screenName,
+                            AnalyticsEvents.PARAM_SCREEN_CLASS to screenName,
+                        ),
+                    )
+                }
 
                 // Handle mid-session expiry detected in onResume
                 androidx.compose.runtime.LaunchedEffect(isExpired) {
@@ -298,6 +318,7 @@ class MainActivity : ComponentActivity() {
                 conversationId?.let {
                     pendingConversationId.value = it
                     pendingOtherUserName.value = name
+                    logNotificationOpened()
                 }
             }
             uri != null -> AppLogger.w("MainActivity", "Rejected deep link with unexpected scheme/host: $uri")
@@ -307,8 +328,15 @@ class MainActivity : ComponentActivity() {
             intent.validatedConversationId()?.let {
                 pendingConversationId.value = it
                 pendingOtherUserName.value = intent.validatedUserName()
+                logNotificationOpened()
             }
         }
+    }
+
+    // Wrapped defensively — same reason as ChatApplication's Firebase calls: must never crash
+    // a screen navigation just because analytics collection is unavailable.
+    private fun logNotificationOpened() {
+        runCatching { get<AnalyticsTracker>().logEvent(AnalyticsEvents.NOTIFICATION_OPENED) }
     }
 
     private fun Uri.isValidAuthCallback(): Boolean =

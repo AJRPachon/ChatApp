@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.domain.usecase
 
+import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.InvitationRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -12,7 +13,8 @@ import org.junit.Test
 class RespondInvitationUseCaseTest {
 
     private val invitationRepository = mockk<InvitationRepository>()
-    private val useCase = RespondInvitationUseCase(invitationRepository)
+    private val analyticsTracker = mockk<AnalyticsTracker>(relaxed = true)
+    private val useCase = RespondInvitationUseCase(invitationRepository, analyticsTracker)
 
     @Test
     fun `accept delegates to repository`() = runTest {

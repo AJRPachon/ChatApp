@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.domain.usecase
 
+import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.InvitationRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import io.mockk.coEvery
@@ -14,7 +15,8 @@ class BlockUserUseCaseTest {
 
     private val invitationRepository = mockk<InvitationRepository>()
     private val userRepository = mockk<UserRepository>()
-    private val useCase = BlockUserUseCase(invitationRepository, userRepository)
+    private val analyticsTracker = mockk<AnalyticsTracker>(relaxed = true)
+    private val useCase = BlockUserUseCase(invitationRepository, userRepository, analyticsTracker)
 
     @Test
     fun `block returns failure when user is not authenticated`() = runTest {
