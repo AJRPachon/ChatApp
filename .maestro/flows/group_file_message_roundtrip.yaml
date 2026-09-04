@@ -1,0 +1,41 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens "Maestro Test Group", attaches a file via the system
+# ACTION_OPEN_DOCUMENT picker (no MediaStore/media-scanning tricks needed —
+# unlike Galería/Video, "Archivo" doesn't go through the Photo Picker, just
+# `fileLauncher.launch(arrayOf("*/*"))`), confirms it renders, then deletes
+# it via the multi-select bulk-delete path (a bare file message has blank
+# `content`, so the per-message text-longpress dropdown never renders for
+# it — same reasoning as group_image_message_roundtrip.yaml).
+#
+# REQUIRES a small file already pushed to /sdcard/Download/ before this flow
+# runs — not done here, since Maestro flows can't shell out to adb. See
+# .maestro/README.md for the exact `adb push` command.
+# Run with:
+#   maestro test .maestro/flows/group_file_message_roundtrip.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: "Maestro Test Group"
+- tapOn: "Adjuntar|Attach"
+- tapOn: "Archivo"
+- extendedWaitUntil:
+    visible: "maestro_test_file.txt"
+    timeout: 15000
+- tapOn: "maestro_test_file.txt"
+- extendedWaitUntil:
+    visible:
+      id: "chat_input_field"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: "maestro_test_file.txt"
+    timeout: 20000
+- runFlow:
+    file: ../subflows/delete_selected_message.yaml
+    env:
+      MESSAGE_SELECTOR: "maestro_test_file.txt"

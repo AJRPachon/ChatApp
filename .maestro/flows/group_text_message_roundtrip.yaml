@@ -1,0 +1,31 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the real "Maestro Test Group" (see .maestro/README.md),
+# sends a plain text message, confirms it renders, then deletes it — same
+# send+verify+delete pattern as flows/send_message.yaml, but inside a group
+# conversation instead of the 1:1 with @claudeqa2.
+#
+# Doesn't assert sender-name attribution here: MessageBubble only renders the
+# sender-name header for messages NOT from the current user
+# (`isGroup && !message.isFromMe`), so the sending account never sees it on
+# its own messages — see group_sender_attribution_navigation.yaml, which
+# checks this from @claudeqa2's side instead.
+# Run with:
+#   maestro test .maestro/flows/group_text_message_roundtrip.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: "Maestro Test Group"
+- runFlow:
+    file: ../subflows/send_chat_message.yaml
+    env:
+      MESSAGE_TEXT: "Maestro group text ping"
+- runFlow:
+    file: ../subflows/delete_own_message.yaml
+    env:
+      MESSAGE_TEXT: "Maestro group text ping"

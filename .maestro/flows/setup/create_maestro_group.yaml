@@ -1,0 +1,31 @@
+appId: com.ajrpachon.chatapp
+---
+# ONE-TIME SETUP — NOT part of the repeatable suite, NOT in config.yaml.
+#
+# Creates the real, permanent "Maestro Test Group" (with @claudeqa2 as the
+# only other member) used by every flows/group_*.yaml flow in this suite.
+# Group creation is not reversible/idempotent the way send+delete is — running
+# this again would create ANOTHER group — so this file lives in its own
+# flows/setup/ subdirectory, deliberately mirroring flows/realtime/: verified
+# directly that `maestro test .maestro/flows` (directory mode, config.yaml
+# present) only scans top-level .yaml files in that directory and does NOT
+# descend into subdirectories — a loose top-level file like this one used to
+# be would still run on every full-suite pass even while absent from
+# `flowsOrder`, which is exactly the accidental-re-creation risk this
+# location avoids. Run it directly, exactly once:
+#   maestro test .maestro/flows/setup/create_maestro_group.yaml \
+#     --device emulator-5554 -e QA_EMAIL=... -e QA_PASSWORD=...
+#
+# See .maestro/README.md's "Grupo real de prueba" section for why a real,
+# permanent group is an accepted exception to this suite's usual rule against
+# writing permanent shared-backend data.
+- runFlow:
+    file: ../../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../../subflows/create_group.yaml
+    env:
+      GROUP_NAME: "Maestro Test Group"
+      MEMBER_USERNAME: claudeqa2

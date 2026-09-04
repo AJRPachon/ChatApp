@@ -55,6 +55,18 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     ai_assistant_navigation.yaml
     clear_chat_roundtrip.yaml
     status_compose_navigation.yaml
+    group_text_message_roundtrip.yaml
+    group_sender_attribution_navigation.yaml
+    group_image_message_roundtrip.yaml
+    group_file_message_roundtrip.yaml
+    group_camera_photo_roundtrip.yaml
+    group_video_capture_roundtrip.yaml
+    group_audio_message_roundtrip.yaml
+    group_location_message_roundtrip.yaml
+    group_contact_message_roundtrip.yaml
+    group_poll_message_roundtrip.yaml
+    setup/                  # setup ÚNICO, fuera de la suite normal — ver más abajo
+      create_maestro_group.yaml
     realtime/              # flujo multi-dispositivo, fuera de la suite de un solo device
       01_recipient_wait.yaml
       02_sender_send.yaml
@@ -66,6 +78,7 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     logout.yaml
     open_conversation.yaml      # parametrizado: env CONTACT_NAME
     delete_own_message.yaml     # parametrizado: env MESSAGE_TEXT
+    delete_selected_message.yaml  # parametrizado: env MESSAGE_SELECTOR
     send_chat_message.yaml      # parametrizado: env MESSAGE_TEXT
     react_to_message.yaml       # parametrizado: env MESSAGE_TEXT, EMOJI
     background_and_resume.yaml  # sin parámetros
@@ -77,11 +90,23 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     mute_conversation.yaml        # parametrizado: env CONTACT_NAME
     unmute_conversation.yaml      # parametrizado: env CONTACT_NAME
     set_theme.yaml                 # parametrizado: env THEME_OPTION
+    create_group.yaml              # parametrizado: env GROUP_NAME, MEMBER_USERNAME
 ```
 
 Siempre se ejecuta apuntando a `flows/` (archivo o carpeta), nunca a `.maestro`
 a secas — así nunca se corre un subflow suelto (le faltaría contexto: espera
 partir de una pantalla concreta, no del arranque de la app).
+
+**`maestro test .maestro/flows` (modo carpeta) solo escanea archivos `.yaml`
+de primer nivel dentro de `flows/`, nunca desciende a subcarpetas** —
+verificado directamente con una carpeta de prueba mínima: un archivo
+sin listar en `flowsOrder` pero suelto directamente en `flows/` sí se
+ejecutó igualmente (`flowsOrder` solo determina el ORDEN de los que sí
+lista, no filtra los que no), mientras que uno idéntico dentro de una
+subcarpeta nunca llegó a correr. Por eso tanto `flows/realtime/` como
+`flows/setup/` (ver debajo) viven en su propia subcarpeta en vez de como
+archivos sueltos con un prefijo `_` — un prefijo no basta para excluirlos de
+una pasada de la suite completa.
 
 ## Ejecutar
 
@@ -169,7 +194,12 @@ IDs ya disponibles: `auth_email_field`, `auth_password_field`,
 `create_group_search_field`, `create_group_next_button`
 (`CreateGroupScreen`); `chat_app_top_bar_back_button` (`ChatAppTopBar`,
 compartido por varias pantallas: `NewChatScreen`, `InvitationsScreen`,
-`CreateGroupScreen`, `SessionAuditScreen`...).
+`CreateGroupScreen`, `SessionAuditScreen`...); `chat_mic_button`
+(`ChatInputBar`'s `NormalInputBar` — el icono de micrófono, antes sin
+`testTag`), `chat_recording_stop_button` (`RecordingBar`'s botón de stop),
+`chat_audio_discard_button` / `chat_audio_send_button` (`AudioPreviewBar`'s
+descartar/enviar — los cuatro añadidos para `group_audio_message_roundtrip.yaml`,
+ver "Grupo real de prueba" más abajo).
 
 **Excepciones donde se usa texto en vez de `id`:**
 
@@ -320,8 +350,268 @@ Verificado end-to-end con dos emuladores reales (`Pixel9ProXL_API36_A` +
 `_B`): el mensaje enviado en el emisor apareció en el receptor sin
 recargar ni relanzar la app.
 
+## Grupo real de prueba y sus flows de adjuntos
+
+Decisión explícita del usuario, que sustituye la cautela anterior de esta
+misma suite (ver el antiguo punto "Crear grupo de verdad..." en "Pendiente"
+más abajo, ahora resuelto): existe un grupo real y permanente llamado
+**"Maestro Test Group"**, creado una sola vez con `@claudeqa` como creador y
+`@claudeqa2` como único otro miembro. Aparece para siempre en la lista de
+chats de ambas cuentas — `GroupRepositoryImpl.leaveGroup` no borra la fila
+de la conversación en Supabase aunque ambas cuentas salgan del grupo, así
+que salir no sería una limpieza real, solo perder acceso — y eso es
+aceptado a propósito. Todos los flows `flows/group_*.yaml` asumen que este
+grupo ya existe y lo abren por nombre (`open_conversation.yaml` con
+`CONTACT_NAME: "Maestro Test Group"`), igual que cualquier chat 1:1.
+
+**Creación (ya hecha, no repetir)**: `flows/setup/create_maestro_group.yaml`
+documenta los pasos exactos y usa el nuevo `subflows/create_group.yaml`
+(parametrizado por `GROUP_NAME`/`MEMBER_USERNAME`, extraído del wizard que
+`create_group_navigation.yaml` ya recorría sin nunca tocar "Create"). Crear
+un grupo no es idempotente como un send+delete — volver a correrlo crearía
+OTRO grupo cada vez — así que este archivo vive en su propia subcarpeta
+`flows/setup/`, no como un archivo suelto en `flows/`: ver la nota en
+"Estructura" más arriba sobre por qué un `.yaml` de primer nivel sin listar
+en `flowsOrder` **igualmente se ejecutaría** en una pasada de la suite
+completa, y solo una subcarpeta (como ya hacía `flows/realtime/`) lo evita
+de verdad. Queda en el repo solo como referencia/documentación de cómo se
+hizo.
+
+### Sembrar medios para el picker
+
+`group_image_message_roundtrip.yaml` y `group_file_message_roundtrip.yaml`
+requieren un archivo ya sembrado en el dispositivo — Maestro no puede
+invocar `adb` desde dentro de un flow. Comandos reales verificados
+(**en Git Bash/MSYS, no `cmd.exe`**: usar doble barra al inicio de la ruta
+del dispositivo, `//sdcard/...`, o MSYS reescribe silenciosamente
+`/sdcard/...` como una ruta de Windows tipo `C:/Program Files/Git/sdcard/...`
+y el push falla o aterriza en el sitio equivocado — verificado directamente,
+ver historial de comandos):
+
+```bash
+# Imagen — Galería usa el Photo Picker moderno (ACTION_PICK_IMAGES), que
+# solo ve archivos indexados por MediaStore, no cualquier archivo en /sdcard.
+adb -s emulator-5554 push maestro_test_image.jpg //sdcard/Pictures/maestro_test_image.jpg
+adb -s emulator-5554 shell content insert --uri content://media/external/images/media \
+  --bind _data:s://sdcard/Pictures/maestro_test_image.jpg --bind mime_type:s:image/jpeg
+adb -s emulator-5554 shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE \
+  -d file://sdcard/Pictures/maestro_test_image.jpg
+
+# Archivo — "Archivo" usa ACTION_OPEN_DOCUMENT (el selector de archivos del
+# sistema), que sí ve archivos recientes sin necesitar indexado de MediaStore.
+adb -s emulator-5554 push maestro_test_file.txt //sdcard/Download/maestro_test_file.txt
+```
+
+En el picker de fotos, el archivo sembrado aparece con `content-desc="Photo
+taken on <fecha>"` (dinámico) — seleccionable con `tapOn: "Photo taken.*"`
+(regex, ya que el selector de texto exige coincidencia completa del nodo).
+El botón para confirmar la selección se llama **"Done"**, no "Add" — verificado
+directamente contra el picker real; la documentación/suposición inicial de
+"Add" no correspondía a la build actual.
+
+### "Video" en el menú de adjuntar es captura de cámara real, no una galería
+
+A diferencia de lo que su posición junto a "Galería" sugiere, el botón
+"Video" del `AttachmentBottomSheet` dispara
+`ActivityResultContracts.CaptureVideo()` (ver `ChatScreen.kt`) — abre la
+app de cámara del sistema en modo vídeo y graba de verdad, igual que
+"Cámara" para fotos. No consulta la galería/MediaStore en ningún momento,
+así que sembrar un MP4 ahí (como si fuera para un picker) no serviría de
+nada. `group_video_capture_roundtrip.yaml` conduce la app de cámara AOSP
+del emulador (mismo flujo que `group_camera_photo_roundtrip.yaml`, solo que
+en modo vídeo): `tapOn: "Shutter"` inicia la grabación, `tapOn: "Shutter"`
+otra vez la detiene, luego la pantalla de revisión (`Play`/`Done`/`Cancel`,
+un fotograma fijo con controles) — `tapOn: "Done"` confirma. Ambos flows de
+captura real funcionan de punta a punta contra la cámara virtual del
+emulador (un patrón de prueba estático, una casa con ventanas).
+
+### Grabar y enviar un audio es tap-to-start/tap-to-stop, no mantener pulsado
+
+`ChatAudioRecordingDelegate.kt` (`StartRecording`/`StopRecording`) confirma
+que no hay gesto de mantener-pulsado ni de deslizar-para-cancelar en este
+código — un toque en el micrófono empieza a grabar (`RecordingBar` con
+botón de stop), otro toque lo detiene y pasa a una vista previa
+(`AudioPreviewBar` con descartar/enviar). Mucho más simple de automatizar
+de lo que el encargo original anticipaba. `group_audio_message_roundtrip.yaml`
+graba ~2 segundos reales (con micrófono del emulador, sin necesitar audio
+de verdad — un archivo `.m4a` silencioso/de ruido de fondo es válido) y
+lo envía. Para borrarlo después, ver la sección de multi-select más abajo —
+el reproductor de audio (`RemoteAudioPlayer`/`AudioPlayerRow`) no tiene
+ningún texto estable que seleccionar salvo la propia etiqueta de duración
+(p. ej. `"0:03"`), que nunca coincide con una hora de reloj en pantalla
+porque esta usa `"%d:%02d"` (minutos sin cero a la izquierda: `"0:XX"`,
+nunca `"00:XX"`) mientras que un reloj siempre usa `"%02d:%02d"`.
+
+### Borrado universal por selección múltiple, y tres bugs de long-press reales encontrados y arreglados
+
+`delete_own_message.yaml` (long-press sobre el texto → "Eliminar" del menú
+contextual) solo sirve para mensajes con `content` no vacío — ese menú
+contextual vive dentro de un `if (message.content.isNotBlank())` en
+`ChatBubbleContent.kt`. Un mensaje de imagen/audio/vídeo/archivo puro (sin
+texto) nunca entra en esa rama, así que no tiene ese menú. Todo tipo de
+mensaje comparte en cambio un mecanismo distinto: `MessageBubble.kt` envuelve
+cada burbuja en un contenedor con `onLongClick = { onToggleSelect() }` —
+mantener pulsado activa el modo de selección múltiple, y la barra superior
+muestra entonces un botón de papelera ("Eliminar seleccionados") que abre un
+`AlertDialog` de confirmación. `subflows/delete_selected_message.yaml`
+formaliza esto (parametrizado por `MESSAGE_SELECTOR`) y es lo que usan todos
+los flows `group_*` para tipos sin texto — image, file, video, audio,
+contact, poll, location y las capturas de cámara.
+
+Construir esto encontró (y arregló, en `MessageBubble.kt`/
+`ChatFileBubbles.kt`/`ChatBubbleContent.kt`) tres casos reales donde
+mantener pulsado no llegaba nunca a ese `onLongClick` del contenedor
+exterior: la imagen (`AsyncImage`), el archivo genérico
+(`GenericFileBubble`) y el vídeo (`VideoBubble`) tenían cada uno su propio
+`Modifier.clickable { ... }` (abrir el visor, abrir el archivo, reproducir
+el vídeo) — y un `clickable` normal en Compose dispara `onClick` en el
+`ACTION_UP` sin importar cuánto duró la pulsación, así que un long-press
+sobre esa zona hacía justo lo mismo que un tap corto (abría el visor/
+archivo/vídeo) y JAMÁS llegaba a activar la selección — verificado
+directamente probando `longPressOn` sobre la imagen enviada: en vez de
+"1 selected", abría el visor de imágenes de pantalla completa. Arreglado
+cambiando esos tres `clickable` a `combinedClickable(onClick = ..., onLongClick
+= onToggleSelect)`, con `onToggleSelect`/`onLongPress` ahora enhebrado como
+parámetro hasta cada composable. Se aplicó el mismo arreglo a
+`LocationMessageCard`, que además tenía un problema estructural adicional:
+su propio `clickable` (abrir Maps) vivía como **hermano**, no hijo, del
+`Box` que contiene el `DropdownMenu` de borrado en `MessageFooterContent` —
+ni siquiera estando dentro de ese `Box`, así que un mensaje de ubicación no
+tenía NINGÚN camino de borrado alcanzable antes de este fix, pese a que su
+`content` (`"📍 Mi ubicación: <url>"`) no está vacío. `StickerBubble` y
+`ContactBubble` no necesitaron el mismo arreglo porque nunca tuvieron su
+propio `clickable` — el long-press siempre cayó limpiamente al contenedor
+exterior.
+
+### Sembrar un contacto de prueba
+
+`group_contact_message_roundtrip.yaml` necesita un contacto llamado
+"MaestroContact" ya existente en el dispositivo antes de correr. El camino
+obvio — `adb shell am start -a android.intent.action.INSERT ... -e name
+"Maestro Contact"` seguido de tocar "Save" en la UI del sistema — resultó
+poco fiable: el botón "Save" de "Add to contacts" apareció visualmente
+deshabilitado (sin ninguna cuenta de dispositivo configurada en este
+emulador) y el contacto nunca llegó a guardarse pese a que `tapOn`
+reportaba éxito. Además, un nombre con espacio en el propio comando `adb
+shell am start -e name "Maestro Contact"` se corrompe por cómo Android
+tokeniza el comando shell recibido — usar un nombre sin espacios
+(`MaestroContact`) evita ese problema aparte. La alternativa que sí
+funciona de forma reproducible: insertar directamente vía el
+`ContentProvider` de contactos, sin pasar por ninguna UI:
+
+```bash
+adb -s emulator-5554 shell content insert --uri content://com.android.contacts/raw_contacts \
+  --bind account_name:n: --bind account_type:n:
+# usar el _id devuelto (consultar con `content query --uri content://com.android.contacts/raw_contacts --projection _id`)
+adb -s emulator-5554 shell content insert --uri content://com.android.contacts/data \
+  --bind raw_contact_id:i:<id> --bind mimetype:s:vnd.android.cursor.item/name --bind data1:s:MaestroContact
+adb -s emulator-5554 shell content insert --uri content://com.android.contacts/data \
+  --bind raw_contact_id:i:<id> --bind mimetype:s:vnd.android.cursor.item/phone_v2 \
+  --bind data1:s:5550100 --bind data2:i:2
+```
+
+Verificado con `content query --uri content://com.android.contacts/contacts
+--projection display_name`. El Activity del picker de contactos
+(`com.google.android.contacts`) además renderiza como una captura de
+pantalla completamente negra vía `adb shell screencap` en este emulador —
+confirmado con `uiautomator dump` que el contenido real (la lista de
+contactos) está presente e interactuable debajo; es una rareza de
+screencap/hardware-layer de ese Activity concreto, no un problema real de
+la app ni de Maestro para `tapOn`/`assertVisible` por texto.
+
+### Ubicación: ahora sí se cubre, con permiso y GPS falso ya preparados de antemano
+
+Corrige la decisión anterior documentada en "Pendiente" (más abajo, ahora
+resuelta): con `ACCESS_FINE_LOCATION` ya concedido de antemano
+(`adb shell pm grant`) y una posición falsa ya fijada
+(`adb emu geo fix -3.7038 40.4168`, Madrid) antes de correr la suite, enviar
+una ubicación real dentro de `group_location_message_roundtrip.yaml` es
+seguro y repetible — el permiso, una vez concedido, ya no puede
+revocarse desde dentro de un flow, así que ya no hay nada que "arriesgar":
+cada ejecución futura enviará una ubicación real de todas formas,
+igual que antes de este flow existir. Se borra en el mismo run vía
+selección múltiple.
+
+### Sticker: paquetes no disponibles, no cubierto por falta de datos (no de código)
+
+`sticker_picker_navigation.yaml` sigue siendo solo de navegación. Investigado
+a fondo si se podía extender a un envío real: la pestaña "Stickers" del
+picker (`StickerTab`, paquetes de imágenes reales vía `StickerPackViewModel`)
+muestra "Instala packs desde la tienda →" porque no hay ningún paquete
+instalado; abrir la tienda in-app (`StickerStoreSheet`, alcanzable con
+`tapOn: "\\+"` en la pestaña) confirma que tampoco hay ninguno **disponible**
+para instalar — "No hay packs disponibles". A diferencia de GIFs (que
+necesitan una clave de API de Giphy y red externa, fuera de alcance por
+diseño), esto es simplemente un catálogo vacío en el backend de Supabase de
+este proyecto — no hay ninguna fila en la tabla de paquetes de stickers
+disponibles. Sembrar una no es como sembrar un archivo en `/sdcard/`: es
+contenido de catálogo compartido, no datos de la cuenta QA, así que está
+fuera del alcance de "mutar libremente las cuentas QA" y no se hizo sin
+confirmación explícita. Documentado aquí en vez de forzarlo.
+
+De paso: `StickerBubble` renderiza `message.stickerUrl` como texto (fontSize
+64sp) tras pasarlo por `StickerValidation.sanitize()`, que descarta
+cualquier valor de más de 10 caracteres — pensado para una secuencia de
+emoji corta (el flujo `SendSticker(emoji: String)` original), pero el
+selector de paquetes de imágenes (`onStickerSelected(url)`) envía una URL
+real de bastante más de 10 caracteres por ese mismo intent. Si alguna vez
+se siembra un paquete de verdad, un sticker de imagen elegido ahí
+probablemente se renderizaría como una burbuja casi vacía (solo la hora),
+no la imagen — un bug de UI real pero no verificable sin datos de catálogo
+para reproducirlo; queda anotado para cuando se investigue el catálogo de
+stickers.
+
 ## Hallazgos de UX reales encontrados (y su estado)
 
+- **`inputText: " "` + `Backspace` NO evita de forma fiable que el teclado
+  predictivo sustituya el texto tecleado (arreglado en el flow, no en la
+  app)**: `profile_display_name_roundtrip.yaml` documentaba desde antes un
+  workaround para el autocompletado de Gboard (escribir "claudeqa" tras
+  sesiones repitiendo "claudeqa2" hacía que un `pressKey: Enter` a secas
+  aceptara la sugerencia en vez del texto literal) — pero el propio
+  workaround (tecleaba un espacio, luego lo borraba con Backspace, y
+  entonces sí pulsaba Enter) resultó **no funcionar**: verificado paso a
+  paso con capturas de pantalla que el simple hecho de teclear el espacio
+  ya sustituía el contenido del campo por la sugerencia resaltada
+  ("claudeqa2"), antes incluso de llegar al Backspace/Enter. La sustitución
+  ocurre al escribir el espacio, no al confirmar. El arreglo real: usar
+  `eraseText` para vaciar el campo y un único `inputText` seguido
+  directamente de `pressKey: Enter` — sin espacio de por medio — que sí
+  respeta el texto tecleado literalmente en todas las repeticiones
+  probadas. Esto tuvo una consecuencia real y no trivial: el propio bug del
+  workaround había dejado el `display_name` de la cuenta `@claudeqa` en el
+  backend permanentemente corrompido a `"claudeqa2"` (en vez de
+  `"claudeqa"`) tras una ejecución anterior de la versión antigua del
+  flow — ver el siguiente punto.
+- **Atribución de remitente en grupo, aparentemente incorrecta (en realidad,
+  dato de cuenta QA corrompido, ya arreglado)**:
+  `group_sender_attribution_navigation.yaml` (verificar que
+  `MessageBubble`'s cabecera de remitente muestra el nombre correcto al ver
+  un mensaje ajeno en un grupo) inicialmente parecía encontrar un bug de
+  atribución real: un mensaje enviado desde `@claudeqa` se mostraba, visto
+  desde `@claudeqa2`, con la cabecera **"claudeqa2"** — el propio nombre del
+  espectador, no el del remitente real. Investigado a fondo con
+  `MessageRepositoryImpl.observeMessages` (`senderMap[dbo.senderId]
+  ?.displayName`, correcto — usa el `senderId` real de cada fila, no el
+  usuario actual) antes de descartarlo como bug de la app: la Pantalla de
+  Perfil de `@claudeqa`, abierta directamente, confirmó que su propio
+  `display_name` en el backend literalmente decía `"claudeqa2"` — dato de
+  cuenta corrompido, no un bug de renderizado. Causa raíz encontrada:
+  el bug del punto anterior (`inputText: " "` + `Backspace` no siempre
+  evita la sustitución predictiva) había hecho que una ejecución anterior
+  de `profile_display_name_roundtrip.yaml` (posiblemente del otro agente
+  compartiendo `@claudeqa` en `emulator-5556`, o de una ejecución previa
+  propia) "restaurara" el nombre a "claudeqa2" en vez de "claudeqa" al
+  final de su propio roundtrip. Arreglado corrigiendo el dato directamente
+  (vía la propia UI de Perfil, con el `pressKey: Enter` sin espacio) en vez
+  de dejarlo como hallazgo sin resolver, ya que es dato de una cuenta QA
+  explícitamente mutable, no un bug de código — y arreglando también el
+  propio `profile_display_name_roundtrip.yaml` para que no vuelva a
+  corromperlo. Recordatorio para el futuro: con dos agentes compartiendo
+  las mismas dos cuentas QA en dos emuladores a la vez, una ejecución
+  concurrente de cualquier flow que mute un perfil compartido (nombre,
+  username, avatar...) puede pisar el trabajo del otro — no hay forma de
+  evitar esto por diseño mientras ambos agentes usen las mismas cuentas.
 - **Cursor al editar un mensaje (arreglado)**: `edit_message_roundtrip.yaml`
   encontró que al pulsar "Editar" en un mensaje propio, el campo de texto
   se rellenaba con el contenido original pero el cursor quedaba en la
@@ -437,6 +727,15 @@ justamente esto para verificar el comportamiento (envía un mensaje único,
 vacía el chat, reabre, confirma que el mensaje reaparece) y borra ese
 mensaje de prueba al final igual que `send_message.yaml`.
 
+Los flows `group_*.yaml` siguen el mismo principio para tipos con texto
+(text, poll — vía `delete_own_message.yaml`/selección múltiple) y lo
+extienden a los que no tienen texto (image, file, video, audio, contact,
+location, capturas de cámara) vía `delete_selected_message.yaml` — ver
+"Grupo real de prueba" más arriba. La única excepción real y documentada es
+el propio grupo "Maestro Test Group": la conversación en sí es permanente
+por diseño (decisión explícita del usuario), no algo que cada flow cree y
+borre.
+
 ## Pendiente / ideas
 
 - Flow de registro (`sign up`) con limpieza posterior de la cuenta creada
@@ -456,25 +755,15 @@ mensaje de prueba al final igual que `send_message.yaml`.
 - Wallpaper picker: probablemente requiere un Intent de galería externo
   (fuera del sandbox de Compose/Maestro) para elegir una imagen — no
   investigado a fondo.
-- **Compartir ubicación** (adjuntar → "Ubicación"): investigado a fondo,
-  no cubierto a propósito. `ChatScreen.kt`'s `onLocation` no abre ningún
-  diálogo de confirmación — si el permiso `ACCESS_FINE_LOCATION` ya está
-  concedido, toca directamente `ChatIntent.FetchAndSendLocation`, que
-  obtiene la ubicación real del dispositivo y envía el mensaje de una,
-  sin paso intermedio que cancelar. La única cobertura segura sería el
-  gate de permiso del sistema (si no está concedido, Android muestra su
-  propio diálogo de permiso) — pero eso depende del estado de permisos
-  ya otorgados en el dispositivo/emulador, que ni este flow ni Maestro
-  controlan de forma fiable entre ejecuciones; una vez concedido el
-  permiso una sola vez (a mano, por otro test, por otro agente), todas
-  las ejecuciones futuras enviarían una ubicación real sin que hubiera
-  forma de evitarlo desde el flow. Se descarta en vez de arriesgar un
-  envío real no reversible.
-- **Compartir contacto** (adjuntar → "Contacto"): investigado a fondo,
-  no cubierto. `onContact` en `ChatScreen.kt` lanza
-  `contactPickerLauncher` (`ActivityResultContracts.PickContact`), un
-  Intent real al selector de Contactos de Android — fuera del sandbox
-  de Compose/Maestro, misma categoría que el wallpaper picker.
+- **Sticker (paquetes de imagen reales)**: no cubierto por falta de datos
+  de catálogo (ni instalados ni disponibles en la tienda in-app de este
+  backend de Supabase), no por limitación técnica de Maestro — ver "Grupo
+  real de prueba" más arriba para el detalle completo, incluyendo un bug de
+  UI real (`StickerValidation.sanitize`) encontrado de paso pero no
+  verificable sin esos datos.
+- **GIFs** (pestaña GIFs del picker de stickers): necesita una clave de API
+  de Giphy configurada y red externa — fuera de alcance por diseño, sin
+  investigar más a fondo.
 - **Activar verificación en dos pasos** (Profile → "Activate"):
   investigado a fondo, no cubierto — tratado con la cautela extra que
   pedía el encargo. Tocar "Activate" llama a
@@ -496,19 +785,11 @@ mensaje de prueba al final igual que `send_message.yaml`.
   de confirmar que `onBackup` existe — descartado directamente por
   requerir casi con certeza un inicio de sesión real de Google, como ya
   anticipaba el encargo.
-- **Crear grupo de verdad + Group info + salir del grupo**: investigado
-  a fondo, se decide NO cubrirlo con datos reales (más allá de la
-  navegación del wizard que ya cubre `create_group_navigation.yaml`).
-  `GroupRepositoryImpl.leaveGroup` solo hace
-  `remoteSource.removeMember` + borra la fila local del miembro — no
-  borra ni marca la conversación en sí. Aunque ambas cuentas QA
-  (`@claudeqa` y `@claudeqa2`) salieran del grupo al terminar el test,
-  la fila de esa conversación de grupo (y sus mensajes) seguiría
-  existiendo para siempre en Supabase, inalcanzable desde la UI de
-  cualquiera de las dos cuentas pero presente como suciedad permanente
-  en el backend compartido — el mismo tipo de huella que la razón
-  original para no crear el grupo en `create_group_navigation.yaml`,
-  solo que sin siquiera la mitigación de "sigue siendo visible para
-  @claudeqa2".
+- ~~Crear grupo de verdad + Group info + salir del grupo~~: **resuelto** —
+  decisión explícita del usuario de crear un grupo real y permanente pese
+  a la suciedad de backend que eso implica. Ver "Grupo real de prueba y sus
+  flows de adjuntos" más arriba. `Group info`/salir del grupo en sí siguen
+  sin flow propio (fuera del alcance de este encargo, centrado en tipos de
+  mensaje/adjuntos), pero ya no por la razón original.
 - Integrar como job opcional de CI (requiere un emulador headless en el
   runner; de momento se ejecuta solo en local).

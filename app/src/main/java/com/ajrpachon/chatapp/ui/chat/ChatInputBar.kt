@@ -163,7 +163,11 @@ internal fun NormalInputBar(
                 )
             }
         } else {
-            IconButton(onClick = onMic, enabled = !busy) {
+            IconButton(
+                onClick = onMic,
+                enabled = !busy,
+                modifier = Modifier.testTag("chat_mic_button"),
+            ) {
                 Icon(Icons.Default.Mic, contentDescription = stringResource(R.string.chat_record_audio_cd))
             }
         }

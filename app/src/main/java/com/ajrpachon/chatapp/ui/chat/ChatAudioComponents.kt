@@ -43,6 +43,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -127,7 +128,7 @@ internal fun RecordingBar(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.error,
         )
-        IconButton(onClick = onStop) {
+        IconButton(onClick = onStop, modifier = Modifier.testTag("chat_recording_stop_button")) {
             Icon(
                 Icons.Default.Stop,
                 contentDescription = stringResource(R.string.chat_stop_recording_cd),
@@ -158,13 +159,17 @@ internal fun AudioPreviewBar(
             amplitudeHistory = amplitudeHistory,
             modifier = Modifier.weight(1f),
         )
-        IconButton(onClick = onDiscard, enabled = !isUploading) {
+        IconButton(
+            onClick = onDiscard,
+            enabled = !isUploading,
+            modifier = Modifier.testTag("chat_audio_discard_button"),
+        ) {
             Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.chat_discard_audio_cd))
         }
         if (isUploading) {
             CircularProgressIndicator(modifier = Modifier.size(40.dp).padding(8.dp))
         } else {
-            IconButton(onClick = onSend) {
+            IconButton(onClick = onSend, modifier = Modifier.testTag("chat_audio_send_button")) {
                 Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.chat_send_audio_cd))
             }
         }

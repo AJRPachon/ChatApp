@@ -2,6 +2,7 @@ package com.ajrpachon.chatapp.ui.chat
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -120,12 +121,13 @@ internal fun CallMessageBubble(message: MessageBO) {
 internal fun FileBubble(
     message: MessageBO,
     onOpenPdf: (url: String, filename: String) -> Unit = { _, _ -> },
+    onLongPress: () -> Unit = {},
 ) {
     val isPdf = message.fileUrl?.endsWith(".pdf", ignoreCase = true) == true
     if (isPdf) {
         PdfFileCard(message = message, onOpenPdf = onOpenPdf)
     } else {
-        GenericFileBubble(message = message)
+        GenericFileBubble(message = message, onLongPress = onLongPress)
     }
 }
 
@@ -207,8 +209,9 @@ private fun PdfFileCard(
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun GenericFileBubble(message: MessageBO) {
+private fun GenericFileBubble(message: MessageBO, onLongPress: () -> Unit = {}) {
     val timeText = remember(message.createdAt) {
         val local = message.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
         "%02d:%02d".format(local.hour, local.minute)
@@ -223,16 +226,23 @@ private fun GenericFileBubble(message: MessageBO) {
         Surface(
             shape = MaterialTheme.shapes.small,
             color = bubbleColor,
+            // combinedClickable (not a plain clickable) so a long-press here can still reach
+            // onLongPress instead of always firing onClick regardless of hold duration — same fix
+            // as MessageBubble's bare-image AsyncImage, needed for the same reason: without it,
+            // there's no way to long-press-to-select a file message for bulk delete.
             modifier = Modifier.widthIn(max = minOf(280.dp, maxBubbleWidth))
-                .clickable {
-                    message.fileUrl?.let { url ->
-                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                            data = android.net.Uri.parse(url)
-                            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                .combinedClickable(
+                    onClick = {
+                        message.fileUrl?.let { url ->
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                data = android.net.Uri.parse(url)
+                                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            runCatching { context.startActivity(intent) }
                         }
-                        runCatching { context.startActivity(intent) }
-                    }
-                },
+                    },
+                    onLongClick = onLongPress,
+                ),
         ) {
             Row(
                 modifier = Modifier.padding(10.dp),
@@ -279,8 +289,9 @@ internal fun formatFileSize(bytes: Long): String {
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-internal fun VideoBubble(message: MessageBO) {
+internal fun VideoBubble(message: MessageBO, onLongPress: () -> Unit = {}) {
     val timeText = remember(message.createdAt) {
         val local = message.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
         "%02d:%02d".format(local.hour, local.minute)
@@ -294,14 +305,19 @@ internal fun VideoBubble(message: MessageBO) {
             Surface(
                 shape = MaterialTheme.shapes.small,
                 color = if (message.isFromMe) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                modifier = Modifier.widthIn(max = minOf(240.dp, maxBubbleWidth)).clickable {
-                    val uri = android.net.Uri.parse(message.videoUrl)
-                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                        setDataAndType(uri, "video/*")
-                        addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                    }
-                    runCatching { context.startActivity(intent) }
-                },
+                // combinedClickable, not a plain clickable — see GenericFileBubble's onLongPress
+                // doc above for why (same bare-`clickable`-swallows-long-press issue).
+                modifier = Modifier.widthIn(max = minOf(240.dp, maxBubbleWidth)).combinedClickable(
+                    onClick = {
+                        val uri = android.net.Uri.parse(message.videoUrl)
+                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                            setDataAndType(uri, "video/*")
+                            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        runCatching { context.startActivity(intent) }
+                    },
+                    onLongClick = onLongPress,
+                ),
             ) {
                 Box(
                     modifier = Modifier

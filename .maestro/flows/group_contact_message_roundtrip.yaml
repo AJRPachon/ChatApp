@@ -1,0 +1,56 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens "Maestro Test Group", attaches a device contact via the
+# system Contacts picker (`ActivityResultContracts.PickContact` —
+# `ChatScreen.kt`'s onContact handler), confirms it renders as a contact
+# card, then deletes it via the multi-select bulk-delete path.
+#
+# Unlike the 1:1 exploration documented in .maestro/README.md's "Pendiente"
+# section (which called this out-of-scope as "a real Intent to the system
+# Contacts picker, out of the Compose/Maestro sandbox"), this flow embraces
+# that: the picker turned out to be reliably scriptable by matching the
+# seeded contact's name text, same as any other external-Activity screen in
+# this suite.
+#
+# REQUIRES a "MaestroContact" device contact already seeded before this flow
+# runs — not done here, since Maestro flows can't shell out to adb, and the
+# system "Add to contacts" UI's Save button was unreliable to automate (see
+# .maestro/README.md's "Sembrar un contacto de prueba" section: it stayed
+# visually disabled with no device account configured). Seed the contact
+# directly via the ContactsContract content provider instead — see the
+# README for the exact adb sequence.
+#
+# The Contacts picker Activity (`com.google.android.contacts`) renders as a
+# solid black screenshot via `adb shell screencap` on this emulator image —
+# confirmed via `uiautomator dump` that the real content (contact list) is
+# present and interactable underneath; it's a screencap/hardware-layer
+# quirk of that specific Activity, not a real rendering bug, so this flow
+# still finds and taps the contact by text normally.
+# Run with:
+#   maestro test .maestro/flows/group_contact_message_roundtrip.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: "Maestro Test Group"
+- tapOn: "Adjuntar|Attach"
+- tapOn: "Contacto"
+- extendedWaitUntil:
+    visible: "MaestroContact"
+    timeout: 15000
+- tapOn: "MaestroContact"
+- extendedWaitUntil:
+    visible:
+      id: "chat_input_field"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: "MaestroContact"
+    timeout: 20000
+- runFlow:
+    file: ../subflows/delete_selected_message.yaml
+    env:
+      MESSAGE_SELECTOR: "MaestroContact"
