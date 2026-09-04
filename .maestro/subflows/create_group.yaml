@@ -1,0 +1,40 @@
+appId: com.ajrpachon.chatapp
+---
+# Reusable building block — NOT meant to run standalone.
+# From the chat list, opens "New group", searches for MEMBER_USERNAME, selects
+# them, advances to the group-info step, fills in GROUP_NAME, and taps
+# "Create group" — waiting for navigation into the newly created group's chat
+# screen (asserted via GROUP_NAME showing as the chat top bar title).
+#
+# Unlike create_group_navigation.yaml (which stops before "Create" on purpose),
+# this actually creates the group — see .maestro/README.md's "Grupo real de
+# prueba" section for why that's an accepted, explicit exception to this
+# suite's usual no-permanent-data rule.
+#
+# Call it from a flow with:
+#   - runFlow:
+#       file: ../subflows/create_group.yaml
+#       env:
+#         GROUP_NAME: "Maestro Test Group"
+#         MEMBER_USERNAME: claudeqa2
+- tapOn:
+    id: "conversation_list_new_group_fab"
+- tapOn:
+    id: "create_group_search_field"
+- inputText: ${MEMBER_USERNAME}
+- extendedWaitUntil:
+    visible: "@${MEMBER_USERNAME}"
+    timeout: 10000
+# Tap "@username" (the row's subtitle), not the plain username alone — see
+# README's "search field can collide with its own result" note.
+- tapOn: "@${MEMBER_USERNAME}"
+- tapOn:
+    id: "create_group_next_button"
+- assertVisible: "Group name|Nombre del grupo"
+- tapOn: "Group name|Nombre del grupo"
+- inputText: ${GROUP_NAME}
+- hideKeyboard
+- tapOn: "Create group|Crear grupo"
+- extendedWaitUntil:
+    visible: ${GROUP_NAME}
+    timeout: 15000

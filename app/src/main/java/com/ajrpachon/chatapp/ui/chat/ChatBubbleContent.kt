@@ -97,6 +97,7 @@ internal fun MessageFooterContent(
     isTranslating: Boolean = false,
     onTranslate: () -> Unit = {},
     onDismissTranslation: () -> Unit = {},
+    onToggleSelect: () -> Unit = {},
 ) {
     if (message.audioUrl != null && MediaUrlValidator.isValid(message.audioUrl)) {
         RemoteAudioPlayer(
@@ -117,7 +118,7 @@ internal fun MessageFooterContent(
             LocationMessageFormat.parseMapsUrl(message.content)
         }
         if (locationUrl != null) {
-            LocationMessageCard(mapsUrl = locationUrl)
+            LocationMessageCard(mapsUrl = locationUrl, onLongPress = onToggleSelect)
         }
         Box(
             modifier = Modifier.combinedClickable(
@@ -288,8 +289,9 @@ private fun openLocationInMaps(context: android.content.Context, mapsUrl: String
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-internal fun LocationMessageCard(mapsUrl: String) {
+internal fun LocationMessageCard(mapsUrl: String, onLongPress: () -> Unit = {}) {
     val context = LocalContext.current
     val latLng = remember(mapsUrl) {
         runCatching {
@@ -307,9 +309,19 @@ internal fun LocationMessageCard(mapsUrl: String) {
         shape = RoundedCornerShape(8.dp),
         color = MaterialTheme.colorScheme.surfaceVariant,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+        // combinedClickable, not a plain clickable — see GenericFileBubble's onLongPress doc for
+        // why (a bare `clickable` always fires onClick on release regardless of hold duration,
+        // swallowing long-press before it can reach a parent's long-click handler). This card
+        // also sits as a sibling of — not nested inside — the per-message dropdown-menu Box in
+        // MessageFooterContent, so long-pressing it could never have reached that menu anyway;
+        // onLongPress instead routes to the same multi-select toggle every other attachment type
+        // uses (see delete_selected_message.yaml in .maestro/).
         modifier = Modifier
             .widthIn(min = 160.dp, max = 240.dp)
-            .clickable { openLocationInMaps(context, mapsUrl, latLng) },
+            .combinedClickable(
+                onClick = { openLocationInMaps(context, mapsUrl, latLng) },
+                onLongClick = onLongPress,
+            ),
     ) {
         Column {
             if (staticMapUrl != null) {

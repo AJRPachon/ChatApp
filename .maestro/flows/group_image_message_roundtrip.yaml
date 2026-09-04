@@ -1,0 +1,44 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens "Maestro Test Group", attaches an image from the gallery
+# (Android's modern permission-less Photo Picker — see .maestro/README.md),
+# confirms it renders, then deletes it via the multi-select bulk-delete path
+# (subflows/delete_selected_message.yaml) — a bare image message has blank
+# `content`, so the per-message text-longpress dropdown from
+# delete_own_message.yaml never renders for it.
+#
+# REQUIRES a JPEG already seeded into MediaStore before this flow runs — not
+# done here, since Maestro flows can't shell out to adb. See
+# .maestro/README.md's "Sembrar medios para el picker" section for the exact
+# adb sequence (push to /sdcard/Pictures/ + `content insert` + a
+# MEDIA_SCANNER_SCAN_FILE broadcast) that makes a locally-pushed file show up
+# in the Photo Picker.
+# Run with:
+#   maestro test .maestro/flows/group_image_message_roundtrip.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: "Maestro Test Group"
+- tapOn: "Adjuntar|Attach"
+- tapOn: "Galería"
+- extendedWaitUntil:
+    visible: "Photo taken.*"
+    timeout: 15000
+- tapOn: "Photo taken.*"
+- tapOn: "Done"
+- extendedWaitUntil:
+    visible:
+      id: "chat_input_field"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: "Imagen|Image"
+    timeout: 20000
+- runFlow:
+    file: ../subflows/delete_selected_message.yaml
+    env:
+      MESSAGE_SELECTOR: "Imagen|Image"

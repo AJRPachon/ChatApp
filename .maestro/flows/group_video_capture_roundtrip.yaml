@@ -1,0 +1,53 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens "Maestro Test Group", taps "Video" in the attach sheet —
+# which, unlike "Galería", is real camera capture
+# (`ActivityResultContracts.CaptureVideo`, see ChatScreen.kt), not a
+# gallery/file picker — records a few seconds with the emulator's virtual
+# camera, confirms the review screen and the sent message, then deletes it
+# via the multi-select bulk-delete path.
+#
+# This is why no MP4 needs to be seeded into MediaStore for "Video" the way
+# a JPEG is for "Galería": the attach button never consults the gallery at
+# all. Same shutter/review UI as "Cámara" (AOSP camera2 app), just started
+# in video mode — tap Shutter to start recording, tap it again to stop, then
+# "Done" on the review screen (a still-frame preview with Play/Done/Cancel).
+#
+# REQUIRES android.permission.CAMERA already granted (adb pm grant — see
+# .maestro/README.md), same as group_camera_photo_roundtrip.yaml — this
+# flow doesn't handle the system permission dialog itself.
+# Run with:
+#   maestro test .maestro/flows/group_video_capture_roundtrip.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: "Maestro Test Group"
+- tapOn: "Adjuntar|Attach"
+- tapOn: "Video"
+- extendedWaitUntil:
+    visible: "Shutter"
+    timeout: 15000
+- tapOn: "Shutter"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: "Shutter"
+- extendedWaitUntil:
+    visible: "Done"
+    timeout: 10000
+- tapOn: "Done"
+- extendedWaitUntil:
+    visible:
+      id: "chat_input_field"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: "Video"
+    timeout: 20000
+- runFlow:
+    file: ../subflows/delete_selected_message.yaml
+    env:
+      MESSAGE_SELECTOR: "Video"

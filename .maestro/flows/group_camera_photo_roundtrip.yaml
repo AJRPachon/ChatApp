@@ -1,0 +1,47 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens "Maestro Test Group", taps "Cámara" (TakePicture contract
+# — real capture, not a picker), drives the AOSP emulator camera app's
+# shutter + review screen, confirms the captured photo renders as a message,
+# then deletes it via the multi-select bulk-delete path.
+#
+# Goes further than the encargo's "fine to just verify it launches without
+# crashing" fallback: the emulator's virtual camera (a static test-pattern
+# image) turned out to be reliably scriptable end-to-end — shutter → review
+# ("Done"/"Retake"/"Cancel") → back in the app with a real image sent.
+#
+# REQUIRES android.permission.CAMERA already granted (adb pm grant — see
+# .maestro/README.md) since this flow doesn't handle the system permission
+# dialog itself.
+# Run with:
+#   maestro test .maestro/flows/group_camera_photo_roundtrip.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: "Maestro Test Group"
+- tapOn: "Adjuntar|Attach"
+- tapOn: "Cámara"
+- extendedWaitUntil:
+    visible: "Shutter"
+    timeout: 15000
+- tapOn: "Shutter"
+- extendedWaitUntil:
+    visible: "Done"
+    timeout: 10000
+- tapOn: "Done"
+- extendedWaitUntil:
+    visible:
+      id: "chat_input_field"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: "Imagen|Image"
+    timeout: 20000
+- runFlow:
+    file: ../subflows/delete_selected_message.yaml
+    env:
+      MESSAGE_SELECTOR: "Imagen|Image"

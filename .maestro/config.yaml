@@ -46,3 +46,13 @@ executionOrder:
     - flows/ai_assistant_navigation.yaml
     - flows/clear_chat_roundtrip.yaml
     - flows/status_compose_navigation.yaml
+    - flows/group_text_message_roundtrip.yaml
+    - flows/group_sender_attribution_navigation.yaml
+    - flows/group_image_message_roundtrip.yaml
+    - flows/group_file_message_roundtrip.yaml
+    - flows/group_camera_photo_roundtrip.yaml
+    - flows/group_video_capture_roundtrip.yaml
+    - flows/group_audio_message_roundtrip.yaml
+    - flows/group_location_message_roundtrip.yaml
+    - flows/group_contact_message_roundtrip.yaml
+    - flows/group_poll_message_roundtrip.yaml

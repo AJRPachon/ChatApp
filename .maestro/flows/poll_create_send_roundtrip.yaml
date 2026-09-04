@@ -65,4 +65,4 @@ appId: com.ajrpachon.chatapp
 - runFlow:
     file: ../subflows/delete_selected_message.yaml
     env:
-      SELECT_TARGET: "Maestro poll question"
+      MESSAGE_SELECTOR: "Maestro poll question"
