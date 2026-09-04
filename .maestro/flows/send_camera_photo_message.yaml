@@ -1,0 +1,55 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the conversation with @claudeqa2, captures and sends a
+# real photo via Attach → Cámara (`ActivityResultContracts.TakePicture()`
+# — a real system Camera app Activity, same category as
+# send_video_message.yaml's video capture), confirms it renders as an
+# image bubble, then deletes it the same way as
+# send_image_message.yaml — this ends up on the exact same
+# `ChatIntent.SendImages` path as a gallery pick, so it's a captionless
+# standalone image with the same "long-press opens the viewer instead of
+# selecting" quirk.
+#
+# Same fragility class as send_video_message.yaml: the Camera app's
+# shutter/confirm controls carry no content-description/text on this
+# AVD, so this taps fixed relative screen points (verified against the
+# real emulator's stock Camera app) instead of a text/id selector.
+#
+# REQUIRES `android.permission.CAMERA` already granted beforehand:
+#   adb -s emulator-5556 shell pm grant com.ajrpachon.chatapp android.permission.CAMERA
+# Run with:
+#   maestro test .maestro/flows/send_camera_photo_message.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- tapOn: "Adjuntar|Attach"
+- tapOn: "Cámara"
+- extendedWaitUntil:
+    notVisible:
+      id: "chat_input_field"
+    timeout: 8000
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    point: "51%,95%"
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    point: "51%,95%"
+- extendedWaitUntil:
+    visible:
+      id: "chat_input_field"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 4000
+- assertVisible: "Imagen|Image"
+- runFlow:
+    file: ../subflows/delete_selected_media_message.yaml
+    env:
+      POINT: "8%,77%"

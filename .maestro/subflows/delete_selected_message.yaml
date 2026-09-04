@@ -1,0 +1,26 @@
+appId: com.ajrpachon.chatapp
+---
+# Reusable building block — NOT meant to run standalone.
+# Cleanup path for message types that have NO per-message context menu
+# reachable by a direct long-press on their own content (any type
+# without a caption: image/video/file/sticker/contact/poll/location —
+# see README "Multi-select delete for non-text bubbles" for the root
+# cause: MessageFooterContent's own long-press-to-open-DropdownMenu Box
+# only renders when `message.content` is non-blank, and even the one
+# non-blank case here (location) doesn't render its Text either, so
+# there's nothing under that Box to press). Long-presses the element
+# matched by SELECT_TARGET (any visible text or content-description
+# unique to that message right now) to enter multi-select mode instead,
+# taps the top-bar delete icon, and confirms the AlertDialog.
+# Call it from a flow with:
+#   - runFlow:
+#       file: ../subflows/delete_selected_message.yaml
+#       env:
+#         SELECT_TARGET: "Imagen|Image"
+- longPressOn: ${SELECT_TARGET}
+- tapOn: "Eliminar seleccionados|Delete selected"
+- extendedWaitUntil:
+    visible: "Eliminar mensajes|Delete messages"
+    timeout: 5000
+- tapOn: "Eliminar|Delete"
+- assertNotVisible: "Eliminar mensajes|Delete messages"

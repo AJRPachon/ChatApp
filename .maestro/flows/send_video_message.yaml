@@ -1,0 +1,78 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the conversation with @claudeqa2, records and sends a
+# real video, confirms it renders as a video bubble, then deletes it via
+# subflows/delete_selected_media_message.yaml.
+#
+# IMPORTANT — "Video" in the attach menu is NOT a gallery/file picker:
+# `ChatScreen.kt` wires `onAttachVideo` to
+# `ActivityResultContracts.CaptureVideo()`, i.e. it always launches the
+# real system Camera app in video mode and records a brand new clip —
+# there is no way to attach an existing video file from this button (a
+# `.mp4` seeded via `adb push`, unlike the image/file flows, is never
+# read). So unlike send_image_message.yaml this can't be pre-seeded —
+# it has to actually drive the system Camera app's record/stop/confirm
+# UI, which (like send_contact_message.yaml's system Contacts picker)
+# is a real external Activity outside Compose/Maestro's own tree.
+#
+# The Camera app's record/stop/confirm controls carry no
+# content-description/text in its accessibility tree on this AVD (API
+# 36 system Camera, `com.android.camera2` or equivalent) — verified via
+# `uiautomator dump` — so this flow taps fixed relative screen points
+# instead of a text/id selector, same last-resort category as
+# `delete_selected_media_message.yaml`'s margin-tap. This makes it the
+# most layout-fragile flow in this suite: it depends on the stock
+# Camera app's shutter button staying centered near the bottom of the
+# screen across emulator/API image updates. If a future AVD image moves
+# it, this flow needs its POINTs re-measured (screenshot the camera
+# screen and remeasure), not rewritten.
+#
+# REQUIRES `android.permission.CAMERA` already granted beforehand (same
+# reasoning as RECORD_AUDIO/READ_CONTACTS elsewhere in this suite):
+#   adb -s emulator-5556 shell pm grant com.ajrpachon.chatapp android.permission.CAMERA
+#
+# Cleanup uses the same margin-long-press trick as the image/file/
+# location/contact flows: VideoBubble.kt's thumbnail Surface has its own
+# `Modifier.clickable` (opens the video in an external player), so a
+# long-press on the bubble itself would open that instead of entering
+# multi-select.
+# Run with:
+#   maestro test .maestro/flows/send_video_message.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- tapOn: "Adjuntar|Attach"
+- tapOn: "Video"
+- extendedWaitUntil:
+    notVisible:
+      id: "chat_input_field"
+    timeout: 8000
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    point: "51%,95%"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn:
+    point: "51%,95%"
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    point: "51%,95%"
+- extendedWaitUntil:
+    visible:
+      id: "chat_input_field"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible: "Video"
+- runFlow:
+    file: ../subflows/delete_selected_media_message.yaml
+    env:
+      POINT: "15%,77%"

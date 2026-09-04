@@ -1,0 +1,74 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the conversation with @claudeqa2, shares a real device
+# contact via Attach → Contacto (`ActivityResultContracts.PickContact`,
+# a genuine system Contacts-app Activity), confirms it renders as a
+# contact card, then deletes it via
+# subflows/delete_selected_media_message.yaml.
+#
+# REQUIRES a device contact to exist beforehand (outside Maestro — no
+# shell-command step exists in a flow, and there's no in-app way to add
+# one either since ChatApp only ever *reads* contacts). Seed exactly one
+# so the picker's single row is unambiguous:
+#   adb -s emulator-5556 shell am start -a android.intent.action.INSERT \
+#     -t vnd.android.cursor.dir/person
+#   # then fill "First name"/"Phone" and tap Save by hand or via adb
+#   # input — see this suite's notes for why `-e name`/`-e phone` extras
+#   # on that same `am start` line did not reliably prefill the form on
+#   # this emulator image (unclear whether a shell-quoting issue with
+#   # the space in a multi-word extra, or the field simply not honoring
+#   # those extras) and had to be typed in afterwards instead. Also note
+#   # the *legacy* mimetype `vnd.android.cursor.dir/contact` resolves to
+#   # nothing on this device — the installed com.google.android.contacts
+#   # only registers `vnd.android.cursor.dir/person`.
+# Also requires `android.permission.READ_CONTACTS` already granted
+# (same reasoning as RECORD_AUDIO in send_audio_message.yaml — no
+# reliable way to click through the system permission dialog):
+#   adb -s emulator-5556 shell pm grant com.ajrpachon.chatapp android.permission.READ_CONTACTS
+#
+# **Known cosmetic bug, not a blocker**: on this AVD/API level, the
+# picker's own screen (com.google.android.contacts'
+# ContactPickerActivity) renders fully BLACK — verified via
+# `uiautomator dump` that the contact list is genuinely present in the
+# accessibility tree (a real "<Name>" text node with real bounds) while
+# the screen paints solid black on top of it. A human tester would see
+# nothing there, but Maestro drives the accessibility tree, not pixels,
+# so `tapOn` still finds and taps the (invisible) row correctly. Confirmed
+# this is a rendering-only glitch, not missing content, before relying on
+# it here — if it turns out to be flakier on other emulator images/API
+# levels than the one this was verified against, that would be a reason
+# to reconsider this flow.
+#
+# Cleanup uses the same margin-long-press trick as the image/file/
+# location flows: ContactBubble.kt's name/phone header has no
+# `clickable` of its own, but the two footer `TextButton`s
+# ("Send invitation"/"Add to contacts") do, and a long-press anywhere
+# on the card risks landing inside the Card's own content rather than
+# the row-level multi-select handler above it — the point keeps this
+# flow consistent with the others rather than relying on exactly where
+# the header text happens to sit.
+# Run with:
+#   maestro test .maestro/flows/send_contact_message.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- tapOn: "Adjuntar|Attach"
+- tapOn: "Contacto"
+- extendedWaitUntil:
+    visible: "MaestroContact"
+    timeout: 10000
+- tapOn: "MaestroContact"
+- extendedWaitUntil:
+    visible: "MaestroContact"
+    timeout: 10000
+- assertVisible: "Enviar invitación|Send invitation"
+- runFlow:
+    file: ../subflows/delete_selected_media_message.yaml
+    env:
+      POINT: "15%,84%"
