@@ -39,6 +39,19 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
+ * Whether [this] message can join/start a consecutive-image group (see [ChatMessageList]'s
+ * `isInsideGroup`/`isImageGroupStart`) — a standalone image with no audio, and not soft-deleted.
+ * That last condition matters beyond this one message: without it, a run of soft-deleted image
+ * messages (imageUrl survives a soft-delete; only `isDeleted` flips) still counts toward the
+ * `group.size > 2` threshold below, so two already-deleted images followed by one freshly-sent
+ * one silently render as a 3-photo [ImageGroupBubble] — hiding the "message was deleted"
+ * placeholders the deleted ones should show instead of the new image's own standalone bubble.
+ * Verified for real: exactly that sequence (two prior deleted image sends, then a new one)
+ * rendered as a single misleading "N photos" summary before this check was added.
+ */
+private fun MessageBO.isGroupableImage(): Boolean = imageUrl != null && audioUrl == null && !isDeleted
+
+/**
  * [ChatScreen]'s `Scaffold` content: the message list itself (paged, with the pending-image-
  * batch placeholder and image-group/suppressed-message logic), the loading skeleton, the
  * scroll-to-bottom FAB, and the search overlay. Extracted per
@@ -134,14 +147,16 @@ internal fun ChatMessageList(
                 var prevIndex = index - 1
                 while (prevIndex >= 0 && lazyPagingItems[prevIndex]?.id in state.mediaUpload.suppressedImageMessageIds) prevIndex--
                 val prevMessage = if (prevIndex >= 0) lazyPagingItems[prevIndex] else null
+                // A soft-deleted message never joins/starts a group — see isGroupableImage's doc
+                // for why treating it as groupable is a real bug, not just a stylistic choice.
                 val isInsideGroup = prevMessage != null
-                    && message.imageUrl != null && message.audioUrl == null
-                    && prevMessage.imageUrl != null && prevMessage.audioUrl == null
+                    && message.isGroupableImage()
+                    && prevMessage.isGroupableImage()
                     && prevMessage.senderId == message.senderId
 
                 if (!isInsideGroup) {
                 Box(Modifier.padding(top = 8.dp)) {
-                    val isImageGroupStart = message.imageUrl != null && message.audioUrl == null
+                    val isImageGroupStart = message.isGroupableImage()
                     if (isImageGroupStart) {
                         // Collect consecutive images from the same sender starting at this index.
                         // Accessing lazyPagingItems[j] triggers loading of the next page if j is
@@ -151,7 +166,7 @@ internal fun ChatMessageList(
                         while (j < lazyPagingItems.itemCount) {
                             val next = lazyPagingItems[j] ?: break
                             if (next.id in state.mediaUpload.suppressedImageMessageIds) break
-                            if (next.imageUrl != null && next.audioUrl == null && next.senderId == message.senderId) {
+                            if (next.isGroupableImage() && next.senderId == message.senderId) {
                                 group.add(next)
                                 j++
                             } else break

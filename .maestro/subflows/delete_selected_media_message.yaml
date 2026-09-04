@@ -1,0 +1,35 @@
+appId: com.ajrpachon.chatapp
+---
+# Reusable building block — NOT meant to run standalone.
+# Cleanup path for a message whose only visible content is media that is
+# ITSELF a plain `Modifier.clickable` (a standalone image/GIF with no
+# caption — see MessageBubble.kt: `mediaIsStandalone`). Long-pressing
+# that content does NOT enter multi-select like it does for every other
+# bubble type: the inner `AsyncImage.clickable { onImageClick(...) }`
+# resolves the whole press-and-release as a plain tap regardless of how
+# long it was held, so a real "long press" on the image itself opens the
+# full-screen viewer instead of selecting the message — verified via a
+# real long-press in this exact scenario. The bubble is capped to 85% of
+# the row width (`ChatBubbleSlot`/`BUBBLE_MAX_WIDTH_FRACTION`) and
+# pinned to the outgoing (right) edge, so there's a blank ~15% margin on
+# the left of an outgoing standalone-media bubble that belongs to the
+# OUTER row Box instead (the one whose `onLongClick = onToggleSelect`
+# actually reaches multi-select). Long-pressing a point in that margin,
+# at the vertical position of the message (POINT, e.g. "8%,80%" for the
+# most-recently-sent message sitting just above the input bar), triggers
+# multi-select instead — then the rest is identical to
+# delete_selected_message.yaml (top-bar delete icon → confirm dialog).
+# Call it from a flow with:
+#   - runFlow:
+#       file: ../subflows/delete_selected_media_message.yaml
+#       env:
+#         POINT: "8%,80%"
+- longPressOn:
+    point: ${POINT}
+- assertVisible: "1 seleccionados|1 selected"
+- tapOn: "Eliminar seleccionados|Delete selected"
+- extendedWaitUntil:
+    visible: "Eliminar mensajes|Delete messages"
+    timeout: 5000
+- tapOn: "Eliminar|Delete"
+- assertNotVisible: "Eliminar mensajes|Delete messages"

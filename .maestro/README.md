@@ -28,6 +28,13 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     theme_toggle_roundtrip.yaml
     send_message.yaml
     message_reaction_roundtrip.yaml
+    send_image_message.yaml
+    send_camera_photo_message.yaml
+    send_video_message.yaml
+    send_file_message.yaml
+    send_audio_message.yaml
+    send_location_message.yaml
+    send_contact_message.yaml
     background_resume_chat_list.yaml
     background_resume_chat_screen.yaml
     background_resume_profile.yaml
@@ -52,6 +59,7 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     mute_duration_dialog_navigation.yaml
     chat_wallpaper_picker_navigation.yaml
     poll_create_navigation.yaml
+    poll_create_send_roundtrip.yaml
     ai_assistant_navigation.yaml
     clear_chat_roundtrip.yaml
     status_compose_navigation.yaml
@@ -90,6 +98,8 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     mute_conversation.yaml        # parametrizado: env CONTACT_NAME
     unmute_conversation.yaml      # parametrizado: env CONTACT_NAME
     set_theme.yaml                 # parametrizado: env THEME_OPTION
+    delete_selected_message.yaml         # parametrizado: env MESSAGE_SELECTOR
+    delete_selected_media_message.yaml   # parametrizado: env POINT
     create_group.yaml              # parametrizado: env GROUP_NAME, MEMBER_USERNAME
 ```
 
@@ -125,6 +135,54 @@ maestro test .maestro/flows -e QA_EMAIL="$QA_EMAIL" -e QA_PASSWORD="$QA_PASSWORD
 
 `maestro studio` abre un inspector interactivo para explorar el árbol de la UI
 y grabar pasos nuevos.
+
+## Setup previo para los flows de adjuntos
+
+Siete flows envían un adjunto real (`send_image_message.yaml`,
+`send_camera_photo_message.yaml`, `send_video_message.yaml`,
+`send_file_message.yaml`, `send_audio_message.yaml`,
+`send_location_message.yaml`, `send_contact_message.yaml`) y necesitan
+estado del dispositivo que ningún paso de Maestro puede crear (no existe
+un comando de shell dentro de un flow). A diferencia de las credenciales
+QA, este estado es duradero — sobrevive a `launchApp: clearState` (que
+solo limpia `com.ajrpachon.chatapp`, no el resto del dispositivo) y a
+sucesivas ejecuciones — así que se hace una sola vez por emulador, no
+antes de cada run:
+
+```bash
+# Permisos (sin diálogo del sistema que estos flows puedan pulsar)
+adb -s emulator-5556 shell pm grant com.ajrpachon.chatapp android.permission.CAMERA
+adb -s emulator-5556 shell pm grant com.ajrpachon.chatapp android.permission.RECORD_AUDIO
+adb -s emulator-5556 shell pm grant com.ajrpachon.chatapp android.permission.READ_CONTACTS
+adb -s emulator-5556 shell pm grant com.ajrpachon.chatapp android.permission.ACCESS_FINE_LOCATION
+adb -s emulator-5556 shell pm grant com.ajrpachon.chatapp android.permission.ACCESS_COARSE_LOCATION
+
+# Ubicación fija y determinista (persiste hasta reiniciar el emulador)
+adb -s emulator-5556 emu geo fix -3.7038 40.4168
+
+# Imagen semilla para el Photo Picker (Attach → Galería)
+adb -s emulator-5556 push seed.jpg /sdcard/Pictures/maestro_seed.jpg
+adb -s emulator-5556 shell content insert --uri content://media/external/images/media --bind _data:s:/sdcard/Pictures/maestro_seed.jpg
+adb -s emulator-5556 shell am force-stop com.google.android.photopicker
+adb -s emulator-5556 shell am force-stop com.google.android.providers.media.module
+
+# Archivo semilla para el selector de documentos (Attach → Archivo)
+adb -s emulator-5556 push seed.txt /sdcard/Download/maestro_seed.txt
+
+# Un contacto de dispositivo para Attach → Contacto (ver
+# send_contact_message.yaml para por qué los extras -e name/-e phone de
+# `am start` no rellenaron el formulario de forma fiable en esta imagen
+# de emulador, y hubo que escribirlos a mano/por adb después)
+adb -s emulator-5556 shell am start -a android.intent.action.INSERT -t vnd.android.cursor.dir/person
+# … completar "First name"/"Phone" y pulsar "Save" (a mano o con adb input) …
+```
+
+`send_image_message.yaml` deja documentado un matiz importante: cualquier
+`adb shell screencap` directo a almacenamiento del dispositivo (incluida
+la raíz de `/sdcard`, no solo `Pictures`/`DCIM`) se auto-indexa como foto
+y contamina el Photo Picker en ejecuciones futuras — usar
+`adb exec-out screencap -p > local.png` en su lugar para depurar, que
+nunca toca el almacenamiento del dispositivo.
 
 ## Credenciales de la cuenta QA
 
@@ -242,6 +300,37 @@ ver "Grupo real de prueba" más abajo).
   dejó "0 selected" en vez de seleccionar al usuario). Selecciona por
   algo que solo esté en la fila, como el `@username` del subtítulo
   (`tapOn: "@claudeqa2"`), no por el nombre a secas.
+- **`ModalBottomSheet` tampoco propaga `testTagsAsResourceId`**, no solo
+  `DropdownMenu`: `poll_create_send_roundtrip.yaml` añadió
+  `Modifier.testTag("poll_create_button")` al botón de
+  `CreatePollSheetContent` y Maestro nunca lo encontró por `id`, aunque
+  el propio texto del botón sí era visible en pantalla en ese momento —
+  se revirtió el `testTag` (no aporta nada aquí) y en su lugar se
+  selecciona por texto con `index: 1`, ya que "Crear encuesta"/
+  "Create poll" aparece dos veces a la vez (título de la hoja + botón) y
+  el texto por sí solo es ambiguo. Confirma que la excepción de arriba
+  aplica a *cualquier* contenido de un `ModalBottomSheet`, no solo a los
+  `DropdownMenu`.
+- **Un `Modifier.clickable` propio en el contenido de un mensaje se come
+  el long-press antes de que llegue al selector múltiple de la fila**:
+  visto en `send_image_message.yaml` (la `AsyncImage` de una imagen sin
+  texto tiene `.clickable { onImageClick(...) }` para abrir el visor a
+  pantalla completa), y de nuevo en `send_file_message.yaml`,
+  `send_location_message.yaml`, `send_contact_message.yaml` y
+  `send_camera_photo_message.yaml`/`send_video_message.yaml` — todos con
+  su propio `clickable` de un solo toque (abrir imagen/archivo/Maps/
+  intent de contacto/reproductor). Un long-press real y sostenido sobre
+  ese contenido se resuelve como un simple toque (abre el visor/intent)
+  en vez de disparar `onLongClick = onToggleSelect` en la fila que lo
+  envuelve — verificado con una pulsación larga real, no una suposición
+  de lectura de código. `subflows/delete_selected_media_message.yaml`
+  evita esto pulsando el margen en blanco junto a la burbuja (la fila
+  completa ocupa el 100% del ancho pero la burbuja está capada al 85% y
+  pegada al borde saliente, dejando un margen sin `clickable` propio en
+  el lado "interior") en vez del contenido de la burbuja en sí. El audio
+  (`send_audio_message.yaml`) es la excepción: su forma de onda es un
+  `Canvas` puro sin gesto propio, así que un long-press directo sobre
+  ella sí llega al selector múltiple sin necesidad de este rodeo.
 
 ## Subflows reutilizables
 
@@ -701,6 +790,60 @@ stickers.
   estado una vez publicado. Es la razón por la que
   `status_compose_navigation.yaml` no publica un estado real: no habría
   forma de limpiarlo después a través de la app.
+- **El Photo Picker (`com.google.android.photopicker`) no indexa un
+  archivo recién insertado hasta que se reinicia**: un `adb push` +
+  `content insert` en MediaStore deja la imagen consultable por
+  `content query` de inmediato, pero el propio Picker (que mantiene su
+  índice propio, separado de MediaStore) seguía mostrando "No photos
+  yet" hasta hacer `am force-stop` de `com.google.android.photopicker`
+  **y** `com.google.android.providers.media.module` — verificado
+  directamente probando ambos por separado. No es un bug de ChatApp (el
+  Picker es un componente del sistema fuera de su control), documentado
+  aquí porque `send_image_message.yaml` depende de este paso de setup.
+- **`ACTION_OPEN_DOCUMENT` recuerda la última carpeta/raíz explorada
+  entre lanzamientos, sobreviviendo a `launchApp: clearState`**: la
+  primera vez que se abre "Archivo" en un emulador nuevo, el picker
+  (`com.google.android.documentsui`) aterriza en su pestaña "Recent"
+  (vacía para un archivo recién insertado — mismo tipo de lag de índice
+  que el Photo Picker); a partir de ahí, recuerda haber navegado a
+  "Downloads" y abre directamente ahí en cada ejecución siguiente —
+  porque ese estado vive en las preferencias de DocumentsUI, un paquete
+  aparte, no en `com.ajrpachon.chatapp`. `send_file_message.yaml` maneja
+  ambos casos con `runFlow: when: notVisible` en vez de asumir uno fijo.
+- **El picker de contactos del sistema renderiza en negro sólido en este
+  AVD, pero el contenido y la interacción funcionan igual**: al abrir
+  Attach → Contacto, la pantalla de `com.google.android.contacts`
+  (`ContactPickerActivity`) se ve completamente negra — verificado con
+  `uiautomator dump` que la fila del contacto ("MaestroContact") sí
+  existe en el árbol de accesibilidad, con sus bounds reales, mientras
+  la pantalla no pinta nada encima. Como Maestro conduce el árbol de
+  accesibilidad y no los píxeles, `tapOn`/`send_contact_message.yaml`
+  funcionan sin cambios pese a que un humano viendo la pantalla no vería
+  nada que tocar. Es un glitch de rendering de esa build de la app de
+  Contactos de Google en esta imagen de emulador concreta, no algo
+  atribuible a ChatApp ni a Maestro.
+- **La vista previa de "último mensaje" en la lista de chats no se
+  actualiza al borrar ese mensaje**: tras enviar y borrar un mensaje de
+  audio con `send_audio_message.yaml`, `ConversationListScreen` siguió
+  mostrando "🎤 Audio (0:06)" como último mensaje de `@claudeqa2` en vez
+  de reflejar el borrado — la fila de la propia conversación abierta sí
+  se actualiza correctamente al placeholder "This message was deleted".
+  Probablemente un campo `lastMessage` desnormalizado en la fila de
+  conversación que no se refresca en el flujo de borrado. No investigado
+  a fondo (no bloquea ningún flow: el contenido del chat en sí es
+  correcto) — mencionado aquí por si aparece de nuevo al depurar otro
+  flow y resulta desconcertante.
+- **La tienda de stickers no tiene ningún pack disponible en esta
+  instalación**: `Attach → Stickers → +` abre `StickerStoreSheet` y
+  muestra "No hay packs disponibles" — investigado hasta
+  `StickerPackRepositoryImpl`/`StickerPackDao`: los packs se leen de una
+  tabla Room puramente local, sin ningún seed/prepopulate en
+  `DatabaseBuilder.kt` ni en ningún otro sitio del código. Es decir, no
+  hay ningún sticker instalable a través de la UI en una instalación
+  nueva, con ninguna cuenta. Por eso `sticker_picker_navigation.yaml`
+  sigue siendo solo de navegación (abre el picker y cancela) — no se
+  extendió a un envío real porque no hay ningún sticker que seleccionar,
+  no por una limitación de Maestro.
 
 ## Higiene de datos
 
@@ -714,7 +857,20 @@ placeholders con cada ejecución; es ruido inofensivo, no un dato
 sensible ni de prueba con contenido.
 
 Sigue el mismo principio en cualquier flow nuevo que escriba datos: si el
-flow los crea, el propio flow los borra al final.
+flow los crea, el propio flow los borra al final. Los siete flows de
+adjuntos (`send_image_message.yaml` y el resto listado en "Setup previo
+para los flows de adjuntos") siguen el mismo patrón: cada uno borra su
+mensaje justo después de verificarlo, vía
+`subflows/delete_selected_media_message.yaml` (o
+`delete_selected_message.yaml` para la encuesta) en vez de
+`delete_own_message.yaml` — ver la sección de selectores más arriba para
+por qué. Los propios *archivos/contacto semilla* en el dispositivo
+(`maestro_seed.jpg`, `maestro_seed.txt`, el contacto "MaestroContact")
+no se borran entre ejecuciones a propósito: son datos de setup del
+dispositivo de prueba, reutilizados en cada run, no datos de prueba
+generados dentro de la conversación — la distinción que importa para
+esta política es qué termina visible en la conversación de QA, no qué
+existe en el disco del emulador.
 
 `clear_chat_roundtrip.yaml` usa la misma cuenta y conversación compartidas,
 pero su "borrado" (`ConversationRepositoryImpl.clearChat` →
@@ -755,6 +911,25 @@ borre.
 - Wallpaper picker: probablemente requiere un Intent de galería externo
   (fuera del sandbox de Compose/Maestro) para elegir una imagen — no
   investigado a fondo.
+- **Compartir ubicación** (adjuntar → "Ubicación"): ~~no cubierto~~ →
+  cubierto por `send_location_message.yaml`. La razón original para
+  descartarlo (una vez concedido `ACCESS_FINE_LOCATION`,
+  `FetchAndSendLocation` envía la ubicación real sin paso intermedio, y
+  el flow no puede revocar el permiso entre ejecuciones) seguía siendo
+  válida — lo que cambió es reconocer que en el emulador la "ubicación
+  real del dispositivo" es en sí un valor fijo y determinista via
+  `adb emu geo fix`, no algo incontrolable. El flow asume permiso y geo
+  fix ya establecidos (ver "Setup previo para los flows de adjuntos"
+  arriba) en vez de gestionarlos él mismo.
+- **Compartir contacto** (adjuntar → "Contacto"): ~~no cubierto~~ →
+  cubierto por `send_contact_message.yaml`, sembrando un contacto real
+  del dispositivo primero (`am start -a android.intent.action.INSERT`).
+  Resultó automatizable pese a ser un Intent real a la app de Contactos
+  del sistema — el precedente de "fuera del sandbox de Compose/Maestro"
+  no era, por sí solo, motivo suficiente para descartarlo (a diferencia
+  del wallpaper picker de abajo, que sigue sin investigarse a fondo). El
+  único hallazgo real en el camino fue un glitch de rendering (ver
+  "Hallazgos" arriba) que no impidió automatizarlo.
 - **Sticker (paquetes de imagen reales)**: no cubierto por falta de datos
   de catálogo (ni instalados ni disponibles en la tienda in-app de este
   backend de Supabase), no por limitación técnica de Maestro — ver "Grupo
@@ -791,5 +966,22 @@ borre.
   flows de adjuntos" más arriba. `Group info`/salir del grupo en sí siguen
   sin flow propio (fuera del alcance de este encargo, centrado en tipos de
   mensaje/adjuntos), pero ya no por la razón original.
+- **Borrar una encuesta de verdad**: `poll_create_send_roundtrip.yaml`
+  borra el *mensaje* `poll:<id>` (soft-delete, igual que cualquier otro
+  tipo de mensaje), pero no existe ninguna acción de UI que borre la
+  fila de la propia encuesta/sus opciones/votos en Supabase —
+  `ChatPollDelegate` solo tiene `createPoll`/`votePoll`, sin
+  `deletePoll`. Mismo tipo de huella permanente de bajo impacto que
+  "Crear grupo de verdad" de arriba, aceptado por la misma razón: es
+  metadata sin contenido legible sensible, no un mensaje de texto de
+  prueba.
+- **`send_video_message.yaml`/`send_camera_photo_message.yaml`
+  dependen de coordenadas de pantalla fijas** para el obturador/confirmar
+  de la app de Cámara del sistema (sin texto/`content-description`
+  seleccionable en su árbol de accesibilidad en este AVD) — es el flow
+  más frágil ante un cambio de imagen de emulador/API level de toda esta
+  suite. Si se rompe, la solución es volver a capturar la pantalla de la
+  Cámara con `adb exec-out screencap` y remedir los puntos, no reescribir
+  el flow.
 - Integrar como job opcional de CI (requiere un emulador headless en el
   runner; de momento se ejecuta solo en local).

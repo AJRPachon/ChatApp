@@ -1,0 +1,54 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the conversation with @claudeqa2, shares a real
+# location via Attach → Ubicación, confirms it renders as a location
+# card, then deletes it via subflows/delete_selected_media_message.yaml.
+#
+# Earlier investigation (see this suite's git history/README) declined
+# to cover this: `ChatScreen.kt`'s `onLocation` has no confirmation step
+# — if `ACCESS_FINE_LOCATION` is already granted it fetches the REAL
+# device location and sends immediately, with nothing to cancel — and
+# once granted once, that stays true for every future run with no way
+# for a flow to un-grant it. What makes this safe to automate for real
+# now: the emulator's location is itself fully controlled and
+# deterministic via `adb emu geo fix`, so "the real device location" IS
+# a known, fixed value here, not an uncontrolled one — this flow only
+# assumes the permission is pre-granted and a geo fix is already set, it
+# doesn't (and safely can't, from a Maestro flow) do either itself.
+#
+# REQUIRES manual setup before running:
+#   adb -s emulator-5556 shell pm grant com.ajrpachon.chatapp android.permission.ACCESS_FINE_LOCATION
+#   adb -s emulator-5556 shell pm grant com.ajrpachon.chatapp android.permission.ACCESS_COARSE_LOCATION
+#   adb -s emulator-5556 emu geo fix -3.7038 40.4168   # any fixed coordinate works
+#
+# The location message's content IS non-blank (LocationMessageFormat's
+# "📍 Mi ubicación: <mapsUrl>" text), unlike a captionless image/file —
+# but MessageFooterContent only renders that raw Text when
+# `LocationMessageFormat.parseMapsUrl` returns null, so for an actual
+# location message the per-message long-press-to-open-menu Box ends up
+# empty (zero content, zero size) instead: pressing where the text WOULD
+# be lands on the LocationMessageCard above it (which has its own
+# `Modifier.clickable` to open Maps, swallowing the long-press) or
+# nothing at all. Same margin-long-press cleanup as the image/file flows
+# as a result.
+# Run with:
+#   maestro test .maestro/flows/send_location_message.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- tapOn: "Adjuntar|Attach"
+- tapOn: "Ubicación"
+- extendedWaitUntil:
+    visible: "Ubicación compartida|Shared location"
+    timeout: 10000
+- assertVisible: "Ver en Maps|View on Maps"
+- runFlow:
+    file: ../subflows/delete_selected_media_message.yaml
+    env:
+      POINT: "11%,77%"

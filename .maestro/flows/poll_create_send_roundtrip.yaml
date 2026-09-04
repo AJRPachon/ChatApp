@@ -1,0 +1,68 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the conversation with @claudeqa2, and — unlike
+# poll_create_navigation.yaml (which only opens/cancels the sheet) —
+# actually fills in a question + two options, creates the poll, confirms
+# it renders as a poll bubble (question + both options visible), votes
+# on one option to confirm ChatIntent.Vote/ChatPollDelegate.votePoll
+# works end-to-end, then deletes the poll message via
+# subflows/delete_selected_message.yaml.
+#
+# The "Crear encuesta"/"Create poll" button text is not unique on
+# screen — the same string is also the sheet's title, both visible at
+# once — and `id` doesn't help either: a `Modifier.testTag()` added to
+# the button was verified NOT to show up as a `resource-id` at all here,
+# same root cause as the already-documented `DropdownMenu` gap in the
+# README (`ModalBottomSheet` also renders its content into a separate
+# window that `testTagsAsResourceId` — set once at the `NavDisplay` root
+# in MainActivity.kt — never reaches). `index: 1` picks the second
+# "Crear encuesta|Create poll" match (title first, button second, in
+# that traversal order) instead.
+#
+# Cleanup is a normal (non-point-based) long-press on the poll question
+# text: PollBubble.kt's question `Text` and the Card around it carry no
+# `clickable` of their own (only the individual vote rows do), so a
+# long-press there correctly reaches the row's multi-select handler —
+# unlike the image/file/sticker-picker-adjacent bubbles elsewhere in
+# this suite that DO have an inner plain `clickable` swallowing it.
+#
+# No delete-the-poll-itself path exists beyond deleting the chat message
+# that references it (`poll:<id>`) — the poll row and its options/votes
+# stay in Supabase after that, same accepted trade-off as every other
+# message type's soft-delete in this suite (see README "Higiene de
+# datos"); nothing in the UI exposes a harder poll-delete to test.
+# Run with:
+#   maestro test .maestro/flows/poll_create_send_roundtrip.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- tapOn: "Adjuntar|Attach"
+- tapOn: "Encuesta"
+- tapOn: "Pregunta|Question"
+- inputText: "Maestro poll question"
+- tapOn: "Opción 1|Option 1"
+- inputText: "Maestro option A"
+- tapOn: "Opción 2|Option 2"
+- inputText: "Maestro option B"
+- hideKeyboard
+- tapOn:
+    text: "Crear encuesta|Create poll"
+    index: 1
+- extendedWaitUntil:
+    visible: "Maestro poll question"
+    timeout: 10000
+- assertVisible: "Maestro option A"
+- assertVisible: "Maestro option B"
+- tapOn: "Maestro option A"
+- waitForAnimationToEnd:
+    timeout: 3000
+- runFlow:
+    file: ../subflows/delete_selected_message.yaml
+    env:
+      MESSAGE_SELECTOR: "Maestro poll question"
