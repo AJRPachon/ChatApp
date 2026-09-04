@@ -1,0 +1,64 @@
+appId: com.ajrpachon.chatapp
+---
+# Verifies sender-name attribution in a group conversation, which the plain
+# group_text_message_roundtrip.yaml flow structurally cannot check:
+# MessageBubble only renders the sender-name header above a bubble when
+# `isGroup && !message.isFromMe` (see MessageBubble.kt's BubbleHeader), so
+# the *sending* account never sees a header on its own messages — only
+# someone else in the group does.
+#
+# @claudeqa sends a message in "Maestro Test Group", then this flow switches
+# to @claudeqa2 (a real account switch — clearState + fresh login, since both
+# QA accounts share this one device) and confirms the message renders with
+# "claudeqa" as its sender-name header. @claudeqa then logs back in and
+# deletes it (only the sender can delete their own message).
+#
+# Uncovered a real, since-fixed data-integrity bug while building this: at
+# the time this was written, @claudeqa's own `profiles.display_name` had
+# been corrupted to the literal string "claudeqa2" by a previous run of
+# profile_display_name_roundtrip.yaml hitting the exact predictive-text bug
+# that flow is now fixed to avoid (see that flow's own comment) — so the
+# very first run of this flow showed @claudeqa's message attributed to
+# "claudeqa2", which looked like a sender-attribution bug in the app until
+# tracing it back to that stale display name. Fixed directly (see git
+# history) rather than left as a skip, since it's QA-account data, not app
+# code, and safe to correct.
+# Run with:
+#   maestro test .maestro/flows/group_sender_attribution_navigation.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: "Maestro Test Group"
+- runFlow:
+    file: ../subflows/send_chat_message.yaml
+    env:
+      MESSAGE_TEXT: "Maestro sender attribution check"
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: claude.qa2.chatapp@gmail.com
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: "Maestro Test Group"
+- assertVisible: "Maestro sender attribution check"
+- assertVisible: "claudeqa"
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: "Maestro Test Group"
+- runFlow:
+    file: ../subflows/delete_own_message.yaml
+    env:
+      MESSAGE_TEXT: "Maestro sender attribution check"

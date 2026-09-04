@@ -1,0 +1,66 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens "Maestro Test Group", records and sends a short voice
+# message, confirms it renders, then deletes it via the multi-select
+# bulk-delete path.
+#
+# Recording is tap-to-start / tap-to-stop, NOT hold-to-record — see
+# ChatAudioRecordingDelegate.kt (StartRecording/StopRecording intents) and
+# ChatBottomBar.kt's audioState.isRecording branch. There's no
+# minimum-duration gate and no slide-to-cancel gesture in this codebase, so
+# the interaction is just: tap mic → wait a beat → tap stop → tap send.
+#
+# The rendered duration text (e.g. "0:03") is what identifies the message
+# for deletion — RemoteAudioPlayer's own Play/Pause IconButton has a plain
+# `clickable` that swallows a long-press before it can reach the bubble's
+# outer long-press-to-select handler (same class of issue documented on
+# GenericFileBubble/VideoBubble/LocationMessageCard — not fixed here since
+# fixing it would require threading onToggleSelect through the shared
+# AudioPlayerRow, used by every audio bubble including ones with no
+# selection concept), so long-press the duration label instead, which has no
+# click handler of its own. Matched with a regex bucket ("0:[0-9]{2}") rather
+# than an exact value since the recorded duration depends on real elapsed
+# time between the start/stop taps — never colliding with an on-screen clock
+# timestamp (always rendered "HH:MM" with a leading zero, e.g. "09:12") since
+# this format uses a bare, un-padded "0" whenever the clip is under a minute.
+# REQUIRES RECORD_AUDIO already granted (adb pm grant — see
+# .maestro/README.md) since this flow doesn't handle the system permission
+# dialog.
+# Run with:
+#   maestro test .maestro/flows/group_audio_message_roundtrip.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: "Maestro Test Group"
+- tapOn:
+    id: "chat_mic_button"
+- extendedWaitUntil:
+    visible:
+      id: "chat_recording_stop_button"
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "chat_recording_stop_button"
+- extendedWaitUntil:
+    visible:
+      id: "chat_audio_send_button"
+    timeout: 10000
+- tapOn:
+    id: "chat_audio_send_button"
+- extendedWaitUntil:
+    visible:
+      id: "chat_input_field"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: "0:[0-9]{2}"
+    timeout: 20000
+- runFlow:
+    file: ../subflows/delete_selected_message.yaml
+    env:
+      MESSAGE_SELECTOR: "0:[0-9]{2}"

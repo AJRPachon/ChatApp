@@ -5,16 +5,23 @@ appId: com.ajrpachon.chatapp
 # screen), then changes it back to "claudeqa" (the QA account's real
 # display name) — leaving the account as it started.
 #
-# The `inputText: " "` + `pressKey: Backspace` pair after each real
-# `inputText` isn't decorative: reproduced directly that the on-device
-# keyboard's next-word prediction (polluted by this session typing
-# "claudeqa2" dozens of times for other flows) can hijack a bare
-# `pressKey: Enter` and commit that suggestion instead of the
-# literally-typed "claudeqa" — confirmed via a screenshot of the
-# suggestion strip showing "claudeqa2" as a candidate right after typing
-# "claudeqa". Typing a space forces the IME to commit the word exactly as
-# typed (autocomplete never fires on space), then backspace removes just
-# the space before submitting with Enter.
+# Uses `eraseText` + a single `inputText` + `pressKey: Enter` — NOT the
+# `inputText: " "` + `pressKey: Backspace` pair this flow used previously.
+# That older workaround assumed a trailing space always commits the exact
+# typed word without ever accepting an IME suggestion; verified directly
+# (screenshot of the suggestion strip, then of the field's actual content
+# right after) that this is false on this keyboard/session: typing
+# "claudeqa" then a space silently replaced the field's content with
+# "claudeqa2" — the bolded predictive-text candidate — even though nothing
+# was tapped. `pressKey: Enter` immediately after the literal `inputText`
+# call (no space at all) does NOT trigger this substitution and reliably
+# commits+saves the exact typed string; reproduced across several repeats
+# fixing this exact real data drift on the QA account (see .maestro/README.md's
+# "Grupo real de prueba" section for how this was found: a group message
+# sent by @claudeqa rendered its sender-attribution header as "claudeqa2" for
+# another viewer, tracing back to @claudeqa's own `profiles.display_name`
+# having been corrupted to "claudeqa2" by a previous run of the OLD version
+# of this exact flow, hitting the same bug it was trying to guard against).
 # Run with:
 #   maestro test .maestro/flows/profile_display_name_roundtrip.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
 - runFlow:
@@ -28,12 +35,10 @@ appId: com.ajrpachon.chatapp
     visible:
       id: "profile_sign_out_button"
     timeout: 10000
-- longPressOn:
+- tapOn:
     id: "profile_display_name_field"
-- tapOn: "Select all"
+- eraseText: 20
 - inputText: Maestro name test
-- inputText: " "
-- pressKey: Backspace
 - pressKey: Enter
 - back
 - tapOn:
@@ -41,12 +46,10 @@ appId: com.ajrpachon.chatapp
 - extendedWaitUntil:
     visible: "Maestro name test"
     timeout: 10000
-- longPressOn:
+- tapOn:
     id: "profile_display_name_field"
-- tapOn: "Select all"
+- eraseText: 20
 - inputText: claudeqa
-- inputText: " "
-- pressKey: Backspace
 - pressKey: Enter
 - back
 - tapOn:

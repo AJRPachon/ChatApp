@@ -1,0 +1,25 @@
+appId: com.ajrpachon.chatapp
+---
+# Reusable building block — NOT meant to run standalone.
+# Deletes ANY message type (image, video, file, audio, sticker, poll,
+# contact, location...) via long-press → multi-select → top-bar bulk-delete,
+# instead of the per-message text dropdown that delete_own_message.yaml uses.
+# That dropdown only exists for messages with non-blank `content`
+# (ChatBubbleContent.kt's `if (message.content.isNotBlank())` gate) — a bare
+# image/audio/video/file send has blank content, so it never renders. Every
+# message type's outer container shares the same long-press → multi-select
+# affordance instead (MessageBubble.kt's `onLongClick = { onToggleSelect() }`,
+# present on every early-return branch — sticker, contact, file, video,
+# poll — as well as the general text/image/audio path), so this works
+# universally, including for the text-content case delete_own_message.yaml
+# already covers more directly.
+# Call it from a flow with:
+#   - runFlow:
+#       file: ../subflows/delete_selected_message.yaml
+#       env:
+#         MESSAGE_SELECTOR: "Imagen|Image"
+- longPressOn: ${MESSAGE_SELECTOR}
+- assertVisible: "1 seleccionados|1 selected"
+- tapOn: "Eliminar seleccionados|Delete selected"
+- tapOn: "Eliminar|Delete"
+- assertVisible: "This message was deleted|Se eliminó este mensaje"

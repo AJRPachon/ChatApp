@@ -6,7 +6,6 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -250,13 +249,13 @@ internal fun MessageBubble(
     }
     if (message.fileUrl != null) {
         ReplySelectContainer(message.isFromMe, isSelected, isMultiSelectActive, onToggleSelect, onReply) {
-            FileBubble(message, onOpenPdf)
+            FileBubble(message, onOpenPdf, onLongPress = onToggleSelect)
         }
         return
     }
     if (message.videoUrl != null) {
         ReplySelectContainer(message.isFromMe, isSelected, isMultiSelectActive, onToggleSelect, onReply) {
-            VideoBubble(message)
+            VideoBubble(message, onLongPress = onToggleSelect)
         }
         return
     }
@@ -385,6 +384,7 @@ internal fun MessageBubble(
                             isTranslating = isTranslating,
                             onTranslate = onTranslate,
                             onDismissTranslation = onDismissTranslation,
+                            onToggleSelect = onToggleSelect,
                         )
                     }
                 } else {
@@ -403,7 +403,18 @@ internal fun MessageBubble(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(220.dp)
-                                        .clickable { onImageClick(imageUrl) },
+                                        // A bare photo fills the whole bubble (mediaIsStandalone),
+                                        // so its own click target is the only surface a user can
+                                        // press — a plain `clickable` here would silently swallow
+                                        // long-presses too (Compose fires onClick regardless of
+                                        // hold duration when no onLongClick is registered on the
+                                        // same node), leaving no way to long-press-to-select a
+                                        // photo message for bulk delete, unlike every other
+                                        // message type. `combinedClickable` restores that parity.
+                                        .combinedClickable(
+                                            onClick = { onImageClick(imageUrl) },
+                                            onLongClick = { onToggleSelect() },
+                                        ),
                                 )
                                 if (mediaIsStandalone) {
                                     MediaMetaOverlay(
@@ -450,6 +461,7 @@ internal fun MessageBubble(
                                     isTranslating = isTranslating,
                                     onTranslate = onTranslate,
                                     onDismissTranslation = onDismissTranslation,
+                                    onToggleSelect = onToggleSelect,
                                 )
                             }
                         }
