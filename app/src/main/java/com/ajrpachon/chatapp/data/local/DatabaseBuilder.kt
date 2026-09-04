@@ -269,13 +269,7 @@ fun buildChatDatabase(context: Context): ChatDatabase {
     )
         .openHelperFactory(SupportOpenHelperFactory(passphrase))
         .setQueryCoroutineContext(Dispatchers.IO)
-        .addMigrations(
-            MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
-            MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
-            MIGRATION_9_10, MIGRATION_10_11, migration11To12,
-            migration12To13, migration13To14, migration14To15, migration15To16, migration16To17,
-            migration17To18, migration18To19, migration19To20, migration20To21, migration21To22, migration22To23, migration23To24, migration24To25, migration25To26, migration26To27, migration27To28, migration28To29, migration29To30, migration30To31, migration31To32, migration32To33, migration33To34, migration34To35, migration35To36, migration36To37,
-        )
+        .addMigrations(*allMigrations)
         .build()
 }
 
@@ -431,3 +425,22 @@ private val migration29To30 = object : Migration(29, 30) {
         )
     }
 }
+
+/**
+ * Every registered migration, oldest to newest — the single source of truth `buildChatDatabase`
+ * wires into `.addMigrations(...)`, and what `ChatDatabaseMigrationTest`
+ * (`app/src/androidTest/.../data/local/`) replays end-to-end against real exported schemas.
+ * `internal` rather than `private` so the instrumented test source set can see it. Declared last
+ * in the file (not next to `buildChatDatabase`) because Kotlin initializes top-level properties
+ * in textual declaration order within a file — referencing a migration val declared further
+ * down than this one would fail to compile ("Variable must be initialized"), since several of
+ * this file's migration vals aren't in ascending-version order (migration26To27 etc. are
+ * declared after migration33To34..migration36To37).
+ */
+internal val allMigrations = arrayOf(
+    MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
+    MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
+    MIGRATION_9_10, MIGRATION_10_11, migration11To12,
+    migration12To13, migration13To14, migration14To15, migration15To16, migration16To17,
+    migration17To18, migration18To19, migration19To20, migration20To21, migration21To22, migration22To23, migration23To24, migration24To25, migration25To26, migration26To27, migration27To28, migration28To29, migration29To30, migration30To31, migration31To32, migration32To33, migration33To34, migration34To35, migration35To36, migration36To37,
+)

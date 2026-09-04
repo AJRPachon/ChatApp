@@ -1,4 +1,4 @@
-﻿package com.ajrpachon.chatapp.data.local.entity
+package com.ajrpachon.chatapp.data.local.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity

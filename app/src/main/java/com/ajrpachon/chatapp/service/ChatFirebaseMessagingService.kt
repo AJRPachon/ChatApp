@@ -1,7 +1,7 @@
 package com.ajrpachon.chatapp.service
 import com.ajrpachon.chatapp.utils.catchResult
 
-import com.ajrpachon.chatapp.data.remote.source.FcmTokenRemoteSource
+import com.ajrpachon.chatapp.domain.repository.FcmTokenRepository
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
@@ -17,17 +17,16 @@ import java.util.concurrent.atomic.AtomicInteger
 
 class ChatFirebaseMessagingService : FirebaseMessagingService() {
 
-    private val fcmTokenRemoteSource: FcmTokenRemoteSource by inject()
-    private val fcmTokenManager: FcmTokenManager by inject()
-    private val notificationSoundRepository: com.ajrpachon.chatapp.data.local.NotificationSoundRepository by inject()
+    private val fcmTokenRepository: FcmTokenRepository by inject()
+    private val notificationSoundRepository: com.ajrpachon.chatapp.domain.repository.NotificationSoundRepository by inject()
     private val job = SupervisorJob()
     private val scope = CoroutineScope(job + Dispatchers.IO + CoroutineName("FCMService"))
 
     override fun onNewToken(token: String) {
         // Save locally first in case the user isn't authenticated yet.
-        // FcmTokenManager.syncToken() will push it on next login.
-        fcmTokenManager.savePendingToken(token)
-        scope.launch { catchResult { fcmTokenRemoteSource.upsertToken(token) } }
+        // FcmTokenRepository.syncToken() will push it on next login.
+        fcmTokenRepository.savePendingToken(token)
+        scope.launch { catchResult { fcmTokenRepository.upsertToken(token) } }
     }
 
     override fun onMessageReceived(message: RemoteMessage) {

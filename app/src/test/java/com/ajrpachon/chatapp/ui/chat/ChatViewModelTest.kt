@@ -12,11 +12,12 @@ import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
+import com.ajrpachon.chatapp.domain.repository.PendingMessageRepository
 import com.ajrpachon.chatapp.domain.repository.ReactionRepository
 import com.ajrpachon.chatapp.domain.repository.ScheduledMessageRepository
 import com.ajrpachon.chatapp.domain.repository.TypingRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
-import com.ajrpachon.chatapp.data.local.ChatThemeRepository
+import com.ajrpachon.chatapp.domain.repository.ChatThemeRepository
 import com.ajrpachon.chatapp.domain.repository.AiAssistantRepository
 import com.ajrpachon.chatapp.domain.repository.ContactRepository
 import com.ajrpachon.chatapp.domain.repository.DraftRepository
@@ -32,7 +33,9 @@ import com.ajrpachon.chatapp.utils.TranslationManager
 import androidx.work.WorkManager
 import com.ajrpachon.chatapp.domain.usecase.ExportConversationUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetGroupMembersUseCase
+import com.ajrpachon.chatapp.domain.usecase.GetUriMetadataUseCase
 import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
+import com.ajrpachon.chatapp.domain.usecase.ReadUriAsBytesUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
 import com.ajrpachon.chatapp.util.MainDispatcherRule
@@ -63,6 +66,7 @@ class ChatViewModelTest {
 
     private val sendMessageUseCase = mockk<SendMessageUseCase>()
     private val messageRepository = mockk<MessageRepository>(relaxed = true)
+    private val pendingMessageRepository = mockk<PendingMessageRepository>(relaxed = true)
     private val callRepository = mockk<CallRepository>(relaxed = true)
     private val userRepository = mockk<UserRepository>(relaxed = true)
     private val getGroupMembersUseCase = mockk<GetGroupMembersUseCase>()
@@ -88,6 +92,8 @@ class ChatViewModelTest {
     private val clipboardProtection = mockk<ClipboardProtection>(relaxed = true)
     private val exportConversationUseCase = mockk<ExportConversationUseCase>(relaxed = true)
     private val linkPreviewFetcher = mockk<LinkPreviewFetcher>(relaxed = true)
+    private val getUriMetadataUseCase = mockk<GetUriMetadataUseCase>(relaxed = true)
+    private val readUriAsBytesUseCase = mockk<ReadUriAsBytesUseCase>(relaxed = true)
 
     private val membersFlow = MutableStateFlow<List<GroupMemberBO>>(emptyList())
 
@@ -146,6 +152,7 @@ class ChatViewModelTest {
             clipboardProtection = clipboardProtection,
             sendMessageUseCase = sendMessageUseCase,
             messageRepository = messageRepository,
+            pendingMessageRepository = pendingMessageRepository,
             callRepository = callRepository,
             userRepository = userRepository,
             getGroupMembersUseCase = getGroupMembersUseCase,
@@ -169,6 +176,8 @@ class ChatViewModelTest {
             sendInvitationUseCase = sendInvitationUseCase,
             exportConversationUseCase = exportConversationUseCase,
             linkPreviewFetcher = linkPreviewFetcher,
+            getUriMetadataUseCase = getUriMetadataUseCase,
+            readUriAsBytesUseCase = readUriAsBytesUseCase,
         )
 
     // ── isCurrentUserMember ───────────────────────────────────────────────────
@@ -384,24 +393,24 @@ class ChatViewModelTest {
     // ── Forward dialog ────────────────────────────────────────────────────────
 
     @Test
-    fun `ShowForwardDialog sets showForwardDialog to true and stores message`() = runTest(sharedScheduler) {
+    fun `ShowForwardDialog sets forward showDialog to true and stores message`() = runTest(sharedScheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         val msg = mockk<MessageBO>(relaxed = true)
         vm.onIntent(ChatIntent.ShowForwardDialog(msg))
         advanceUntilIdle()
-        assertTrue(vm.state.value.showForwardDialog)
-        assertEquals(msg, vm.state.value.forwardingMessage)
+        assertTrue(vm.state.value.forward.showDialog)
+        assertEquals(msg, vm.state.value.forward.message)
     }
 
     @Test
-    fun `DismissForwardDialog resets showForwardDialog and forwardingMessage`() = runTest(sharedScheduler) {
+    fun `DismissForwardDialog resets forward showDialog and message`() = runTest(sharedScheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         vm.onIntent(ChatIntent.ShowForwardDialog(mockk(relaxed = true)))
         vm.onIntent(ChatIntent.DismissForwardDialog)
-        assertFalse(vm.state.value.showForwardDialog)
-        assertNull(vm.state.value.forwardingMessage)
+        assertFalse(vm.state.value.forward.showDialog)
+        assertNull(vm.state.value.forward.message)
     }
 
     // ── Polls ─────────────────────────────────────────────────────────────────
@@ -419,7 +428,7 @@ class ChatViewModelTest {
         vm.onIntent(ChatIntent.ObservePoll("poll1"))
         advanceUntilIdle()
 
-        val pollUiState = vm.state.value.pollUiStates["poll1"]
+        val pollUiState = vm.state.value.poll.uiStates["poll1"]
         assertEquals(poll, pollUiState?.poll)
         assertEquals(options, pollUiState?.options)
     }

@@ -1,0 +1,21 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in as the QA account, mutes the conversation with @claudeqa2,
+# confirms the muted indicator appears in the chat list, then unmutes it
+# again and confirms the indicator is gone — leaving notifications as
+# they started.
+# Run with:
+#   maestro test .maestro/flows/mute_unmute_roundtrip.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/mute_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- runFlow:
+    file: ../subflows/unmute_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2

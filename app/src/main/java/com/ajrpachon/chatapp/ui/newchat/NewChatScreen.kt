@@ -52,6 +52,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
@@ -183,7 +184,9 @@ fun NewChatScreen(
                 value = state.query,
                 onValueChange = { vm.onIntent(NewChatIntent.QueryChanged(it)) },
                 placeholder = stringResource(R.string.newchat_search_placeholder),
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .testTag("newchat_search_field"),
             )
 
             LazyColumn(modifier = Modifier.fillMaxSize()) {

@@ -25,14 +25,8 @@ fun CallDTO.toBO(callerName: String = "") = CallBO(
     callerId = callerId,
     callerName = callerName,
     calleeId = calleeId,
-    type = if (type == "video") CallType.VIDEO else CallType.AUDIO,
-    status = when (status) {
-        "active"   -> CallStatus.ACTIVE
-        "ended"    -> CallStatus.ENDED
-        "rejected" -> CallStatus.REJECTED
-        "missed"   -> CallStatus.MISSED
-        else       -> CallStatus.RINGING
-    },
+    type = CallType.fromWire(type),
+    status = CallStatus.fromWire(status),
     roomName = roomName,
     createdAt = createdAt?.let { runCatching { Instant.parse(it) }.getOrNull() },
 )

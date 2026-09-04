@@ -1,14 +1,16 @@
-﻿package com.ajrpachon.chatapp.ui.profile
+package com.ajrpachon.chatapp.ui.profile
 import com.ajrpachon.chatapp.utils.catchResult
 
 import androidx.lifecycle.viewModelScope
-import com.ajrpachon.chatapp.data.local.AppLockRepository
-import com.ajrpachon.chatapp.data.local.ThemeRepository
+import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
+import com.ajrpachon.chatapp.domain.repository.AppLockRepository
 import com.ajrpachon.chatapp.domain.repository.AuthRepository
+import com.ajrpachon.chatapp.domain.repository.FcmTokenRepository
+import com.ajrpachon.chatapp.domain.repository.ThemeRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
-import com.ajrpachon.chatapp.service.FcmTokenManager
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
+import com.ajrpachon.chatapp.utils.AnalyticsEvents
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.UploadLimits.checkAvatarSize
 import kotlinx.coroutines.flow.filterNotNull
@@ -23,10 +25,11 @@ import qrcode.QRCode
 class ProfileViewModel(
     private val authRepository: AuthRepository,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
-    private val fcmTokenManager: FcmTokenManager,
+    private val fcmTokenRepository: FcmTokenRepository,
     private val userRepository: UserRepository,
     private val themeRepository: ThemeRepository,
     private val appLockRepository: AppLockRepository,
+    private val analyticsTracker: AnalyticsTracker,
 ) : BaseViewModel<ProfileState, ProfileEffect>(ProfileState()) {
 
     init {
@@ -112,7 +115,7 @@ class ProfileViewModel(
     fun signOut() {
         viewModelScope.launch {
             catchResult {
-                fcmTokenManager.deleteToken()
+                fcmTokenRepository.deleteToken()
                 authRepository.signOut()
                 userRepository.clearCurrentUser()
             }.onFailure { e -> AppLogger.e(TAG, "Sign out failed", e) }
@@ -127,7 +130,7 @@ class ProfileViewModel(
     fun signOutAll() {
         viewModelScope.launch {
             catchResult {
-                fcmTokenManager.deleteToken()
+                fcmTokenRepository.deleteToken()
                 authRepository.signOutAll()
                 userRepository.clearCurrentUser()
             }.onFailure { e -> AppLogger.e(TAG, "Sign out all failed", e) }
@@ -181,6 +184,7 @@ class ProfileViewModel(
                     qrCodeSvg = null,
                     secret = null,
                 )) }
+                analyticsTracker.logEvent(AnalyticsEvents.MFA_ENROLLED)
             }.onFailure { e ->
                 AppLogger.e(TAG, "verify2FACode failed", e)
                 updateState { it.copy(twoFactor = it.twoFactor.copy(

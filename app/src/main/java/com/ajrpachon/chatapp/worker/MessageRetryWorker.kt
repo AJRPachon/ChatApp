@@ -3,7 +3,7 @@ package com.ajrpachon.chatapp.worker
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.ajrpachon.chatapp.data.local.dao.MessageDao
+import com.ajrpachon.chatapp.domain.repository.PendingMessageRepository
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
 import com.ajrpachon.chatapp.utils.AppLogger
 import org.koin.core.component.KoinComponent
@@ -14,11 +14,11 @@ class MessageRetryWorker(
     params: WorkerParameters,
 ) : CoroutineWorker(appContext, params), KoinComponent {
 
-    private val messageDao: MessageDao by inject()
+    private val messageRepository: PendingMessageRepository by inject()
     private val sendMessageUseCase: SendMessageUseCase by inject()
 
     override suspend fun doWork(): Result {
-        val pending = messageDao.getPendingMessages()
+        val pending = messageRepository.getPendingMessages()
         AppLogger.d(TAG, "MessageRetryWorker: found ${pending.size} pending/failed messages")
 
         var anyFailed = false
@@ -40,10 +40,10 @@ class MessageRetryWorker(
                 fileMimeType = msg.fileMimeType,
                 videoUrl = msg.videoUrl,
             ).onSuccess {
-                messageDao.updateSendStatus(msg.id, "sent")
+                messageRepository.updateSendStatus(msg.id, "sent")
                 AppLogger.d(TAG, "Retried and sent message ${msg.id}")
             }.onFailure { e ->
-                messageDao.updateSendStatus(msg.id, "failed")
+                messageRepository.updateSendStatus(msg.id, "failed")
                 anyFailed = true
                 AppLogger.e(TAG, "Retry failed for message ${msg.id}", e)
             }

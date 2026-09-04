@@ -1,0 +1,14 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, backgrounds the app from the chat list and brings it back,
+# and confirms it's still showing the chat list (not logged out, not
+# stuck on a blank/loading screen).
+# Run with:
+#   maestro test .maestro/flows/background_resume_chat_list.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow: ../subflows/background_and_resume.yaml
+- assertVisible: "Chats"

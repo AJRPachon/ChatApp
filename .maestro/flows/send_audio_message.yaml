@@ -1,0 +1,65 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the conversation with @claudeqa2, records and sends a
+# real voice message, confirms it renders as a playable audio bubble,
+# then deletes it via subflows/delete_selected_media_message.yaml.
+#
+# Recording is tap-to-start/tap-to-stop, not hold-to-record — see
+# ChatAudioRecordingDelegate.kt/ChatBottomBar.kt: tapping the mic icon
+# fires `ChatIntent.StartRecording` immediately and swaps the input bar
+# for a `RecordingBar` (waveform + elapsed time + a "Detener grabación"/
+# "Stop recording" button), no press-and-hold or slide-to-cancel gesture
+# involved. Stopping swaps in an `AudioPreviewBar` (playback + discard +
+# send) instead of sending immediately, so this can preview before
+# committing. No minimum-duration guard exists in the delegate, so even
+# the short recording below (~1.5s, just enough for
+# `waitForAnimationToEnd` to cover real device latency) sends fine.
+#
+# REQUIRES `android.permission.RECORD_AUDIO` already granted (this flow
+# has no way to click through the system permission dialog reliably —
+# grant it once beforehand):
+#   adb -s emulator-5556 shell pm grant com.ajrpachon.chatapp android.permission.RECORD_AUDIO
+#
+# Cleanup uses the same margin-long-press trick as
+# send_image_message.yaml/send_file_message.yaml: the audio row's own
+# waveform Canvas has no click/drag handler (confirmed by reading
+# ChatAudioComponents.kt — it's a pure `Canvas` draw, no
+# `Modifier.pointerInput`/`clickable`), so unlike the image/file bubbles
+# a real long-press ON the waveform itself DOES reach the row's
+# multi-select handler — verified directly. POINT still targets that
+# waveform area (not the small play-button IconButton, which — like
+# every other inner-clickable case in this suite — would swallow the
+# long-press into a play/pause tap instead) since it's the largest safe
+# target and keeps this flow consistent with the others.
+# Run with:
+#   maestro test .maestro/flows/send_audio_message.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- tapOn: "Grabar audio|Record audio"
+- extendedWaitUntil:
+    visible: "Detener grabación|Stop recording"
+    timeout: 5000
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn: "Detener grabación|Stop recording"
+- extendedWaitUntil:
+    visible: "Enviar audio|Send audio"
+    timeout: 5000
+- tapOn: "Enviar audio|Send audio"
+- extendedWaitUntil:
+    visible:
+      id: "chat_input_field"
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 3000
+- runFlow:
+    file: ../subflows/delete_selected_media_message.yaml
+    env:
+      POINT: "67%,85%"

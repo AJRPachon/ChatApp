@@ -27,6 +27,10 @@ fun formatStatusAge(createdAt: Instant): String {
     }
 }
 
+/** Formats a call duration in seconds as "m:ss" (e.g. 75 -> "1:15"). */
+fun formatCallDuration(seconds: Int): String =
+    "%d:%02d".format(seconds / 60, seconds % 60)
+
 /** Formats disappearing-mode seconds into a compact label (e.g. "5m", "1h", "7d"). */
 fun formatDisappearingDuration(seconds: Long): String = when {
     seconds <= 0L -> ""
@@ -34,6 +38,17 @@ fun formatDisappearingDuration(seconds: Long): String = when {
     seconds < 86_400L -> "${seconds / 3_600}h"
     seconds < 604_800L -> "${seconds / 86_400}d"
     else -> "${seconds / 604_800}s"
+}
+
+/** Formats an [Instant] for the "scheduled message" confirmation snackbar (dd/MM HH:mm). */
+@Suppress("DEPRECATION")
+fun formatScheduledMessageTime(instant: Instant): String {
+    val dt = instant.toLocalDateTime(TimeZone.currentSystemDefault())
+    val day = dt.day.toString().padStart(2, '0')
+    val month = dt.monthNumber.toString().padStart(2, '0')
+    val hour = dt.hour.toString().padStart(2, '0')
+    val minute = dt.minute.toString().padStart(2, '0')
+    return "$day/$month $hour:$minute"
 }
 
 /** Formats an [Instant] into a conversation-list time label (HH:mm, "Ayer", dd/MM, dd/MM/yy). */

@@ -1,0 +1,29 @@
+appId: com.ajrpachon.chatapp
+---
+# Reusable building block — NOT meant to run standalone.
+# From an open conversation, long-presses the bubble containing
+# MESSAGE_TEXT, opens the reaction picker, and taps EMOJI. EMOJI must be
+# BOTH visible without scrolling the picker grid AND not equal to any
+# category tab's icon glyph — each category tab renders as plain text
+# using that category's icon emoji (e.g. the Smileys tab is literally
+# "😀"), so if EMOJI matches a tab icon, tapOn matches two identical-text
+# elements and may hit the tab instead of the grid cell (verified: this
+# silently leaves the picker open instead of reacting). "😃" (second
+# Smileys entry, first is the tab-colliding "😀") is a safe default on a
+# fresh account with no recent emojis.
+# Call it from a flow with:
+#   - runFlow:
+#       file: ../subflows/react_to_message.yaml
+#       env:
+#         MESSAGE_TEXT: some text
+#         EMOJI: "😃"
+#
+# Selected by text, not `id`: same DropdownMenu/ModalBottomSheet/Popup
+# limitation as delete_own_message.yaml — "Reaccionar"/"React" and the
+# emoji glyphs are rendered as plain text, so they're selectable
+# directly and (EMOJI caveat above aside) are unique on screen at each
+# step of this flow.
+- longPressOn: ${MESSAGE_TEXT}
+- tapOn: "Reaccionar|React"
+- tapOn: ${EMOJI}
+- assertVisible: "${EMOJI} 1"

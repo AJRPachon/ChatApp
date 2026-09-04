@@ -1,4 +1,4 @@
-﻿package com.ajrpachon.chatapp.utils
+package com.ajrpachon.chatapp.utils
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties

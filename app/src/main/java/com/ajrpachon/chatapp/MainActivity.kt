@@ -24,6 +24,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import com.ajrpachon.chatapp.utils.AppLogger
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
@@ -31,17 +33,18 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import com.ajrpachon.chatapp.ui.auth.IntegrityBlockedScreen
-import com.ajrpachon.chatapp.data.local.AppLockRepository
+import com.ajrpachon.chatapp.domain.repository.AppLockRepository
 import com.ajrpachon.chatapp.utils.IntegrityChecker
 import com.ajrpachon.chatapp.utils.IntegrityResult
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.Alignment
 import com.ajrpachon.chatapp.ui.call.IncomingCallIntent
+import com.ajrpachon.chatapp.domain.model.isGroupCall
 import com.ajrpachon.chatapp.ui.call.IncomingCallScreen
 import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
-import com.ajrpachon.chatapp.data.local.ThemePreference
-import com.ajrpachon.chatapp.data.local.ThemeRepository
+import com.ajrpachon.chatapp.domain.model.ThemePreference
+import com.ajrpachon.chatapp.domain.repository.ThemeRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.utils.SessionGuard
 import kotlinx.coroutines.flow.first
@@ -49,8 +52,12 @@ import kotlinx.coroutines.flow.first
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.handleDeeplinks
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.lifecycle.lifecycleScope
+import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
+import com.ajrpachon.chatapp.utils.AnalyticsEvents
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.get
@@ -83,6 +90,7 @@ class MainActivity : ComponentActivity() {
             pendingConversationId.value = intent.validatedConversationId()
             pendingOtherUserName.value = intent.validatedUserName()
         }
+        if (pendingConversationId.value != null) logNotificationOpened()
         val getCurrentUser: GetCurrentUserUseCase = get()
         val supabase: SupabaseClient = get()
         setContent {
@@ -138,6 +146,21 @@ class MainActivity : ComponentActivity() {
                 val resolvedRoute = initialRoute ?: return@ChatAppTheme
                 val backStack = rememberNavBackStack(resolvedRoute)
 
+                // Screen-view tracking: single chokepoint for every navigation change, no
+                // per-screen wiring needed. Route class name only — routes carry ids/names
+                // (ChatRoute, UserInfoRoute...) that must never reach analytics.
+                val analyticsTracker = remember { get<AnalyticsTracker>() }
+                LaunchedEffect(backStack.lastOrNull()) {
+                    val screenName = backStack.lastOrNull()?.let { it::class.simpleName } ?: return@LaunchedEffect
+                    analyticsTracker.logEvent(
+                        AnalyticsEvents.SCREEN_VIEW,
+                        mapOf(
+                            AnalyticsEvents.PARAM_SCREEN_NAME to screenName,
+                            AnalyticsEvents.PARAM_SCREEN_CLASS to screenName,
+                        ),
+                    )
+                }
+
                 // Handle mid-session expiry detected in onResume
                 androidx.compose.runtime.LaunchedEffect(isExpired) {
                     if (isExpired) {
@@ -180,7 +203,13 @@ class MainActivity : ComponentActivity() {
                     AppLogger.d("MainActivity", "RECOMPOSE vmHash=${System.identityHashCode(incomingCallVm)} incomingCall=${incomingCallState.incomingCall?.id ?: "null"}")
                 }
 
-                Box(modifier = Modifier.fillMaxSize()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        // Exposes Compose testTag() as the Android resource-id so UI
+                        // automation tools (Maestro, UiAutomator) can select on it.
+                        .semantics { testTagsAsResourceId = true },
+                ) {
                 NavDisplay(
                     backStack = backStack,
                     onBack = { if (backStack.size > 1) backStack.removeLastOrNull() else finish() },
@@ -201,10 +230,10 @@ class MainActivity : ComponentActivity() {
                                     callId = call.id,
                                     conversationId = call.conversationId,
                                     roomName = call.roomName,
-                                    callType = call.type.name.lowercase(),
+                                    callType = call.type.wireValue,
                                     otherUserName = call.callerName,
                                     isOutgoing = false,
-                                    isGroup = call.roomName.startsWith("group_"),
+                                    isGroup = call.isGroupCall(),
                                 )
                             )
                         },
@@ -289,6 +318,7 @@ class MainActivity : ComponentActivity() {
                 conversationId?.let {
                     pendingConversationId.value = it
                     pendingOtherUserName.value = name
+                    logNotificationOpened()
                 }
             }
             uri != null -> AppLogger.w("MainActivity", "Rejected deep link with unexpected scheme/host: $uri")
@@ -298,8 +328,15 @@ class MainActivity : ComponentActivity() {
             intent.validatedConversationId()?.let {
                 pendingConversationId.value = it
                 pendingOtherUserName.value = intent.validatedUserName()
+                logNotificationOpened()
             }
         }
+    }
+
+    // Wrapped defensively — same reason as ChatApplication's Firebase calls: must never crash
+    // a screen navigation just because analytics collection is unavailable.
+    private fun logNotificationOpened() {
+        runCatching { get<AnalyticsTracker>().logEvent(AnalyticsEvents.NOTIFICATION_OPENED) }
     }
 
     private fun Uri.isValidAuthCallback(): Boolean =

@@ -16,6 +16,12 @@ import kotlin.coroutines.resume
  *
  * Note: [SpeechRecognizer] must be created and used on the main thread.
  * [transcribeFromMic] handles this internally via [Dispatchers.Main].
+ *
+ * **Not a transcriber of existing audio files** — [SpeechRecognizer] only accepts live
+ * microphone input, there is no file-input API. `ChatTranslationDelegate.transcribeAudio`
+ * currently (mis)uses this to "transcribe" a received voice message, which actually records
+ * *your own* mic instead. See docs/audio-transcription-todo.md for the real fix (a cloud STT
+ * Edge Function, following the `ai-assistant` pattern).
  */
 class AudioTranscriber(private val context: Context) {
 

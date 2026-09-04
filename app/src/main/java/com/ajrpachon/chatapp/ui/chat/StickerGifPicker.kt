@@ -19,6 +19,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
@@ -27,7 +28,6 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -39,14 +39,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.components.ChatAppSearchField
-import com.ajrpachon.chatapp.utils.GiphyKeyManager
 import coil3.compose.AsyncImage
-import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
 
 // ── Main picker ───────────────────────────────────────────────────────────────
@@ -177,79 +176,65 @@ private fun StickerTab(
 // ── GIF tab ───────────────────────────────────────────────────────────────────
 
 @Composable
-private fun GifTab(onSelected: (String) -> Unit) {
-    var query by remember { mutableStateOf("") }
-    var result by remember { mutableStateOf<GiphyResult>(GiphyResult.Success(emptyList())) }
-    var isLoading by remember { mutableStateOf(true) }
-    var showKeyDialog by remember { mutableStateOf(false) }
-    var refresh by remember { mutableStateOf(0) }
+private fun GifTab(onSelected: (String) -> Unit, vm: GifPickerViewModel = koinViewModel()) {
+    val state by vm.state.collectAsStateWithLifecycle()
 
-    LaunchedEffect(query, refresh) {
-        if (query.isNotBlank()) delay(400)
-        isLoading = true
-        result = searchGiphy(query)
-        isLoading = false
-    }
-
-    if (showKeyDialog) {
+    if (state.showKeyDialog) {
         GiphyApiKeyDialog(
-            onSave = { key ->
-                GiphyKeyManager.setKey(key)
-                showKeyDialog = false
-                refresh++
-            },
-            onDismiss = { showKeyDialog = false },
+            initialKey = state.savedApiKey,
+            onSave = { key -> vm.onIntent(GifPickerIntent.SaveApiKey(key)) },
+            onDismiss = { vm.onIntent(GifPickerIntent.DismissKeyDialog) },
         )
     }
 
     Column {
         ChatAppSearchField(
-            value = query,
-            onValueChange = { query = it },
+            value = state.query,
+            onValueChange = { vm.onIntent(GifPickerIntent.QueryChanged(it)) },
             placeholder = "Buscar GIFs…",
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
         )
         when {
-            isLoading -> Box(Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
+            state.isLoading -> Box(Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
-            result is GiphyResult.ApiKeyInvalid -> Column(
+            state.errorState == GifPickerError.API_KEY_INVALID -> Column(
                 Modifier.fillMaxWidth().padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text("GIFs no disponibles", color = Color.Gray)
-                Text("Configura tu propia clave API de Giphy para activar esta función.", color = Color.Gray)
-                Button(onClick = { showKeyDialog = true }) {
+                Text("GIFs no disponibles", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    "Configura tu propia clave API de Giphy para activar esta función.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Button(onClick = { vm.onIntent(GifPickerIntent.ShowKeyDialog) }) {
                     Text("Configurar clave API")
                 }
             }
-            result is GiphyResult.NetworkError -> Box(
+            state.errorState == GifPickerError.NETWORK_ERROR -> Box(
                 Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center
             ) {
-                Text("Error de red. Inténtalo de nuevo.", color = Color.Gray)
+                Text("Error de red. Inténtalo de nuevo.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             else -> {
-            val gifs = (result as GiphyResult.Success).gifs
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
                 contentPadding = PaddingValues(4.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                items(gifs) { gif ->
-                    val thumbUrl = gif.images.fixedHeightSmall.url
-                    val fullUrl = gif.images.original.url
+                items(state.gifs, key = { it.previewUrl }) { gif ->
                     AsyncImage(
-                        model = thumbUrl,
-                        contentDescription = "GIF",
+                        model = gif.previewUrl,
+                        contentDescription = stringResource(R.string.chat_gif_content_description),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .height(100.dp)
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(8.dp))
-                            .background(Color.Gray.copy(alpha = 0.15f))
-                            .clickable { onSelected(fullUrl) },
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f))
+                            .clickable { onSelected(gif.fullUrl) },
                     )
                 }
             }
@@ -261,8 +246,8 @@ private fun GifTab(onSelected: (String) -> Unit) {
 // ── Giphy API key dialog ──────────────────────────────────────────────────────
 
 @Composable
-private fun GiphyApiKeyDialog(onSave: (String) -> Unit, onDismiss: () -> Unit) {
-    var key by remember { mutableStateOf(GiphyKeyManager.getKey() ?: "") }
+private fun GiphyApiKeyDialog(initialKey: String, onSave: (String) -> Unit, onDismiss: () -> Unit) {
+    var key by remember { mutableStateOf(initialKey) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Clave API de Giphy") },

@@ -1,0 +1,22 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the conversation with @claudeqa2, taps the chat header
+# to open that contact's info screen, confirms it renders, then goes
+# back to the same chat (not the chat list).
+# Run with:
+#   maestro test .maestro/flows/contact_info_navigation.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- tapOn:
+    id: "chat_top_bar_title"
+- assertVisible: "claudeqa2"
+- back
+- assertVisible:
+    id: "chat_input_field"

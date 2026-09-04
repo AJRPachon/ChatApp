@@ -1,0 +1,21 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in as the QA account, archives the conversation with
+# @claudeqa2, confirms it drops off the main chat list, then unarchives
+# it again from the Archived sheet and confirms it's back — leaving the
+# app in the same state it started in.
+# Run with:
+#   maestro test .maestro/flows/archive_unarchive_roundtrip.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/archive_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- runFlow:
+    file: ../subflows/unarchive_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2

@@ -6,7 +6,7 @@ import android.os.ParcelFileDescriptor
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.viewModelScope
-import com.ajrpachon.chatapp.domain.usecase.GetCacheFileUseCase
+import com.ajrpachon.chatapp.domain.usecase.GetCacheFilePathUseCase
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import com.ajrpachon.chatapp.utils.AppLogger
 import kotlinx.coroutines.Dispatchers
@@ -14,15 +14,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
-
-data class PdfViewerState(
-    val pages: List<ImageBitmap> = emptyList(),
-    val isLoading: Boolean = false,
-    val error: String? = null,
-)
+import java.io.File
 
 class PdfViewerViewModel(
-    private val getCacheFile: GetCacheFileUseCase,
+    private val getCacheFilePath: GetCacheFilePathUseCase,
     private val okHttpClient: OkHttpClient,
 ) : BaseViewModel<PdfViewerState, PdfViewerEffect>(PdfViewerState()) {
 
@@ -51,7 +46,7 @@ class PdfViewerViewModel(
     }
 
     private suspend fun downloadAndRender(url: String): List<ImageBitmap> = withContext(Dispatchers.IO) {
-        val cacheFile = getCacheFile("pdf_${url.hashCode()}.pdf")
+        val cacheFile = File(getCacheFilePath("pdf_${url.hashCode()}.pdf"))
 
         if (!cacheFile.exists()) {
             val request = Request.Builder().url(url).build()

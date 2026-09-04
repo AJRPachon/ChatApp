@@ -1,13 +1,13 @@
 package com.ajrpachon.chatapp.ui.backup
 
 import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.domain.repository.BackupRepository
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import com.ajrpachon.chatapp.utils.AppLogger
-import com.ajrpachon.chatapp.utils.BackupManager
 import kotlinx.coroutines.launch
 
 class BackupViewModel(
-    private val backupManager: BackupManager,
+    private val backupRepository: BackupRepository,
 ) : BaseViewModel<BackupState, BackupEffect>(BackupState()) {
 
     init {
@@ -26,7 +26,7 @@ class BackupViewModel(
     private fun loadLastBackupInfo() {
         viewModelScope.launch {
             runCatching {
-                val info = backupManager.getLatestBackupInfo()
+                val info = backupRepository.getLatestBackupInfo()
                 if (info != null) {
                     updateState {
                         it.copy(
@@ -46,7 +46,7 @@ class BackupViewModel(
         viewModelScope.launch {
             updateState { it.copy(isBackingUp = true, error = null) }
             runCatching {
-                val info = backupManager.backup()
+                val info = backupRepository.backup()
                 updateState {
                     it.copy(
                         isBackingUp = false,
@@ -72,7 +72,7 @@ class BackupViewModel(
         viewModelScope.launch {
             updateState { it.copy(isRestoring = true, error = null) }
             runCatching {
-                backupManager.restore()
+                backupRepository.restore()
                 updateState {
                     it.copy(
                         isRestoring = false,

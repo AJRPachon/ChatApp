@@ -9,7 +9,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.dropUnlessResumed
+import com.ajrpachon.chatapp.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,8 +25,11 @@ fun ChatAppTopBar(
     TopAppBar(
         title = { Text(title) },
         navigationIcon = {
-            IconButton(onClick = dropUnlessResumed { onBack() }) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+            IconButton(
+                onClick = dropUnlessResumed { onBack() },
+                modifier = Modifier.testTag("chat_app_top_bar_back_button"),
+            ) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.chat_back))
             }
         },
         actions = actions,

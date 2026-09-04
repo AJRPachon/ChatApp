@@ -1,0 +1,64 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the conversation with @claudeqa2, sends a real file via
+# the system document picker (Attach → Archivo, `ACTION_OPEN_DOCUMENT`),
+# confirms it renders as a file bubble with its filename, then deletes it
+# via subflows/delete_selected_media_message.yaml — same "long-press the
+# blank margin, not the bubble" workaround as send_image_message.yaml:
+# the file bubble's own Surface has a plain `Modifier.clickable` (to open
+# the file), which swallows a real long-press exactly like the
+# standalone image's AsyncImage does, so pressing the bubble content
+# itself never reaches the row's multi-select long-press handler —
+# verified directly (long-pressing the filename text did nothing).
+#
+# REQUIRES manual setup before running (outside Maestro — no shell-command
+# step exists in a Maestro flow):
+#   adb -s emulator-5556 push seed.txt /sdcard/Download/maestro_seed.txt
+# Unlike the Photo Picker, `ACTION_OPEN_DOCUMENT`'s "Downloads" shortcut
+# lists files straight from the filesystem — no MediaStore re-index/
+# force-stop dance needed. Its "Recent" tab, however, comes up empty for
+# a freshly-pushed file (same kind of index-lag as the Photo Picker), so
+# this flow navigates to the "Downloads" root explicitly instead of
+# relying on Recent.
+#
+# The picker (com.google.android.documentsui) is a system app with its
+# OWN persistent state, separate from ChatApp's — it remembers the last
+# root/folder browsed across launches, surviving `launchApp: clearState`
+# on ChatApp (which only clears *our* app). So the very first time this
+# suite ever opens Archivo on a given emulator, the picker lands on
+# "Recent"; every run after that, it reopens directly on "Downloads"
+# from last time. Handled here with `runFlow: when: notVisible` instead
+# of assuming either state.
+# Run with:
+#   maestro test .maestro/flows/send_file_message.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- tapOn: "Adjuntar|Attach"
+- tapOn: "Archivo"
+- extendedWaitUntil:
+    visible: "maestro_seed.txt|Recent"
+    timeout: 10000
+- runFlow:
+    when:
+      notVisible: "maestro_seed.txt"
+    commands:
+      - tapOn: "Show roots"
+      - tapOn: "Downloads"
+      - extendedWaitUntil:
+          visible: "maestro_seed.txt"
+          timeout: 8000
+- tapOn: "maestro_seed.txt"
+- extendedWaitUntil:
+    visible: "maestro_seed.txt"
+    timeout: 15000
+- runFlow:
+    file: ../subflows/delete_selected_media_message.yaml
+    env:
+      POINT: "10%,86%"

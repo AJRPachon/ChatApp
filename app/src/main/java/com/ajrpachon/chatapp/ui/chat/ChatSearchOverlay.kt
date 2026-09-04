@@ -31,10 +31,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -67,8 +70,10 @@ internal fun MessageSearchOverlay(
                 OutlinedTextField(
                     value = query,
                     onValueChange = onQueryChange,
-                    modifier = Modifier.weight(1f),
-                    placeholder = { Text("Buscar mensajes...") },
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("chat_search_field"),
+                    placeholder = { Text(stringResource(R.string.chat_search_placeholder)) },
                     singleLine = true,
                     leadingIcon = {
                         if (isSearching) {
@@ -80,20 +85,20 @@ internal fun MessageSearchOverlay(
                     trailingIcon = if (query.isNotEmpty()) {
                         {
                             IconButton(onClick = { onQueryChange("") }) {
-                                Icon(Icons.Default.Close, contentDescription = "Limpiar")
+                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.chat_clear_search_cd))
                             }
                         }
                     } else null,
                 )
                 IconButton(onClick = onClose) {
-                    Icon(Icons.Default.Close, contentDescription = "Cerrar búsqueda")
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.chat_close_search_cd))
                 }
             }
             HorizontalDivider()
             if (query.isNotBlank() && results.isEmpty() && !isSearching) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        "Sin resultados",
+                        stringResource(R.string.chat_search_no_results),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.outline,
                     )

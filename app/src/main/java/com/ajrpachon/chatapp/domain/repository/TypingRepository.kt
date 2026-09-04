@@ -1,4 +1,4 @@
-﻿package com.ajrpachon.chatapp.domain.repository
+package com.ajrpachon.chatapp.domain.repository
 
 import kotlinx.coroutines.flow.Flow
 

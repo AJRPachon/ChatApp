@@ -1,0 +1,31 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the conversation with @claudeqa2, opens in-chat message
+# search from the overflow menu, types a query, confirms the "no
+# results" state renders, then closes the search overlay via its close
+# icon. Note: the Android back button does NOT close this overlay (no
+# BackHandler intercepts it) — it would pop the whole chat screen
+# instead, so this flow always taps the close icon.
+# Run with:
+#   maestro test .maestro/flows/in_chat_search_navigation.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- runFlow:
+    file: ../subflows/open_chat_menu_item.yaml
+    env:
+      MENU_ITEM_TEXT: "Buscar mensajes|Search messages"
+- tapOn:
+    id: "chat_search_field"
+- inputText: zzz-nonexistent-maestro-query
+- assertVisible: "Sin resultados|No results"
+- hideKeyboard
+- tapOn: "Cerrar búsqueda|Close search"
+- assertVisible:
+    id: "chat_input_field"

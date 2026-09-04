@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.domain.usecase
 
 import com.ajrpachon.chatapp.domain.model.MessageBO
+import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -20,7 +21,8 @@ private fun stubSend(repo: MessageRepository, result: MessageBO) {
 class SendMessageUseCaseTest {
 
     private val messageRepository = mockk<MessageRepository>()
-    private val useCase = SendMessageUseCase(messageRepository)
+    private val analyticsTracker = mockk<AnalyticsTracker>(relaxed = true)
+    private val useCase = SendMessageUseCase(messageRepository, analyticsTracker)
     private val fakeMessage = mockk<MessageBO>(relaxed = true)
 
     @Test

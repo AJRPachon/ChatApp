@@ -1,0 +1,13 @@
+appId: com.ajrpachon.chatapp
+---
+# Reusable building block — NOT meant to run standalone.
+# From the chat list, opens the 1:1 conversation with the given contact
+# name. Call it from a flow with:
+#   - runFlow:
+#       file: ../subflows/open_conversation.yaml
+#       env:
+#         CONTACT_NAME: claudeqa2
+# Matched by text, not `id`: the contact name is user-generated content
+# (a username), not a static app string, so there's no testTag to hang
+# it off — and usernames aren't translated, so it's locale-safe too.
+- tapOn: ${CONTACT_NAME}

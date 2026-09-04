@@ -1,0 +1,57 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens "Maestro Test Group", extends poll_create_navigation.yaml's
+# navigation-only coverage into an actual send: fills a question and two
+# options, creates the poll, confirms it renders as a message (question +
+# both options, 0 votes each), then deletes it via the multi-select
+# bulk-delete path.
+#
+# Correction to a prior finding: earlier docs in this area (e.g. the sticker
+# picker exploration) assumed "no delete path for a sent poll" the way
+# StatusIntent.DeleteStatus has none — that assumption doesn't hold here.
+# PollBubble's question Text has no click handler of its own, so a long-press
+# on it falls through cleanly to MessageBubble's outer long-press-to-select
+# handler (ReplySelectContainer), same as every other non-text attachment
+# type in this suite — no code fix needed for polls specifically.
+#
+# Two things worth noting from getting this working:
+# - The sheet's title and its submit button both render the literal string
+#   "Create poll"/"Crear encuesta" (same string resource, `chat_create_poll`,
+#   used for both) — `tapOn` with a plain text selector matched the
+#   non-clickable title first and silently did nothing. `index: 1` picks the
+#   second match (the actual button) instead.
+# - The "Create poll" button stays disabled until a question and at least
+#   two non-blank options are filled in (see ChatBottomSheets.kt's
+#   `isValid`), so this flow never risks tapping it prematurely.
+# Run with:
+#   maestro test .maestro/flows/group_poll_message_roundtrip.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: "Maestro Test Group"
+- tapOn: "Adjuntar|Attach"
+- tapOn: "Encuesta"
+- tapOn: "Question|Pregunta"
+- inputText: "Maestro poll question?"
+- tapOn: "Option 1|Opción 1"
+- inputText: "Option A"
+- tapOn: "Option 2|Opción 2"
+- inputText: "Option B"
+- hideKeyboard
+- tapOn:
+    text: "Create poll|Crear encuesta"
+    index: 1
+- extendedWaitUntil:
+    visible: "Maestro poll question\\?"
+    timeout: 20000
+- assertVisible: "Option A"
+- assertVisible: "Option B"
+- runFlow:
+    file: ../subflows/delete_selected_message.yaml
+    env:
+      MESSAGE_SELECTOR: "Maestro poll question\\?"

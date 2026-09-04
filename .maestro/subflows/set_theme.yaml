@@ -1,0 +1,18 @@
+appId: com.ajrpachon.chatapp
+---
+# Reusable building block — NOT meant to run standalone.
+# From the chat list, opens the profile screen and picks a theme option,
+# then goes back to the chat list. Call it from a flow with:
+#   - runFlow:
+#       file: ../subflows/set_theme.yaml
+#       env:
+#         THEME_OPTION: profile_theme_dark_option  # or _light_ / _system_
+- tapOn:
+    id: "conversation_list_profile_button"
+- extendedWaitUntil:
+    visible:
+      id: "profile_sign_out_button"
+    timeout: 10000
+- tapOn:
+    id: ${THEME_OPTION}
+- back

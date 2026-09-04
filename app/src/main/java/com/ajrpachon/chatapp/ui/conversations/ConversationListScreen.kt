@@ -69,7 +69,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -242,10 +242,16 @@ fun ConversationListScreen(
                     )
                 },
                 actions = {
-                    IconButton(onClick = dropUnlessResumed { onGoToGlobalSearch() }) {
+                    IconButton(
+                        onClick = dropUnlessResumed { onGoToGlobalSearch() },
+                        modifier = Modifier.testTag("conversation_list_search_button"),
+                    ) {
                         Icon(Icons.Default.Search, contentDescription = stringResource(R.string.conversations_search_content_description))
                     }
-                    IconButton(onClick = { vm.onIntent(ConversationListIntent.ShowArchivedSheet) }) {
+                    IconButton(
+                        onClick = { vm.onIntent(ConversationListIntent.ShowArchivedSheet) },
+                        modifier = Modifier.testTag("conversation_list_archived_button"),
+                    ) {
                         BadgedBox(badge = {
                             if (state.archivedConversations.isNotEmpty()) {
                                 Badge { Text(state.archivedConversations.size.toString()) }
@@ -254,7 +260,10 @@ fun ConversationListScreen(
                             Icon(Icons.Default.Inventory2, contentDescription = stringResource(R.string.conversations_archived_content_description))
                         }
                     }
-                    IconButton(onClick = dropUnlessResumed { onOpenProfile() }) {
+                    IconButton(
+                        onClick = dropUnlessResumed { onOpenProfile() },
+                        modifier = Modifier.testTag("conversation_list_profile_button"),
+                    ) {
                         Icon(
                             Icons.Default.Person,
                             contentDescription = stringResource(R.string.conversations_profile_content_description),
@@ -268,7 +277,10 @@ fun ConversationListScreen(
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
                         )
                     }
-                    IconButton(onClick = dropUnlessResumed { onOpenInvitations() }) {
+                    IconButton(
+                        onClick = dropUnlessResumed { onOpenInvitations() },
+                        modifier = Modifier.testTag("conversation_list_invitations_button"),
+                    ) {
                         BadgedBox(badge = {
                             if (state.pendingInvitationsCount > 0) {
                                 Badge { Text(state.pendingInvitationsCount.toString()) }
@@ -291,15 +303,19 @@ fun ConversationListScreen(
             ) {
                 SmallFloatingActionButton(
                     onClick = dropUnlessResumed { onNewGroup() },
+                    shape = MaterialTheme.shapes.small,
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.testTag("conversation_list_new_group_fab"),
                 ) {
                     Icon(Icons.Default.Group, contentDescription = stringResource(R.string.conversations_new_group_content_description))
                 }
                 FloatingActionButton(
                     onClick = dropUnlessResumed { onNewChat() },
+                    shape = MaterialTheme.shapes.small,
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.testTag("conversation_list_new_chat_fab"),
                 ) {
                     Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.conversations_new_chat_content_description))
                 }
@@ -494,7 +510,7 @@ private fun ConversationItem(
                             .size(14.dp)
                             .align(Alignment.BottomEnd)
                             .background(
-                                androidx.compose.ui.graphics.Color(0xFF4CAF50),
+                                MaterialTheme.colorScheme.tertiary,
                                 CircleShape,
                             )
                             .border(2.dp, MaterialTheme.colorScheme.background, CircleShape),

@@ -1,0 +1,56 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the conversation with @claudeqa2, sends a real image via
+# the Photo Picker (Attach → Galería), confirms it renders as an image
+# bubble, then deletes it via subflows/delete_selected_media_message.yaml
+# (a captionless image bubble has no per-message context menu AND a real
+# long-press directly on it opens the full-screen viewer instead of
+# entering multi-select — see that subflow's doc for why — so cleanup
+# long-presses the blank margin beside the bubble instead).
+#
+# REQUIRES manual setup before running (outside Maestro — the modern
+# permission-less Photo Picker (ACTION_PICK_IMAGES) is its own separate
+# app, and Maestro flows have no shell-command step):
+#   1. Seed a small JPEG the Photo Picker's own index can see. A raw
+#      `adb push` + `content insert` into MediaStore is not enough — the
+#      Picker (com.google.android.photopicker) keeps its own cache and
+#      didn't pick up a freshly-pushed file in testing until that app
+#      (and com.google.android.providers.media.module) was force-stopped:
+#        adb -s emulator-5556 push seed.jpg /sdcard/Pictures/maestro_seed.jpg
+#        adb -s emulator-5556 shell content insert --uri content://media/external/images/media --bind _data:s:/sdcard/Pictures/maestro_seed.jpg
+#        adb -s emulator-5556 shell am force-stop com.google.android.photopicker
+#        adb -s emulator-5556 shell am force-stop com.google.android.providers.media.module
+#   2. Make sure that JPEG is the ONLY item in the device's Photos —
+#      this flow matches the single item by its auto-generated
+#      "Photo taken on <date>" content-description, which is ambiguous
+#      if more than one photo exists. In particular, never `adb shell
+#      screencap` straight to /sdcard (root or Pictures/DCIM) while
+#      iterating on this suite — that file gets auto-indexed as a
+#      "photo" too and silently pollutes the picker. Use
+#      `adb exec-out screencap -p > local_file.png` instead, which never
+#      touches device storage.
+# Run with:
+#   maestro test .maestro/flows/send_image_message.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- tapOn: "Adjuntar|Attach"
+- tapOn: "Galería"
+- extendedWaitUntil:
+    visible: ".*Photo taken on.*"
+    timeout: 8000
+- tapOn: ".*Photo taken on.*"
+- tapOn: "Done"
+- extendedWaitUntil:
+    visible: "Imagen|Image"
+    timeout: 15000
+- runFlow:
+    file: ../subflows/delete_selected_media_message.yaml
+    env:
+      POINT: "8%,80%"

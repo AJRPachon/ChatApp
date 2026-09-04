@@ -37,3 +37,10 @@ supabase/.temp/
 # Old shared module (removed, kept out of future tracking)
 shared/
 supabase/functions/.env
+
+# Maestro local env (QA credentials, never commit)
+.maestro/.env
+
+# Release signing (upload keystore, never commit)
+*.jks
+*.keystore

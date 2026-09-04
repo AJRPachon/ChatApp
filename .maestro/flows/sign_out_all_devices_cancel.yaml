@@ -1,0 +1,25 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the profile screen, taps "Sign out on all devices",
+# confirms the confirmation dialog renders, then cancels — never
+# actually signs out. Only covers the destructive action's guardrail
+# dialog, not the sign-out itself.
+# Run with:
+#   maestro test .maestro/flows/sign_out_all_devices_cancel.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- tapOn:
+    id: "conversation_list_profile_button"
+- extendedWaitUntil:
+    visible:
+      id: "profile_sign_out_button"
+    timeout: 10000
+- tapOn:
+    id: "profile_sign_out_all_button"
+- assertVisible: "Cerrar sesión en todos los dispositivos|Sign out on all devices"
+- tapOn: "Cancelar|Cancel"
+- assertVisible:
+    id: "profile_sign_out_button"

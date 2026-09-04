@@ -1,0 +1,58 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the profile screen, changes the display name to a
+# throwaway value, confirms it saved (shown after re-entering the
+# screen), then changes it back to "claudeqa" (the QA account's real
+# display name) — leaving the account as it started.
+#
+# Uses `eraseText` + a single `inputText` + `pressKey: Enter` — NOT the
+# `inputText: " "` + `pressKey: Backspace` pair this flow used previously.
+# That older workaround assumed a trailing space always commits the exact
+# typed word without ever accepting an IME suggestion; verified directly
+# (screenshot of the suggestion strip, then of the field's actual content
+# right after) that this is false on this keyboard/session: typing
+# "claudeqa" then a space silently replaced the field's content with
+# "claudeqa2" — the bolded predictive-text candidate — even though nothing
+# was tapped. `pressKey: Enter` immediately after the literal `inputText`
+# call (no space at all) does NOT trigger this substitution and reliably
+# commits+saves the exact typed string; reproduced across several repeats
+# fixing this exact real data drift on the QA account (see .maestro/README.md's
+# "Grupo real de prueba" section for how this was found: a group message
+# sent by @claudeqa rendered its sender-attribution header as "claudeqa2" for
+# another viewer, tracing back to @claudeqa's own `profiles.display_name`
+# having been corrupted to "claudeqa2" by a previous run of the OLD version
+# of this exact flow, hitting the same bug it was trying to guard against).
+# Run with:
+#   maestro test .maestro/flows/profile_display_name_roundtrip.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- tapOn:
+    id: "conversation_list_profile_button"
+- extendedWaitUntil:
+    visible:
+      id: "profile_sign_out_button"
+    timeout: 10000
+- tapOn:
+    id: "profile_display_name_field"
+- eraseText: 20
+- inputText: Maestro name test
+- pressKey: Enter
+- back
+- tapOn:
+    id: "conversation_list_profile_button"
+- extendedWaitUntil:
+    visible: "Maestro name test"
+    timeout: 10000
+- tapOn:
+    id: "profile_display_name_field"
+- eraseText: 20
+- inputText: claudeqa
+- pressKey: Enter
+- back
+- tapOn:
+    id: "conversation_list_profile_button"
+- assertVisible: "claudeqa"
+- back

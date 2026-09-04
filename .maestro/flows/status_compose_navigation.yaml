@@ -1,0 +1,44 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, taps "My status"'s add-text-status icon on the chat list,
+# confirms the "New status" compose dialog renders with the Post button
+# disabled while empty, then cancels — without ever posting a real
+# status.
+#
+# Media statuses (photo/video) are out of scope: they go through
+# `PickVisualMedia`, a real Android system picker Intent, same category
+# of thing skipped elsewhere in this suite (wallpaper, contact sharing).
+# Text status is the one option that's a plain in-app AlertDialog.
+#
+# Deliberately doesn't post-then-delete like send_message.yaml does:
+# StatusViewModel has a StatusIntent.DeleteStatus/deleteStatus() code
+# path, but nothing in StatusScreen.kt ever dispatches it — there is no
+# UI affordance to delete a status once posted. Posting a real one here
+# would leave it live on @claudeqa's account with no way to clean it up
+# through the app (only by waiting out whatever server-side expiry
+# applies), so this flow only covers the compose dialog opening/closing.
+#
+# Assumes "My status" starts empty (no existing own status), which is
+# what selects the direct add-icon path below (`AddStatusButton` in
+# StatusScreen.kt). If an own status already exists, the equivalent
+# tap targets move into a small "+" badge's dropdown menu instead
+# (`MyStatusAvatar`) — not handled by this flow.
+#
+# Doesn't assert the "Post" button is disabled while the field is
+# blank: verified directly (hierarchy dump) that Compose's
+# `enabled = false` on this TextButton only clears `clickable` in the
+# accessibility tree, not `enabled` — the node still reports
+# `enabled="true"`, so a `text: "Post", enabled: false` selector never
+# matches even though tapping it while blank correctly does nothing.
+# Run with:
+#   maestro test .maestro/flows/status_compose_navigation.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- tapOn: "Agregar estado de texto|Add text status"
+- assertVisible: "Nuevo estado|New status"
+- assertVisible: "¿Qué está pasando\\?|What's happening\\?"
+- tapOn: "Cancelar|Cancel"
+- assertVisible: "Chats"

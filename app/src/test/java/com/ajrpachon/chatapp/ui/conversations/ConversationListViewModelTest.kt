@@ -9,10 +9,10 @@ import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
 import com.ajrpachon.chatapp.domain.usecase.ObserveConversationsUseCase
 import com.ajrpachon.chatapp.domain.usecase.ObserveInvitationsUseCase
-import com.ajrpachon.chatapp.service.FcmTokenManager
 import com.ajrpachon.chatapp.data.local.DraftRepository
-import com.ajrpachon.chatapp.data.local.NotificationSoundRepository
-import com.ajrpachon.chatapp.data.local.ThemeRepository
+import com.ajrpachon.chatapp.domain.repository.FcmTokenRepository
+import com.ajrpachon.chatapp.domain.repository.NotificationSoundRepository
+import com.ajrpachon.chatapp.domain.repository.ThemeRepository
 import com.ajrpachon.chatapp.service.PresenceManager
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import com.ajrpachon.chatapp.utils.NetworkMonitor
@@ -39,7 +39,7 @@ class ConversationListViewModelTest {
     private val observeInvitationsUseCase = mockk<ObserveInvitationsUseCase>()
     private val conversationRepository = mockk<ConversationRepository>(relaxed = true)
     private val leaveGroupUseCase = mockk<LeaveGroupUseCase>(relaxed = true)
-    private val fcmTokenManager = mockk<FcmTokenManager>(relaxed = true)
+    private val fcmTokenRepository = mockk<FcmTokenRepository>(relaxed = true)
     private val presenceManager = mockk<PresenceManager>(relaxed = true)
     private val draftRepository = mockk<DraftRepository>(relaxed = true)
     private val notificationSoundRepository = mockk<NotificationSoundRepository>(relaxed = true)
@@ -73,7 +73,7 @@ class ConversationListViewModelTest {
         observeInvitationsUseCase = observeInvitationsUseCase,
         conversationRepository = conversationRepository,
         leaveGroupUseCase = leaveGroupUseCase,
-        fcmTokenManager = fcmTokenManager,
+        fcmTokenRepository = fcmTokenRepository,
         presenceManager = presenceManager,
         draftRepository = draftRepository,
         notificationSoundRepository = notificationSoundRepository,

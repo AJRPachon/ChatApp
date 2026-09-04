@@ -1,0 +1,17 @@
+appId: com.ajrpachon.chatapp
+---
+# Reusable building block — NOT meant to run standalone.
+# Opens the Archived sheet from the chat list and unarchives the row for
+# CONTACT_NAME, dismissing the sheet afterwards. Call it from a flow with:
+#   - runFlow:
+#       file: ../subflows/unarchive_conversation.yaml
+#       env:
+#         CONTACT_NAME: claudeqa2
+- tapOn:
+    id: "conversation_list_archived_button"
+- extendedWaitUntil:
+    visible: ${CONTACT_NAME}
+    timeout: 10000
+- tapOn: "Desarchivar|Unarchive"
+- back
+- assertVisible: ${CONTACT_NAME}

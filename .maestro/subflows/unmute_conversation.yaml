@@ -1,0 +1,13 @@
+appId: com.ajrpachon.chatapp
+---
+# Reusable building block — NOT meant to run standalone.
+# From the chat list, long-presses the conversation row for CONTACT_NAME
+# and unmutes it ("turn on notifications") via the context menu. Call it
+# from a flow with:
+#   - runFlow:
+#       file: ../subflows/unmute_conversation.yaml
+#       env:
+#         CONTACT_NAME: claudeqa2
+- longPressOn: ${CONTACT_NAME}
+- tapOn: "Activar notificaciones|Turn on notifications"
+- assertNotVisible: "Silenciado|Muted"

@@ -1,0 +1,15 @@
+appId: com.ajrpachon.chatapp
+---
+# Reusable building block — NOT meant to run standalone.
+# From the chat list, long-presses the conversation row for CONTACT_NAME
+# and mutes it via the context menu. Call it from a flow with:
+#   - runFlow:
+#       file: ../subflows/mute_conversation.yaml
+#       env:
+#         CONTACT_NAME: claudeqa2
+#
+# Selected by text, not `id`: same DropdownMenu/Popup limitation as
+# archive_conversation.yaml (see .maestro/README.md).
+- longPressOn: ${CONTACT_NAME}
+- tapOn: "Silenciar|Mute"
+- assertVisible: "Silenciado|Muted"

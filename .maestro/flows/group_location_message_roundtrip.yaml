@@ -1,0 +1,47 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens "Maestro Test Group", shares the device's current location,
+# confirms it renders as a location card, then deletes it via the multi-select
+# bulk-delete path.
+#
+# Unlike the 1:1 exploration documented in .maestro/README.md's "Pendiente"
+# section (which deliberately skipped this because a granted permission
+# stays granted forever with no way to revoke it from a flow, making a real
+# send unavoidable on every future run), this flow embraces that: it
+# REQUIRES ACCESS_FINE_LOCATION already granted (adb pm grant) and a fake
+# GPS fix already set (`adb emu geo fix <lon> <lat>`) before it runs — see
+# .maestro/README.md. ChatScreen.kt's onLocation handler dispatches
+# ChatIntent.FetchAndSendLocation the instant the permission check passes,
+# with no confirmation dialog to cancel — so tapping "Ubicación" always sends
+# for real, immediately, which is exactly why this flow always cleans up
+# after itself in the same run.
+#
+# Deleted via the multi-select path, not delete_own_message.yaml's
+# text-longpress: LocationMessageCard has its own `clickable` (opens Google
+# Maps) that swallows a long-press before it can reach a parent's long-click
+# handler — same class of issue as GenericFileBubble/VideoBubble, fixed the
+# same way (`combinedClickable` routing long-press to the shared
+# multi-select toggle instead). Long-press targets the "View on Maps" label
+# specifically, not "Shared location" (that string is also the map preview
+# image's contentDescription, so it can match two nodes at once — matching
+# the label a line below is unambiguous).
+# Run with:
+#   maestro test .maestro/flows/group_location_message_roundtrip.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: "Maestro Test Group"
+- tapOn: "Adjuntar|Attach"
+- tapOn: "Ubicación"
+- extendedWaitUntil:
+    visible: "Ver en Maps|View on Maps"
+    timeout: 20000
+- runFlow:
+    file: ../subflows/delete_selected_message.yaml
+    env:
+      MESSAGE_SELECTOR: "Ver en Maps|View on Maps"

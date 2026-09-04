@@ -64,12 +64,27 @@
     <!-- Message bubble -->
     <string name="chat_image_content_description">Image</string>
     <string name="chat_gif_content_description">GIF</string>
+    <string name="chat_video_thumbnail_cd">Video thumbnail</string>
+    <string name="chat_cancel_reply_cd">Cancel reply</string>
+    <string name="chat_stop_recording_cd">Stop recording</string>
+    <string name="chat_discard_audio_cd">Discard audio</string>
+    <string name="chat_send_audio_cd">Send audio</string>
+    <string name="chat_attach_cd">Attach</string>
+    <string name="chat_send_hold_to_schedule_cd">Send (hold to schedule)</string>
+    <string name="chat_record_audio_cd">Record audio</string>
+    <string name="chat_clear_search_cd">Clear</string>
+    <string name="chat_close_search_cd">Close search</string>
+    <string name="chat_search_placeholder">Search messages...</string>
+    <string name="chat_search_no_results">No results</string>
     <string name="chat_react">React</string>
     <string name="chat_edit">Edit</string>
     <string name="chat_remove_self_destruct">Remove self-destruct</string>
     <string name="chat_ephemeral_message">Ephemeral message</string>
     <string name="chat_copy">Copy</string>
     <string name="chat_forward">Forward</string>
+    <string name="chat_translate">Translate</string>
+    <string name="chat_translating">Translating…</string>
+    <string name="chat_hide_translation">Hide translation</string>
     <string name="chat_edited_label">edited</string>
     <string name="chat_pending_send">Pending send</string>
     <string name="chat_send_error">Send error</string>
@@ -139,6 +154,7 @@
     <string name="chat_pinned_message">Pinned message</string>
     <string name="chat_attachment_placeholder">[Attachment]</string>
     <string name="chat_unpin">Unpin</string>
+    <string name="chat_hide_pinned_banner">Hide banner</string>
 
     <!-- Poll bubble -->
     <string name="chat_poll">Poll</string>

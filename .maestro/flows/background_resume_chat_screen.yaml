@@ -1,0 +1,23 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the conversation with @claudeqa2, backgrounds the app
+# and brings it back, and confirms it's still showing that same chat
+# screen — not popped back to the chat list. Regression coverage for
+# Navigation 3 back-stack / nav state surviving a background/foreground
+# cycle (this is exactly the kind of state a stale ViewModel scope or a
+# rebuilt NavBackStack could silently lose).
+# Run with:
+#   maestro test .maestro/flows/background_resume_chat_screen.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- runFlow: ../subflows/background_and_resume.yaml
+- assertVisible:
+    id: "chat_input_field"
+- assertVisible: "claudeqa2"

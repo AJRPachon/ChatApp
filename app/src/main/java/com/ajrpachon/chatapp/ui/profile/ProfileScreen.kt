@@ -56,6 +56,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -366,7 +367,9 @@ fun ProfileScreen(
                     keyboard?.hide()
                     vm.onIntent(ProfileIntent.SaveDisplayName)
                 }),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("profile_display_name_field"),
             )
             if (state.isSavingDisplayName) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp))
@@ -407,6 +410,7 @@ fun ProfileScreen(
                 Switch(
                     checked = state.showOnlineStatus,
                     onCheckedChange = { vm.onIntent(ProfileIntent.ToggleOnlineStatus(it)) },
+                    modifier = Modifier.testTag("profile_online_status_switch"),
                 )
             }
 
@@ -435,7 +439,9 @@ fun ProfileScreen(
                 text = stringResource(R.string.profile_my_qr_code_button),
                 onClick = { showQrSheet = true },
                 leadingIcon = Icons.Default.QrCode,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("profile_my_qr_code_button"),
             )
 
             HorizontalDivider()
@@ -551,7 +557,8 @@ fun ProfileScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onSessionAudit() }
-                    .padding(vertical = 12.dp),
+                    .padding(vertical = 12.dp)
+                    .testTag("profile_session_audit_row"),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
@@ -579,7 +586,9 @@ fun ProfileScreen(
                 text = stringResource(R.string.profile_sign_out),
                 onClick = { vm.signOut() },
                 leadingIcon = Icons.AutoMirrored.Filled.Logout,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("profile_sign_out_button"),
             )
             Spacer(Modifier.size(8.dp))
             ChatAppDestructiveButton(
@@ -588,7 +597,8 @@ fun ProfileScreen(
                 leadingIcon = Icons.AutoMirrored.Filled.Logout,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 24.dp),
+                    .padding(bottom = 24.dp)
+                    .testTag("profile_sign_out_all_button"),
             )
         }
     }
@@ -614,7 +624,8 @@ private fun ThemeSelector(
             Surface(
                 modifier = Modifier
                     .weight(1f)
-                    .clickable { onSelect(pref) },
+                    .clickable { onSelect(pref) }
+                    .testTag("profile_theme_${pref.name.lowercase()}_option"),
                 shape = RoundedCornerShape(8.dp),
                 color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
                         else MaterialTheme.colorScheme.surfaceVariant,

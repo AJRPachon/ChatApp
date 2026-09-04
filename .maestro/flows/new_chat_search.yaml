@@ -1,0 +1,30 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in as the QA account and exercises "New chat" search: opens the
+# screen (confirms the invite-code card shows the current username),
+# searches for a username nobody has, and confirms the app shows the
+# "no user found" empty state instead of crashing or hanging.
+#
+# Note: existing contacts (like @claudeqa2) intentionally don't show up
+# in this search — "New chat" is for finding people you're NOT already
+# connected with. To jump into an existing conversation, use
+# subflows/open_conversation.yaml from the chat list instead.
+# Run with:
+#   maestro test .maestro/flows/new_chat_search.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_new_chat_search.yaml
+    env:
+      QUERY: nonexistent-maestro-test-user
+- assertVisible: "@claudeqa"
+# Full node text required (Maestro text selectors are matches(), not
+# contains() — see .maestro/README.md) — this is the exact empty-state
+# sentence, not just the query substring.
+- assertVisible: "No user found with \"nonexistent-maestro-test-user\"|No se encontró ningún usuario con \"nonexistent-maestro-test-user\""
+- hideKeyboard
+- back
+- assertVisible: "Chats"

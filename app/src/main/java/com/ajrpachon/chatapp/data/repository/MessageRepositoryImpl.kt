@@ -1,4 +1,4 @@
-﻿package com.ajrpachon.chatapp.data.repository
+package com.ajrpachon.chatapp.data.repository
 
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
@@ -15,11 +15,11 @@ import com.ajrpachon.chatapp.data.mapper.toBO
 import com.ajrpachon.chatapp.data.mapper.toDBO
 import com.ajrpachon.chatapp.data.remote.dto.MessageDTO
 import com.ajrpachon.chatapp.data.remote.source.MessageRemoteSource
-import com.ajrpachon.chatapp.data.remote.source.UserRemoteSource
 import com.ajrpachon.chatapp.domain.model.MessageBO
+import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
+import com.ajrpachon.chatapp.utils.AnalyticsEvents
 import com.ajrpachon.chatapp.utils.AppLogger
-import com.ajrpachon.chatapp.utils.E2EEKeyManager
 import com.ajrpachon.chatapp.utils.UploadLimits.checkAudioSize
 import com.ajrpachon.chatapp.utils.UploadLimits.checkFileSize
 import com.ajrpachon.chatapp.utils.UploadLimits.checkImageSize
@@ -27,15 +27,11 @@ import com.ajrpachon.chatapp.utils.UploadLimits.checkVideoSize
 import com.ajrpachon.chatapp.utils.catchResult
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.storage.storage
-import java.util.concurrent.ConcurrentHashMap
-import javax.crypto.SecretKey
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Instant
 private const val TAG = "MsgRepo"
 
@@ -49,14 +45,10 @@ class MessageRepositoryImpl(
     private val userDao: UserDao,
     private val reactionDao: ReactionDao,
     private val remoteSource: MessageRemoteSource,
-    private val userRemoteSource: UserRemoteSource,
     private val supabase: SupabaseClient,
+    private val analyticsTracker: AnalyticsTracker,
+    private val e2eeCoder: MessageE2EECoder,
 ) : MessageRepository {
-
-    // Shared key cache: avoids a Supabase round-trip on every encrypt/decrypt.
-    // Key = (localUserId, peerUserId). Entry is populated on first use per session.
-    private val sharedKeyCache = ConcurrentHashMap<Pair<String, String>, SecretKey>()
-    private val keyDerivationMutex = Mutex()
 
     override fun observeMessages(conversationId: String, currentUserId: String, historyVisibleFrom: Long): Flow<List<MessageBO>> = channelFlow {
         AppLogger.d(TAG, "observeMessages conv=$conversationId historyVisibleFrom=$historyVisibleFrom")
@@ -82,7 +74,7 @@ class MessageRepositoryImpl(
                 val bo = dbo.toBO(currentUserId, senderName, senderAvatarUrl)
                 // Attempt to decrypt E2EE messages inline; fall back to ciphertext on error
                 if (bo.isEncrypted && bo.content.isNotBlank()) {
-                    tryDecrypt(currentUserId, bo.senderId, bo)
+                    e2eeCoder.tryDecrypt(currentUserId, bo.senderId, bo)
                 } else {
                     bo
                 }
@@ -119,7 +111,7 @@ class MessageRepositoryImpl(
             imageUrl == null && audioUrl == null && callType == null &&
             gifUrl == null && stickerUrl == null && fileUrl == null && videoUrl == null
         ) {
-            tryEncrypt(senderId, otherUserId, content)
+            e2eeCoder.tryEncrypt(senderId, otherUserId, content)
         } else {
             Pair(content, false)
         }
@@ -241,7 +233,7 @@ class MessageRepositoryImpl(
                     val senderName = sender?.displayName ?: dbo.senderId
                     val bo = dbo.toBO(currentUserId, senderName, sender?.avatarUrl)
                     if (bo.isEncrypted && bo.content.isNotBlank()) {
-                        tryDecrypt(currentUserId, bo.senderId, bo)
+                        e2eeCoder.tryDecrypt(currentUserId, bo.senderId, bo)
                     } else {
                         bo
                     }
@@ -290,6 +282,13 @@ class MessageRepositoryImpl(
 
     override suspend fun setPinned(messageId: String, pinned: Boolean) {
         messageDao.setPinned(messageId, pinned)
+        analyticsTracker.logEvent(
+            AnalyticsEvents.SETTING_CHANGED,
+            mapOf(
+                AnalyticsEvents.PARAM_SETTING_NAME to AnalyticsEvents.SETTING_MESSAGE_PIN,
+                AnalyticsEvents.PARAM_SETTING_VALUE to pinned,
+            ),
+        )
     }
 
     override fun getSavedMessages(currentUserId: String): Flow<List<MessageBO>> =
@@ -304,64 +303,15 @@ class MessageRepositoryImpl(
 
     override suspend fun setSaved(messageId: String, saved: Boolean) {
         messageDao.setSaved(messageId, saved)
+        analyticsTracker.logEvent(
+            AnalyticsEvents.SETTING_CHANGED,
+            mapOf(
+                AnalyticsEvents.PARAM_SETTING_NAME to AnalyticsEvents.SETTING_MESSAGE_SAVE,
+                AnalyticsEvents.PARAM_SETTING_VALUE to saved,
+            ),
+        )
     }
 
-    // ---------------------------------------------------------------------------
-    // E2EE helpers
-    // ---------------------------------------------------------------------------
-
-    /**
-     * Returns the cached shared key for [localUserId]+[peerId], deriving and caching it on
-     * first call. Returns null if the peer has no public key registered yet.
-     */
-    private suspend fun getOrDeriveSharedKey(localUserId: String, peerId: String): SecretKey? {
-        val cacheKey = localUserId to peerId
-        sharedKeyCache[cacheKey]?.let { return it }
-        // Mutex prevents duplicate derivations when multiple messages arrive concurrently.
-        return keyDerivationMutex.withLock {
-            sharedKeyCache[cacheKey]?.let { return it }
-            val row = userRemoteSource.getPublicKey(peerId)
-            val peerPublicKey = row?.publicKey
-            if (peerPublicKey.isNullOrBlank()) return null
-            E2EEKeyManager.getOrCreateKeyPair(localUserId)
-            val key = E2EEKeyManager.deriveSharedKey(localUserId, peerPublicKey)
-            sharedKeyCache[cacheKey] = key
-            key
-        }
-    }
-
-    /** Encrypts [content] for [otherUserId]. Falls back to plaintext on any error. */
-    private suspend fun tryEncrypt(senderId: String, otherUserId: String, content: String): Pair<String, Boolean> {
-        return runCatching {
-            val sharedKey = getOrDeriveSharedKey(senderId, otherUserId)
-            if (sharedKey == null) {
-                AppLogger.d("E2EE", "No public key for $otherUserId — sending unencrypted")
-                return Pair(content, false)
-            }
-            Pair(E2EEKeyManager.encrypt(sharedKey, content), true)
-        }.getOrElse { e ->
-            AppLogger.w("E2EE", "Encryption failed, sending unencrypted: ${e.message}")
-            Pair(content, false)
-        }
-    }
-
-    /**
-     * Decrypts [bo] using the sender's public key. Falls back to ciphertext on any error.
-     * [currentUserId] is the local user; [senderId] is who sent the message.
-     */
-    private suspend fun tryDecrypt(currentUserId: String, senderId: String, bo: MessageBO): MessageBO {
-        return runCatching {
-            val sharedKey = getOrDeriveSharedKey(currentUserId, senderId)
-            if (sharedKey == null) {
-                AppLogger.d("E2EE", "No public key for sender $senderId — cannot decrypt")
-                return bo
-            }
-            bo.copy(content = E2EEKeyManager.decrypt(sharedKey, bo.content))
-        }.getOrElse { e ->
-            AppLogger.w("E2EE", "Decryption failed for msg ${bo.id}: ${e.message}")
-            bo
-        }
-    }
 
     override suspend fun getAllMessages(conversationId: String, currentUserId: String): List<MessageBO> {
         val dbos = messageDao.getAllMessages(conversationId)
@@ -371,11 +321,6 @@ class MessageRepositoryImpl(
             val senderName = senderMap[dbo.senderId]?.displayName ?: dbo.senderId
             dbo.toBO(currentUserId, senderName, senderMap[dbo.senderId]?.avatarUrl)
         }
-    }
-
-    override suspend fun savePendingMessage(id: String, conversationId: String, senderId: String, content: String, replyToId: String?, replyToContent: String?, replyToSenderName: String?) {
-        val dbo = com.ajrpachon.chatapp.data.local.entity.MessageDBO(id = id, conversationId = conversationId, senderId = senderId, content = content, isRead = true, createdAt = System.currentTimeMillis(), replyToId = replyToId, replyToContent = replyToContent, replyToSenderName = replyToSenderName, sendStatus = "pending")
-        messageDao.upsert(dbo)
     }
 
     override suspend fun searchAllMessages(query: String): List<MessageBO> {
@@ -388,16 +333,10 @@ class MessageRepositoryImpl(
         }
     }
 
-    override suspend fun countSent(userId: String): Int = messageDao.countSent(userId)
-    override suspend fun countReceived(userId: String): Int = messageDao.countReceived(userId)
-    override suspend fun countCalls(): Int = messageDao.countCalls()
-    override suspend fun sumCallDurationSeconds(): Int = messageDao.sumCallDurationSeconds()
-    override suspend fun countImages(): Int = messageDao.countImages()
-    override suspend fun countAudio(): Int = messageDao.countAudio()
-    override suspend fun countVideos(): Int = messageDao.countVideos()
-    override suspend fun getMostActiveConversationId(): String? = messageDao.getMostActiveConversation()?.conversationId
-    override suspend fun countMessagesByDay(since: Long): List<Pair<Long, Int>> =
-        messageDao.countMessagesByDay(since).map { it.dayEpoch to it.count }
+    override fun getImagesForConversation(conversationId: String): Flow<List<String>> =
+        messageDao.getImagesForConversation(conversationId)
+    override fun getVideosForConversation(conversationId: String): Flow<List<String>> =
+        messageDao.getVideosForConversation(conversationId)
 }
 
 /**

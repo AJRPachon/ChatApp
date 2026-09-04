@@ -1,0 +1,61 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, sends a uniquely-worded probe message to @claudeqa2, backs
+# out to the chat list, then uses the conversation row's overflow menu
+# to "Clear chat" — and verifies the probe message comes back after
+# simply reopening the conversation, before deleting it for real.
+#
+# This exercises (and documents) a real, non-obvious behavior found by
+# reading ConversationRepositoryImpl.clearChat: it only runs
+# `messageDao.deleteByConversation` against the LOCAL Room cache —
+# nothing is sent to the backend, so @claudeqa2's copy and the Supabase
+# rows are untouched. ChatViewModel.init unconditionally calls
+# `messageRepository.syncRemote(conversationId, historyVisibleFrom)`
+# every time a conversation screen opens, which re-fetches and
+# re-upserts the full remote history into the now-empty local cache —
+# so from the UI, "Clear chat" only ever clears until the next time you
+# open that chat, at which point it's fully restored from the backend.
+# That's why this flow can safely run against the shared QA
+# conversation: the "destructive" action here has no lasting effect
+# either on shared backend state or on @claudeqa2's device, and this
+# flow's own probe message is deleted at the end regardless.
+#
+# Notable UX finding: unlike "Sign out on all devices", tapping "Clear
+# chat" fires immediately with NO confirmation dialog (see
+# ConversationListScreen.kt's DropdownMenuItem for
+# conversations_menu_clear_chat) — a real destructive action one
+# accidental tap away, worth a second look outside this test suite.
+# Run with:
+#   maestro test .maestro/flows/clear_chat_roundtrip.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- runFlow:
+    file: ../subflows/send_chat_message.yaml
+    env:
+      MESSAGE_TEXT: Maestro clear-chat probe
+- back
+- assertVisible: "Chats"
+- longPressOn: claudeqa2
+- tapOn: "Vaciar chat|Clear chat"
+- tapOn: claudeqa2
+# Reopening lands wherever the paging window resumes, which after a
+# resync of a long history isn't necessarily scrolled all the way down
+# to the newest (probe) message — nudge it down if a "scroll to bottom"
+# FAB appeared (optional: it only renders when scrolled up a few rows).
+- tapOn:
+    text: "Ir al final|Scroll to bottom"
+    optional: true
+- extendedWaitUntil:
+    visible: "Maestro clear-chat probe"
+    timeout: 15000
+- runFlow:
+    file: ../subflows/delete_own_message.yaml
+    env:
+      MESSAGE_TEXT: Maestro clear-chat probe

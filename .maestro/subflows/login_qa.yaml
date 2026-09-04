@@ -1,0 +1,32 @@
+appId: com.ajrpachon.chatapp
+---
+# Reusable building block — NOT meant to run standalone.
+# Signs in with the given account and waits for the chat list to appear.
+# Call it from a flow with:
+#   - runFlow:
+#       file: ../subflows/login_qa.yaml
+#       env:
+#         LOGIN_EMAIL: ${QA_EMAIL}
+#         LOGIN_PASSWORD: ${QA_PASSWORD}
+# Selectors use `id` (Compose testTag exposed via testTagsAsResourceId
+# in MainActivity), not text — the sign-in tab and the submit button
+# share the same literal label, and the label text itself is
+# locale-dependent (values/ = es, values-en/ = en).
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible:
+      id: "auth_email_field"
+    timeout: 20000
+- tapOn:
+    id: "auth_email_field"
+- inputText: ${LOGIN_EMAIL}
+- tapOn:
+    id: "auth_password_field"
+- inputText: ${LOGIN_PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: "auth_submit_button"
+- extendedWaitUntil:
+    visible: "Chats"
+    timeout: 15000

@@ -25,11 +25,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import com.ajrpachon.chatapp.R
 
 @Composable
 fun InlineVideoPlayer(url: String, modifier: Modifier = Modifier) {
@@ -84,7 +86,7 @@ fun InlineVideoPlayer(url: String, modifier: Modifier = Modifier) {
             if (thumbnail != null) {
                 Image(
                     bitmap = thumbnail.asImageBitmap(),
-                    contentDescription = "Miniatura de vídeo",
+                    contentDescription = stringResource(R.string.chat_video_thumbnail_cd),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -108,7 +110,7 @@ fun InlineVideoPlayer(url: String, modifier: Modifier = Modifier) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Filled.PlayCircle,
-                        contentDescription = "Reproducir vídeo",
+                        contentDescription = stringResource(R.string.media_gallery_play_video_cd),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(40.dp),
                     )

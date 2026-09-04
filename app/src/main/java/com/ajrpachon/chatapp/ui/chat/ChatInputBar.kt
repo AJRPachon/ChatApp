@@ -49,10 +49,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.MessageLimits
 import com.ajrpachon.chatapp.ui.components.ChatAppTextField
@@ -119,14 +122,16 @@ internal fun NormalInputBar(
         ) {
             Icon(
                 Icons.Default.Add,
-                contentDescription = "Adjuntar",
+                contentDescription = stringResource(R.string.chat_attach_cd),
                 tint = MaterialTheme.colorScheme.primary,
             )
         }
         ChatAppTextField(
             value = inputText,
             onValueChange = { if (it.length <= MessageLimits.MAX_CONTENT_LENGTH) onTextChange(it) },
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .testTag("chat_input_field"),
             placeholder = "Mensaje…",
             singleLine = false,
             maxLines = 4,
@@ -147,18 +152,23 @@ internal fun NormalInputBar(
                         enabled = !isSending,
                         onClick = onSend,
                         onLongClick = onSchedule,
-                    ),
+                    )
+                    .testTag("chat_send_button"),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.Send,
-                    contentDescription = "Enviar (mantén para programar)",
+                    contentDescription = stringResource(R.string.chat_send_hold_to_schedule_cd),
                     tint = MaterialTheme.colorScheme.primary,
                 )
             }
         } else {
-            IconButton(onClick = onMic, enabled = !busy) {
-                Icon(Icons.Default.Mic, contentDescription = "Grabar audio")
+            IconButton(
+                onClick = onMic,
+                enabled = !busy,
+                modifier = Modifier.testTag("chat_mic_button"),
+            ) {
+                Icon(Icons.Default.Mic, contentDescription = stringResource(R.string.chat_record_audio_cd))
             }
         }
     }
@@ -366,10 +376,10 @@ internal fun ReplyPreviewBar(message: MessageBO, onCancel: () -> Unit) {
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        IconButton(onClick = onCancel, modifier = Modifier.size(32.dp)) {
+        IconButton(onClick = onCancel) {
             Icon(
                 Icons.Default.Close,
-                contentDescription = "Cancelar respuesta",
+                contentDescription = stringResource(R.string.chat_cancel_reply_cd),
                 modifier = Modifier.size(18.dp),
             )
         }

@@ -6,7 +6,9 @@ import com.ajrpachon.chatapp.data.mapper.toBO
 import com.ajrpachon.chatapp.data.remote.dto.StatusDTO
 import com.ajrpachon.chatapp.data.remote.source.StatusRemoteSource
 import com.ajrpachon.chatapp.domain.model.StatusBO
+import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.StatusRepository
+import com.ajrpachon.chatapp.utils.AnalyticsEvents
 import com.ajrpachon.chatapp.utils.catchResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -16,6 +18,7 @@ class StatusRepositoryImpl(
     private val statusDao: StatusDao,
     private val userDao: UserDao,
     private val remoteSource: StatusRemoteSource,
+    private val analyticsTracker: AnalyticsTracker,
 ) : StatusRepository {
     override fun observeActiveStatuses(): Flow<List<StatusBO>> =
         statusDao.observeActive(System.currentTimeMillis()).map { dbos ->
@@ -51,6 +54,10 @@ class StatusRepositoryImpl(
         )
         remoteSource.postStatus(dto)
         statusDao.upsert(dto.toDBO())
+        analyticsTracker.logEvent(
+            AnalyticsEvents.STATUS_POSTED,
+            mapOf(AnalyticsEvents.PARAM_STATUS_TYPE to AnalyticsEvents.TYPE_TEXT),
+        )
     }
     override suspend fun postImageStatus(imageBytes: ByteArray, text: String?) {
         val userId = remoteSource.getCurrentUserId() ?: return
@@ -66,6 +73,10 @@ class StatusRepositoryImpl(
         )
         remoteSource.postStatus(dto)
         statusDao.upsert(dto.toDBO())
+        analyticsTracker.logEvent(
+            AnalyticsEvents.STATUS_POSTED,
+            mapOf(AnalyticsEvents.PARAM_STATUS_TYPE to AnalyticsEvents.TYPE_IMAGE),
+        )
     }
     override suspend fun postVideoStatus(videoBytes: ByteArray, text: String?) {
         val userId = remoteSource.getCurrentUserId() ?: return
@@ -81,6 +92,10 @@ class StatusRepositoryImpl(
         )
         remoteSource.postStatus(dto)
         statusDao.upsert(dto.toDBO())
+        analyticsTracker.logEvent(
+            AnalyticsEvents.STATUS_POSTED,
+            mapOf(AnalyticsEvents.PARAM_STATUS_TYPE to AnalyticsEvents.TYPE_VIDEO),
+        )
     }
     override suspend fun deleteStatus(statusId: String) {
         remoteSource.deleteStatus(statusId)
