@@ -21,21 +21,24 @@ appId: com.ajrpachon.chatapp
 # attempts to pass a real biometric/PIN challenge, per the task's explicit
 # preference order.
 #
-# REAL FINDING while building this flow (reported, not fixed — see
-# CLAUDE.md guidance / task instructions on not forcing app fixes):
-# `NavDisplay`'s `onBack` in MainActivity.kt
-# (`if (backStack.size > 1) backStack.removeLastOrNull() else finish()`)
-# is not guarded against `AppLockRoute` being on top of the back stack —
-# a plain system back gesture pops AppLockScreen off *without* going
-# through AuthSucceeded/Effect.Authenticated, revealing whatever screen
-# was underneath (here, ProfileScreen) with no authentication at all.
-# This flow relies on exactly that gap to get back to ProfileScreen
-# afterwards (there is no other UI-driven way back without a real
-# biometric/PIN pass) — which is itself worth flagging: it means the
-# App Lock feature can currently be bypassed with the system/gesture
-# back button. If that gap is ever closed, this flow's cleanup step
-# (turning the toggle back off) will need a different path back to
-# ProfileScreen.
+# SECURITY FIX LANDED (fix/applock-back-button-bypass): `NavDisplay`'s
+# `onBack` in MainActivity.kt now routes a back press away while
+# `AppLockRoute` is on top to `moveTaskToBack(true)` instead of popping
+# it off the stack — a plain back press/gesture can no longer bypass
+# the lock screen. Confirmed directly on-device: this flow's original
+# cleanup step (a plain `back` landing on ProfileScreen underneath) no
+# longer works, by design — that was exactly the bug being closed.
+#
+# With no biometric/PIN enrolled on the emulator (this project has no
+# such automation configured anywhere), there is now genuinely no
+# UI-driven way back into the app once AppLockScreen triggers — which
+# is correct app behavior, not a test limitation. So cleanup here uses
+# `launchApp: { clearState: true }` (Maestro's `pm clear` equivalent)
+# once the lock screen's presence is confirmed, wiping the app-lock
+# flag (and everything else local) instead of trying to navigate back
+# to toggle it off. Subsequent flows in the suite re-authenticate via
+# their own `login_qa.yaml` regardless, so this doesn't strand the
+# suite — only this flow ends the app logged out.
 #
 # Run with:
 #   maestro test .maestro/flows/app_lock_toggle_roundtrip.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
@@ -72,15 +75,8 @@ appId: com.ajrpachon.chatapp
 - assertNotVisible:
     id: "profile_sign_out_button"
 # Deliberately does NOT tap "Unlock with fingerprint" — see notes above.
-# Goes back via the system back gesture instead (known bypass, see notes
-# above), landing back on ProfileScreen since it was still underneath
-# AppLockRoute on the back stack.
-- back
-- extendedWaitUntil:
-    visible:
-      id: "profile_app_lock_switch"
-    timeout: 10000
-- tapOn:
-    id: "profile_app_lock_switch"
-- assertVisible:
-    id: "profile_sign_out_button"
+# No UI-driven way back past a real lock screen without a real
+# biometric/PIN pass (that's the fix working as intended) — wipe local
+# state instead of trying to navigate back to toggle it off.
+- launchApp:
+    clearState: true
