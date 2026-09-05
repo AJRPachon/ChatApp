@@ -8,7 +8,7 @@ Esta política describe qué datos recoge ChatApp ("la App", "nosotros"), cómo 
 
 ## 1. Quiénes somos
 
-ChatApp es una aplicación de mensajería instantánea para Android (chats 1:1, grupos, llamadas de voz/vídeo) desarrollada por [nombre del desarrollador/empresa]. Para consultas sobre privacidad, contacta a **[email de soporte]**.
+ChatApp es una aplicación de mensajería instantánea para Android (chats 1:1, grupos, llamadas de voz/vídeo) desarrollada por [nombre del desarrollador/empresa]. Para consultas sobre privacidad, contacta a **ajrpachon@gmail.com**.
 
 ---
 
@@ -121,7 +121,7 @@ Dependiendo de tu jurisdicción (por ejemplo, RGPD en la UE/EEE), puedes tener d
 - Portabilidad de tus datos.
 - Retirar tu consentimiento a permisos concedidos (contactos, ubicación, cámara, micrófono) en cualquier momento desde los ajustes de Android, sin que ello afecte a funciones que no dependen de ese permiso.
 
-Para ejercer cualquiera de estos derechos, contacta con **[email de soporte]**.
+Para ejercer cualquiera de estos derechos, contacta con **ajrpachon@gmail.com**.
 
 ---
 
@@ -142,7 +142,7 @@ Para ejercer cualquiera de estos derechos, contacta con **[email de soporte]**.
 
 ## 8. Menores de edad
 
-ChatApp no está dirigida a menores de 13 años (o la edad mínima aplicable en tu país) y no recogemos conscientemente datos de menores. Si crees que un menor nos ha proporcionado datos personales, contacta con **[email de soporte]** para solicitar su eliminación.
+ChatApp no está dirigida a menores de 13 años (o la edad mínima aplicable en tu país) y no recogemos conscientemente datos de menores. Si crees que un menor nos ha proporcionado datos personales, contacta con **ajrpachon@gmail.com** para solicitar su eliminación.
 
 ---
 
@@ -154,7 +154,7 @@ Podemos actualizar esta política cuando cambien las funciones de la App. Notifi
 
 ## 10. Contacto
 
-Para cualquier consulta sobre privacidad, protección de datos o para ejercer tus derechos: **[email de soporte]**.
+Para cualquier consulta sobre privacidad, protección de datos o para ejercer tus derechos: **ajrpachon@gmail.com**.
 
 ---
 
