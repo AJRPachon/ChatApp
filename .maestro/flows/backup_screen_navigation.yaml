@@ -1,0 +1,58 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the profile screen, taps "Backup" (profile_backup_row /
+# R.string.profile_backup_title), confirms BackupScreen renders (the
+# "Back up" button — R.string.backup_make_backup_button, "Hacer copia" in
+# es/"Back up" in en), then goes back to the profile screen. Deliberately
+# navigation-only: never taps "backup_make_backup_button" (Start backup)
+# nor the restore button, and never completes any Google OAuth flow.
+#
+# `BackupRepository.backup()`/`.restore()` call `AccountManager.get(context)
+# .blockingGetAuthToken(account, "oauth2:.../auth/drive.file", true)` —
+# needs a real Google account already added on the device and would upload/
+# download a real file on a real Drive, which is out of scope here (per
+# task instructions).
+#
+# REAL FINDING while building this flow (reported, not fixed): merely
+# opening BackupScreen already risks starting that OAuth dance, not just
+# tapping the button — `BackupViewModel.init` unconditionally calls
+# `loadLastBackupInfo()`, which calls `backupRepository.getLatestBackupInfo()`,
+# which also calls `getAccessToken()` (the same `blockingGetAuthToken`
+# call) to show the "last backup" card. It's wrapped in `runCatching { }
+# .getOrNull()`, so on a device/account with NO Google account added
+# (`accounts.firstOrNull() ?: error(...)`) it fails silently and the
+# screen just renders its "No backups in Google Drive" empty state — no
+# dialog, no crash. But on a device that DOES have a Google account
+# configured, simply navigating into this screen could already trigger a
+# real system account-consent prompt, before ever touching either button.
+# This flow assumes the target emulator has no Google account added (per
+# the task's own description of the QA setup) so it should render its
+# empty state safely; if a system Google account/consent dialog appears
+# unexpectedly at any point, cancel/dismiss it without completing it and
+# do not proceed with a real backup/restore.
+#
+# Run with:
+#   maestro test .maestro/flows/backup_screen_navigation.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- tapOn:
+    id: "conversation_list_profile_button"
+- extendedWaitUntil:
+    visible:
+      id: "profile_sign_out_button"
+    timeout: 10000
+- tapOn:
+    id: "profile_backup_row"
+- extendedWaitUntil:
+    visible:
+      id: "backup_make_backup_button"
+    timeout: 10000
+- assertVisible:
+    id: "backup_make_backup_button"
+- tapOn:
+    id: "chat_app_top_bar_back_button"
+- assertVisible:
+    id: "profile_sign_out_button"

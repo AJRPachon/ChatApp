@@ -508,6 +508,7 @@ fun ProfileScreen(
                 Switch(
                     checked = state.isAppLockEnabled,
                     onCheckedChange = { vm.onIntent(ProfileIntent.ToggleAppLock) },
+                    modifier = Modifier.testTag("profile_app_lock_switch"),
                 )
             }
 
@@ -560,7 +561,8 @@ fun ProfileScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onBackup() }
-                    .padding(vertical = 12.dp),
+                    .padding(vertical = 12.dp)
+                    .testTag("profile_backup_row"),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {

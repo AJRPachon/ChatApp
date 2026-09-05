@@ -54,6 +54,8 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     sign_out_all_devices_cancel.yaml
     profile_display_name_roundtrip.yaml
     profile_online_status_roundtrip.yaml
+    app_lock_toggle_roundtrip.yaml
+    backup_screen_navigation.yaml
     my_qr_code_navigation.yaml
     forward_message_dialog_navigation.yaml
     ephemeral_message_dialog_navigation.yaml
@@ -259,7 +261,11 @@ compartido por varias pantallas: `NewChatScreen`, `InvitationsScreen`,
 `testTag`), `chat_recording_stop_button` (`RecordingBar`'s botón de stop),
 `chat_audio_discard_button` / `chat_audio_send_button` (`AudioPreviewBar`'s
 descartar/enviar — los cuatro añadidos para `group_audio_message_roundtrip.yaml`,
-ver "Grupo real de prueba" más abajo).
+ver "Grupo real de prueba" más abajo); `profile_app_lock_switch`,
+`profile_backup_row` (`ProfileScreen`), `applock_screen` (`AppLockScreen`,
+root `Column`), `backup_make_backup_button` (`BackupScreen`) — los cuatro
+añadidos para `app_lock_toggle_roundtrip.yaml`/`backup_screen_navigation.yaml`,
+ninguno tenía `testTag` antes.
 
 **Excepciones donde se usa texto en vez de `id`:**
 
@@ -847,6 +853,38 @@ stickers.
   extendió a un envío real porque no hay ningún sticker que seleccionar,
   no por una limitación de Maestro.
 
+- **`AppLockScreen` es evitable con el botón/gesto "atrás" del sistema (no
+  arreglado, solo reportado)**: construyendo `app_lock_toggle_roundtrip.yaml`
+  se confirmó que `NavDisplay`'s `onBack` en `MainActivity.kt`
+  (`if (backStack.size > 1) backStack.removeLastOrNull() else finish()`)
+  no tiene ninguna excepción para `AppLockRoute` — un `back` normal la
+  saca de la pila igual que cualquier otra pantalla, revelando lo que
+  hubiera debajo (aquí, `ProfileScreen`) sin pasar nunca por
+  `AppLockIntent.AuthSucceeded`/`AppLockEffect.Authenticated`. Es decir,
+  el bloqueo de app actual se puede saltar por completo con el botón
+  atrás, sin biometría ni PIN. El propio flow se apoya en este hueco a
+  propósito para volver a `ProfileScreen` y desactivar el toggle al
+  terminar (no hay ninguna otra vía de UI para salir de `AppLockScreen`
+  sin pasar una biometría/PIN real) — si esto se arregla alguna vez
+  (añadiendo una excepción para `AppLockRoute` en `onBack`), el paso de
+  limpieza de ese flow necesitará una vía distinta.
+- **`BackupScreen` puede disparar el OAuth de Google solo con abrirla, no
+  solo al tocar "Hacer copia"**: `BackupViewModel.init` llama siempre a
+  `loadLastBackupInfo()`, que llama a `backupRepository.getLatestBackupInfo()`
+  para rellenar la tarjeta "Última copia" — y esa función usa el mismo
+  `AccountManager.blockingGetAuthToken(account, DRIVE_SCOPE, true)` que
+  `backup()`/`restore()`. Está envuelta en `runCatching { }.getOrNull()`,
+  así que en un dispositivo/emulador sin ninguna cuenta de Google añadida
+  (`accounts.firstOrNull() ?: error(...)`) falla en silencio y la pantalla
+  simplemente muestra su estado vacío ("No backups in Google Drive") — sin
+  diálogo ni crash, verificado leyendo `BackupRepositoryImpl.kt`. Pero en
+  un dispositivo que sí tenga una cuenta de Google configurada, entrar a
+  esta pantalla podría bastar para disparar un diálogo real de
+  consentimiento de cuenta, antes de tocar ningún botón.
+  `backup_screen_navigation.yaml` asume el escenario sin cuenta de Google
+  (el que describe el propio encargo para la cuenta QA) y por eso se
+  queda en navegación pura.
+
 ## Higiene de datos
 
 `send_message.yaml` y `message_reaction_roundtrip.yaml` borran el mensaje
@@ -1000,10 +1038,14 @@ verdad.
   salida limpia. Se necesitaría limpiar el factor vía Supabase admin
   (fuera del alcance de un flow de Maestro) para que esto fuera seguro
   de automatizar.
-- **Backup a Google Drive** (Profile): no investigado a fondo más allá
-  de confirmar que `onBackup` existe — descartado directamente por
-  requerir casi con certeza un inicio de sesión real de Google, como ya
-  anticipaba el encargo.
+- ~~Backup a Google Drive~~ (Profile): **parcialmente cubierto** —
+  `backup_screen_navigation.yaml` cubre solo la navegación (entrar,
+  confirmar que renderiza, volver), sin tocar "Hacer copia"/"Restaurar" ni
+  completar ningún OAuth real — sigue siendo cierto que un backup/restore
+  de extremo a extremo necesitaría una cuenta de Google real añadida al
+  emulador, como ya anticipaba el encargo original. Ver "Hallazgos" más
+  abajo por un matiz real encontrado: incluso solo *abrir* la pantalla
+  puede disparar el mismo `blockingGetAuthToken` que el propio botón.
 - ~~Crear grupo de verdad + Group info + salir del grupo~~: **resuelto** —
   decisión explícita del usuario de crear un grupo real y permanente pese
   a la suciedad de backend que eso implica. Ver "Grupo real de prueba y sus
