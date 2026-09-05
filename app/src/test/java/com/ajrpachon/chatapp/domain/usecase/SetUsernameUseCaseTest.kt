@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.domain.usecase
 
 import com.ajrpachon.chatapp.domain.model.UserBO
+import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -12,7 +13,8 @@ import org.junit.Test
 class SetUsernameUseCaseTest {
 
     private val userRepository = mockk<UserRepository>()
-    private val useCase = SetUsernameUseCase(userRepository)
+    private val analyticsTracker = mockk<AnalyticsTracker>(relaxed = true)
+    private val useCase = SetUsernameUseCase(userRepository, analyticsTracker)
     private val fakeUser = mockk<UserBO>(relaxed = true)
 
     @Test

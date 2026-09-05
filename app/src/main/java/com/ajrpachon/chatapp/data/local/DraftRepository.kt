@@ -4,13 +4,15 @@ import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+// This class shares its simple name with the domain interface it implements — aliased to avoid
+// a same-name clash (there is no "...Impl" suffix on this one, unlike its sibling repositories).
+import com.ajrpachon.chatapp.domain.repository.DraftRepository as DraftRepositoryContract
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 private val Context.draftDataStore by preferencesDataStore(name = "message_drafts")
 
-class DraftRepository(private val context: Context) :
-    com.ajrpachon.chatapp.domain.repository.DraftRepository {
+class DraftRepository(private val context: Context) : DraftRepositoryContract {
 
     override suspend fun saveDraft(conversationId: String, text: String) {
         val key = stringPreferencesKey("draft_$conversationId")

@@ -1,10 +1,13 @@
 package com.ajrpachon.chatapp.data.repository
 
 import com.ajrpachon.chatapp.data.local.ChatDatabase
+import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.AuthRepository
+import com.ajrpachon.chatapp.domain.repository.CrashReporter
 import com.ajrpachon.chatapp.domain.repository.MfaAssuranceLevel
 import com.ajrpachon.chatapp.domain.repository.SessionInfo
 import com.ajrpachon.chatapp.domain.repository.TotpEnrollment
+import com.ajrpachon.chatapp.utils.AnalyticsEvents
 import com.ajrpachon.chatapp.utils.E2EEKeyManager
 import com.ajrpachon.chatapp.utils.IntegrityChecker
 import com.ajrpachon.chatapp.utils.IntegrityResult
@@ -25,6 +28,8 @@ class AuthRepositoryImpl(
     private val supabase: SupabaseClient,
     private val chatDatabase: ChatDatabase,
     private val sessionGuard: SessionGuard,
+    private val crashReporter: CrashReporter,
+    private val analyticsTracker: AnalyticsTracker,
 ) : AuthRepository {
 
     override fun getCurrentUserId(): String? =
@@ -41,6 +46,11 @@ class AuthRepositoryImpl(
             this.email = email
             this.password = password
         }
+        crashReporter.setUserId(getCurrentUserId())
+        analyticsTracker.logEvent(
+            AnalyticsEvents.LOGIN,
+            mapOf(AnalyticsEvents.PARAM_METHOD to AnalyticsEvents.METHOD_EMAIL),
+        )
     }
 
     override suspend fun signUpWithEmail(email: String, password: String): Boolean {
@@ -48,23 +58,39 @@ class AuthRepositoryImpl(
             this.email = email
             this.password = password
         }
+        analyticsTracker.logEvent(
+            AnalyticsEvents.SIGN_UP,
+            mapOf(AnalyticsEvents.PARAM_METHOD to AnalyticsEvents.METHOD_EMAIL),
+        )
         return supabase.auth.currentSessionOrNull() != null
     }
 
+    // Supabase auto-creates the account on first Google sign-in — there's no separate
+    // "new account" signal from this call, so first-time Google users are logged as `login`
+    // too (unlike email, where sign-up is a distinct explicit call).
     override suspend fun signInWithGoogle(idToken: String, rawNonce: String) {
         supabase.auth.signInWith(IDToken) {
             provider = Google
             this.idToken = idToken
             nonce = rawNonce
         }
+        crashReporter.setUserId(getCurrentUserId())
+        analyticsTracker.logEvent(
+            AnalyticsEvents.LOGIN,
+            mapOf(AnalyticsEvents.PARAM_METHOD to AnalyticsEvents.METHOD_GOOGLE),
+        )
     }
 
     override suspend fun signOut() {
         supabase.auth.signOut()
+        crashReporter.setUserId(null)
+        analyticsTracker.logEvent(AnalyticsEvents.LOGOUT)
     }
 
     override suspend fun signOutAll() {
         supabase.auth.signOut(SignOutScope.GLOBAL)
+        crashReporter.setUserId(null)
+        analyticsTracker.logEvent(AnalyticsEvents.LOGOUT)
     }
 
     override suspend fun deleteAccount() {

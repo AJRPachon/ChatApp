@@ -64,6 +64,7 @@ paging = "3.5.1"
 
 # Firebase
 firebaseBom = "34.18.0"
+firebaseCrashlyticsPlugin = "3.0.4"
 
 # Baseline profiles
 profileinstaller = "1.4.1"
@@ -171,6 +172,8 @@ androidx-paging-compose = { module = "androidx.paging:paging-compose", version.r
 # Firebase
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
 firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
+firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
+firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
 
 # Baseline profiles
 profileinstaller = { module = "androidx.profileinstaller:profileinstaller", version.ref = "profileinstaller" }
@@ -188,6 +191,7 @@ compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 androidx-room = { id = "androidx.room", version.ref = "room" }
 google-services = { id = "com.google.gms.google-services", version = "4.5.0" }
+firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebaseCrashlyticsPlugin" }
 compose-nav-graph = { id = "com.github.skydoves.navgraph", version.ref = "navgraph" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 gradle-versions = { id = "io.github.ben-manes.versions", version.ref = "gradleVersionsPlugin" }

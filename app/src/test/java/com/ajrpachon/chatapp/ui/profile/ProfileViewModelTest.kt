@@ -3,6 +3,7 @@ package com.ajrpachon.chatapp.ui.profile
 import com.ajrpachon.chatapp.domain.model.ThemePreference
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.repository.AppLockRepository
+import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.AuthRepository
 import com.ajrpachon.chatapp.domain.repository.FcmTokenRepository
 import com.ajrpachon.chatapp.domain.repository.ThemeRepository
@@ -40,6 +41,7 @@ class ProfileViewModelTest {
     private val userRepository = mockk<UserRepository>(relaxed = true)
     private val themeRepository = mockk<ThemeRepository>()
     private val appLockRepository = mockk<AppLockRepository>()
+    private val analyticsTracker = mockk<AnalyticsTracker>(relaxed = true)
 
     private val userBO = UserBO(
         id = "user1",
@@ -65,6 +67,7 @@ class ProfileViewModelTest {
         userRepository = userRepository,
         themeRepository = themeRepository,
         appLockRepository = appLockRepository,
+        analyticsTracker = analyticsTracker,
     )
 
     private fun restException(statusCode: Int, message: String? = null): RestException {

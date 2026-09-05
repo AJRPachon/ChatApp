@@ -6,6 +6,7 @@ import com.ajrpachon.chatapp.data.local.dao.PollDao
 import com.ajrpachon.chatapp.data.local.entity.PollDBO
 import com.ajrpachon.chatapp.data.local.entity.PollOptionDBO
 import com.ajrpachon.chatapp.data.local.entity.PollVoteDBO
+import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -27,7 +28,8 @@ class PollRepositoryImplTest {
 
     private val pollDao = mockk<PollDao>(relaxed = true)
     private val localDataSource = PollLocalDataSource(pollDao)
-    private val repo = PollRepositoryImpl(localDataSource)
+    private val analyticsTracker = mockk<AnalyticsTracker>(relaxed = true)
+    private val repo = PollRepositoryImpl(localDataSource, analyticsTracker)
 
     // ── createPoll ───────────────────────────────────────────────────────────
 
