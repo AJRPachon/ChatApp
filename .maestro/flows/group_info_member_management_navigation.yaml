@@ -1,0 +1,54 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in as @claudeqa, opens "Maestro Test Group" (the real, permanent group
+# — see .maestro/README.md's "Grupo real de prueba"), taps the chat top bar
+# title to open GroupInfoScreen (ChatTopBar.kt: tapping the title while
+# `state.isGroup` calls `onGroupInfo()` directly — no dropdown menu item
+# needed), confirms it renders with @claudeqa2 as a member, then opens (but
+# never selects) that member's admin options menu to confirm the
+# promote/remove-admin affordances exist, before backing out without
+# mutating group membership/roles.
+#
+# @claudeqa is the group's creator/admin and @claudeqa2 its only other
+# member (a plain MEMBER), so GroupInfoScreen's per-member "..." button
+# (`group_options_content_description`, only rendered for
+# `isCurrentUserAdmin && !isCurrentUser`) is unambiguous here — exactly one
+# such row exists. Its DropdownMenu (a Popup, same as every other
+# DropdownMenu in this suite — see README's "Selectores: por qué id y no
+# texto") is dismissed with a system `back` press rather than tapped
+# outside: Compose Material3's DropdownMenu registers its own back-dismiss
+# via its Popup's focusable/dismiss-on-back-press properties, which only
+# closes the Popup, not GroupInfoScreen itself — confirmed by asserting
+# GroupInfoScreen's own top bar title is still visible immediately after.
+#
+# Never taps "Hacer admin"/"Quitar admin"/"Eliminar del grupo" — this group
+# is permanent and shared with @claudeqa2's own test runs, so promoting/
+# demoting/removing its only other member is exactly the kind of
+# destructive, hard-to-undo mutation this suite avoids by design.
+# Run with:
+#   maestro test .maestro/flows/group_info_member_management_navigation.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: "Maestro Test Group"
+- tapOn:
+    id: "chat_top_bar_title"
+- extendedWaitUntil:
+    visible: "Info del grupo|Group info"
+    timeout: 10000
+- assertVisible: "@claudeqa2"
+- tapOn: "Opciones|Options"
+- extendedWaitUntil:
+    visible: "Hacer admin|Make admin"
+    timeout: 5000
+- back
+- assertVisible: "Info del grupo|Group info"
+- tapOn:
+    id: "chat_app_top_bar_back_button"
+- assertVisible:
+    id: "chat_top_bar_title"
