@@ -2,7 +2,6 @@ package com.ajrpachon.chatapp.ui.chat.gallery
 
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import com.ajrpachon.chatapp.util.MainDispatcherRule
-import com.ajrpachon.chatapp.util.sharedScheduler
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,14 +33,14 @@ class ChatMediaGalleryViewModelTest {
     }
 
     @Test
-    fun `initial state is empty before the repository emits`() = runTest(sharedScheduler) {
+    fun `initial state is empty before the repository emits`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         assertEquals(emptyList<String>(), vm.state.value.images)
         assertEquals(emptyList<String>(), vm.state.value.videos)
     }
 
     @Test
-    fun `images are loaded from getImagesForConversation on init`() = runTest(sharedScheduler) {
+    fun `images are loaded from getImagesForConversation on init`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         imagesFlow.value = listOf("http://img1", "http://img2")
         advanceUntilIdle()
@@ -49,7 +48,7 @@ class ChatMediaGalleryViewModelTest {
     }
 
     @Test
-    fun `videos are loaded from getVideosForConversation on init`() = runTest(sharedScheduler) {
+    fun `videos are loaded from getVideosForConversation on init`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         videosFlow.value = listOf("http://video1")
         advanceUntilIdle()
@@ -57,7 +56,7 @@ class ChatMediaGalleryViewModelTest {
     }
 
     @Test
-    fun `Refresh intent re-collects both flows`() = runTest(sharedScheduler) {
+    fun `Refresh intent re-collects both flows`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         imagesFlow.value = listOf("http://img1")
         videosFlow.value = listOf("http://video1")

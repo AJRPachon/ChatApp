@@ -6,7 +6,6 @@ import com.ajrpachon.chatapp.domain.usecase.CreateGroupUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.SearchUsersUseCase
 import com.ajrpachon.chatapp.util.MainDispatcherRule
-import com.ajrpachon.chatapp.util.sharedScheduler
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -78,7 +77,7 @@ class CreateGroupViewModelTest {
     )
 
     @Test
-    fun `ToggleUser adds user to selectedUsers`() = runTest(sharedScheduler) {
+    fun `ToggleUser adds user to selectedUsers`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         vm.onIntent(CreateGroupIntent.ToggleUser(userA))
@@ -86,7 +85,7 @@ class CreateGroupViewModelTest {
     }
 
     @Test
-    fun `ToggleUser twice removes the user (toggle)`() = runTest(sharedScheduler) {
+    fun `ToggleUser twice removes the user (toggle)`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         vm.onIntent(CreateGroupIntent.ToggleUser(userA))
@@ -95,7 +94,7 @@ class CreateGroupViewModelTest {
     }
 
     @Test
-    fun `Next without selected users does not advance step`() = runTest(sharedScheduler) {
+    fun `Next without selected users does not advance step`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         vm.onIntent(CreateGroupIntent.Next)
@@ -103,7 +102,7 @@ class CreateGroupViewModelTest {
     }
 
     @Test
-    fun `Next with selected users advances to SET_INFO`() = runTest(sharedScheduler) {
+    fun `Next with selected users advances to SET_INFO`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         vm.onIntent(CreateGroupIntent.ToggleUser(userA))
@@ -112,7 +111,7 @@ class CreateGroupViewModelTest {
     }
 
     @Test
-    fun `NameChanged updates groupName in state`() = runTest(sharedScheduler) {
+    fun `NameChanged updates groupName in state`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         vm.onIntent(CreateGroupIntent.NameChanged("Squad"))
@@ -120,7 +119,7 @@ class CreateGroupViewModelTest {
     }
 
     @Test
-    fun `Create with blank name does not call createGroupUseCase`() = runTest(sharedScheduler) {
+    fun `Create with blank name does not call createGroupUseCase`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         vm.onIntent(CreateGroupIntent.ToggleUser(userA))
@@ -135,7 +134,7 @@ class CreateGroupViewModelTest {
     }
 
     @Test
-    fun `Create success emits NavigateToChat effect`() = runTest(sharedScheduler) {
+    fun `Create success emits NavigateToChat effect`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { createGroupUseCase(any(), any(), any(), any()) } returns Result.success(fakeConversation)
         val vm = buildViewModel()
         advanceUntilIdle()
@@ -150,7 +149,7 @@ class CreateGroupViewModelTest {
     }
 
     @Test
-    fun `Create failure updates error in state`() = runTest(sharedScheduler) {
+    fun `Create failure updates error in state`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { createGroupUseCase(any(), any(), any(), any()) } returns Result.failure(RuntimeException("server error"))
         val vm = buildViewModel()
         advanceUntilIdle()
@@ -163,7 +162,7 @@ class CreateGroupViewModelTest {
     }
 
     @Test
-    fun `Back in SELECT_MEMBERS emits GoBack effect`() = runTest(sharedScheduler) {
+    fun `Back in SELECT_MEMBERS emits GoBack effect`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         assertEquals(CreateGroupStep.SELECT_MEMBERS, vm.state.value.step)
@@ -174,7 +173,7 @@ class CreateGroupViewModelTest {
     }
 
     @Test
-    fun `Back in SET_INFO returns to SELECT_MEMBERS`() = runTest(sharedScheduler) {
+    fun `Back in SET_INFO returns to SELECT_MEMBERS`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         vm.onIntent(CreateGroupIntent.ToggleUser(userA))
@@ -185,7 +184,7 @@ class CreateGroupViewModelTest {
     }
 
     @Test
-    fun `DismissError clears the error`() = runTest(sharedScheduler) {
+    fun `DismissError clears the error`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { createGroupUseCase(any(), any(), any(), any()) } returns Result.failure(RuntimeException("boom"))
         val vm = buildViewModel()
         advanceUntilIdle()

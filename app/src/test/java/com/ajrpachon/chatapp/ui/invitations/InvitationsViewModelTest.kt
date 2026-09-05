@@ -9,7 +9,6 @@ import com.ajrpachon.chatapp.domain.usecase.GetOrCreateConversationUseCase
 import com.ajrpachon.chatapp.domain.usecase.ObserveInvitationsUseCase
 import com.ajrpachon.chatapp.domain.usecase.RespondInvitationUseCase
 import com.ajrpachon.chatapp.util.MainDispatcherRule
-import com.ajrpachon.chatapp.util.sharedScheduler
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -76,7 +75,7 @@ class InvitationsViewModelTest {
     )
 
     @Test
-    fun `initial state loads invitations from flow`() = runTest(sharedScheduler) {
+    fun `initial state loads invitations from flow`() = runTest(mainDispatcherRule.scheduler) {
         invitationsFlow.value = listOf(invitation("inv1"), invitation("inv2"))
         val vm = buildViewModel()
         advanceUntilIdle()
@@ -85,7 +84,7 @@ class InvitationsViewModelTest {
     }
 
     @Test
-    fun `Accept success emits NavigateToChat effect`() = runTest(sharedScheduler) {
+    fun `Accept success emits NavigateToChat effect`() = runTest(mainDispatcherRule.scheduler) {
         invitationsFlow.value = listOf(invitation("inv1"))
         coEvery { respondInvitationUseCase.accept("inv1") } returns Result.success(Unit)
         coEvery { getOrCreateConversationUseCase("user1", "sender1") } returns fakeConversation
@@ -101,7 +100,7 @@ class InvitationsViewModelTest {
     }
 
     @Test
-    fun `Accept failure updates error state`() = runTest(sharedScheduler) {
+    fun `Accept failure updates error state`() = runTest(mainDispatcherRule.scheduler) {
         invitationsFlow.value = listOf(invitation("inv1"))
         coEvery { respondInvitationUseCase.accept("inv1") } returns Result.failure(RuntimeException("network error"))
 
@@ -115,7 +114,7 @@ class InvitationsViewModelTest {
     }
 
     @Test
-    fun `Reject success emits ShowMessage effect`() = runTest(sharedScheduler) {
+    fun `Reject success emits ShowMessage effect`() = runTest(mainDispatcherRule.scheduler) {
         invitationsFlow.value = listOf(invitation("inv1"))
         coEvery { respondInvitationUseCase.reject("inv1") } returns Result.success(Unit)
 
@@ -129,7 +128,7 @@ class InvitationsViewModelTest {
     }
 
     @Test
-    fun `Reject failure updates error state`() = runTest(sharedScheduler) {
+    fun `Reject failure updates error state`() = runTest(mainDispatcherRule.scheduler) {
         invitationsFlow.value = listOf(invitation("inv1"))
         coEvery { respondInvitationUseCase.reject("inv1") } returns Result.failure(RuntimeException("reject failed"))
 
@@ -142,7 +141,7 @@ class InvitationsViewModelTest {
     }
 
     @Test
-    fun `DismissError clears error`() = runTest(sharedScheduler) {
+    fun `DismissError clears error`() = runTest(mainDispatcherRule.scheduler) {
         invitationsFlow.value = listOf(invitation("inv1"))
         coEvery { respondInvitationUseCase.accept("inv1") } returns Result.failure(RuntimeException("oops"))
 
@@ -157,7 +156,7 @@ class InvitationsViewModelTest {
     }
 
     @Test
-    fun `invitations list updates when flow emits new value`() = runTest(sharedScheduler) {
+    fun `invitations list updates when flow emits new value`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         assertEquals(0, vm.state.value.invitations.size)

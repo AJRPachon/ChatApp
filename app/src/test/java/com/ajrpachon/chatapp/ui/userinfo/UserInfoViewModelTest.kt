@@ -7,7 +7,6 @@ import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.util.MainDispatcherRule
-import com.ajrpachon.chatapp.util.sharedScheduler
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -70,7 +69,7 @@ class UserInfoViewModelTest {
     )
 
     @Test
-    fun `loads user profile fields on init`() = runTest(sharedScheduler) {
+    fun `loads user profile fields on init`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { userRepository.getUserById("other-1") } returns otherUser
         every { userRepository.getCurrentUserId() } returns "current-user"
         coEvery { conversationRepository.getOrCreateDirectConversation("current-user", "other-1") } returns conversation
@@ -86,7 +85,7 @@ class UserInfoViewModelTest {
     }
 
     @Test
-    fun `falls back to blank fields when user is not found`() = runTest(sharedScheduler) {
+    fun `falls back to blank fields when user is not found`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { userRepository.getUserById("other-1") } returns null
         every { userRepository.getCurrentUserId() } returns null
 
@@ -99,7 +98,7 @@ class UserInfoViewModelTest {
     }
 
     @Test
-    fun `does not load media when there is no active session`() = runTest(sharedScheduler) {
+    fun `does not load media when there is no active session`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { userRepository.getUserById("other-1") } returns otherUser
         every { userRepository.getCurrentUserId() } returns null
 
@@ -110,7 +109,7 @@ class UserInfoViewModelTest {
     }
 
     @Test
-    fun `collects distinct image and video urls from shared messages, most recent first`() = runTest(sharedScheduler) {
+    fun `collects distinct image and video urls from shared messages, most recent first`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { userRepository.getUserById("other-1") } returns otherUser
         every { userRepository.getCurrentUserId() } returns "current-user"
         coEvery { conversationRepository.getOrCreateDirectConversation("current-user", "other-1") } returns conversation
@@ -129,7 +128,7 @@ class UserInfoViewModelTest {
     }
 
     @Test
-    fun `Refresh intent reloads profile and media`() = runTest(sharedScheduler) {
+    fun `Refresh intent reloads profile and media`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { userRepository.getUserById("other-1") } returns otherUser
         every { userRepository.getCurrentUserId() } returns "current-user"
         coEvery { conversationRepository.getOrCreateDirectConversation("current-user", "other-1") } returns conversation
@@ -145,7 +144,7 @@ class UserInfoViewModelTest {
     }
 
     @Test
-    fun `does not crash when conversation lookup fails`() = runTest(sharedScheduler) {
+    fun `does not crash when conversation lookup fails`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { userRepository.getUserById("other-1") } returns otherUser
         every { userRepository.getCurrentUserId() } returns "current-user"
         coEvery { conversationRepository.getOrCreateDirectConversation("current-user", "other-1") } throws RuntimeException("boom")

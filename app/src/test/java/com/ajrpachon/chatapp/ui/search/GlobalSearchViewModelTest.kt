@@ -6,7 +6,6 @@ import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import com.ajrpachon.chatapp.util.MainDispatcherRule
-import com.ajrpachon.chatapp.util.sharedScheduler
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -42,7 +41,7 @@ class GlobalSearchViewModelTest {
     )
 
     @Test
-    fun `short query does not trigger a search and clears results`() = runTest(sharedScheduler) {
+    fun `short query does not trigger a search and clears results`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
 
@@ -55,7 +54,7 @@ class GlobalSearchViewModelTest {
     }
 
     @Test
-    fun `query with two or more characters searches and maps results`() = runTest(sharedScheduler) {
+    fun `query with two or more characters searches and maps results`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { messageRepository.searchAllMessages("hello") } returns listOf(message("msg-1", "conv-1", "hello world"))
         coEvery { conversationRepository.getById("conv-1") } returns ConversationBO(
             id = "conv-1",
@@ -81,7 +80,7 @@ class GlobalSearchViewModelTest {
     }
 
     @Test
-    fun `falls back to Chat as conversation name when conversation lookup returns null`() = runTest(sharedScheduler) {
+    fun `falls back to Chat as conversation name when conversation lookup returns null`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { messageRepository.searchAllMessages("hello") } returns listOf(message("msg-1", "conv-missing", "hi"))
         coEvery { conversationRepository.getById("conv-missing") } returns null
 
@@ -95,7 +94,7 @@ class GlobalSearchViewModelTest {
     }
 
     @Test
-    fun `returns empty results when no messages match`() = runTest(sharedScheduler) {
+    fun `returns empty results when no messages match`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { messageRepository.searchAllMessages("nomatch") } returns emptyList()
 
         val vm = buildViewModel()
@@ -109,7 +108,7 @@ class GlobalSearchViewModelTest {
     }
 
     @Test
-    fun `only the latest query's results are kept when query changes quickly`() = runTest(sharedScheduler) {
+    fun `only the latest query's results are kept when query changes quickly`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { messageRepository.searchAllMessages("first") } returns listOf(message("msg-first", "conv-1", "first"))
         coEvery { messageRepository.searchAllMessages("second") } returns listOf(message("msg-second", "conv-1", "second"))
         coEvery { conversationRepository.getById("conv-1") } returns null

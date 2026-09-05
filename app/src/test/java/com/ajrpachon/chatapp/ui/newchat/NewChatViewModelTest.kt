@@ -11,7 +11,6 @@ import com.ajrpachon.chatapp.domain.usecase.SendInvitationResult
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationUseCase
 import android.app.Application
 import com.ajrpachon.chatapp.util.MainDispatcherRule
-import com.ajrpachon.chatapp.util.sharedScheduler
 import com.ajrpachon.chatapp.utils.ClipboardProtection
 import com.ajrpachon.chatapp.utils.ContactSyncManager
 import io.mockk.coEvery
@@ -86,7 +85,7 @@ class NewChatViewModelTest {
     )
 
     @Test
-    fun `search returns empty list when no users found`() = runTest(sharedScheduler) {
+    fun `search returns empty list when no users found`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { searchUsersUseCase(any()) } returns emptyList()
         val vm = buildViewModel()
         advanceUntilIdle()
@@ -96,7 +95,7 @@ class NewChatViewModelTest {
     }
 
     @Test
-    fun `search returns users when found and filters out self`() = runTest(sharedScheduler) {
+    fun `search returns users when found and filters out self`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { searchUsersUseCase("user") } returns listOf(testUser, otherUser)
         val vm = buildViewModel()
         advanceUntilIdle()
@@ -107,7 +106,7 @@ class NewChatViewModelTest {
     }
 
     @Test
-    fun `QR scan of own userId shows ShowMessage effect`() = runTest(sharedScheduler) {
+    fun `QR scan of own userId shows ShowMessage effect`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         vm.onIntent(NewChatIntent.UserScannedByQr("user1"))
@@ -118,7 +117,7 @@ class NewChatViewModelTest {
     }
 
     @Test
-    fun `UserAction with BLOCKED relationship shows ShowMessage effect`() = runTest(sharedScheduler) {
+    fun `UserAction with BLOCKED relationship shows ShowMessage effect`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { sendInvitationUseCase(otherUser) } returns SendInvitationResult.Blocked
         val vm = buildViewModel()
         advanceUntilIdle()
@@ -130,7 +129,7 @@ class NewChatViewModelTest {
     }
 
     @Test
-    fun `UserAction with NavigateToChat result emits NavigateToChat effect`() = runTest(sharedScheduler) {
+    fun `UserAction with NavigateToChat result emits NavigateToChat effect`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { sendInvitationUseCase(otherUser) } returns SendInvitationResult.NavigateToChat("conv1", "User Two")
         val vm = buildViewModel()
         advanceUntilIdle()
@@ -142,7 +141,7 @@ class NewChatViewModelTest {
     }
 
     @Test
-    fun `UserAction with PendingReceived result emits NavigateToInvitations effect`() = runTest(sharedScheduler) {
+    fun `UserAction with PendingReceived result emits NavigateToInvitations effect`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { sendInvitationUseCase(otherUser) } returns SendInvitationResult.PendingReceived
         val vm = buildViewModel()
         advanceUntilIdle()
@@ -153,7 +152,7 @@ class NewChatViewModelTest {
     }
 
     @Test
-    fun `UserAction with Sent result emits ShowMessage effect`() = runTest(sharedScheduler) {
+    fun `UserAction with Sent result emits ShowMessage effect`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { sendInvitationUseCase(otherUser) } returns SendInvitationResult.Sent
         val vm = buildViewModel()
         advanceUntilIdle()
@@ -164,7 +163,7 @@ class NewChatViewModelTest {
     }
 
     @Test
-    fun `UserAction when relationship is PENDING_SENT emits ShowMessage without calling sendInvitation`() = runTest(sharedScheduler) {
+    fun `UserAction when relationship is PENDING_SENT emits ShowMessage without calling sendInvitation`() = runTest(mainDispatcherRule.scheduler) {
         // Pre-seed relationship as PENDING_SENT via state
         coEvery { sendInvitationUseCase(otherUser) } returns SendInvitationResult.AlreadySent
         val vm = buildViewModel()
@@ -183,7 +182,7 @@ class NewChatViewModelTest {
     }
 
     @Test
-    fun `search failure updates error state`() = runTest(sharedScheduler) {
+    fun `search failure updates error state`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { searchUsersUseCase("fail") } throws RuntimeException("network error")
         val vm = buildViewModel()
         advanceUntilIdle()
@@ -194,7 +193,7 @@ class NewChatViewModelTest {
     }
 
     @Test
-    fun `DismissError clears the error`() = runTest(sharedScheduler) {
+    fun `DismissError clears the error`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { searchUsersUseCase("fail") } throws RuntimeException("oops")
         val vm = buildViewModel()
         advanceUntilIdle()

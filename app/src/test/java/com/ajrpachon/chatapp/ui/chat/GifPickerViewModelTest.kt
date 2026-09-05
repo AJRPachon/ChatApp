@@ -4,7 +4,6 @@ import com.ajrpachon.chatapp.domain.model.GiphyGif
 import com.ajrpachon.chatapp.domain.model.GiphySearchResult
 import com.ajrpachon.chatapp.domain.repository.GiphyRepository
 import com.ajrpachon.chatapp.util.MainDispatcherRule
-import com.ajrpachon.chatapp.util.sharedScheduler
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -36,7 +35,7 @@ class GifPickerViewModelTest {
     }
 
     @Test
-    fun `loads trending gifs on init without a debounce delay`() = runTest(sharedScheduler) {
+    fun `loads trending gifs on init without a debounce delay`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
 
@@ -46,7 +45,7 @@ class GifPickerViewModelTest {
     }
 
     @Test
-    fun `QueryChanged debounces before searching`() = runTest(sharedScheduler) {
+    fun `QueryChanged debounces before searching`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { giphyRepository.search("cat") } returns GiphySearchResult.Success(listOf(searchedGif))
         val vm = buildViewModel()
         advanceUntilIdle()
@@ -61,7 +60,7 @@ class GifPickerViewModelTest {
     }
 
     @Test
-    fun `ApiKeyInvalid result surfaces API_KEY_INVALID error state`() = runTest(sharedScheduler) {
+    fun `ApiKeyInvalid result surfaces API_KEY_INVALID error state`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel(trendingResult = GiphySearchResult.ApiKeyInvalid)
         advanceUntilIdle()
 
@@ -70,7 +69,7 @@ class GifPickerViewModelTest {
     }
 
     @Test
-    fun `SaveApiKey persists the key and triggers a re-search`() = runTest(sharedScheduler) {
+    fun `SaveApiKey persists the key and triggers a re-search`() = runTest(mainDispatcherRule.scheduler) {
         every { giphyRepository.setApiKey(any()) } returns Unit
         val vm = buildViewModel()
         advanceUntilIdle()
@@ -84,7 +83,7 @@ class GifPickerViewModelTest {
     }
 
     @Test
-    fun `ShowKeyDialog and DismissKeyDialog toggle showKeyDialog`() = runTest(sharedScheduler) {
+    fun `ShowKeyDialog and DismissKeyDialog toggle showKeyDialog`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
 

@@ -11,7 +11,6 @@ import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
 import com.ajrpachon.chatapp.domain.usecase.SearchUsersUseCase
 import com.ajrpachon.chatapp.domain.usecase.UpdateGroupUseCase
 import com.ajrpachon.chatapp.util.MainDispatcherRule
-import com.ajrpachon.chatapp.util.sharedScheduler
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -76,7 +75,7 @@ class GroupInfoViewModelTest {
     )
 
     @Test
-    fun `initial state loads currentUserId and groupAvatarUrl`() = runTest(sharedScheduler) {
+    fun `initial state loads currentUserId and groupAvatarUrl`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         assertEquals("user1", vm.state.value.currentUserId)
@@ -84,7 +83,7 @@ class GroupInfoViewModelTest {
     }
 
     @Test
-    fun `members are loaded from getGroupMembersUseCase`() = runTest(sharedScheduler) {
+    fun `members are loaded from getGroupMembersUseCase`() = runTest(mainDispatcherRule.scheduler) {
         membersFlow.value = listOf(member("user1", GroupRole.ADMIN), member("user2", GroupRole.MEMBER))
         val vm = buildViewModel()
         advanceUntilIdle()
@@ -92,7 +91,7 @@ class GroupInfoViewModelTest {
     }
 
     @Test
-    fun `isCurrentUserAdmin is true when user has ADMIN role`() = runTest(sharedScheduler) {
+    fun `isCurrentUserAdmin is true when user has ADMIN role`() = runTest(mainDispatcherRule.scheduler) {
         membersFlow.value = listOf(member("user1", GroupRole.ADMIN))
         val vm = buildViewModel()
         advanceUntilIdle()
@@ -100,7 +99,7 @@ class GroupInfoViewModelTest {
     }
 
     @Test
-    fun `isCurrentUserAdmin is false when user has MEMBER role`() = runTest(sharedScheduler) {
+    fun `isCurrentUserAdmin is false when user has MEMBER role`() = runTest(mainDispatcherRule.scheduler) {
         membersFlow.value = listOf(member("user1", GroupRole.MEMBER))
         val vm = buildViewModel()
         advanceUntilIdle()
