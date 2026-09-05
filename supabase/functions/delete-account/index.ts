@@ -63,23 +63,32 @@ import { createClient } from "jsr:@supabase/supabase-js@2"
 //     (sender/receiver, blocker/blocked). Unlike messages these are
 //     relationship bookkeeping rows with no "other participant" whose
 //     view of shared history would be affected by removing them.
-//   - calls / call_signals: left untouched — call history audit trail,
-//     same "retained" reasoning as messages; no message-style personal
-//     content lives there beyond call metadata (duration/status).
+//   - calls / call_signals: rows retained (call history audit trail,
+//     same reasoning as messages) but sender/caller/callee are
+//     reassigned to the placeholder account below, for the same FK
+//     reason as messages/conversations — see next paragraph.
 //
-// Known open risk: this repo's base tables (profiles, conversations,
-// messages, calls, invitations, blocked_users, ...) predate tracked
-// migrations, so their exact FK definitions to auth.users could not be
-// confirmed from supabase/migrations/ alone. If any of
-// messages.sender_id / conversations.created_by / calls.caller_id /
-// calls.callee_id / call_signals.sender_id turns out to have a hard
-// (NO ACTION) FK to auth.users, the final admin.deleteUser() call
-// below will fail with a Postgres FK-violation error, which this
-// function surfaces as a 500 rather than guessing at a schema change.
-// If that happens in practice: confirm the actual constraint (Supabase
-// SQL editor, e.g. `\d+ messages`) and decide explicitly what to do —
-// do not blindly add ON DELETE SET NULL/CASCADE without checking what
-// it would do to conversation history shared with other participants.
+// Confirmed via the Supabase SQL editor (pg_constraint against this
+// project's actual schema — NOT derivable from supabase/migrations/
+// alone, since these base tables predate tracked migrations):
+// messages.sender_id, conversations.created_by, calls.caller_id,
+// calls.callee_id and call_signals.sender_id are all NOT NULL with a
+// hard (NO ACTION, no cascade) FK to profiles/auth.users. Left as-is,
+// step 5's admin.deleteUser() would fail with a Postgres FK-violation
+// for any user who ever sent a message, created a conversation, or
+// made a call — i.e. almost every real account.
+//
+// Fix: a permanent, fixed-id "deleted user" placeholder account
+// (00000000-0000-0000-0000-000000000001, profiles.display_name
+// "Usuario eliminado", auth.users banned via ban_duration so it can
+// never sign in — created once via the Admin API, not by any
+// migration) that every one of those columns gets reassigned to
+// below, right before the real account is removed. This reuses the
+// existing "look up display name via profiles" rendering path
+// everywhere (ChatScreen, CallScreen, etc.) instead of requiring a
+// nullable-sender_id UI refactor across the app, and needs no schema
+// change — the FK still points at a row, it's just this row now.
+const DELETED_USER_PLACEHOLDER_ID = "00000000-0000-0000-0000-000000000001"
 // ============================================================
 
 const RATE_LIMIT_WINDOW_MS = 60_000 // 1 minute
@@ -194,11 +203,16 @@ Deno.serve(async (req) => {
       if (error) console.error(`storage.remove(${bucket}) failed`, error)
     }
 
+    // sender_id is reassigned to the placeholder in this same update —
+    // not a separate pass — so this filter (`eq("sender_id", userId)`)
+    // still matches every row that's actually this user's, regardless
+    // of statement ordering.
     const { error: scrubError } = await admin
       .from("messages")
       .update({
         is_deleted: true,
         content: DELETED_MESSAGE_PLACEHOLDER,
+        sender_id: DELETED_USER_PLACEHOLDER_ID,
         image_url: null,
         audio_url: null,
         audio_duration_ms: null,
@@ -259,6 +273,34 @@ Deno.serve(async (req) => {
       .delete()
       .eq("user_id", userId)
     if (statusError) throw statusError
+
+    // ── 4.5. Reassign the remaining hard (NOT NULL, NO ACTION) FK
+    // references to the "deleted user" placeholder — see the header
+    // comment. This must happen before step 5's deleteUser() call, or
+    // that call fails on any of these still pointing at the real user.
+    const { error: conversationsError } = await admin
+      .from("conversations")
+      .update({ created_by: DELETED_USER_PLACEHOLDER_ID })
+      .eq("created_by", userId)
+    if (conversationsError) throw conversationsError
+
+    const { error: callerError } = await admin
+      .from("calls")
+      .update({ caller_id: DELETED_USER_PLACEHOLDER_ID })
+      .eq("caller_id", userId)
+    if (callerError) throw callerError
+
+    const { error: calleeError } = await admin
+      .from("calls")
+      .update({ callee_id: DELETED_USER_PLACEHOLDER_ID })
+      .eq("callee_id", userId)
+    if (calleeError) throw calleeError
+
+    const { error: callSignalsError } = await admin
+      .from("call_signals")
+      .update({ sender_id: DELETED_USER_PLACEHOLDER_ID })
+      .eq("sender_id", userId)
+    if (callSignalsError) throw callSignalsError
 
     // ── 5. The actual account deletion — the only step that removes
     // the row from auth.users. Everything above is cleanup of data
