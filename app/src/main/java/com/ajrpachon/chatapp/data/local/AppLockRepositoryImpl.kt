@@ -1,6 +1,9 @@
 package com.ajrpachon.chatapp.data.local
 
 import android.content.Context
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
+import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
@@ -38,5 +41,10 @@ class AppLockRepositoryImpl(
 
     override suspend fun recordBackgroundedAt(timestamp: Long) {
         context.appLockDataStore.edit { prefs -> prefs[backgroundedAtKey] = timestamp }
+    }
+
+    override fun canUseDeviceCredential(): Boolean {
+        val canAuth = BiometricManager.from(context).canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
+        return canAuth == BiometricManager.BIOMETRIC_SUCCESS
     }
 }

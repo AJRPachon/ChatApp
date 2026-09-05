@@ -485,6 +485,7 @@
     <!-- AppLockScreen -->
     <string name="applock_biometric_title">Unlock ChatApp</string>
     <string name="applock_biometric_subtitle">Confirm your identity to continue</string>
+    <string name="profile_app_lock_no_credential_error">Set up a fingerprint, face, or PIN in your device settings before enabling app lock — otherwise you could get locked out of your own account.</string>
     <string name="applock_locked_title">ChatApp locked</string>
     <string name="applock_locked_subtitle">Verify your identity to access</string>
     <string name="applock_unlock_with_fingerprint">Unlock with fingerprint</string>

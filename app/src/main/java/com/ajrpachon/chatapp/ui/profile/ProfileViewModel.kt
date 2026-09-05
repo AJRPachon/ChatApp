@@ -238,8 +238,17 @@ class ProfileViewModel(
     private fun toggleAppLock() {
         viewModelScope.launch {
             catchResult {
-                if (state.value.isAppLockEnabled) appLockRepository.disable()
-                else appLockRepository.enable()
+                if (state.value.isAppLockEnabled) {
+                    appLockRepository.disable()
+                } else if (!appLockRepository.canUseDeviceCredential()) {
+                    // Refuse to enable if the device has no biometric/PIN enrolled —
+                    // AppLockScreen's biometric prompt never auto-launches in that case,
+                    // and (since the back-press bypass was fixed) there is no other
+                    // UI-driven way back in. Enabling anyway would strand the user.
+                    sendEffect(ProfileEffect.AppLockCredentialMissing)
+                } else {
+                    appLockRepository.enable()
+                }
             }.onFailure { e -> AppLogger.e(TAG, "toggleAppLock failed", e) }
         }
     }

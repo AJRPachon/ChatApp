@@ -11,16 +11,21 @@ appId: com.ajrpachon.chatapp
 #
 # This project has no biometric/device-credential automation configured
 # anywhere (confirmed: no maestro/emulator/biometric mention in
-# .github/workflows/), and a bare emulator normally has neither a
-# fingerprint nor a device PIN enrolled — so
-# `BiometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)`
-# in AppLockScreen.kt's LaunchedEffect should return something other than
-# BIOMETRIC_SUCCESS, and the real system BiometricPrompt should never
-# auto-launch. This flow deliberately never taps
+# .github/workflows/). This flow deliberately never taps
 # "Unlock with fingerprint" / `applock_unlock_with_fingerprint` and never
-# attempts to pass a real biometric/PIN challenge, per the task's explicit
-# preference order.
+# attempts to pass a real biometric/PIN challenge.
 #
+# REQUIRES a device PIN/credential enrolled on the target emulator/device
+# (any PIN works — the flow never enters it). Since
+# fix/applock-prevent-enable-without-credential, ProfileViewModel refuses
+# to enable App Lock at all if `AppLockRepository.canUseDeviceCredential()`
+# is false — correct app behavior, but it means a bare emulator with
+# nothing enrolled can no longer reach AppLockScreen via this flow either
+# (the toggle silently stays off and a Snackbar appears instead). Enroll
+# one once per emulator before running this flow:
+#   adb -s emulator-5554 shell locksettings set-pin 1234
+#
+
 # SECURITY FIX LANDED (fix/applock-back-button-bypass): `NavDisplay`'s
 # `onBack` in MainActivity.kt now routes a back press away while
 # `AppLockRoute` is on top to `moveTaskToBack(true)` instead of popping
