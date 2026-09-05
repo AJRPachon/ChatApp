@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.DevicesOther
+import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Security
@@ -95,6 +96,7 @@ fun ProfileScreen(
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     var showSignOutAllDialog by remember { mutableStateOf(false) }
+    var showDeleteAccountDialog by remember { mutableStateOf(false) }
     var showQrSheet by remember { mutableStateOf(false) }
     val qrSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val enrollSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -243,6 +245,7 @@ fun ProfileScreen(
             when (effect) {
                 ProfileEffect.NavigateToAuth -> onSignOut()
                 ProfileEffect.ShowSignOutAllConfirm -> showSignOutAllDialog = true
+                ProfileEffect.ShowDeleteAccountConfirm -> showDeleteAccountDialog = true
             }
         }
     }
@@ -260,6 +263,31 @@ fun ProfileScreen(
             },
             dismissButton = {
                 androidx.compose.material3.TextButton(onClick = { showSignOutAllDialog = false }) {
+                    androidx.compose.material3.Text(stringResource(R.string.profile_cancel))
+                }
+            },
+        )
+    }
+
+    if (showDeleteAccountDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showDeleteAccountDialog = false },
+            title = { androidx.compose.material3.Text(stringResource(R.string.profile_delete_account_dialog_title)) },
+            text = { androidx.compose.material3.Text(stringResource(R.string.profile_delete_account_dialog_text)) },
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        showDeleteAccountDialog = false
+                        vm.deleteAccount()
+                    },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error,
+                    ),
+                    modifier = Modifier.testTag("profile_delete_account_confirm_button"),
+                ) { androidx.compose.material3.Text(stringResource(R.string.profile_delete_account_confirm)) }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { showDeleteAccountDialog = false }) {
                     androidx.compose.material3.Text(stringResource(R.string.profile_cancel))
                 }
             },
@@ -597,9 +625,27 @@ fun ProfileScreen(
                 leadingIcon = Icons.AutoMirrored.Filled.Logout,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 24.dp)
                     .testTag("profile_sign_out_all_button"),
             )
+            Spacer(Modifier.size(8.dp))
+            if (state.isDeletingAccount) {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .padding(bottom = 24.dp)
+                        .size(24.dp)
+                        .testTag("profile_deleting_account_indicator"),
+                )
+            } else {
+                ChatAppDestructiveButton(
+                    text = stringResource(R.string.profile_delete_account),
+                    onClick = { vm.requestDeleteAccount() },
+                    leadingIcon = Icons.Default.DeleteForever,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 24.dp)
+                        .testTag("profile_delete_account_button"),
+                )
+            }
         }
     }
 }

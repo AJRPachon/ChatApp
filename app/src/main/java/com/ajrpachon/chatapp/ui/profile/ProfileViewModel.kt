@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -30,6 +31,9 @@ class ProfileViewModel(
     private val themeRepository: ThemeRepository,
     private val appLockRepository: AppLockRepository,
     private val analyticsTracker: AnalyticsTracker,
+    // Not Koin-injectable (no CoroutineDispatcher binding registered) — passed explicitly
+    // from AppModule's lambda so tests can supply a TestDispatcher instead of a real one.
+    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : BaseViewModel<ProfileState, ProfileEffect>(ProfileState()) {
 
     init {
@@ -138,6 +142,42 @@ class ProfileViewModel(
         }
     }
 
+    fun requestDeleteAccount() {
+        viewModelScope.launch { sendEffect(ProfileEffect.ShowDeleteAccountConfirm) }
+    }
+
+    fun deleteAccount() {
+        viewModelScope.launch {
+            updateState { it.copy(isDeletingAccount = true, error = null) }
+            catchResult {
+                fcmTokenRepository.deleteToken()
+                authRepository.deleteAccount()
+                userRepository.clearCurrentUser()
+            }.onSuccess {
+                updateState { it.copy(isDeletingAccount = false) }
+                sendEffect(ProfileEffect.NavigateToAuth)
+            }.onFailure { e ->
+                AppLogger.e(TAG, "Delete account failed", e)
+                updateState { it.copy(
+                    isDeletingAccount = false,
+                    error = e.toDeleteAccountErrorMessage(),
+                ) }
+            }
+        }
+    }
+
+    private fun Throwable.toDeleteAccountErrorMessage(): String {
+        val restException = this as? io.github.jan.supabase.exceptions.RestException
+        return when (restException?.statusCode) {
+            HTTP_UNAUTHORIZED ->
+                "Tu sesion ya no es valida. Es posible que la cuenta ya se haya eliminado; " +
+                    "vuelve a iniciar sesion para comprobarlo."
+            HTTP_TOO_MANY_REQUESTS -> "Demasiados intentos. Espera un minuto y vuelve a intentarlo."
+            HTTP_SERVER_ERROR -> "No se pudo eliminar la cuenta en el servidor. Intentalo de nuevo mas tarde."
+            else -> message ?: "Error al eliminar la cuenta"
+        }
+    }
+
     private suspend fun load2FAStatus() {
         catchResult {
             val totpFactorId = authRepository.getVerifiedTotpFactorId()
@@ -241,7 +281,7 @@ class ProfileViewModel(
     }
 
     private suspend fun generateQrBitmap(userId: String) {
-        val bitmap = withContext(Dispatchers.Default) {
+        val bitmap = withContext(defaultDispatcher) {
             runCatching {
                 val content = "chatapp://user/$userId"
                 val rendered = QRCode(content).render()
@@ -253,5 +293,8 @@ class ProfileViewModel(
 
     companion object {
         private const val TAG = "ProfileViewModel"
+        private const val HTTP_UNAUTHORIZED = 401
+        private const val HTTP_TOO_MANY_REQUESTS = 429
+        private const val HTTP_SERVER_ERROR = 500
     }
 }

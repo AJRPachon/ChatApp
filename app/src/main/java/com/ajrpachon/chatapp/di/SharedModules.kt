@@ -100,7 +100,7 @@ val remoteModule = module {
 }
 
 val repositoryModule = module {
-    single<AuthRepository> { AuthRepositoryImpl(androidContext(), get(), get(), get()) }
+    single<AuthRepository> { AuthRepositoryImpl(androidContext(), get(), get(), get(), get(), get()) }
     singleOf(::UserRepositoryImpl) { bind<UserRepository>() }
     singleOf(::ConversationRepositoryImpl) { bind<ConversationRepository>() }
     singleOf(::MessageE2EECoder)
