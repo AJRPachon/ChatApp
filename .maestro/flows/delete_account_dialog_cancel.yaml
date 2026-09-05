@@ -1,0 +1,25 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the profile screen, taps "Eliminar cuenta" (delete
+# account), confirms the confirmation dialog renders, then cancels —
+# NEVER actually deletes the account. Only covers the destructive
+# action's guardrail dialog, not the deletion itself.
+# Run with:
+#   maestro test .maestro/flows/delete_account_dialog_cancel.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- tapOn:
+    id: "conversation_list_profile_button"
+- extendedWaitUntil:
+    visible:
+      id: "profile_delete_account_button"
+    timeout: 10000
+- tapOn:
+    id: "profile_delete_account_button"
+- assertVisible: "¿Eliminar tu cuenta permanentemente?|Permanently delete your account?"
+- tapOn: "Cancelar|Cancel"
+- assertVisible:
+    id: "profile_delete_account_button"
