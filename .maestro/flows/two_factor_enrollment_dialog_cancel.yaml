@@ -1,0 +1,44 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the profile screen, taps "Activar" (2FA/TOTP enroll),
+# confirms the enrollment bottom sheet renders (setup instructions + the
+# TOTP secret + the code input), then dismisses it via system back
+# WITHOUT ever entering a code — never actually completes 2FA
+# enrollment. Only covers the enrollment sheet rendering, not a real
+# TOTP activation (which would need a real authenticator app computing
+# a valid 6-digit code from the on-screen secret).
+#
+# No testTag exists on the "Activar"/"Activate" button (ProfileScreen.kt
+# — the 2FA row is one of the few left using text-only tapOn on this
+# screen), so this matches by its visible text instead of an id.
+#
+# Dismissal: the enrollment sheet is a plain M3 ModalBottomSheet with no
+# explicit "Cancel" button — only `onDismissRequest` (mapped to
+# ProfileIntent.Dismiss2FASheet). `back` triggers onDismissRequest for a
+# ModalBottomSheet the same way tapping the scrim would, without ever
+# touching the code input or the confirm button.
+#
+# Run with:
+#   maestro test .maestro/flows/two_factor_enrollment_dialog_cancel.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- tapOn:
+    id: "conversation_list_profile_button"
+- extendedWaitUntil:
+    visible:
+      id: "profile_sign_out_button"
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      text: "Activar|Activate"
+    direction: DOWN
+    timeout: 10000
+    centerElement: true
+- tapOn: "Activar|Activate"
+- assertVisible: "Configurar verificación en dos pasos|Set up two-step verification"
+- assertVisible: "Código TOTP|TOTP code"
+- back
+- assertVisible: "Activar|Activate"
