@@ -34,8 +34,6 @@ jobs:
           echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> local.properties
           echo "GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }}" >> local.properties
           echo "LIVEKIT_URL=${{ secrets.LIVEKIT_URL }}" >> local.properties
-          echo "LIVEKIT_API_KEY=${{ secrets.LIVEKIT_API_KEY }}" >> local.properties
-          echo "LIVEKIT_API_SECRET=${{ secrets.LIVEKIT_API_SECRET }}" >> local.properties
           echo "GIPHY_API_KEY=${{ secrets.GIPHY_API_KEY }}" >> local.properties
 
       - name: Regenerate verification metadata
