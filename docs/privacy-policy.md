@@ -38,7 +38,7 @@ Si no concedes el permiso de contactos, estas funciones (sugerencias de contacto
 Cuando pulsas el botón de "compartir ubicación" dentro de un chat, la App obtiene tu **última ubicación conocida** por GPS o red (`ChatViewModel.fetchAndSendLocation`, permisos `ACCESS_FINE_LOCATION` / `ACCESS_COARSE_LOCATION`) y la envía como un enlace de Google Maps dentro del mensaje. **La App no accede a tu ubicación salvo que pulses ese botón explícitamente**; no hay rastreo de ubicación en segundo plano ni ubicación continua.
 
 ### 2.5 Audio y vídeo de llamadas
-Para llamadas de voz/vídeo 1:1 y en grupo (permisos `CAMERA`, `RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS`, `BLUETOOTH_CONNECT`), la App captura audio de tu micrófono y vídeo de tu cámara y los transmite en tiempo real a través de **LiveKit** (infraestructura WebRTC), incluyendo, si la usas, la función de compartir pantalla. Estos flujos son de señal en vivo (streaming); la App no los almacena en el dispositivo salvo que actives explícitamente una grabación de llamada, si esa función está habilitada.
+Para llamadas de voz/vídeo 1:1 y en grupo (permisos `CAMERA`, `RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS`, `BLUETOOTH_CONNECT` — este último para poder enrutar el audio a auriculares Bluetooth conectados), la App captura audio de tu micrófono y vídeo de tu cámara y los transmite en tiempo real a través de **LiveKit Cloud** (infraestructura de llamadas de un tercero, no servidores propios), incluyendo, si la usas, la función de compartir pantalla. Estos flujos son de señal en vivo (streaming); **la App no incluye ninguna función de grabación de llamadas** ni las almacena en ningún momento, ni en el dispositivo ni en nuestros servidores.
 
 Las notas de voz (mensajes de audio, no llamadas) también usan `RECORD_AUDIO` y se guardan como archivo adjunto del mensaje.
 
@@ -70,7 +70,7 @@ No vendemos tus datos. Los compartimos únicamente con los proveedores necesario
 | Proveedor | Qué datos recibe | Para qué |
 |---|---|---|
 | **Supabase** (Auth, Postgrest, Realtime, Storage, Edge Functions) | Cuenta, perfil, mensajes, archivos multimedia, claves públicas E2EE, tokens push, correos de contactos consultados | Backend principal: autenticación, base de datos, almacenamiento de archivos, sincronización en tiempo real, funciones de servidor (notificaciones, verificación de integridad) |
-| **LiveKit** | Audio/vídeo de llamadas, señalización WebRTC | Infraestructura de llamadas de voz/vídeo en tiempo real |
+| **LiveKit Cloud** | Audio/vídeo de llamadas, señalización WebRTC | Infraestructura de llamadas de voz/vídeo en tiempo real (servicio de terceros, no servidores propios) |
 | **Firebase Cloud Messaging (Google)** | Token de dispositivo | Entrega de notificaciones push |
 | **Firebase Analytics (Google)** | Eventos de uso de funciones, tipo de evento, tu identificador interno de usuario (mientras tienes sesión iniciada) | Entender el uso de funciones de la App; nunca recibe el contenido de tus mensajes ni tu identificador de publicidad |
 | **Firebase Crashlytics (Google)** | Trazas de errores/fallos, tu identificador interno de usuario, modelo y versión de Android | Diagnóstico y solución de fallos de la App; nunca recibe el contenido de tus mensajes |
@@ -98,7 +98,8 @@ No compartimos tus datos con terceros con fines publicitarios ni los usamos para
 
 ## 5. Retención y borrado de datos
 
-- Tus mensajes y archivos permanecen almacenados mientras tu cuenta esté activa, salvo que tú o el destinatario los eliminéis (eliminación o expiración de mensajes efímeros).
+- Tus mensajes y archivos permanecen almacenados mientras tu cuenta esté activa, salvo que tú o el destinatario los eliminéis.
+- **Mensajes efímeros y estados/historias de 24 h**: al expirar, desaparecen de la vista de tu dispositivo y del de los demás participantes de inmediato. *Nota de precisión técnica*: esta expiración se aplica hoy solo del lado del dispositivo; no hay confirmado un proceso automático que borre esa misma fila de nuestros servidores en el momento exacto de expirar — puede seguir existiendo en el backend hasta que se borre por otra vía (por ejemplo, al eliminar la cuenta). Esta política se actualizará si se añade un borrado automático también en el servidor.
 - **Puedes eliminar tu cuenta de forma permanente** desde Perfil → Eliminar cuenta, con una confirmación explícita de que la acción es irreversible. Al confirmar, se ejecuta de inmediato lo siguiente:
   - Se borran tu perfil, tu clave pública E2EE, tu foto de perfil y el resto de tus archivos (fotos, audios, vídeos, stickers de tus mensajes) de nuestros servidores.
   - Se borran tus invitaciones, tus bloqueos de otros usuarios y tu pertenencia a cada conversación y grupo (equivalente a abandonarlos todos).
