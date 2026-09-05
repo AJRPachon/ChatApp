@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
@@ -175,6 +176,7 @@ private fun LoginContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .imePadding()
             .verticalScroll(rememberScrollState())
             .padding(contentPadding),
     ) {
@@ -536,7 +538,9 @@ private fun UsernameSetupContent(
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(32.dp),
+        modifier = Modifier
+            .padding(32.dp)
+            .safeDrawingPadding(),
     ) {
         Text(stringResource(R.string.auth_choose_username_title), style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(8.dp))

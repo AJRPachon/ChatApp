@@ -278,9 +278,8 @@ fun GroupInfoScreen(
         },
     ) { innerPadding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = innerPadding,
         ) {
             item {
                 GroupHeader(
