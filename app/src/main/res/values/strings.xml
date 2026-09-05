@@ -490,6 +490,7 @@
     <!-- AppLockScreen -->
     <string name="applock_biometric_title">Desbloquear ChatApp</string>
     <string name="applock_biometric_subtitle">Confirma tu identidad para continuar</string>
+    <string name="profile_app_lock_no_credential_error">Configura una huella, rostro o PIN en los ajustes de tu dispositivo antes de activar el bloqueo de la app — si no, podrías quedarte sin poder acceder a tu cuenta.</string>
     <string name="applock_locked_title">ChatApp bloqueada</string>
     <string name="applock_locked_subtitle">Verifica tu identidad para acceder</string>
     <string name="applock_unlock_with_fingerprint">Desbloquear con huella</string>

@@ -48,4 +48,5 @@ sealed interface ProfileEffect {
     data object NavigateToAuth : ProfileEffect
     data object ShowSignOutAllConfirm : ProfileEffect
     data object ShowDeleteAccountConfirm : ProfileEffect
+    data object AppLockCredentialMissing : ProfileEffect
 }

@@ -108,6 +108,33 @@ class ProfileViewModelTest {
     }
 
     @Test
+    fun `ToggleAppLock enables when a device credential is available`() = runTest(mainDispatcherRule.scheduler) {
+        every { appLockRepository.canUseDeviceCredential() } returns true
+        coEvery { appLockRepository.enable() } returns Unit
+        val vm = buildViewModel()
+        advanceUntilIdle()
+
+        vm.onIntent(ProfileIntent.ToggleAppLock)
+        advanceUntilIdle()
+
+        coVerify { appLockRepository.enable() }
+    }
+
+    @Test
+    fun `ToggleAppLock refuses to enable and warns when no device credential is enrolled`() =
+        runTest(mainDispatcherRule.scheduler) {
+            every { appLockRepository.canUseDeviceCredential() } returns false
+            val vm = buildViewModel()
+            advanceUntilIdle()
+
+            vm.onIntent(ProfileIntent.ToggleAppLock)
+            advanceUntilIdle()
+
+            coVerify(exactly = 0) { appLockRepository.enable() }
+            assertEquals(ProfileEffect.AppLockCredentialMissing, vm.effect.first())
+        }
+
+    @Test
     fun `deleteAccount with 401 shows invalid session message`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { authRepository.deleteAccount() } throws restException(401)
         val vm = buildViewModel()
