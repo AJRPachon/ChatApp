@@ -121,10 +121,13 @@ fun PdfViewerScreen(
 
             else -> {
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentPadding = PaddingValues(8.dp),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        start = 8.dp,
+                        end = 8.dp,
+                        top = innerPadding.calculateTopPadding() + 8.dp,
+                        bottom = innerPadding.calculateBottomPadding() + 8.dp,
+                    ),
                 ) {
                     itemsIndexed(state.pages, key = { index, _ -> index }) { _, page ->
                         ZoomablePdfPage(page = page)
