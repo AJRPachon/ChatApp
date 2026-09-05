@@ -100,6 +100,9 @@ fun ProfileScreen(
     var showSignOutAllDialog by remember { mutableStateOf(false) }
     var showDeleteAccountDialog by remember { mutableStateOf(false) }
     var showQrSheet by remember { mutableStateOf(false) }
+    // Hoisted out of the LaunchedEffect below — stringResource() is @Composable and can't
+    // be called from inside a suspend collector block.
+    val appLockCredentialMissingMessage = stringResource(R.string.profile_app_lock_no_credential_error)
     val qrSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val enrollSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -248,6 +251,9 @@ fun ProfileScreen(
                 ProfileEffect.NavigateToAuth -> onSignOut()
                 ProfileEffect.ShowSignOutAllConfirm -> showSignOutAllDialog = true
                 ProfileEffect.ShowDeleteAccountConfirm -> showDeleteAccountDialog = true
+                ProfileEffect.AppLockCredentialMissing -> {
+                    snackbarHostState.showSnackbar(appLockCredentialMissingMessage)
+                }
             }
         }
     }
