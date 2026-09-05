@@ -34,6 +34,7 @@ executionOrder:
     - flows/create_group_navigation.yaml
     - flows/notification_sound_picker_navigation.yaml
     - flows/sign_out_all_devices_cancel.yaml
+    - flows/delete_account_dialog_cancel.yaml
     - flows/profile_display_name_roundtrip.yaml
     - flows/profile_online_status_roundtrip.yaml
     - flows/my_qr_code_navigation.yaml
