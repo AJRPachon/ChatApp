@@ -243,6 +243,11 @@
     <string name="profile_sessions_description">Ver y administrar dispositivos conectados</string>
     <string name="profile_sign_out">Cerrar sesión</string>
     <string name="profile_sign_out_all_devices">Cerrar sesión en todos los dispositivos</string>
+    <string name="profile_delete_account">Eliminar cuenta</string>
+    <string name="profile_delete_account_dialog_title">¿Eliminar tu cuenta permanentemente?</string>
+    <string name="profile_delete_account_dialog_text">Esta acción no se puede deshacer. Se eliminarán tu perfil, tu nombre de usuario, tu foto y tus archivos (fotos, audios, videos) de nuestros servidores. Tus mensajes en conversaciones y grupos se anonimizarán, pero no se borrarán para las demás personas. Además, se cerrará tu sesión en todos los dispositivos y se borrarán todos los datos guardados en este dispositivo. ¿Deseas continuar?</string>
+    <string name="profile_delete_account_confirm">Eliminar cuenta</string>
+    <string name="profile_deleting_account_content_description">Eliminando cuenta…</string>
 
     <!-- Session Audit -->
     <string name="session_audit_revoked_success">Sesión cerrada correctamente</string>

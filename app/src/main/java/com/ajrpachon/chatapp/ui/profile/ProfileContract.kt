@@ -28,6 +28,7 @@ data class ProfileState(
     val twoFactor: TwoFactorState = TwoFactorState(),
     val isAppLockEnabled: Boolean = false,
     val qrBitmap: Bitmap? = null,
+    val isDeletingAccount: Boolean = false,
     val error: String? = null,
 )
 
@@ -46,4 +47,5 @@ sealed interface ProfileIntent {
 sealed interface ProfileEffect {
     data object NavigateToAuth : ProfileEffect
     data object ShowSignOutAllConfirm : ProfileEffect
+    data object ShowDeleteAccountConfirm : ProfileEffect
 }

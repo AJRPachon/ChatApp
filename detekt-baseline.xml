@@ -21,6 +21,7 @@
     <ID>NewLineAtEndOfFile:GroupRemoteSource.kt$com.ajrpachon.chatapp.data.remote.source.GroupRemoteSource.kt</ID>
     <ID>ReturnCount:BroadcastListViewModel.kt$BroadcastListViewModel$private fun sendBroadcast()</ID>
     <ID>ReturnCount:InvitationRepositoryImpl.kt$InvitationRepositoryImpl$override suspend fun getRelationship(currentUserId: String, otherUserId: String): UserRelationship</ID>
+    <ID>TooManyFunctions:AuthRepository.kt$AuthRepository</ID>
     <ID>TooManyFunctions:MessageRepositoryImpl.kt$MessageRepositoryImpl : MessageRepository</ID>
     <ID>TooManyFunctions:UserRepository.kt$UserRepository</ID>
     <ID>TopLevelPropertyNaming:DatabaseBuilder.kt$private val MIGRATION_10_11 = object : Migration(10, 11) { override fun migrate(connection: SQLiteConnection) { connection.execSQL("ALTER TABLE messages ADD COLUMN isEncrypted INTEGER NOT NULL DEFAULT 0") } }</ID>
