@@ -181,17 +181,25 @@ Not collected — no code path touches any of these categories.
   specific flow. Worth a closer look at whether that particular permission check is even needed for the
   picker to work.
 
-### 5.2 `BLUETOOTH_CONNECT` — no justifying code found anywhere in the app
+### 5.2 `BLUETOOTH_CONNECT` — RESOLVED: genuinely needed, confirmed by decompiling the dependency
 
-Grepped the entire repository: the only occurrence of `BLUETOOTH_CONNECT` is the manifest declaration.
-No `checkSelfPermission`, no `ActivityResultContracts.RequestPermission()` call, nothing. This is
-almost certainly pulled in for LiveKit/WebRTC's Bluetooth SCO audio-routing during calls (needed on
-Android 12+ to detect/route audio to a Bluetooth headset), which LiveKit's own manifest may declare via
-manifest merging, or which this app declared defensively without knowing it's needed. **Before filling
-the Play Console permissions declaration**: confirm whether LiveKit actually requires this at runtime
-(check LiveKit's own docs/manifest, or test a call with a Bluetooth headset connected). If it's not
-actually needed, remove it — an unused dangerous-adjacent permission with zero justifying code is
-exactly the kind of thing Play's automated review flags.
+No first-party code in this repo references `BLUETOOTH_CONNECT` (still true), and LiveKit's own
+manifest (`livekit-android-2.28.1`) does not declare it either (only `ACCESS_NETWORK_STATE`,
+`INTERNET`, `RECORD_AUDIO`, `CAMERA`, `FOREGROUND_SERVICE*`). But LiveKit depends on Twilio's
+`audioswitch` library for in-call audio device routing (speaker/earpiece/wired/Bluetooth headset),
+and decompiling `audioswitch`'s `classes.jar` confirms it: `BluetoothHeadsetManager
+$DefaultPermissionsCheckStrategy.class` contains the literal string `android.permission.
+BLUETOOTH_CONNECT` alongside `android.permission.BLUETOOTH` and a `targetSdkVersion` check — a
+runtime permission check that picks `BLUETOOTH_CONNECT` on API 31+ and legacy `BLUETOOTH` below
+that. `audioswitch`'s own manifest declares `BLUETOOTH` capped at `maxSdkVersion="30"` but leaves
+`BLUETOOTH_CONNECT` for the host app to add (common pattern — the library doesn't want to force
+the permission on every consumer). Since ChatApp's `targetSdk` is 37, without this permission
+`audioswitch`'s Bluetooth-headset routing during calls would silently stop working on Android 12+
+(not a crash — the Bluetooth audio route would just never be offered).
+
+**Verdict: keep the permission.** Justification for the Play Console permissions declaration:
+"Used by the calling feature (LiveKit) to route call audio to a connected Bluetooth headset on
+Android 12+."
 
 ### 5.3 `ACCESS_FINE_LOCATION` + `ACCESS_COARSE_LOCATION` declared together, only `FINE` requested at runtime
 
@@ -260,9 +268,8 @@ exposed `signOut()`/`signOutAll()`). This is now implemented and verified end-to
 
 - [x] **Account deletion**: implemented and verified end-to-end against production (§5.6). Answer Play's
       deletion question "Yes" — in-app, self-service.
-- [ ] **BLUETOOTH_CONNECT**: confirm with LiveKit's docs/manifest whether it's actually required for
-      Bluetooth audio routing during calls. Remove the permission if not, otherwise document the
-      justification (§5.2).
+- [x] **BLUETOOTH_CONNECT**: confirmed genuinely needed (§5.2) — keep it, use the justification text
+      already drafted there.
 - [ ] **Google Drive backup scope**: confirm `drive.file` is the intended, minimal scope, and decide
       whether the Data Safety form should describe backup as "sharing with Google Drive" or "user-
       directed transfer to a service the user controls" — get this right, it's a common review flank.
