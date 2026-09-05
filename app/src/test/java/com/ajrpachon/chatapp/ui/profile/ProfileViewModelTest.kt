@@ -10,7 +10,6 @@ import com.ajrpachon.chatapp.domain.repository.ThemeRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.util.MainDispatcherRule
-import com.ajrpachon.chatapp.util.sharedScheduler
 import io.github.jan.supabase.exceptions.RestException
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -68,6 +67,9 @@ class ProfileViewModelTest {
         themeRepository = themeRepository,
         appLockRepository = appLockRepository,
         analyticsTracker = analyticsTracker,
+        // Shares the rule's scheduler so the QR-bitmap withContext() hop in init{} is
+        // driven by advanceUntilIdle() instead of leaking onto a real background thread.
+        defaultDispatcher = mainDispatcherRule.testDispatcher,
     )
 
     private fun restException(statusCode: Int, message: String? = null): RestException {
@@ -78,7 +80,7 @@ class ProfileViewModelTest {
     }
 
     @Test
-    fun `requestDeleteAccount sends ShowDeleteAccountConfirm effect`() = runTest(sharedScheduler) {
+    fun `requestDeleteAccount sends ShowDeleteAccountConfirm effect`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
 
@@ -89,7 +91,7 @@ class ProfileViewModelTest {
     }
 
     @Test
-    fun `deleteAccount success clears local state and navigates to auth`() = runTest(sharedScheduler) {
+    fun `deleteAccount success clears local state and navigates to auth`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { authRepository.deleteAccount() } returns Unit
         val vm = buildViewModel()
         advanceUntilIdle()
@@ -106,7 +108,7 @@ class ProfileViewModelTest {
     }
 
     @Test
-    fun `deleteAccount with 401 shows invalid session message`() = runTest(sharedScheduler) {
+    fun `deleteAccount with 401 shows invalid session message`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { authRepository.deleteAccount() } throws restException(401)
         val vm = buildViewModel()
         advanceUntilIdle()
@@ -119,7 +121,7 @@ class ProfileViewModelTest {
     }
 
     @Test
-    fun `deleteAccount with 429 shows rate limit message`() = runTest(sharedScheduler) {
+    fun `deleteAccount with 429 shows rate limit message`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { authRepository.deleteAccount() } throws restException(429)
         val vm = buildViewModel()
         advanceUntilIdle()
@@ -132,7 +134,7 @@ class ProfileViewModelTest {
     }
 
     @Test
-    fun `deleteAccount with 500 shows generic server error message`() = runTest(sharedScheduler) {
+    fun `deleteAccount with 500 shows generic server error message`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { authRepository.deleteAccount() } throws restException(500)
         val vm = buildViewModel()
         advanceUntilIdle()
@@ -145,7 +147,7 @@ class ProfileViewModelTest {
     }
 
     @Test
-    fun `deleteAccount with unexpected error falls back to exception message`() = runTest(sharedScheduler) {
+    fun `deleteAccount with unexpected error falls back to exception message`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { authRepository.deleteAccount() } throws IllegalStateException("boom")
         val vm = buildViewModel()
         advanceUntilIdle()

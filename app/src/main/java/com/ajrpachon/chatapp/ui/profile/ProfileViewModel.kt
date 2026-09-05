@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -30,6 +31,9 @@ class ProfileViewModel(
     private val themeRepository: ThemeRepository,
     private val appLockRepository: AppLockRepository,
     private val analyticsTracker: AnalyticsTracker,
+    // Not Koin-injectable (no CoroutineDispatcher binding registered) — passed explicitly
+    // from AppModule's lambda so tests can supply a TestDispatcher instead of a real one.
+    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : BaseViewModel<ProfileState, ProfileEffect>(ProfileState()) {
 
     init {
@@ -277,7 +281,7 @@ class ProfileViewModel(
     }
 
     private suspend fun generateQrBitmap(userId: String) {
-        val bitmap = withContext(Dispatchers.Default) {
+        val bitmap = withContext(defaultDispatcher) {
             runCatching {
                 val content = "chatapp://user/$userId"
                 val rendered = QRCode(content).render()

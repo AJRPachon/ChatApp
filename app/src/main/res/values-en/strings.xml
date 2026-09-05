@@ -497,4 +497,9 @@
     <string name="media_gallery_no_images">No shared images</string>
     <string name="media_gallery_no_videos">No shared videos</string>
     <string name="media_gallery_play_video_cd">Play video</string>
+    <string name="profile_delete_account">Delete account</string>
+    <string name="profile_delete_account_dialog_title">Permanently delete your account?</string>
+    <string name="profile_delete_account_dialog_text">This action can\'t be undone. Your profile, username, photo and files (photos, audio, videos) will be deleted from our servers. Your messages in conversations and groups will be anonymized, but not deleted for other people. Your session will also be signed out on every device, and all data saved on this device will be erased. Do you want to continue?</string>
+    <string name="profile_delete_account_confirm">Delete account</string>
+    <string name="profile_deleting_account_content_description">Deleting account…</string>
 </resources>
