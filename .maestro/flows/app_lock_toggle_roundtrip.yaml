@@ -60,9 +60,25 @@ appId: com.ajrpachon.chatapp
 # Background long enough to cross the 30s APP_LOCK_TIMEOUT_MS threshold —
 # a plain immediate background/resume (as in
 # subflows/background_and_resume.yaml) would NOT trigger the lock at all.
+#
+# REAL BUG FOUND AND FIXED HERE (in the flow, not the app): the original
+# version of this step used `waitForAnimationToEnd: { timeout: 32000 }`,
+# assuming that would block for 32s. It doesn't — that command only waits
+# for whatever transition animation is actually in flight (typically well
+# under a second) and returns as soon as the UI settles, `timeout` is just
+# its ceiling. Confirmed empirically on-device: with that version, this
+# flow always failed the `applock_screen` assertion below, because barely
+# any real time had elapsed when it relaunched — not a regression in the
+# app. Maestro has no dedicated fixed-duration sleep command at all
+# (exhaustively confirmed against every Command class in
+# maestro-orchestra-models.jar — the full command set has nothing like
+# `wait: <ms>`, only condition-based waits that fail if their condition
+# is never met). A JS busy-loop inside `evalScript` is the only primitive
+# that reliably blocks for real wall-clock time; verified this actually
+# blocks (not just returns immediately) with a standalone 5s-loop flow
+# before using it here.
 - pressKey: Home
-- waitForAnimationToEnd:
-    timeout: 32000
+- evalScript: ${(function(){ var start = Date.now(); while (Date.now() - start < 32000) {} return true; })()}
 - launchApp:
     stopApp: false
     clearState: false
