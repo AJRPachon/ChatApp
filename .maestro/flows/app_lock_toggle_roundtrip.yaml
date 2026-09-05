@@ -1,0 +1,86 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, opens the profile screen, enables the "App lock" toggle,
+# backgrounds the app for long enough to cross AppLockRepository's 30s
+# threshold (MainActivity.APP_LOCK_TIMEOUT_MS) and resumes it WITHOUT
+# killing the process (same pattern as background_resume_profile.yaml /
+# subflows/background_and_resume.yaml), and confirms AppLockScreen
+# renders on top instead of the profile screen simply reappearing.
+# Leaves the toggle disabled again at the end (shared, persistent QA
+# account — see .maestro/README.md "Higiene de datos").
+#
+# This project has no biometric/device-credential automation configured
+# anywhere (confirmed: no maestro/emulator/biometric mention in
+# .github/workflows/), and a bare emulator normally has neither a
+# fingerprint nor a device PIN enrolled — so
+# `BiometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)`
+# in AppLockScreen.kt's LaunchedEffect should return something other than
+# BIOMETRIC_SUCCESS, and the real system BiometricPrompt should never
+# auto-launch. This flow deliberately never taps
+# "Unlock with fingerprint" / `applock_unlock_with_fingerprint` and never
+# attempts to pass a real biometric/PIN challenge, per the task's explicit
+# preference order.
+#
+# REAL FINDING while building this flow (reported, not fixed — see
+# CLAUDE.md guidance / task instructions on not forcing app fixes):
+# `NavDisplay`'s `onBack` in MainActivity.kt
+# (`if (backStack.size > 1) backStack.removeLastOrNull() else finish()`)
+# is not guarded against `AppLockRoute` being on top of the back stack —
+# a plain system back gesture pops AppLockScreen off *without* going
+# through AuthSucceeded/Effect.Authenticated, revealing whatever screen
+# was underneath (here, ProfileScreen) with no authentication at all.
+# This flow relies on exactly that gap to get back to ProfileScreen
+# afterwards (there is no other UI-driven way back without a real
+# biometric/PIN pass) — which is itself worth flagging: it means the
+# App Lock feature can currently be bypassed with the system/gesture
+# back button. If that gap is ever closed, this flow's cleanup step
+# (turning the toggle back off) will need a different path back to
+# ProfileScreen.
+#
+# Run with:
+#   maestro test .maestro/flows/app_lock_toggle_roundtrip.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- tapOn:
+    id: "conversation_list_profile_button"
+- extendedWaitUntil:
+    visible:
+      id: "profile_sign_out_button"
+    timeout: 10000
+- assertVisible:
+    id: "profile_app_lock_switch"
+- tapOn:
+    id: "profile_app_lock_switch"
+# Background long enough to cross the 30s APP_LOCK_TIMEOUT_MS threshold —
+# a plain immediate background/resume (as in
+# subflows/background_and_resume.yaml) would NOT trigger the lock at all.
+- pressKey: Home
+- waitForAnimationToEnd:
+    timeout: 32000
+- launchApp:
+    stopApp: false
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      id: "applock_screen"
+    timeout: 15000
+- assertVisible:
+    id: "applock_screen"
+- assertNotVisible:
+    id: "profile_sign_out_button"
+# Deliberately does NOT tap "Unlock with fingerprint" — see notes above.
+# Goes back via the system back gesture instead (known bypass, see notes
+# above), landing back on ProfileScreen since it was still underneath
+# AppLockRoute on the back stack.
+- back
+- extendedWaitUntil:
+    visible:
+      id: "profile_app_lock_switch"
+    timeout: 10000
+- tapOn:
+    id: "profile_app_lock_switch"
+- assertVisible:
+    id: "profile_sign_out_button"

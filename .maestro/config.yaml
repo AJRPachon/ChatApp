@@ -36,6 +36,8 @@ executionOrder:
     - flows/sign_out_all_devices_cancel.yaml
     - flows/profile_display_name_roundtrip.yaml
     - flows/profile_online_status_roundtrip.yaml
+    - flows/app_lock_toggle_roundtrip.yaml
+    - flows/backup_screen_navigation.yaml
     - flows/my_qr_code_navigation.yaml
     - flows/forward_message_dialog_navigation.yaml
     - flows/ephemeral_message_dialog_navigation.yaml
