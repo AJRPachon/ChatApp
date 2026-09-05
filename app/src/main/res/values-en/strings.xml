@@ -485,6 +485,7 @@
     <!-- AppLockScreen -->
     <string name="applock_biometric_title">Unlock ChatApp</string>
     <string name="applock_biometric_subtitle">Confirm your identity to continue</string>
+    <string name="profile_app_lock_no_credential_error">Set up a fingerprint, face, or PIN in your device settings before enabling app lock — otherwise you could get locked out of your own account.</string>
     <string name="applock_locked_title">ChatApp locked</string>
     <string name="applock_locked_subtitle">Verify your identity to access</string>
     <string name="applock_unlock_with_fingerprint">Unlock with fingerprint</string>
@@ -497,4 +498,9 @@
     <string name="media_gallery_no_images">No shared images</string>
     <string name="media_gallery_no_videos">No shared videos</string>
     <string name="media_gallery_play_video_cd">Play video</string>
+    <string name="profile_delete_account">Delete account</string>
+    <string name="profile_delete_account_dialog_title">Permanently delete your account?</string>
+    <string name="profile_delete_account_dialog_text">This action can\'t be undone. Your profile, username, photo and files (photos, audio, videos) will be deleted from our servers. Your messages in conversations and groups will be anonymized, but not deleted for other people. Your session will also be signed out on every device, and all data saved on this device will be erased. Do you want to continue?</string>
+    <string name="profile_delete_account_confirm">Delete account</string>
+    <string name="profile_deleting_account_content_description">Deleting account…</string>
 </resources>

@@ -68,6 +68,18 @@ object E2EEKeyManager {
     }
 
     /**
+     * Removes [userId]'s EC key pair from Android KeyStore, if present.
+     * Called on account deletion so no E2EE key material for this user survives locally.
+     */
+    fun deleteKeyPair(userId: String) {
+        val alias = "$KEY_ALIAS_PREFIX$userId"
+        val keyStore = KeyStore.getInstance(ANDROID_KEY_STORE).apply { load(null) }
+        if (keyStore.containsAlias(alias)) {
+            keyStore.deleteEntry(alias)
+        }
+    }
+
+    /**
      * Derives a shared AES-256 secret key using ECDH + HKDF.
      *
      * @param userId               our own user ID (used to look up our private key)

@@ -8,7 +8,6 @@ import com.ajrpachon.chatapp.domain.repository.StatusRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.ReadUriAsBytesUseCase
 import com.ajrpachon.chatapp.util.MainDispatcherRule
-import com.ajrpachon.chatapp.util.sharedScheduler
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -60,7 +59,7 @@ class StatusViewModelTest {
     // ── initial state ─────────────────────────────────────────────────────────
 
     @Test
-    fun `initial state has empty statuses and isLoading false`() = runTest(sharedScheduler) {
+    fun `initial state has empty statuses and isLoading false`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildVm()
         advanceUntilIdle()
 
@@ -72,7 +71,7 @@ class StatusViewModelTest {
     // ── observeActiveStatuses reflects repository flow ────────────────────────
 
     @Test
-    fun `statuses updated when repository emits new list`() = runTest(sharedScheduler) {
+    fun `statuses updated when repository emits new list`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildVm()
         advanceUntilIdle()
 
@@ -85,7 +84,7 @@ class StatusViewModelTest {
     }
 
     @Test
-    fun `statuses cleared when repository emits empty list`() = runTest(sharedScheduler) {
+    fun `statuses cleared when repository emits empty list`() = runTest(mainDispatcherRule.scheduler) {
         statusesFlow.value = listOf(fakeStatus("s1", "alice"))
         val vm = buildVm()
         advanceUntilIdle()
@@ -99,7 +98,7 @@ class StatusViewModelTest {
     // ── compose dialog ────────────────────────────────────────────────────────
 
     @Test
-    fun `OpenCompose sets showComposeDialog to true`() = runTest(sharedScheduler) {
+    fun `OpenCompose sets showComposeDialog to true`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildVm()
         vm.onIntent(StatusIntent.OpenCompose)
 
@@ -107,7 +106,7 @@ class StatusViewModelTest {
     }
 
     @Test
-    fun `CloseCompose sets showComposeDialog to false`() = runTest(sharedScheduler) {
+    fun `CloseCompose sets showComposeDialog to false`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildVm()
         vm.onIntent(StatusIntent.OpenCompose)
         vm.onIntent(StatusIntent.CloseCompose)
@@ -116,7 +115,7 @@ class StatusViewModelTest {
     }
 
     @Test
-    fun `TextChanged updates composeText`() = runTest(sharedScheduler) {
+    fun `TextChanged updates composeText`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildVm()
         vm.onIntent(StatusIntent.TextChanged("¿Qué está pasando?"))
 
@@ -124,7 +123,7 @@ class StatusViewModelTest {
     }
 
     @Test
-    fun `ColorChanged updates selectedColor`() = runTest(sharedScheduler) {
+    fun `ColorChanged updates selectedColor`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildVm()
         vm.onIntent(StatusIntent.ColorChanged(0xFF0000FF))
 
@@ -132,7 +131,7 @@ class StatusViewModelTest {
     }
 
     @Test
-    fun `OpenCompose resets composeText and color`() = runTest(sharedScheduler) {
+    fun `OpenCompose resets composeText and color`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildVm()
         vm.onIntent(StatusIntent.TextChanged("old text"))
         vm.onIntent(StatusIntent.ColorChanged(0xFF000000))
@@ -145,7 +144,7 @@ class StatusViewModelTest {
     // ── PostTextStatus ────────────────────────────────────────────────────────
 
     @Test
-    fun `PostTextStatus calls repository and closes dialog`() = runTest(sharedScheduler) {
+    fun `PostTextStatus calls repository and closes dialog`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildVm()
         vm.onIntent(StatusIntent.OpenCompose)
         vm.onIntent(StatusIntent.TextChanged("Hello world"))
@@ -157,7 +156,7 @@ class StatusViewModelTest {
     }
 
     @Test
-    fun `PostTextStatus with blank text does nothing`() = runTest(sharedScheduler) {
+    fun `PostTextStatus with blank text does nothing`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildVm()
         vm.onIntent(StatusIntent.OpenCompose)
         vm.onIntent(StatusIntent.TextChanged("   "))
@@ -168,7 +167,7 @@ class StatusViewModelTest {
     }
 
     @Test
-    fun `PostTextStatus trims whitespace before posting`() = runTest(sharedScheduler) {
+    fun `PostTextStatus trims whitespace before posting`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildVm()
         vm.onIntent(StatusIntent.OpenCompose)
         vm.onIntent(StatusIntent.TextChanged("  Hola  "))
@@ -181,7 +180,7 @@ class StatusViewModelTest {
     // ── DeleteStatus ──────────────────────────────────────────────────────────
 
     @Test
-    fun `DeleteStatus calls repository with correct id`() = runTest(sharedScheduler) {
+    fun `DeleteStatus calls repository with correct id`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildVm()
         vm.onIntent(StatusIntent.DeleteStatus("s42"))
         advanceUntilIdle()
@@ -192,7 +191,7 @@ class StatusViewModelTest {
     // ── PostVideoStatus ───────────────────────────────────────────────────────
 
     @Test
-    fun `PostVideoStatus reads the uri and calls repository`() = runTest(sharedScheduler) {
+    fun `PostVideoStatus reads the uri and calls repository`() = runTest(mainDispatcherRule.scheduler) {
         val bytes = ByteArray(10)
         coEvery { readUriAsBytes(any()) } returns bytes
         val vm = buildVm()
@@ -203,7 +202,7 @@ class StatusViewModelTest {
     }
 
     @Test
-    fun `PostVideoStatus with oversized video sets error and does not call repository`() = runTest(sharedScheduler) {
+    fun `PostVideoStatus with oversized video sets error and does not call repository`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { readUriAsBytes(any()) } returns ByteArray(51 * 1024 * 1024)
         val vm = buildVm()
         vm.onIntent(StatusIntent.PostVideoStatus(mockk(relaxed = true)))
@@ -216,7 +215,7 @@ class StatusViewModelTest {
     // ── Refresh / sync ────────────────────────────────────────────────────────
 
     @Test
-    fun `Refresh triggers syncStatuses on init`() = runTest(sharedScheduler) {
+    fun `Refresh triggers syncStatuses on init`() = runTest(mainDispatcherRule.scheduler) {
         buildVm()
         advanceUntilIdle()
 
@@ -224,7 +223,7 @@ class StatusViewModelTest {
     }
 
     @Test
-    fun `error from repository sets error in state`() = runTest(sharedScheduler) {
+    fun `error from repository sets error in state`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { statusRepository.postTextStatus(any(), any()) } throws RuntimeException("error de red")
         val vm = buildVm()
         vm.onIntent(StatusIntent.OpenCompose)

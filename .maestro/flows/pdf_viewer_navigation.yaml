@@ -1,0 +1,85 @@
+appId: com.ajrpachon.chatapp
+---
+# Signs in, sends a real PDF via the system document picker (Attach →
+# Archivo, `ACTION_OPEN_DOCUMENT` — same mechanism as send_file_message.yaml)
+# to @claudeqa2, taps its "Ver PDF|View PDF" button to open PdfViewerScreen,
+# confirms it renders the document (its top bar shows the filename, and no
+# error state), goes back to the chat, then deletes the message.
+#
+# PdfViewerScreen itself has no static content to assert beyond the filename
+# in its own top bar (ChatFileBubbles.kt's PdfFileCard passes
+# `message.fileName`/"maestro_seed.pdf" through as PdfViewerScreen's own
+# `filename` param/title) — the page content is a LazyColumn of rendered
+# bitmap pages with no stable text, so absence of the
+# `pdf_error_loading` string is the closest signal to "it actually rendered"
+# available without inspecting pixels.
+#
+# REQUIRES manual setup before running (outside Maestro — no shell-command
+# step exists in a Maestro flow), same pattern as send_file_message.yaml's
+# own setup note:
+#   adb -s emulator-5554 push maestro_seed.pdf //sdcard/Download/maestro_seed.pdf
+# A minimal single-page PDF is enough — PdfViewerViewModel only needs a
+# document `PdfRenderer` can open. Unlike send_file_message.yaml's
+# maestro_seed.txt, the filename here MUST end in ".pdf": ChatFileBubbles.kt's
+# `FileBubble` picks `PdfFileCard` vs the plain `GenericFileBubble` purely
+# from `message.fileUrl?.endsWith(".pdf")`, and `MessageRepositoryImpl.uploadFile`
+# preserves the original (sanitized) filename/extension in the uploaded
+# storage path, so the extension survives all the way to that check.
+#
+# Deletion long-presses the filename text directly (delete_selected_message.yaml,
+# MESSAGE_SELECTOR: "maestro_seed.pdf") rather than the blank-margin technique
+# every other attachment flow uses (delete_selected_media_message.yaml):
+# unlike the plain file bubble (whose entire Surface is one clickable),
+# PdfFileCard only wraps its own "Ver PDF"/"View PDF" button in
+# `Modifier.clickable` — the icon/filename/size area above it has no
+# clickable of its own, so a long-press there correctly reaches the row's
+# `onLongClick = onToggleSelect` without the swallowing bug documented
+# elsewhere in this suite. Verified directly that the margin technique does
+# NOT work here the way it does for send_file_message.yaml's plain file
+# bubble: a long-press at a point below the (taller, two-row) PdfFileCard —
+# past its content into the blank chat background — closed the app back to
+# the home screen instead of entering multi-select (reproduced once;
+# device/Maestro gesture-recognition artifact on an unconsumed long touch,
+# not chased further since the direct-text approach below is both simpler
+# and verified working end-to-end).
+# Run with:
+#   maestro test .maestro/flows/pdf_viewer_navigation.yaml -e QA_EMAIL=... -e QA_PASSWORD=...
+- runFlow:
+    file: ../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${QA_EMAIL}
+      LOGIN_PASSWORD: ${QA_PASSWORD}
+- runFlow:
+    file: ../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: claudeqa2
+- tapOn: "Adjuntar|Attach"
+- tapOn: "Archivo"
+- extendedWaitUntil:
+    visible: "maestro_seed.pdf|Recent"
+    timeout: 10000
+- runFlow:
+    when:
+      notVisible: "maestro_seed.pdf"
+    commands:
+      - tapOn: "Show roots"
+      - tapOn: "Downloads"
+      - extendedWaitUntil:
+          visible: "maestro_seed.pdf"
+          timeout: 8000
+- tapOn: "maestro_seed.pdf"
+- extendedWaitUntil:
+    visible: "maestro_seed.pdf"
+    timeout: 15000
+- tapOn: "Ver PDF|View PDF"
+- extendedWaitUntil:
+    visible: "maestro_seed.pdf"
+    timeout: 15000
+- assertNotVisible: "Error al cargar el PDF|Error loading PDF"
+- back
+- assertVisible:
+    id: "chat_top_bar_title"
+- runFlow:
+    file: ../subflows/delete_selected_message.yaml
+    env:
+      MESSAGE_SELECTOR: "maestro_seed.pdf"

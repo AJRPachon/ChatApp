@@ -15,6 +15,13 @@ interface AuthRepository {
     suspend fun signInWithGoogle(idToken: String, rawNonce: String)
     suspend fun signOut()
     suspend fun signOutAll()
+    /**
+     * Permanently deletes the current user's account via the `delete-account` Edge Function.
+     * On success, also wipes local session/DB/keystore state (device left as if freshly installed
+     * for this user). Throws on failure (e.g. [io.github.jan.supabase.exceptions.RestException]
+     * with statusCode 401/429/500) — callers should inspect the exception to show a specific message.
+     */
+    suspend fun deleteAccount()
     suspend fun checkIntegrity(): IntegrityResult
     // MFA
     suspend fun getMfaAssuranceLevel(): MfaAssuranceLevel?

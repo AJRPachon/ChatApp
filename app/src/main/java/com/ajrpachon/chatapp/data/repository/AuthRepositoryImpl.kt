@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.data.repository
 
+import com.ajrpachon.chatapp.data.local.ChatDatabase
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.AuthRepository
 import com.ajrpachon.chatapp.domain.repository.CrashReporter
@@ -7,8 +8,10 @@ import com.ajrpachon.chatapp.domain.repository.MfaAssuranceLevel
 import com.ajrpachon.chatapp.domain.repository.SessionInfo
 import com.ajrpachon.chatapp.domain.repository.TotpEnrollment
 import com.ajrpachon.chatapp.utils.AnalyticsEvents
+import com.ajrpachon.chatapp.utils.E2EEKeyManager
 import com.ajrpachon.chatapp.utils.IntegrityChecker
 import com.ajrpachon.chatapp.utils.IntegrityResult
+import com.ajrpachon.chatapp.utils.SessionGuard
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.mfa.FactorType
@@ -16,10 +19,15 @@ import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.auth.SignOutScope
+import io.github.jan.supabase.functions.functions
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class AuthRepositoryImpl(
     private val context: android.content.Context,
     private val supabase: SupabaseClient,
+    private val chatDatabase: ChatDatabase,
+    private val sessionGuard: SessionGuard,
     private val crashReporter: CrashReporter,
     private val analyticsTracker: AnalyticsTracker,
 ) : AuthRepository {
@@ -83,6 +91,24 @@ class AuthRepositoryImpl(
         supabase.auth.signOut(SignOutScope.GLOBAL)
         crashReporter.setUserId(null)
         analyticsTracker.logEvent(AnalyticsEvents.LOGOUT)
+    }
+
+    override suspend fun deleteAccount() {
+        val userId = getCurrentUserId()
+
+        // POST, no body — the Edge Function resolves the user from the Authorization JWT.
+        // Throws a RestException (statusCode 401/429/500) on failure; nothing below runs then.
+        supabase.functions.invoke("delete-account")
+
+        // From here on the server-side account/session is gone. Wipe everything local so the
+        // device looks freshly installed for this user: Room cache (SQLCipher), the "remember me"
+        // inactivity timer, this user's E2EE keypair, and the local Supabase session.
+        withContext(Dispatchers.IO) { chatDatabase.clearAllTables() }
+        if (userId != null) {
+            E2EEKeyManager.deleteKeyPair(userId)
+        }
+        sessionGuard.clearSession()
+        supabase.auth.clearSession()
     }
 
     override suspend fun checkIntegrity(): IntegrityResult =

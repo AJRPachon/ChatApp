@@ -32,6 +32,7 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     send_camera_photo_message.yaml
     send_video_message.yaml
     send_file_message.yaml
+    pdf_viewer_navigation.yaml
     send_audio_message.yaml
     send_location_message.yaml
     send_contact_message.yaml
@@ -53,6 +54,8 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     sign_out_all_devices_cancel.yaml
     profile_display_name_roundtrip.yaml
     profile_online_status_roundtrip.yaml
+    app_lock_toggle_roundtrip.yaml
+    backup_screen_navigation.yaml
     my_qr_code_navigation.yaml
     forward_message_dialog_navigation.yaml
     ephemeral_message_dialog_navigation.yaml
@@ -65,6 +68,7 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     status_compose_navigation.yaml
     group_text_message_roundtrip.yaml
     group_sender_attribution_navigation.yaml
+    group_info_member_management_navigation.yaml
     group_image_message_roundtrip.yaml
     group_file_message_roundtrip.yaml
     group_camera_photo_roundtrip.yaml
@@ -257,7 +261,11 @@ compartido por varias pantallas: `NewChatScreen`, `InvitationsScreen`,
 `testTag`), `chat_recording_stop_button` (`RecordingBar`'s botón de stop),
 `chat_audio_discard_button` / `chat_audio_send_button` (`AudioPreviewBar`'s
 descartar/enviar — los cuatro añadidos para `group_audio_message_roundtrip.yaml`,
-ver "Grupo real de prueba" más abajo).
+ver "Grupo real de prueba" más abajo); `profile_app_lock_switch`,
+`profile_backup_row` (`ProfileScreen`), `applock_screen` (`AppLockScreen`,
+root `Column`), `backup_make_backup_button` (`BackupScreen`) — los cuatro
+añadidos para `app_lock_toggle_roundtrip.yaml`/`backup_screen_navigation.yaml`,
+ninguno tenía `testTag` antes.
 
 **Excepciones donde se usa texto en vez de `id`:**
 
@@ -845,6 +853,38 @@ stickers.
   extendió a un envío real porque no hay ningún sticker que seleccionar,
   no por una limitación de Maestro.
 
+- **`AppLockScreen` es evitable con el botón/gesto "atrás" del sistema (no
+  arreglado, solo reportado)**: construyendo `app_lock_toggle_roundtrip.yaml`
+  se confirmó que `NavDisplay`'s `onBack` en `MainActivity.kt`
+  (`if (backStack.size > 1) backStack.removeLastOrNull() else finish()`)
+  no tiene ninguna excepción para `AppLockRoute` — un `back` normal la
+  saca de la pila igual que cualquier otra pantalla, revelando lo que
+  hubiera debajo (aquí, `ProfileScreen`) sin pasar nunca por
+  `AppLockIntent.AuthSucceeded`/`AppLockEffect.Authenticated`. Es decir,
+  el bloqueo de app actual se puede saltar por completo con el botón
+  atrás, sin biometría ni PIN. El propio flow se apoya en este hueco a
+  propósito para volver a `ProfileScreen` y desactivar el toggle al
+  terminar (no hay ninguna otra vía de UI para salir de `AppLockScreen`
+  sin pasar una biometría/PIN real) — si esto se arregla alguna vez
+  (añadiendo una excepción para `AppLockRoute` en `onBack`), el paso de
+  limpieza de ese flow necesitará una vía distinta.
+- **`BackupScreen` puede disparar el OAuth de Google solo con abrirla, no
+  solo al tocar "Hacer copia"**: `BackupViewModel.init` llama siempre a
+  `loadLastBackupInfo()`, que llama a `backupRepository.getLatestBackupInfo()`
+  para rellenar la tarjeta "Última copia" — y esa función usa el mismo
+  `AccountManager.blockingGetAuthToken(account, DRIVE_SCOPE, true)` que
+  `backup()`/`restore()`. Está envuelta en `runCatching { }.getOrNull()`,
+  así que en un dispositivo/emulador sin ninguna cuenta de Google añadida
+  (`accounts.firstOrNull() ?: error(...)`) falla en silencio y la pantalla
+  simplemente muestra su estado vacío ("No backups in Google Drive") — sin
+  diálogo ni crash, verificado leyendo `BackupRepositoryImpl.kt`. Pero en
+  un dispositivo que sí tenga una cuenta de Google configurada, entrar a
+  esta pantalla podría bastar para disparar un diálogo real de
+  consentimiento de cuenta, antes de tocar ningún botón.
+  `backup_screen_navigation.yaml` asume el escenario sin cuenta de Google
+  (el que describe el propio encargo para la cuenta QA) y por eso se
+  queda en navegación pura.
+
 ## Higiene de datos
 
 `send_message.yaml` y `message_reaction_roundtrip.yaml` borran el mensaje
@@ -891,6 +931,48 @@ location, capturas de cámara) vía `delete_selected_message.yaml` — ver
 el propio grupo "Maestro Test Group": la conversación en sí es permanente
 por diseño (decisión explícita del usuario), no algo que cada flow cree y
 borre.
+
+## `BroadcastListScreen` y `UsageStatsScreen`: implementadas, pero sin ningún punto de entrada real en la app
+
+Ambas pantallas están completamente implementadas (`ui/broadcast/BroadcastListScreen.kt`,
+`ui/usagestats/UsageStatsScreen.kt`), tienen su propia ruta `@Serializable`
+(`BroadcastListRoute`, `UsageStatsRoute`) y su propio `NavEntry` registrado en
+`NavRoutes.kt` (`miscNavEntry`/`profileNavEntry` respectivamente) — es decir,
+Navigation 3 sabe perfectamente cómo renderizarlas si algún `NavKey` de ese
+tipo llega a aparecer en el backstack. El problema es que nada en la app
+llega jamás a añadir ese `NavKey`: verificado exhaustivamente con
+`grep -rn "onUsageStats\|onBroadcastList\|UsageStatsRoute\|BroadcastListRoute"`
+sobre todo `app/src/main/java` que la única aparición de ambas rutas fuera de
+sus propias pantallas y de `NavRoutes.kt` es su definición y su `NavEntry` —
+ningún composable en toda la app llama nunca a `backStack.add(BroadcastListRoute)`
+ni a `backStack.add(UsageStatsRoute)`. Se leyó `ProfileScreen.kt` completo (la
+pantalla candidata más obvia, dado que `UsageStatsRoute` vive en
+`profileNavEntry` junto a `SessionAuditRoute`/`BackupRoute`, que sí tienen
+fila propia) y no existe ninguna fila/botón para ninguna de las dos — su
+firma (`onBack`, `onSignOut`, `onBackup`, `onSessionAudit`) ni siquiera tiene
+un parámetro `onUsageStats`/`onBroadcastList` que se pudiera invocar.
+`ConversationListScreen.kt` (candidato para "Listas de difusión", ya que
+conceptualmente encaja junto a "Nuevo grupo"/"Nuevo chat") tampoco tiene
+ningún FAB/ítem de menú para ello. Tampoco hay deep link (`MainActivity.kt`
+solo reconoce `chatapp://chat/...` y el callback de auth de Supabase).
+
+Esto bloquea escribir `broadcast_list_navigation.yaml` y
+`usage_stats_navigation.yaml` tal como se pidieron (abrir la pantalla desde
+un punto de entrada real): no existe ninguno que abrir, y Maestro solo puede
+conducir la UI real de la app — no puede inyectar un `NavKey` arbitrario en
+el backstack de Navigation 3 saltándose la UI. Siguiendo el mismo principio
+que el resto de esta sección (documentar en vez de forzar: ver 2FA, tienda
+de stickers, wallpaper picker), no se creó ningún flow simulado para estas
+dos pantallas — habría sido un flow que nunca podría pasar de verdad, o que
+solo probaría un botón que no existe en el código de producción.
+Es un bug real (dos pantallas terminadas y registradas en el grafo de
+navegación pero completamente inalcanzables por cualquier usuario real),
+no una limitación de esta suite — repórtese y arréglese añadiendo el punto
+de entrada que falta (lo más probable: una fila en `ProfileScreen.kt` para
+"Estadísticas de uso" junto a "Sesiones activas", y un punto de entrada para
+"Listas de difusión" en `ConversationListScreen.kt` o en el propio
+`ProfileScreen.kt`) antes de que estos dos flows se puedan escribir de
+verdad.
 
 ## Pendiente / ideas
 
@@ -956,10 +1038,14 @@ borre.
   salida limpia. Se necesitaría limpiar el factor vía Supabase admin
   (fuera del alcance de un flow de Maestro) para que esto fuera seguro
   de automatizar.
-- **Backup a Google Drive** (Profile): no investigado a fondo más allá
-  de confirmar que `onBackup` existe — descartado directamente por
-  requerir casi con certeza un inicio de sesión real de Google, como ya
-  anticipaba el encargo.
+- ~~Backup a Google Drive~~ (Profile): **parcialmente cubierto** —
+  `backup_screen_navigation.yaml` cubre solo la navegación (entrar,
+  confirmar que renderiza, volver), sin tocar "Hacer copia"/"Restaurar" ni
+  completar ningún OAuth real — sigue siendo cierto que un backup/restore
+  de extremo a extremo necesitaría una cuenta de Google real añadida al
+  emulador, como ya anticipaba el encargo original. Ver "Hallazgos" más
+  abajo por un matiz real encontrado: incluso solo *abrir* la pantalla
+  puede disparar el mismo `blockingGetAuthToken` que el propio botón.
 - ~~Crear grupo de verdad + Group info + salir del grupo~~: **resuelto** —
   decisión explícita del usuario de crear un grupo real y permanente pese
   a la suciedad de backend que eso implica. Ver "Grupo real de prueba y sus

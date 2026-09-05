@@ -13,6 +13,7 @@
     <ID>LongMethod:ConversationRepositoryImpl.kt$ConversationRepositoryImpl$override fun observeConversations(userId: String): Flow&lt;List&lt;ConversationBO&gt;&gt;</ID>
     <ID>LongMethod:MainActivity.kt$MainActivity$override fun onCreate(savedInstanceState: Bundle?)</ID>
     <ID>LongParameterList:GroupInfoViewModel.kt$GroupInfoViewModel$( private val conversationId: String, private val userRepository: UserRepository, private val getGroupMembersUseCase: GetGroupMembersUseCase, private val updateGroupUseCase: UpdateGroupUseCase, private val leaveGroupUseCase: LeaveGroupUseCase, private val searchUsersUseCase: SearchUsersUseCase, private val groupRepository: GroupRepository, private val conversationRepository: ConversationRepository, )</ID>
+    <ID>LongParameterList:ProfileViewModel.kt$ProfileViewModel$( private val authRepository: AuthRepository, private val getCurrentUserUseCase: GetCurrentUserUseCase, private val fcmTokenRepository: FcmTokenRepository, private val userRepository: UserRepository, private val themeRepository: ThemeRepository, private val appLockRepository: AppLockRepository, private val analyticsTracker: AnalyticsTracker, // Not Koin-injectable (no CoroutineDispatcher binding registered) — passed explicitly // from AppModule's lambda so tests can supply a TestDispatcher instead of a real one. private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default, )</ID>
     <ID>LoopWithTooManyJumpStatements:ChatMessageList.kt$while</ID>
     <ID>LoopWithTooManyJumpStatements:ContactRepositoryImpl.kt$ContactRepositoryImpl$while</ID>
     <ID>LoopWithTooManyJumpStatements:ExportConversationUseCase.kt$ExportConversationUseCase$for</ID>
@@ -21,6 +22,7 @@
     <ID>NewLineAtEndOfFile:GroupRemoteSource.kt$com.ajrpachon.chatapp.data.remote.source.GroupRemoteSource.kt</ID>
     <ID>ReturnCount:BroadcastListViewModel.kt$BroadcastListViewModel$private fun sendBroadcast()</ID>
     <ID>ReturnCount:InvitationRepositoryImpl.kt$InvitationRepositoryImpl$override suspend fun getRelationship(currentUserId: String, otherUserId: String): UserRelationship</ID>
+    <ID>TooManyFunctions:AuthRepository.kt$AuthRepository</ID>
     <ID>TooManyFunctions:MessageRepositoryImpl.kt$MessageRepositoryImpl : MessageRepository</ID>
     <ID>TooManyFunctions:UserRepository.kt$UserRepository</ID>
     <ID>TopLevelPropertyNaming:DatabaseBuilder.kt$private val MIGRATION_10_11 = object : Migration(10, 11) { override fun migrate(connection: SQLiteConnection) { connection.execSQL("ALTER TABLE messages ADD COLUMN isEncrypted INTEGER NOT NULL DEFAULT 0") } }</ID>

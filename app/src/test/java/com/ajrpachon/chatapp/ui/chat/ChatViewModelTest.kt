@@ -49,7 +49,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import com.ajrpachon.chatapp.util.sharedScheduler
 import kotlinx.datetime.Instant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -183,14 +182,14 @@ class ChatViewModelTest {
     // ── isCurrentUserMember ───────────────────────────────────────────────────
 
     @Test
-    fun `isCurrentUserMember is true by default`() = runTest(sharedScheduler) {
+    fun `isCurrentUserMember is true by default`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         assertTrue(vm.state.value.isCurrentUserMember)
     }
 
     @Test
-    fun `isCurrentUserMember stays true when member list contains current user`() = runTest(sharedScheduler) {
+    fun `isCurrentUserMember stays true when member list contains current user`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         membersFlow.value = listOf(member("user1"))
@@ -199,7 +198,7 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `isCurrentUserMember becomes false when non-empty list does not contain current user`() = runTest(sharedScheduler) {
+    fun `isCurrentUserMember becomes false when non-empty list does not contain current user`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         membersFlow.value = listOf(member("other-user"))
@@ -208,7 +207,7 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `isCurrentUserMember becomes false when empty list received (repository guarantees definitive state)`() = runTest(sharedScheduler) {
+    fun `isCurrentUserMember becomes false when empty list received (repository guarantees definitive state)`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         membersFlow.value = emptyList()
@@ -217,7 +216,7 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `isCurrentUserMember becomes false when expelled after being a member`() = runTest(sharedScheduler) {
+    fun `isCurrentUserMember becomes false when expelled after being a member`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
 
@@ -231,7 +230,7 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `isCurrentUserMember is true for DM conversations (non-group)`() = runTest(sharedScheduler) {
+    fun `isCurrentUserMember is true for DM conversations (non-group)`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { conversationRepository.getById(any()) } returns dmConvBO
         every { conversationRepository.observeById(any()) } returns flowOf(dmConvBO)
         val vm = buildViewModel("conv2")
@@ -240,7 +239,7 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `isCurrentUserMember recovers to true when user re-appears in member list`() = runTest(sharedScheduler) {
+    fun `isCurrentUserMember recovers to true when user re-appears in member list`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
 
@@ -258,7 +257,7 @@ class ChatViewModelTest {
     // ── Input & basic intents ─────────────────────────────────────────────────
 
     @Test
-    fun `InputChanged intent updates inputText`() = runTest(sharedScheduler) {
+    fun `InputChanged intent updates inputText`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         vm.onIntent(ChatIntent.InputChanged("hello"))
@@ -266,7 +265,7 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `Send clears inputText and calls sendMessageUseCase`() = runTest(sharedScheduler) {
+    fun `Send clears inputText and calls sendMessageUseCase`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         vm.onIntent(ChatIntent.InputChanged("Hi!"))
@@ -278,7 +277,7 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `Send does nothing when input is blank`() = runTest(sharedScheduler) {
+    fun `Send does nothing when input is blank`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         vm.onIntent(ChatIntent.InputChanged("   "))
@@ -289,7 +288,7 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `Send sets error when sendMessageUseCase fails`() = runTest(sharedScheduler) {
+    fun `Send sets error when sendMessageUseCase fails`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns
                 Result.failure(RuntimeException("network error"))
 
@@ -303,7 +302,7 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `DismissError clears error state`() = runTest(sharedScheduler) {
+    fun `DismissError clears error state`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns
                 Result.failure(RuntimeException("oops"))
 
@@ -319,7 +318,7 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `CancelReply clears replyingTo`() = runTest(sharedScheduler) {
+    fun `CancelReply clears replyingTo`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         vm.onIntent(ChatIntent.SetReply(mockk<MessageBO>(relaxed = true)))
@@ -330,7 +329,7 @@ class ChatViewModelTest {
     // ── Multi-select ──────────────────────────────────────────────────────────
 
     @Test
-    fun `ToggleMessageSelection adds messageId to selectedMessageIds`() = runTest(sharedScheduler) {
+    fun `ToggleMessageSelection adds messageId to selectedMessageIds`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         vm.onIntent(ChatIntent.ToggleMessageSelection("msg1"))
@@ -338,7 +337,7 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `ToggleMessageSelection removes already-selected messageId`() = runTest(sharedScheduler) {
+    fun `ToggleMessageSelection removes already-selected messageId`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         vm.onIntent(ChatIntent.ToggleMessageSelection("msg1"))
@@ -347,7 +346,7 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `ToggleMessageSelection can select multiple messages independently`() = runTest(sharedScheduler) {
+    fun `ToggleMessageSelection can select multiple messages independently`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         vm.onIntent(ChatIntent.ToggleMessageSelection("msg1"))
@@ -358,7 +357,7 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `ClearSelection empties selectedMessageIds`() = runTest(sharedScheduler) {
+    fun `ClearSelection empties selectedMessageIds`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         vm.onIntent(ChatIntent.ToggleMessageSelection("msg1"))
@@ -368,7 +367,7 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `isMultiSelectActive is true when at least one message is selected`() = runTest(sharedScheduler) {
+    fun `isMultiSelectActive is true when at least one message is selected`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         assertFalse(vm.state.value.isMultiSelectActive)
@@ -377,7 +376,7 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `DeleteSelectedMessages calls deleteMessage for each selected id and clears selection`() = runTest(sharedScheduler) {
+    fun `DeleteSelectedMessages calls deleteMessage for each selected id and clears selection`() = runTest(mainDispatcherRule.scheduler) {
         coEvery { messageRepository.deleteMessage(any()) } returns Result.success(Unit)
         val vm = buildViewModel()
         advanceUntilIdle()
@@ -393,7 +392,7 @@ class ChatViewModelTest {
     // ── Forward dialog ────────────────────────────────────────────────────────
 
     @Test
-    fun `ShowForwardDialog sets forward showDialog to true and stores message`() = runTest(sharedScheduler) {
+    fun `ShowForwardDialog sets forward showDialog to true and stores message`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         val msg = mockk<MessageBO>(relaxed = true)
@@ -404,7 +403,7 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `DismissForwardDialog resets forward showDialog and message`() = runTest(sharedScheduler) {
+    fun `DismissForwardDialog resets forward showDialog and message`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         vm.onIntent(ChatIntent.ShowForwardDialog(mockk(relaxed = true)))
@@ -416,7 +415,7 @@ class ChatViewModelTest {
     // ── Polls ─────────────────────────────────────────────────────────────────
 
     @Test
-    fun `ObservePoll populates pollUiStates from pollRepository flows`() = runTest(sharedScheduler) {
+    fun `ObservePoll populates pollUiStates from pollRepository flows`() = runTest(mainDispatcherRule.scheduler) {
         val poll = PollBO(id = "poll1", conversationId = "conv1", question = "Q?", createdBy = "user1", createdAt = 0L)
         val options = listOf(PollOptionBO(id = "opt1", pollId = "poll1", text = "A", voteCount = 2))
         every { pollRepository.observePollById("poll1") } returns flowOf(poll)
@@ -434,7 +433,7 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `ObservePoll for the same pollId only subscribes once`() = runTest(sharedScheduler) {
+    fun `ObservePoll for the same pollId only subscribes once`() = runTest(mainDispatcherRule.scheduler) {
         every { pollRepository.observePollById("poll1") } returns flowOf(null)
         every { pollRepository.observeOptionsByPollId("poll1") } returns flowOf(emptyList())
         every { pollRepository.observeVotes("poll1", "user1") } returns flowOf(emptyList())
@@ -451,7 +450,7 @@ class ChatViewModelTest {
     // ── Link previews ─────────────────────────────────────────────────────────
 
     @Test
-    fun `DetectedUrlChanged stores fetched preview in linkPreviews`() = runTest(sharedScheduler) {
+    fun `DetectedUrlChanged stores fetched preview in linkPreviews`() = runTest(mainDispatcherRule.scheduler) {
         val preview = LinkPreviewData(title = "Title", description = null, imageUrl = null, url = "https://example.com")
         coEvery { linkPreviewFetcher.fetchLinkPreview("https://example.com") } returns preview
 

@@ -29,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -165,7 +166,9 @@ fun BackupScreen(
                     onClick = { vm.onIntent(BackupIntent.StartBackup) },
                     leadingIcon = Icons.Default.CloudUpload,
                     enabled = !state.isRestoring,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("backup_make_backup_button"),
                 )
             }
 

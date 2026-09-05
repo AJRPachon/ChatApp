@@ -212,7 +212,19 @@ class MainActivity : ComponentActivity() {
                 ) {
                 NavDisplay(
                     backStack = backStack,
-                    onBack = { if (backStack.size > 1) backStack.removeLastOrNull() else finish() },
+                    // Security: AppLockRoute must never be dismissible by a plain back
+                    // press/gesture — that would let anyone bypass the lock screen and
+                    // land straight on whatever was underneath (chat list, an open
+                    // conversation, etc.) with zero authentication. Route it to the
+                    // same "leave the app, don't reveal what's behind the lock" behavior
+                    // as pressing Home, instead of popping the lock screen off the stack.
+                    onBack = {
+                        when {
+                            backStack.lastOrNull() is AppLockRoute -> moveTaskToBack(true)
+                            backStack.size > 1 -> backStack.removeLastOrNull()
+                            else -> finish()
+                        }
+                    },
                     entryDecorators = listOf(
                         rememberSaveableStateHolderNavEntryDecorator(),
                         rememberViewModelStoreNavEntryDecorator(),

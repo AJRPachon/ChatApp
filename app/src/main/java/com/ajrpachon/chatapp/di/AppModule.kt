@@ -69,6 +69,7 @@ import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.realtime.Realtime
 import io.github.jan.supabase.storage.Storage
 import io.ktor.client.engine.okhttp.OkHttp
+import kotlinx.coroutines.Dispatchers
 import android.app.NotificationManager
 import android.content.Context
 import androidx.credentials.CredentialManager
@@ -133,7 +134,8 @@ val viewModelModule = module {
     viewModelOf(::ConversationListViewModel)
     viewModelOf(::InvitationsViewModel)
     viewModelOf(::NewChatViewModel)
-    viewModelOf(::ProfileViewModel)
+    // ProfileViewModel: defaultDispatcher has no Koin binding — kept as lambda
+    viewModel { ProfileViewModel(get(), get(), get(), get(), get(), get(), get(), Dispatchers.Default) }
     viewModelOf(::IncomingCallViewModel)
     viewModelOf(::CreateGroupViewModel)
     viewModelOf(::StickerPackViewModel)

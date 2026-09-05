@@ -16,7 +16,6 @@ import com.ajrpachon.chatapp.domain.repository.ThemeRepository
 import com.ajrpachon.chatapp.service.PresenceManager
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import com.ajrpachon.chatapp.utils.NetworkMonitor
-import com.ajrpachon.chatapp.util.sharedScheduler
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -82,14 +81,14 @@ class ConversationListViewModelTest {
     )
 
     @Test
-    fun `pendingInvitationsCount is 0 when no invitations`() = runTest(sharedScheduler) {
+    fun `pendingInvitationsCount is 0 when no invitations`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         assertEquals(0, vm.state.value.pendingInvitationsCount)
     }
 
     @Test
-    fun `pendingInvitationsCount reflects number of pending invitations`() = runTest(sharedScheduler) {
+    fun `pendingInvitationsCount reflects number of pending invitations`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
 
@@ -100,7 +99,7 @@ class ConversationListViewModelTest {
     }
 
     @Test
-    fun `pendingInvitationsCount decreases when invitation is accepted`() = runTest(sharedScheduler) {
+    fun `pendingInvitationsCount decreases when invitation is accepted`() = runTest(mainDispatcherRule.scheduler) {
         invitationsFlow.value = listOf(invitation("inv1"), invitation("inv2"))
         val vm = buildViewModel()
         advanceUntilIdle()
@@ -112,7 +111,7 @@ class ConversationListViewModelTest {
     }
 
     @Test
-    fun `pendingInvitationsCount resets to 0 when all invitations resolved`() = runTest(sharedScheduler) {
+    fun `pendingInvitationsCount resets to 0 when all invitations resolved`() = runTest(mainDispatcherRule.scheduler) {
         invitationsFlow.value = listOf(invitation("inv1"))
         val vm = buildViewModel()
         advanceUntilIdle()
@@ -124,7 +123,7 @@ class ConversationListViewModelTest {
     }
 
     @Test
-    fun `conversations state is updated from flow`() = runTest(sharedScheduler) {
+    fun `conversations state is updated from flow`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
         assertEquals(emptyList<ConversationBO>(), vm.state.value.conversations)

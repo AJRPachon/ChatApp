@@ -1,9 +1,10 @@
 # Play Console Data Safety form — mapping from real code
 
 Generated from a direct audit of the ChatApp codebase (branch `develop`, commit `2c9ff49` at time of
-writing). Every claim below is backed by a file path so it can be re-verified. This is **not** a
-finished declaration — it is the field-by-field input a human transcribes into Play Console
-(App content → Data safety), plus explicit flags on anything ambiguous.
+writing; updated 2026-09-05 after PRs #81/#83/#84/#86 added Firebase Analytics/Crashlytics and
+account deletion — see §2, §3, §5.6). Every claim below is backed by a file path so it can be
+re-verified. This is **not** a finished declaration — it is the field-by-field input a human
+transcribes into Play Console (App content → Data safety), plus explicit flags on anything ambiguous.
 
 **Do not transcribe this blind.** Re-run this audit before every release that adds a permission, a
 dependency, or a new use of an existing sensitive permission — see the checklist at the end.
@@ -46,7 +47,9 @@ Source: `gradle/libs.versions.toml`, `app/build.gradle.kts`, `app/src/main/java/
 |---|---|---|---|---|
 | Supabase (Auth, Postgrest, Realtime, Storage, Functions) | 3.8.0 | `AppModule.kt` `networkModule` | Account credentials, message content, media files, device session info, FCM tokens — this is the app's own backend | Treat as first-party processor, not "third-party sharing" for the form, but every data type it touches must still be declared as *collected* |
 | LiveKit Android SDK | 2.28.1 | `AppModule.kt` (`CallViewModel` lambda, `BuildConfig.LIVEKIT_URL`) | Live audio/video streams during calls, routed through a LiveKit server (self-hosted or LiveKit Cloud — confirm which in `local.properties`/infra) | Token minted server-side via Edge Function (`livekit-token`), not embedded in the app |
-| Firebase Cloud Messaging | via `firebaseBom` 34.18.0 | `ChatFirebaseMessagingService.kt`, `FcmTokenRepository` | FCM registration token, synced to Supabase (`FcmTokenRepositoryImpl`) | **Firebase Crashlytics and Firebase Analytics are NOT present** — confirmed absent from `libs.versions.toml`, `build.gradle.kts`, and no `AnalyticsTracker`/`FirebaseAnalyticsTracker`/`Crashlytics` symbol anywhere in the codebase. If this changes in a future PR, the form needs an update (see checklist) |
+| Firebase Cloud Messaging | via `firebaseBom` 34.18.0 | `ChatFirebaseMessagingService.kt`, `FcmTokenRepository` | FCM registration token, synced to Supabase (`FcmTokenRepositoryImpl`) | |
+| Firebase Analytics | via `firebaseBom` 34.18.0 (added since the last audit — was absent, now present) | `AppModule.kt` `analyticsModule`, `FirebaseAnalyticsTracker.kt`, `AnalyticsEvents.kt` | Event/type metadata only per the class's own doc comment ("Deliberately does NOT log message content, conversation ids or user-identifying values — only event/type metadata") — screen views, auth method, message *type* (not content), call type/status/duration, group participant count, invitation sent/accepted, status posted. `setUserId()` is called on login/logout, linking events to the app's internal user id while signed in | `com.google.android.gms.permission.AD_ID` is **not** declared in the manifest (confirmed via grep) — Firebase Analytics does not auto-collect the Advertising ID as a result. Declare "User IDs" as shared with Firebase for Analytics purpose |
+| Firebase Crashlytics | via `firebaseBom` 34.18.0 (added since the last audit — was absent, now present) | `AppModule.kt` `analyticsModule`, `FirebaseCrashReporter.kt` | Crash/exception stack traces, device model/OS version, the app's internal user id (`setUserId()`, mirrors the Analytics one). `MessageE2EECoder.kt` also logs breadcrumb messages on E2EE encrypt/decrypt failures that include internal sender/recipient user ids (not message content) | Declare "Crash logs and diagnostics" and "Device or other IDs" as shared with Firebase for the app-functionality/diagnostics purpose |
 | Google Sign-In / Credential Manager | `credentials` 1.6.0, `googleid` 1.2.0 | `AppModule.kt` (`CredentialManager.create`), `AuthViewModel.kt` | Email, display name, profile photo URL from the user's Google account, ID token | Standard OAuth sign-in |
 | Giphy (REST API, **no bundled SDK**) | N/A — plain Ktor/OkHttp calls to `api.giphy.com` | `GiphyRemoteSource.kt` | GIF search query text + app API key (`GIPHY_API_KEY`) | No user PII sent — just the search string. Still counts as data sent to a third party under Play's rules |
 | ML Kit Translation | `com.google.mlkit:translate:17.0.3` | `TranslationManager.kt` | **Nothing** — on-device model, downloaded once, translation runs locally (doc comment confirms: "On-device translation using ML Kit") | Verify no telemetry opt-out is needed; ML Kit's own model-download step does contact Google servers to fetch the language model file, not to transmit user text |
@@ -71,12 +74,12 @@ Account management**.
 
 | Data type | Collected? | Shared? | Purpose | Optional/Required | Encrypted in transit | User can request deletion |
 |---|---|---|---|---|---|---|
-| Name | Yes — display name/username (`SetUsernameUseCase.kt`, `ProfileViewModel.kt`) | No third-party sharing beyond Supabase (own backend) | Account management, App functionality | Required (needed to create/use account) | Yes (TLS, cert-pinned — see §4) | **No in-app deletion flow found — see §6** |
-| Email address | Yes — signup and Google Sign-In (`AuthRepository.kt`) | No | Account management | Required | Yes | No in-app deletion flow found |
-| User IDs | Yes — Supabase auth UUID | No | Account management, App functionality | Required | Yes | No in-app deletion flow found |
+| Name | Yes — display name/username (`SetUsernameUseCase.kt`, `ProfileViewModel.kt`) | No third-party sharing beyond Supabase (own backend) | Account management, App functionality | Required (needed to create/use account) | Yes (TLS, cert-pinned — see §4) | Yes — in-app account deletion (§5.6) |
+| Email address | Yes — signup and Google Sign-In (`AuthRepository.kt`) | No | Account management | Required | Yes | Yes — in-app account deletion (§5.6) |
+| User IDs | Yes — Supabase auth UUID | No | Account management, App functionality | Required | Yes | Yes — in-app account deletion (§5.6) |
 | Address | Not collected | — | — | — | — | — |
 | Phone number | **Read from device contacts, but NOT transmitted off-device** (`ContactRepositoryImpl.getContacts()` stays local, only rendered in `NewChatViewModel`'s contact list UI — confirmed no network call carries phone numbers) | No | — (local-only use, arguably still "collected" for Play's purposes since it's read into app memory — declare defensively) | Optional (contact-picker feature) | N/A (never leaves device) | N/A |
-| Other personal info (profile photo) | Yes — avatar image uploaded to Supabase Storage | No | Account management, App functionality | Optional | Yes | No explicit "delete my photo" confirmed — verify |
+| Other personal info (profile photo) | Yes — avatar image uploaded to Supabase Storage | No | Account management, App functionality | Optional | Yes | Yes — in-app account deletion (§5.6) |
 
 ### Contacts
 
@@ -88,7 +91,7 @@ Account management**.
 
 | Data type | Collected? | Shared? | Purpose | Optional/Required | Encrypted in transit | User can request deletion |
 |---|---|---|---|---|---|---|
-| Messages (chat text, including 1:1 and group) | **Yes — always, regardless of E2EE.** Stored locally (SQLCipher-encrypted Room DB) and on the Supabase backend (`MessageRepositoryImpl.kt`, `messages` table). This must be declared as "Messages" collection even though 1:1 content is end-to-end encrypted — see §4 for why encryption-in-transit is a separate form field, not a substitute | No sharing with unrelated third parties today. (a) If the Google Drive backup feature is used, message content is copied to the user's own Google Drive — see §5.5. (b) The `ai-assistant` Edge Function receives message snippets when the AI features are used, but currently only reaches a mock, not a real third-party LLM (§2) | App functionality | Required (core feature — cannot be made "optional" and still be a chat app) | Yes (TLS, cert-pinned to `*.supabase.co`) | No in-app "delete my message history from the server" beyond per-message/per-conversation delete found — verify retention policy in Supabase directly |
+| Messages (chat text, including 1:1 and group) | **Yes — always, regardless of E2EE.** Stored locally (SQLCipher-encrypted Room DB) and on the Supabase backend (`MessageRepositoryImpl.kt`, `messages` table). This must be declared as "Messages" collection even though 1:1 content is end-to-end encrypted — see §4 for why encryption-in-transit is a separate form field, not a substitute | No sharing with unrelated third parties today. (a) If the Google Drive backup feature is used, message content is copied to the user's own Google Drive — see §5.5. (b) The `ai-assistant` Edge Function receives message snippets when the AI features are used, but currently only reaches a mock, not a real third-party LLM (§2) | App functionality | Required (core feature — cannot be made "optional" and still be a chat app) | Yes (TLS, cert-pinned to `*.supabase.co`) | Per-message/per-conversation delete exists for individual messages; a full erasure of a user's own message history (content + attachments, across every conversation) now happens as part of in-app account deletion (§5.6) — there is still no standalone "wipe my message history but keep my account" action, only via full account deletion |
 
 ### Photos and videos
 
@@ -101,7 +104,7 @@ Account management**.
 | Data type | Collected? | Shared? | Purpose | Optional/Required | Encrypted in transit | User can request deletion |
 |---|---|---|---|---|---|---|
 | Audio files (voice messages) | Yes — recorded via `AudioRecorderRepositoryImpl.kt`, uploaded to Supabase Storage | No third-party sharing | App functionality | Optional (only when user records a voice message) | Yes | Verify retention/deletion |
-| Audio files (live call audio) | Yes, transiently — routed through LiveKit during calls, not stored by the app itself (confirm LiveKit server-side recording is off unless a "call recording" feature is explicitly enabled — check `CallViewModel.kt` for a recording flag) | Yes — to the LiveKit server (self-hosted or LiveKit Cloud) | App functionality | Required for the calling feature specifically, optional overall (app works without ever placing a call) | Yes (LiveKit uses SRTP/DTLS + the app's own cert pinning to `*.livekit.cloud`) | N/A if not stored |
+| Audio files (live call audio) | Yes, transiently — routed through **LiveKit Cloud** during calls (confirmed: `local.properties` `LIVEKIT_URL=wss://chatapp-8ff7ks6x.livekit.cloud`, a LiveKit Cloud-hosted room, not self-hosted). **No call-recording capability exists** — grepped the whole `ui/call` package and every repository, zero `MediaRecorder`/recording code touching calls (a call-recording feature was built once, commit `7cfef59`, but a later commit `e1b2a17` removed it as dead code, and neither commit is even in `develop`'s history) | **Yes — LiveKit Cloud is a named third party**, not "your own backend" like Supabase; declare it as such on the form, not folded into the Supabase row | App functionality | Required for the calling feature specifically, optional overall (app works without ever placing a call) | Yes (LiveKit uses SRTP/DTLS + the app's own cert pinning to `*.livekit.cloud`) | N/A — never stored, live-streamed only |
 
 ### Files and documents
 
@@ -114,14 +117,14 @@ Account management**.
 | Data type | Collected? | Shared? | Purpose | Optional/Required | Encrypted in transit | User can request deletion |
 |---|---|---|---|---|---|---|
 | App interactions / in-app search history | Yes, narrowly — GIF search queries sent to Giphy's API (`GiphyRemoteSource.kt`); global in-app message search stays local (`GlobalSearchViewModel` — confirm it doesn't hit network) | Yes — Giphy (third party) receives search query text | App functionality | Optional (only if user searches GIFs) | Yes (HTTPS to `api.giphy.com`) | N/A (Giphy's own retention policy applies — not controlled by this app) |
-| Analytics / product usage telemetry | **Not collected — no analytics SDK present** (confirmed: no Firebase Analytics, no Mixpanel/Amplitude/AppsFlyer/Adjust/Segment/Sentry/Bugsnag dependency or code anywhere in the repo) | — | — | — | — | — |
-| Crash logs / diagnostics | **Not collected — no Crashlytics or other crash-reporting SDK present** | — | — | — | — | — |
+| Analytics / product usage telemetry | **Yes, since PR #81** — Firebase Analytics event/type metadata (screen views, auth method, message *type*, call type/status/duration, group size, invitation/status events — never message content). See §2 Firebase Analytics row | Yes — Firebase (Google) | Analytics | Optional in the sense that it doesn't gate any feature, but there's no in-app opt-out found — verify whether one should be added | Yes | Deleted along with the account (Firebase Analytics data tied to the internal user id stops accumulating; historical aggregate data in Firebase's own retention window is Google's, not directly purgeable per-user from the app) |
+| Crash logs / diagnostics | **Yes, since PR #81** — Firebase Crashlytics: stack traces, device model/OS version, internal user id. See §2 Firebase Crashlytics row | Yes — Firebase (Google) | Fraud prevention/security/compliance (Play's closest category for crash diagnostics) | Optional in the same sense as above — no in-app opt-out found | Yes | Same as Analytics above |
 
 ### Device or other IDs
 
 | Data type | Collected? | Shared? | Purpose | Optional/Required | Encrypted in transit | User can request deletion |
 |---|---|---|---|---|---|---|
-| Device or other IDs | Yes, three distinct sources: (a) FCM registration token, synced to Supabase for push delivery (`FcmTokenRepositoryImpl`); (b) device model string (`Build.MANUFACTURER` + `Build.MODEL`) stored per login session for the "active sessions" security screen (`SessionAuditViewModel.kt:30`, `SessionRepositoryImpl.kt`); (c) Play Integrity attestation token, verified server-side (`IntegrityChecker.kt`) | (a),(b) sent to Supabase (own backend). (c) processed by Google Play Integrity API (Google) plus the app's own Edge Function | (a) App functionality; (b) Account management, Fraud prevention/security/compliance; (c) Fraud prevention/security/compliance | Required for push notifications and session security; Play Integrity check likely required to use the app at all — verify enforcement policy in `AuthViewModel.kt` | Yes | User can revoke individual sessions in-app (`SessionAuditViewModel` `RevokeSession`/`RevokeAllOtherSessions`) — this is a partial "deletion" capability worth citing in the form |
+| Device or other IDs | Yes, three distinct sources: (a) FCM registration token, synced to Supabase for push delivery (`FcmTokenRepositoryImpl`); (b) device model string (`Build.MANUFACTURER` + `Build.MODEL`) stored per login session for the "active sessions" security screen (`SessionAuditViewModel.kt:30`, `SessionRepositoryImpl.kt`); (c) Play Integrity attestation token, verified server-side (`IntegrityChecker.kt`) | (a),(b) sent to Supabase (own backend). (c) processed by Google Play Integrity API (Google) plus the app's own Edge Function | (a) App functionality; (b) Account management, Fraud prevention/security/compliance; (c) Fraud prevention/security/compliance | Required for push notifications and session security; Play Integrity is **soft-enforced only** — confirmed in `AuthViewModel.kt`/`AuthScreen.kt`: a `Failed` result only shows a dismissible `Snackbar` (`AuthEffect.IntegrityFailed`), it does not block sign-in or app usage. Mark this data type "Optional" | Yes | User can revoke individual sessions in-app (`SessionAuditViewModel` `RevokeSession`/`RevokeAllOtherSessions`) — this is a partial "deletion" capability worth citing in the form |
 
 ### Location
 
@@ -178,17 +181,25 @@ Not collected — no code path touches any of these categories.
   specific flow. Worth a closer look at whether that particular permission check is even needed for the
   picker to work.
 
-### 5.2 `BLUETOOTH_CONNECT` — no justifying code found anywhere in the app
+### 5.2 `BLUETOOTH_CONNECT` — RESOLVED: genuinely needed, confirmed by decompiling the dependency
 
-Grepped the entire repository: the only occurrence of `BLUETOOTH_CONNECT` is the manifest declaration.
-No `checkSelfPermission`, no `ActivityResultContracts.RequestPermission()` call, nothing. This is
-almost certainly pulled in for LiveKit/WebRTC's Bluetooth SCO audio-routing during calls (needed on
-Android 12+ to detect/route audio to a Bluetooth headset), which LiveKit's own manifest may declare via
-manifest merging, or which this app declared defensively without knowing it's needed. **Before filling
-the Play Console permissions declaration**: confirm whether LiveKit actually requires this at runtime
-(check LiveKit's own docs/manifest, or test a call with a Bluetooth headset connected). If it's not
-actually needed, remove it — an unused dangerous-adjacent permission with zero justifying code is
-exactly the kind of thing Play's automated review flags.
+No first-party code in this repo references `BLUETOOTH_CONNECT` (still true), and LiveKit's own
+manifest (`livekit-android-2.28.1`) does not declare it either (only `ACCESS_NETWORK_STATE`,
+`INTERNET`, `RECORD_AUDIO`, `CAMERA`, `FOREGROUND_SERVICE*`). But LiveKit depends on Twilio's
+`audioswitch` library for in-call audio device routing (speaker/earpiece/wired/Bluetooth headset),
+and decompiling `audioswitch`'s `classes.jar` confirms it: `BluetoothHeadsetManager
+$DefaultPermissionsCheckStrategy.class` contains the literal string `android.permission.
+BLUETOOTH_CONNECT` alongside `android.permission.BLUETOOTH` and a `targetSdkVersion` check — a
+runtime permission check that picks `BLUETOOTH_CONNECT` on API 31+ and legacy `BLUETOOTH` below
+that. `audioswitch`'s own manifest declares `BLUETOOTH` capped at `maxSdkVersion="30"` but leaves
+`BLUETOOTH_CONNECT` for the host app to add (common pattern — the library doesn't want to force
+the permission on every consumer). Since ChatApp's `targetSdk` is 37, without this permission
+`audioswitch`'s Bluetooth-headset routing during calls would silently stop working on Android 12+
+(not a crash — the Bluetooth audio route would just never be offered).
+
+**Verdict: keep the permission.** Justification for the Play Console permissions declaration:
+"Used by the calling feature (LiveKit) to route call audio to a connected Bluetooth headset on
+Android 12+."
 
 ### 5.3 `ACCESS_FINE_LOCATION` + `ACCESS_COARSE_LOCATION` declared together, only `FINE` requested at runtime
 
@@ -231,59 +242,84 @@ calls with an OAuth token requested through `AccountManager.blockingGetAuthToken
 - No dependency on `com.google.android.gms:play-services-drive` or the Drive Android client library
   exists — it's hand-rolled REST calls. Don't let a form-filler search the dependency list for "Drive"
   and conclude the feature doesn't exist.
+- **RESOLVED — media is never embedded as raw bytes.** Re-checked `BackupRepositoryImpl.kt`: the only
+  field ever converted to bytes is the JSON text itself (`json.encodeToString(backups).toByteArray()`);
+  `imageUrl`/`audioUrl`/`fileUrl`/`videoUrl` are serialized as plain URL strings pointing back at
+  Supabase Storage. So "Photos and videos"/"Audio files"/"Files and docs" do **not** need their own line
+  under the Drive-sharing declaration — only "Messages" does (the URLs are metadata about messages, not
+  a distinct transfer of the media itself to Google).
 
-### 5.6 No account deletion feature found anywhere
+### 5.7 Server-side retention gap: "self-destructing" content isn't actually deleted server-side
 
-Searched `AuthRepository`/`AuthRepositoryImpl`, the whole `ui/profile` package, and every Supabase Edge
-Function under `supabase/functions/` for anything resembling account deletion
-(`deleteAccount`, `delete_account`, "eliminar cuenta", etc.) — found nothing. `AuthRepository` only
-exposes `signOut()` and `signOutAll()`. Play Console's Data Safety form explicitly asks "Does your app
-provide a way for users to request that their data be deleted?" and, separately, Play policy requires
-apps that support account creation to also support in-app account deletion (or link to a web resource
-that does the equivalent) as of recent policy. **This is likely a hard blocker for submission, not just
-a form-filling nuance** — flagged at the top of the checklist below.
+Checked `supabase/migrations/` for any scheduled cleanup (`pg_cron`, a scheduled Edge Function, a GitHub
+Actions cron workflow) that acts on the `expires_at` columns added for disappearing messages
+(`20260628000001_add_batch2_message_columns.sql`) and status/stories
+(`20260807092830_add_status_stories.sql`). **Found none.** The only code that actually deletes expired
+rows is client-side, against the local Room cache:
+
+- `MessageDao.kt`: `DELETE FROM messages WHERE expiresAt IS NOT NULL AND expiresAt <= :now`
+- `StatusDao.kt`: `DELETE FROM user_status WHERE expiresAt <= :nowMs`
+
+Both only run against the on-device SQLCipher database. **The corresponding Supabase rows are not
+known to be deleted anywhere** once their `expires_at` passes — they disappear from the sender's/
+viewer's local view, not from the backend. This matters for the form and the privacy policy:
+"disappearing messages" and "24h status stories" should not be described as deleted server-side unless
+a server-side cleanup mechanism is found or added — right now the honest answer is "hidden on-device
+after expiry; backend retention beyond that point is unconfirmed/likely indefinite until the message is
+otherwise deleted (e.g. via account deletion)."
+
+### 5.6 Account deletion — RESOLVED (implemented since this audit, PRs #83/#84/#86)
+
+The earlier version of this audit found no account-deletion feature at all (`AuthRepository` only
+exposed `signOut()`/`signOutAll()`). This is now implemented and verified end-to-end against production:
+
+- **App**: Profile → "Eliminar cuenta", with an explicit irreversible-action confirmation dialog
+  (`ProfileScreen.kt`, `ProfileViewModel.kt`, `AuthRepository.deleteAccount()`).
+- **Backend**: the `delete-account` Edge Function (`supabase/functions/delete-account/index.ts`),
+  resolving the user strictly from their JWT. It: anonymizes the user's messages (content/attachments
+  scrubbed, `is_deleted=true`, row kept so other participants' threads stay intact), deletes their
+  `conversation_participants`/`invitations`/`blocked_users`/`user_status` rows, removes their Storage
+  objects (avatar, status media, and their own message attachments), reassigns the handful of `NOT NULL`
+  hard-FK columns that can't be null'd (`messages.sender_id`, `conversations.created_by`,
+  `calls.caller_id`/`callee_id`, `call_signals.sender_id`) to a permanent "deleted user" placeholder
+  account, then deletes the real `auth.users` row (cascades to `profiles`).
+- Answer Play's "Does your app provide a way for users to request that their data be deleted?" **Yes**,
+  in-app, self-service, immediate (not a support-ticket/manual process).
+- This resolves what was flagged as a likely hard submission blocker — no longer applies.
 
 ---
 
 ## 6. Checklist — confirm/decide before filling the real Play Console form
 
-- [ ] **Account deletion**: confirm there is genuinely no way to delete an account/data today (§5.6). If
-      true, this needs a real feature (in-app delete, or a web page + support flow) before submission —
-      not just a form answer.
-- [ ] **BLUETOOTH_CONNECT**: confirm with LiveKit's docs/manifest whether it's actually required for
-      Bluetooth audio routing during calls. Remove the permission if not, otherwise document the
-      justification (§5.2).
-- [ ] **Google Drive backup scope**: confirm `drive.file` is the intended, minimal scope, and decide
-      whether the Data Safety form should describe backup as "sharing with Google Drive" or "user-
-      directed transfer to a service the user controls" — get this right, it's a common review flank.
-- [ ] **Firebase Analytics**: confirmed absent as of this audit. If a future PR adds it, re-run this
-      audit — Firebase Analytics on Android auto-collects the Advertising ID and device identifiers
-      unless explicitly disabled, which would add new "Device or other IDs" and possibly "Advertising ID"
-      declarations.
+- [x] **Account deletion**: implemented and verified end-to-end against production (§5.6). Answer Play's
+      deletion question "Yes" — in-app, self-service.
+- [x] **BLUETOOTH_CONNECT**: confirmed genuinely needed (§5.2) — keep it, use the justification text
+      already drafted there.
+- [x] **Google Drive backup scope**: confirmed `drive.file` in code (§5.5) — minimal, app-created-files-
+      only scope, as intended. Describe as "user-directed transfer to a service the user controls," not
+      generic third-party sharing, but still declare "Messages" under it (§5.5).
+- [x] **Firebase Analytics/Crashlytics**: added since the last audit (PR #81) — declared above (§2, §3).
+      `AD_ID` permission is not declared, so no Advertising ID is collected. If that ever changes, or if
+      Analytics/Crashlytics start receiving anything beyond event/type metadata and crash traces,
+      re-run this audit.
 - [ ] **AI Assistant**: confirmed currently mocked (§2). The moment a real LLM API call replaces the
       `TODO` in `supabase/functions/ai-assistant/index.ts`, "Messages" must be declared as shared with
       that LLM provider, and this document regenerated.
-- [ ] **Supabase data retention/deletion policy**: this audit only confirms what the *app* sends to
-      Supabase. Confirm directly in the Supabase project (migrations under `supabase/migrations/`, RLS
-      policies, and any scheduled cleanup jobs) what the actual retention period is for messages, media,
-      session records, and matched-contact data, and whether "delete conversation" in the app performs a
-      hard delete server-side or a soft delete/tombstone.
-- [ ] **Media inside Google Drive backups**: confirm whether `imageUrl`/`videoUrl`/`audioUrl`/`fileUrl`
-      fields in the backup JSON are just remote URLs (pointing back at Supabase Storage, which would
-      still require the recipient — Google, in this case only as blob storage — to be able to resolve
-      them) or ever embed raw bytes. Affects whether "Photos and videos"/"Audio files"/"Files and docs"
-      need their own line under the Drive-sharing declaration, in addition to "Messages".
+- [x] **Supabase data retention/deletion policy**: checked `supabase/migrations/` for scheduled cleanup —
+      **found none** (§5.7). Disappearing messages and 24h status stories are only removed from the
+      local on-device cache; the backend row's actual retention beyond `expires_at` is unconfirmed/likely
+      indefinite until deleted another way (e.g. account deletion). Don't describe these as "deleted"
+      server-side on a timer — either add real server-side cleanup or describe retention honestly.
+- [x] **Media inside Google Drive backups**: confirmed URLs only, never raw bytes (§5.5) — no separate
+      "Photos and videos"/"Audio files"/"Files and docs" line needed under the Drive declaration.
 - [ ] **Contacts email-matching**: confirm this is described in the Play listing/permissions text as
       "used to suggest contacts who already use ChatApp," distinctly from the local-only phone number
-      read (§5.1), since these have different risk profiles.
-- [ ] **Call recording**: confirm whether the LiveKit call feature has any server-side or client-side
-      recording capability enabled (checked `CallViewModel.kt` structurally but did not find a recording
-      toggle — verify directly since call audio/video handling changes the Data Safety answers for
-      "Audio files"/"Photos and videos" if recording exists).
-- [ ] **Play Integrity enforcement**: confirm whether failing the integrity check (§ Device or other IDs)
-      blocks app usage entirely or is soft-enforced — affects whether it's "Required" or "Optional" on
-      the form.
-- [ ] **LiveKit hosting**: confirm whether calls run through LiveKit Cloud (a named third party) or a
-      self-hosted LiveKit server (the developer's own infrastructure, same treatment as Supabase) — check
-      the real `LIVEKIT_URL` value, not just `local.properties.example`, since this changes whether call
-      audio/video counts as "shared with a third party" on the form.
+      read (§5.1), since these have different risk profiles. (Copy-writing task, not code-verifiable.)
+- [x] **Call recording**: confirmed no recording capability exists anywhere in the current codebase
+      (§ Audio files row) — a call-recording feature was built once (commit `7cfef59`) then removed as
+      dead code (`e1b2a17`) before ever merging into `develop`.
+- [x] **Play Integrity enforcement**: confirmed soft-enforced only — a dismissible warning, not a block
+      (§ Device or other IDs row). Mark as "Optional" on the form.
+- [x] **LiveKit hosting**: confirmed LiveKit Cloud (`wss://chatapp-8ff7ks6x.livekit.cloud` in
+      `local.properties`), not self-hosted — declare call audio/video as shared with a named third
+      party, not folded into the "own backend" treatment given to Supabase.

@@ -3,7 +3,6 @@ package com.ajrpachon.chatapp.ui.components
 import com.ajrpachon.chatapp.domain.model.EmojiCategory
 import com.ajrpachon.chatapp.domain.repository.EmojiRepository
 import com.ajrpachon.chatapp.util.MainDispatcherRule
-import com.ajrpachon.chatapp.util.sharedScheduler
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -32,7 +31,7 @@ class EmojiPickerViewModelTest {
     }
 
     @Test
-    fun `recent category is filled with recent emojis when present`() = runTest(sharedScheduler) {
+    fun `recent category is filled with recent emojis when present`() = runTest(mainDispatcherRule.scheduler) {
         every { emojiRepository.getRecent() } returns listOf("😂", "❤️")
         val vm = buildViewModel()
         advanceUntilIdle()
@@ -42,7 +41,7 @@ class EmojiPickerViewModelTest {
     }
 
     @Test
-    fun `recent category slot is removed when there are no recent emojis`() = runTest(sharedScheduler) {
+    fun `recent category slot is removed when there are no recent emojis`() = runTest(mainDispatcherRule.scheduler) {
         every { emojiRepository.getRecent() } returns emptyList()
         val vm = buildViewModel()
         advanceUntilIdle()
@@ -51,7 +50,7 @@ class EmojiPickerViewModelTest {
     }
 
     @Test
-    fun `SelectTab updates selectedTab in state`() = runTest(sharedScheduler) {
+    fun `SelectTab updates selectedTab in state`() = runTest(mainDispatcherRule.scheduler) {
         every { emojiRepository.getRecent() } returns emptyList()
         val vm = buildViewModel()
         advanceUntilIdle()
@@ -62,7 +61,7 @@ class EmojiPickerViewModelTest {
     }
 
     @Test
-    fun `EmojiClicked records usage and emits EmojiChosen effect`() = runTest(sharedScheduler) {
+    fun `EmojiClicked records usage and emits EmojiChosen effect`() = runTest(mainDispatcherRule.scheduler) {
         every { emojiRepository.getRecent() } returns emptyList()
         every { emojiRepository.recordUsed(any()) } returns Unit
         val vm = buildViewModel()

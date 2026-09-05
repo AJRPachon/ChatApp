@@ -17,9 +17,30 @@ appId: com.ajrpachon.chatapp
     visible:
       id: "profile_sign_out_button"
     timeout: 10000
+# ProfileScreen's content is scrollable (fix/profile-screen-scroll) and
+# this button sits below the fold on a fresh open. `tapOn` does NOT
+# auto-scroll to find an off-screen element — it computes coordinates
+# from the (fully composed but off-viewport) semantics tree and taps
+# there regardless, which silently misses on a real device. Confirmed
+# directly: the plain `tapOn` version of this step reported COMPLETED
+# but never actually opened the dialog, because the real tap landed
+# outside the visible viewport.
+- scrollUntilVisible:
+    element:
+      id: "profile_sign_out_all_button"
+    direction: DOWN
+    timeout: 10000
+    centerElement: true
 - tapOn:
     id: "profile_sign_out_all_button"
-- assertVisible: "Cerrar sesión en todos los dispositivos|Sign out on all devices"
+# NOT the dialog's own title text — it's byte-for-byte identical to the
+# profile row button's label (both use "Cerrar sesión en todos los
+# dispositivos" / "Sign out on all devices"), so asserting on it proved
+# a false positive: it was already satisfied by the still-visible row
+# label before any dialog opened, masking a real tap-miss underneath.
+# The confirm button's text is distinct from the row label and only
+# exists once the dialog has actually rendered.
+- assertVisible: "Cerrar todas las sesiones|Sign out all sessions"
 - tapOn: "Cancelar|Cancel"
 - assertVisible:
     id: "profile_sign_out_button"

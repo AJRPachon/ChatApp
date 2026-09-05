@@ -38,7 +38,7 @@ Si no concedes el permiso de contactos, estas funciones (sugerencias de contacto
 Cuando pulsas el botón de "compartir ubicación" dentro de un chat, la App obtiene tu **última ubicación conocida** por GPS o red (`ChatViewModel.fetchAndSendLocation`, permisos `ACCESS_FINE_LOCATION` / `ACCESS_COARSE_LOCATION`) y la envía como un enlace de Google Maps dentro del mensaje. **La App no accede a tu ubicación salvo que pulses ese botón explícitamente**; no hay rastreo de ubicación en segundo plano ni ubicación continua.
 
 ### 2.5 Audio y vídeo de llamadas
-Para llamadas de voz/vídeo 1:1 y en grupo (permisos `CAMERA`, `RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS`, `BLUETOOTH_CONNECT`), la App captura audio de tu micrófono y vídeo de tu cámara y los transmite en tiempo real a través de **LiveKit** (infraestructura WebRTC), incluyendo, si la usas, la función de compartir pantalla. Estos flujos son de señal en vivo (streaming); la App no los almacena en el dispositivo salvo que actives explícitamente una grabación de llamada, si esa función está habilitada.
+Para llamadas de voz/vídeo 1:1 y en grupo (permisos `CAMERA`, `RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS`, `BLUETOOTH_CONNECT` — este último para poder enrutar el audio a auriculares Bluetooth conectados), la App captura audio de tu micrófono y vídeo de tu cámara y los transmite en tiempo real a través de **LiveKit Cloud** (infraestructura de llamadas de un tercero, no servidores propios), incluyendo, si la usas, la función de compartir pantalla. Estos flujos son de señal en vivo (streaming); **la App no incluye ninguna función de grabación de llamadas** ni las almacena en ningún momento, ni en el dispositivo ni en nuestros servidores.
 
 Las notas de voz (mensajes de audio, no llamadas) también usan `RECORD_AUDIO` y se guardan como archivo adjunto del mensaje.
 
@@ -47,7 +47,8 @@ Las notas de voz (mensajes de audio, no llamadas) también usan `RECORD_AUDIO` y
 - **Verificación de integridad del dispositivo/app (Play Integrity API)**: en determinados flujos, la App solicita a Google Play un token de integridad del dispositivo y la instalación, que se valida en nuestro backend (`IntegrityChecker.kt`, función Edge `verify-integrity`) para detectar apps modificadas o dispositivos no confiables. Esto no comparte tu identidad personal con Google más allá de lo que el propio servicio de Play Integrity requiere.
 - **Registros técnicos básicos** generados por el uso normal de Supabase (por ejemplo, IP de conexión a la API, marcas de tiempo) como parte del funcionamiento de cualquier backend en la nube.
 
-> **Nota para revisión humana**: en el código actual **no se ha encontrado** Firebase Crashlytics ni Firebase Analytics — solo se usa `firebase-messaging` (ver `app/build.gradle.kts`). Si en el futuro se añaden herramientas de crash-reporting o analítica, esta política deberá actualizarse antes de publicarse esa versión.
+- **Analítica de uso (Firebase Analytics)**: registramos eventos de uso de funciones (por ejemplo, inicio de sesión, mensaje enviado, llamada iniciada/finalizada, grupo creado, invitación enviada) junto con metadatos del tipo de evento (por ejemplo, el *tipo* de mensaje — texto, imagen, audio — nunca su contenido) para entender qué funciones se usan y detectar problemas (`FirebaseAnalyticsTracker.kt`, `AnalyticsEvents.kt`). Tu identificador interno de usuario se asocia a estos eventos mientras tienes sesión iniciada. **No recogemos el contenido de tus mensajes, ni el identificador de publicidad de tu dispositivo** (la app no declara el permiso `AD_ID`, por lo que Firebase Analytics no lo recoge).
+- **Diagnóstico de fallos (Firebase Crashlytics)**: si la App falla o encuentra un error inesperado, se envía un informe técnico (traza de la excepción, modelo/versión de Android, tu identificador interno de usuario) para poder solucionarlo (`FirebaseCrashReporter.kt`). En algunos casos ese informe incluye identificadores internos de usuario relacionados con el fallo (por ejemplo, si falla el cifrado E2EE de un mensaje), pero **nunca el contenido del mensaje en sí**.
 
 ### 2.7 Búsquedas de GIFs y stickers
 Cuando buscas un GIF dentro de un chat, el **término de búsqueda** (o una petición de GIFs "trending" si no escribes nada) se envía a la API de **Giphy** para obtener resultados (`GiphyClient.kt`). Giphy puede recibir esa consulta de búsqueda; consulta la política de privacidad de Giphy para más detalle sobre su tratamiento.
@@ -69,8 +70,10 @@ No vendemos tus datos. Los compartimos únicamente con los proveedores necesario
 | Proveedor | Qué datos recibe | Para qué |
 |---|---|---|
 | **Supabase** (Auth, Postgrest, Realtime, Storage, Edge Functions) | Cuenta, perfil, mensajes, archivos multimedia, claves públicas E2EE, tokens push, correos de contactos consultados | Backend principal: autenticación, base de datos, almacenamiento de archivos, sincronización en tiempo real, funciones de servidor (notificaciones, verificación de integridad) |
-| **LiveKit** | Audio/vídeo de llamadas, señalización WebRTC | Infraestructura de llamadas de voz/vídeo en tiempo real |
+| **LiveKit Cloud** | Audio/vídeo de llamadas, señalización WebRTC | Infraestructura de llamadas de voz/vídeo en tiempo real (servicio de terceros, no servidores propios) |
 | **Firebase Cloud Messaging (Google)** | Token de dispositivo | Entrega de notificaciones push |
+| **Firebase Analytics (Google)** | Eventos de uso de funciones, tipo de evento, tu identificador interno de usuario (mientras tienes sesión iniciada) | Entender el uso de funciones de la App; nunca recibe el contenido de tus mensajes ni tu identificador de publicidad |
+| **Firebase Crashlytics (Google)** | Trazas de errores/fallos, tu identificador interno de usuario, modelo y versión de Android | Diagnóstico y solución de fallos de la App; nunca recibe el contenido de tus mensajes |
 | **Google (Sign-In / Credential Manager)** | Identidad de tu cuenta de Google (si eliges iniciar sesión con Google) | Autenticación alternativa al email/contraseña |
 | **Google Play Integrity** | Token de integridad del dispositivo/app | Detección de manipulación de la App o dispositivos no confiables |
 | **Google Drive** (tu propia cuenta) | Historial de mensajes exportado como JSON | Copia de seguridad opcional, controlada y accesible solo por ti |
@@ -95,10 +98,16 @@ No compartimos tus datos con terceros con fines publicitarios ni los usamos para
 
 ## 5. Retención y borrado de datos
 
-- Tus mensajes y archivos permanecen almacenados mientras tu cuenta esté activa, salvo que tú o el destinatario los eliminéis (eliminación o expiración de mensajes efímeros).
-- Puedes eliminar tu cuenta desde los ajustes de la App. Al hacerlo, solicitamos el borrado de tu perfil, mensajes y archivos asociados en nuestro backend, dentro de los plazos técnicos y legales aplicables.
+- Tus mensajes y archivos permanecen almacenados mientras tu cuenta esté activa, salvo que tú o el destinatario los eliminéis.
+- **Mensajes efímeros y estados/historias de 24 h**: al expirar, desaparecen de la vista de tu dispositivo y del de los demás participantes de inmediato. *Nota de precisión técnica*: esta expiración se aplica hoy solo del lado del dispositivo; no hay confirmado un proceso automático que borre esa misma fila de nuestros servidores en el momento exacto de expirar — puede seguir existiendo en el backend hasta que se borre por otra vía (por ejemplo, al eliminar la cuenta). Esta política se actualizará si se añade un borrado automático también en el servidor.
+- **Puedes eliminar tu cuenta de forma permanente** desde Perfil → Eliminar cuenta, con una confirmación explícita de que la acción es irreversible. Al confirmar, se ejecuta de inmediato lo siguiente:
+  - Se borran tu perfil, tu clave pública E2EE, tu foto de perfil y el resto de tus archivos (fotos, audios, vídeos, stickers de tus mensajes) de nuestros servidores.
+  - Se borran tus invitaciones, tus bloqueos de otros usuarios y tu pertenencia a cada conversación y grupo (equivalente a abandonarlos todos).
+  - Tus mensajes en conversaciones 1:1 y de grupo se **anonimizan**: el contenido y los adjuntos se eliminan y se muestran como "mensaje eliminado", pero la fila del mensaje se conserva para que el hilo de conversación siga siendo coherente para el resto de participantes — no se le atribuyen a tu nombre ni a tu cuenta.
+  - Tu cuenta se elimina de nuestro sistema de autenticación (Supabase Auth) y se cierra tu sesión en todos los dispositivos.
+  - Esta operación **no se puede deshacer**.
 - El token de notificaciones push se elimina de nuestro backend al cerrar sesión o eliminar la cuenta (`FcmTokenManager.deleteToken`).
-- Las copias de seguridad en Google Drive son responsabilidad y propiedad del usuario: puedes eliminarlas en cualquier momento desde tu propia cuenta de Google Drive; nosotros no las controlamos ni las eliminamos por ti.
+- Las copias de seguridad en Google Drive son responsabilidad y propiedad del usuario: puedes eliminarlas en cualquier momento desde tu propia cuenta de Google Drive; nosotros no las controlamos ni las eliminamos por ti. Eliminar tu cuenta en la App **no borra** copias de seguridad que ya hayas subido a tu Google Drive.
 
 ---
 
