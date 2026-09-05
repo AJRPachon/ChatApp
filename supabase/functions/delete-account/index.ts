@@ -105,6 +105,24 @@ function isRateLimited(userId: string): boolean {
   return false
 }
 
+// PostgrestError/AuthError shapes aren't `instanceof Error`, so
+// `String(e)` on them silently produces "[object Object]" — pull out
+// whatever message-ish field they actually have instead.
+function errorMessage(e: unknown): string {
+  if (e instanceof Error) return e.message
+  if (e && typeof e === "object") {
+    const anyE = e as Record<string, unknown>
+    const msg = anyE.message ?? anyE.error_description ?? anyE.msg
+    if (typeof msg === "string") return msg
+    try {
+      return JSON.stringify(e)
+    } catch {
+      // fall through
+    }
+  }
+  return String(e)
+}
+
 function jsonResponse(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -311,7 +329,7 @@ Deno.serve(async (req) => {
 
     return jsonResponse({ success: true }, 200)
   } catch (e) {
-    console.error("delete-account failed for user", userId, e)
-    return jsonResponse({ error: e instanceof Error ? e.message : String(e) }, 500)
+    console.error("delete-account failed for user", userId, JSON.stringify(e), e)
+    return jsonResponse({ error: errorMessage(e) }, 500)
   }
 })
