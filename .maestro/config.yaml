@@ -15,6 +15,7 @@ executionOrder:
     - flows/send_camera_photo_message.yaml
     - flows/send_video_message.yaml
     - flows/send_file_message.yaml
+    - flows/pdf_viewer_navigation.yaml
     - flows/send_audio_message.yaml
     - flows/send_location_message.yaml
     - flows/send_contact_message.yaml
@@ -48,6 +49,7 @@ executionOrder:
     - flows/status_compose_navigation.yaml
     - flows/group_text_message_roundtrip.yaml
     - flows/group_sender_attribution_navigation.yaml
+    - flows/group_info_member_management_navigation.yaml
     - flows/group_image_message_roundtrip.yaml
     - flows/group_file_message_roundtrip.yaml
     - flows/group_camera_photo_roundtrip.yaml

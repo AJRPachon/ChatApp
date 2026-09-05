@@ -32,6 +32,7 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     send_camera_photo_message.yaml
     send_video_message.yaml
     send_file_message.yaml
+    pdf_viewer_navigation.yaml
     send_audio_message.yaml
     send_location_message.yaml
     send_contact_message.yaml
@@ -65,6 +66,7 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
     status_compose_navigation.yaml
     group_text_message_roundtrip.yaml
     group_sender_attribution_navigation.yaml
+    group_info_member_management_navigation.yaml
     group_image_message_roundtrip.yaml
     group_file_message_roundtrip.yaml
     group_camera_photo_roundtrip.yaml
@@ -891,6 +893,48 @@ location, capturas de cámara) vía `delete_selected_message.yaml` — ver
 el propio grupo "Maestro Test Group": la conversación en sí es permanente
 por diseño (decisión explícita del usuario), no algo que cada flow cree y
 borre.
+
+## `BroadcastListScreen` y `UsageStatsScreen`: implementadas, pero sin ningún punto de entrada real en la app
+
+Ambas pantallas están completamente implementadas (`ui/broadcast/BroadcastListScreen.kt`,
+`ui/usagestats/UsageStatsScreen.kt`), tienen su propia ruta `@Serializable`
+(`BroadcastListRoute`, `UsageStatsRoute`) y su propio `NavEntry` registrado en
+`NavRoutes.kt` (`miscNavEntry`/`profileNavEntry` respectivamente) — es decir,
+Navigation 3 sabe perfectamente cómo renderizarlas si algún `NavKey` de ese
+tipo llega a aparecer en el backstack. El problema es que nada en la app
+llega jamás a añadir ese `NavKey`: verificado exhaustivamente con
+`grep -rn "onUsageStats\|onBroadcastList\|UsageStatsRoute\|BroadcastListRoute"`
+sobre todo `app/src/main/java` que la única aparición de ambas rutas fuera de
+sus propias pantallas y de `NavRoutes.kt` es su definición y su `NavEntry` —
+ningún composable en toda la app llama nunca a `backStack.add(BroadcastListRoute)`
+ni a `backStack.add(UsageStatsRoute)`. Se leyó `ProfileScreen.kt` completo (la
+pantalla candidata más obvia, dado que `UsageStatsRoute` vive en
+`profileNavEntry` junto a `SessionAuditRoute`/`BackupRoute`, que sí tienen
+fila propia) y no existe ninguna fila/botón para ninguna de las dos — su
+firma (`onBack`, `onSignOut`, `onBackup`, `onSessionAudit`) ni siquiera tiene
+un parámetro `onUsageStats`/`onBroadcastList` que se pudiera invocar.
+`ConversationListScreen.kt` (candidato para "Listas de difusión", ya que
+conceptualmente encaja junto a "Nuevo grupo"/"Nuevo chat") tampoco tiene
+ningún FAB/ítem de menú para ello. Tampoco hay deep link (`MainActivity.kt`
+solo reconoce `chatapp://chat/...` y el callback de auth de Supabase).
+
+Esto bloquea escribir `broadcast_list_navigation.yaml` y
+`usage_stats_navigation.yaml` tal como se pidieron (abrir la pantalla desde
+un punto de entrada real): no existe ninguno que abrir, y Maestro solo puede
+conducir la UI real de la app — no puede inyectar un `NavKey` arbitrario en
+el backstack de Navigation 3 saltándose la UI. Siguiendo el mismo principio
+que el resto de esta sección (documentar en vez de forzar: ver 2FA, tienda
+de stickers, wallpaper picker), no se creó ningún flow simulado para estas
+dos pantallas — habría sido un flow que nunca podría pasar de verdad, o que
+solo probaría un botón que no existe en el código de producción.
+Es un bug real (dos pantallas terminadas y registradas en el grafo de
+navegación pero completamente inalcanzables por cualquier usuario real),
+no una limitación de esta suite — repórtese y arréglese añadiendo el punto
+de entrada que falta (lo más probable: una fila en `ProfileScreen.kt` para
+"Estadísticas de uso" junto a "Sesiones activas", y un punto de entrada para
+"Listas de difusión" en `ConversationListScreen.kt` o en el propio
+`ProfileScreen.kt`) antes de que estos dos flows se puedan escribir de
+verdad.
 
 ## Pendiente / ideas
 
