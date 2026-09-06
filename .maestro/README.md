@@ -85,6 +85,11 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
       03_recipient_verify.yaml
       04_sender_cleanup.yaml
       run.sh
+    status_visibility/     # flujo multi-dispositivo, fuera de la suite de un solo device
+      01_viewer_wait.yaml
+      02_poster_post.yaml
+      03_viewer_verify_live.yaml
+      run.sh
   subflows/               # bloques reutilizables, solo vía `runFlow`, nunca standalone
     login_qa.yaml               # parametrizado: env LOGIN_EMAIL / LOGIN_PASSWORD
     logout.yaml
@@ -267,6 +272,26 @@ root `Column`), `backup_make_backup_button` (`BackupScreen`) — los cuatro
 añadidos para `app_lock_toggle_roundtrip.yaml`/`backup_screen_navigation.yaml`,
 ninguno tenía `testTag` antes.
 
+`status_add_text_button` (`AddStatusButton`'s icono de "+"),
+`status_add_more_button` (`MyStatusAvatar`'s badge "+", el que abre el
+`DropdownMenu` para añadir otro estado propio), `status_my_avatar`
+(`MyStatusAvatar`'s círculo, tapear para ver el propio estado),
+`status_avatar_<userName>` (`StatusAvatar`, uno **por usuario** — no un
+id estático compartido, ya que cada contacto necesita ser seleccionable
+por separado en un flow multi-dispositivo; usa el `displayName`, no el
+`userId`, porque el id real es un UUID de backend sin forma práctica de
+conocerlo de antemano desde un flow, mientras que el `displayName` ya es
+el valor estable que esta suite usa en otros sitios, p. ej.
+`CONTACT_NAME`), `status_compose_text_field` / `status_publish_button`
+(`ComposeStatusDialog`) — estos dos últimos viven dentro de un
+`AlertDialog`, que en Compose se implementa igual que `Dialog`/`Popup`
+(otra ventana Android separada), así que probablemente no se puedan
+seleccionar por `id` por la misma razón que `DropdownMenu`/
+`ModalBottomSheet` (ver la excepción de abajo) — se añadieron de todas
+formas por si acaso, pero `flows/status_visibility/` los selecciona por
+texto para no depender de eso. Los cinco añadidos para
+`flows/status_visibility/`, ninguno tenía `testTag` antes.
+
 **Excepciones donde se usa texto en vez de `id`:**
 
 - Contenido generado por el usuario (nombre de un contacto, texto de un
@@ -301,6 +326,23 @@ ninguno tenía `testTag` antes.
   busca un efecto secundario alcanzable en su lugar (aquí: el propio
   texto del ítem del menú cambia de "Modo incógnito" a "Desactivar
   incógnito", y eso sí es seleccionable).
+- **`StatusViewerScreen` (el visor de Estados a pantalla completa) no
+  expone NADA de su contenido Compose a Maestro**, un caso más extremo
+  que el del banner de incógnito: un dump recursivo completo de la
+  jerarquía capturada por Maestro en el momento exacto de un
+  `extendedWaitUntil` fallido (`status_visibility/03_viewer_verify_live.yaml`)
+  no encontró ni el texto del estado ni siquiera el nombre/hora de la
+  cabecera — únicamente los iconos del status bar del sistema
+  (`5:46`, batería, wifi...). La pantalla se dibuja completamente
+  edge-to-edge (`Modifier.fillMaxSize()` de fondo, cabecera flotando
+  encima solo con `statusBarsPadding()`), el mismo patrón que ya causaba
+  el problema del banner de incógnito. Aquí no hay ítem de menú
+  alternativo al que recurrir (a diferencia del caso del incógnito), así
+  que la solución fue no intentar leer contenido de esta pantalla en
+  absoluto: la aserción real (`status_avatar_<nombre>` visible sin haber
+  relanzado la app) ya prueba lo que hace falta, y un
+  `takeScreenshot` deja el contenido revisable a mano si algún día hace
+  falta.
 - **Un campo de búsqueda puede colisionar con su propio resultado**: en
   "Nuevo grupo", buscar "claudeqa2" deja ese texto tanto en el campo de
   búsqueda como en la fila de resultado — `tapOn: "claudeqa2"` es
@@ -446,6 +488,116 @@ bash .maestro/flows/realtime/run.sh \
 Verificado end-to-end con dos emuladores reales (`Pixel9ProXL_API36_A` +
 `_B`): el mensaje enviado en el emisor apareció en el receptor sin
 recargar ni relanzar la app.
+
+## Flujo multi-dispositivo (Estado / Status)
+
+`flows/status_visibility/` prueba dos cosas que ningún flow de un solo
+dispositivo puede probar juntas: que un Estado ("Status") publicado por
+una cuenta QA de verdad llega a Supabase (no solo a la caché local del
+propio dispositivo), y que una cuenta QA **distinta** puede verlo. Igual
+que `flows/realtime/`, necesita dos emuladores/dispositivos a la vez y
+no encaja en `config.yaml`/`maestro test .maestro/flows` — vive en su
+propia carpeta, fuera de esa suite.
+
+**Hallazgo original (ya corregido) — se deja documentado porque explica
+por qué el flow tiene la forma que tiene:** al escribir este flow por
+primera vez, `StatusViewModel.sync()` solo se disparaba una vez, desde
+`init{}`, y ningún canal Realtime observaba cambios de estado — un
+Estado publicado por un contacto nunca llegaba a un dispositivo que ya
+tuviera la lista de chats abierta, exactamente el bug que este flow
+existe para detectar. Se arregló añadiendo
+`StatusRemoteSource.observeStatusChanges(userId)` (mismo patrón que
+`InvitationRemoteSource.observeInvitations`: canal Realtime sobre
+INSERT/UPDATE/DELETE sin filtrar en cliente, ya que la RLS de
+`user_status` — "propio o comparte conversación directa" — decide qué
+filas llegan) y haciendo que
+`StatusRepositoryImpl.observeActiveStatuses(contactIds)` se resincronice
+cada vez que ese canal emite, mientras la coleccionan. **Por eso ahora
+la coreografía SÍ es de 3 pasos, igual que `realtime/`**: el paso 1 deja
+al espectador ya inactivo en `ConversationListScreen` (con su
+`StatusViewModel` vivo, coleccionando ese Flow) ANTES de que el paso 2
+publique, y el paso 3 (sin relanzar la app) comprueba que el Estado
+apareció solo — si esto pasara a ser un simple fetch-on-open otra vez,
+el paso 3 fallaría porque nunca haría un nuevo login/arranque que
+disparase un `sync()`.
+
+**Precondición verificada en código**: `sync()` solo pide estados de los
+`contactIds` que salen de
+`conversationRepository.getLocalConversations(currentUserId)` — es
+decir, un Estado solo es visible para cuentas con las que el espectador
+ya tiene una conversación local, no para cualquier usuario de la app.
+Las dos cuentas QA (`@claudeqa`/`@claudeqa2`) ya tienen una conversación
+1:1 permanente entre ellas (se usa en todo el resto de esta suite:
+`flows/realtime/`, todos los `flows/group_*.yaml` vía "Maestro Test
+Group", `forward_message_dialog_navigation.yaml`...), así que esta
+precondición ya está satisfecha y no hizo falta un flow de setup nuevo
+tipo `flows/setup/create_maestro_group.yaml`. Si se usaran dos cuentas
+sin ninguna conversación previa entre ellas, este flow fallaría hasta
+crear una (bastaría con `subflows/open_conversation.yaml` una vez desde
+cualquiera de los dos lados).
+
+**No hay paso de limpieza** (a diferencia del paso 4 de `realtime/`):
+`StatusIntent.DeleteStatus`/`StatusViewModel.deleteStatus()` existen
+pero `StatusScreen.kt` nunca los dispara desde ninguna UI (ver el
+hallazgo ya documentado más abajo, "`StatusIntent.DeleteStatus` no está
+conectado a ninguna UI") — no hay botón para borrar el propio estado una
+vez publicado. Cada ejecución de este flow deja un Estado más, real y
+permanente-ish, en la cuenta QA que publica, que solo expira solo tras
+`STATUS_TTL_MS` (24 h, `StatusRepositoryImpl`). Aceptado explícitamente,
+mismo espíritu que el grupo real permanente ("Grupo real de prueba" más
+abajo) — es el precio de probar una persistencia/visibilidad real en
+vez de solo navegación.
+
+Son 3 pasos secuenciales, cada uno apuntado a un dispositivo concreto:
+
+1. **`01_viewer_wait.yaml`** (dispositivo espectador, cuenta QA
+   distinta): login y queda inactivo en `ConversationListScreen` — sin
+   volver a lanzar/`clearState` este dispositivo hasta el paso 3, para
+   que su `StatusViewModel` siga vivo y coleccionando
+   `observeActiveStatuses()` cuando llegue el Estado.
+2. **`02_poster_post.yaml`** (dispositivo que publica): login, publica
+   un estado de texto con un token único (`STATUS_TOKEN`, generado una
+   sola vez por `run.sh` y compartido con el paso 3 para que un estado
+   viejo de una ejecución anterior nunca pueda dar un falso positivo), y
+   espera a que `status_my_avatar` aparezca — que solo ocurre después de
+   que `remoteSource.postStatus()` haya devuelto éxito
+   (`StatusRepositoryImpl.postTextStatus` primero publica remoto, luego
+   hace upsert local), así que esta espera **es** la aserción real de
+   "se persistió/subió", no un eco optimista local.
+3. **`03_viewer_verify_live.yaml`** (mismo dispositivo espectador del
+   paso 1, deliberadamente sin `launchApp`/login): espera con
+   `extendedWaitUntil` a que aparezca `status_avatar_<POSTER_DISPLAY_NAME>`
+   — nada dispara un nuevo `sync()` manual aquí, así que si esto aparece
+   es porque el canal Realtime lo empujó; esta ES la aserción real de
+   "otro usuario puede verlo en vivo, sin reiniciar la app", y lo pulsa
+   para confirmar que abre sin errores. **No** comprueba el `STATUS_TOKEN`
+   dentro de `StatusViewerScreen` — ver "Selectores: por qué id y no
+   texto" más abajo: esa pantalla es edge-to-edge de punta a punta y
+   Maestro no expone NADA de su árbol de Compose (ni siquiera el nombre/
+   hora de cabecera, verificado con un dump recursivo completo de la
+   jerarquía capturada — solo aparecen los iconos del status bar del
+   sistema), el mismo tipo de límite del driver ya documentado para el
+   banner de incógnito. En su lugar se toma un screenshot
+   (`viewer_story_content`) para poder revisar el contenido a mano si
+   hace falta. `StatusDao.observeActive` ordena por `createdAt DESC` y el
+   visor abre en `initialIndex = 0`, así que el estado recién publicado
+   (el más nuevo) es siempre la primera historia mostrada — verificado
+   visualmente (screenshot) durante el desarrollo de este flow, mostrando
+   el token exacto publicado en el paso 2.
+
+`run.sh` orquesta los 3 pasos con un solo comando:
+
+```bash
+bash .maestro/flows/status_visibility/run.sh \
+  <viewer_device> <viewer_email> <viewer_password> \
+  <poster_device> <poster_email> <poster_password> <poster_display_name>
+
+# Ejemplo real con las dos cuentas QA:
+set -a && source .maestro/.env && set +a
+bash .maestro/flows/status_visibility/run.sh \
+  emulator-5556 claude.qa2.chatapp@gmail.com "$QA_PASSWORD" \
+  emulator-5554 "$QA_EMAIL" "$QA_PASSWORD" claudeqa
+```
 
 ## Grupo real de prueba y sus flows de adjuntos
 

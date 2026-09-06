@@ -48,7 +48,7 @@ class StatusViewModelTest {
 
     @Before
     fun setUp() {
-        every { statusRepository.observeActiveStatuses() } returns statusesFlow
+        every { statusRepository.observeActiveStatuses(any()) } returns statusesFlow
         coEvery { conversationRepository.getLocalConversations("me") } returns emptyList()
         every { getCurrentUserUseCase() } returns flowOf(testUser)
         coEvery { statusRepository.syncStatuses(any()) } returns Unit
