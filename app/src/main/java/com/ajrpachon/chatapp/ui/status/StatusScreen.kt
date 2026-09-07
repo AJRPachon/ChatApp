@@ -53,9 +53,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -368,9 +370,13 @@ fun StatusViewerScreen(
     var currentIndex by remember { mutableIntStateOf(initialIndex) }
     val current = statuses.getOrNull(currentIndex) ?: run { onClose(); return }
     val isVideo = current.videoUrl != null
-    // Typing a reply pauses auto-advance — mirrors WhatsApp/Instagram, and stops the story from
-    // moving on (or closing) mid-reply.
+    // Tapping the reply field pauses auto-advance immediately — mirrors WhatsApp/Instagram, and
+    // stops the story from moving on (or closing) while the user is still deciding what to type,
+    // not just once they've typed something. Resumes as soon as the field loses focus, which
+    // happens both on send (focus cleared explicitly below) and if the user dismisses the
+    // keyboard/taps away without sending.
     var replyText by remember(currentIndex) { mutableStateOf("") }
+    var isReplyFieldFocused by remember(currentIndex) { mutableStateOf(false) }
 
     // Text/image stories advance on a fixed timer; video stories advance when
     // playback finishes, with the progress bar following the player position
@@ -378,8 +384,8 @@ fun StatusViewerScreen(
     val timedProgress = remember(currentIndex) { Animatable(0f) }
     var videoProgress by remember(currentIndex) { mutableFloatStateOf(0f) }
 
-    LaunchedEffect(currentIndex, isVideo, replyText.isNotBlank()) {
-        if (!isVideo && replyText.isBlank()) {
+    LaunchedEffect(currentIndex, isVideo, isReplyFieldFocused, replyText.isNotBlank()) {
+        if (!isVideo && !isReplyFieldFocused && replyText.isBlank()) {
             timedProgress.snapTo(0f)
             timedProgress.animateTo(
                 targetValue = 1f,
@@ -531,11 +537,13 @@ fun StatusViewerScreen(
                     .padding(12.dp),
             ) {
                 val keyboard = LocalSoftwareKeyboardController.current
+                val focusManager = LocalFocusManager.current
                 OutlinedTextField(
                     value = replyText,
                     onValueChange = { replyText = it },
                     modifier = Modifier
                         .weight(1f)
+                        .onFocusChanged { isReplyFieldFocused = it.isFocused }
                         .testTag("status_reply_field"),
                     placeholder = { Text(stringResource(R.string.status_reply_placeholder), color = Color.White.copy(alpha = 0.6f)) },
                     textStyle = MaterialTheme.typography.bodyMedium.copy(color = Color.White),
@@ -554,6 +562,7 @@ fun StatusViewerScreen(
                         onSendReply(current, replyText)
                         replyText = ""
                         keyboard?.hide()
+                        focusManager.clearFocus()
                     },
                     modifier = Modifier.testTag("status_reply_send_button"),
                 ) {
