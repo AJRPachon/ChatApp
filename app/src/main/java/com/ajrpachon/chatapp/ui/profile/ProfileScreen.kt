@@ -48,6 +48,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -72,6 +73,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.R
@@ -323,7 +325,17 @@ fun ProfileScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            ChatAppTopBar(title = stringResource(R.string.profile_top_bar_title), onBack = onBack)
+            ChatAppTopBar(title = stringResource(R.string.profile_top_bar_title), onBack = onBack) {
+                IconButton(
+                    onClick = { showQrSheet = true },
+                    modifier = Modifier.testTag("profile_my_qr_code_button"),
+                ) {
+                    Icon(
+                        Icons.Default.QrCode,
+                        contentDescription = stringResource(R.string.profile_my_qr_code_button),
+                    )
+                }
+            }
         },
     ) { innerPadding ->
         Column(
@@ -485,17 +497,6 @@ fun ProfileScreen(
                         .padding(16.dp),
                 )
             }
-
-            Spacer(Modifier.size(16.dp))
-
-            ChatAppSecondaryButton(
-                text = stringResource(R.string.profile_my_qr_code_button),
-                onClick = { showQrSheet = true },
-                leadingIcon = Icons.Default.QrCode,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("profile_my_qr_code_button"),
-            )
 
             Spacer(Modifier.size(16.dp))
 
@@ -779,7 +780,15 @@ private fun categoryCardColors() = if (MaterialTheme.colorScheme.background.lumi
 private fun CategoryLabel(text: String) {
     Text(
         text = text.uppercase(),
-        style = MaterialTheme.typography.labelMedium,
+        // labelMedium is already SemiBold app-wide (Type.kt), on the generic Monospace font
+        // family — that family has no distinct weight files, so Compose's synthetic-bold
+        // fallback renders SemiBold/Bold/ExtraBold all but identically at this size. Bumping
+        // size + letter-spacing on top of ExtraBold is what actually reads as "stands out more".
+        style = MaterialTheme.typography.labelMedium.copy(
+            fontSize = 13.sp,
+            letterSpacing = 1.2.sp,
+        ),
+        fontWeight = FontWeight.ExtraBold,
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier
             .fillMaxWidth()
