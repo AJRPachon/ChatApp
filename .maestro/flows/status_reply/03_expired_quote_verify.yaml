@@ -1,0 +1,71 @@
+appId: com.ajrpachon.chatapp
+---
+# Optional 3rd step — NOT wired into run.sh (see this README's "Flujo multi-dispositivo
+# (Responder a Estado)"), because unlike steps 1-2 it needs a real, deliberate out-of-band SQL
+# write against the linked Supabase project first — same spirit as this suite's other
+# manual/SQL-requiring precedents (see e.g. the account-corruption fix history in this README's
+# "Hallazgos de UX reales"), not something to fake by mocking local state.
+#
+# Verifies MessageBO.isStatusReplyExpired()/ChatBubbleContent.kt's StatusReplyQuote: once
+# reply_to_status_expires_at is in the past, the quote should render "This status is no longer
+# available"/"Este estado ya no está disponible" instead of the story's text, and tapping it should
+# NOT navigate to the story viewer (ChatViewModel.onStatusQuoteClicked branches on
+# message.isStatusReplyExpired() and shows a snackbar instead of sending
+# ChatEffect.NavigateToStatusViewer — see that function).
+#
+# There is no UI path to backdate this — nothing lets a test wait out the real 24h TTL or fake the
+# device clock from inside the app — so this step assumes 02_replier_reply.yaml already ran AND
+# you already ran, manually, a real UPDATE against the same linked Supabase project this app talks
+# to (verify with `supabase status` / `supabase projects list` first), scoped tightly to the one
+# message this created (exact content match, so it can never touch any other row):
+#
+#   -- REPLY_TEXT below must be the *exact* value 02_replier_reply.yaml was run with.
+#   update public.messages
+#   set reply_to_status_expires_at = now() - interval '1 hour'
+#   where content = '<REPLY_TEXT used in 02_replier_reply.yaml>'
+#   returning id, content, reply_to_status_text, reply_to_status_expires_at;
+#
+#   supabase db query --linked -f expire_status_reply.sql
+#
+# Verified for real once (see this README section for the exact query run and its output) — the
+# UPDATE affected exactly 1 row and, after this flow's relaunch+reopen below (which forces
+# ChatViewModel.init's messageRepository.syncRemote(...) to re-pull the row), the bubble correctly
+# switched from the story text to the localized "no longer available" copy.
+#
+# Deliberately full relaunch (not background_and_resume's stopApp:false) — the point is to force a
+# genuine remote resync of the message row (ChatViewModel.init calls syncRemote(...) every time a
+# conversation is opened — see this README's "Higiene de datos" section on clear_chat_roundtrip.yaml
+# for the same mechanism used the other way), not to test resume-survival. No clearState, so the
+# QA session persists and this lands straight back on ConversationListScreen.
+#
+# Run with (same replier device, any time after the SQL step above has actually run):
+#   maestro test .maestro/flows/status_reply/03_expired_quote_verify.yaml --device <REPLIER_DEVICE_ID> \
+#     -e POSTER_DISPLAY_NAME=<poster displayName, e.g. claudeqa> \
+#     -e REPLY_TEXT="<same REPLY_TEXT used in 02_replier_reply.yaml / the SQL above>"
+- launchApp
+- assertVisible: "Chats"
+- runFlow:
+    file: ../../subflows/open_conversation.yaml
+    env:
+      CONTACT_NAME: ${POSTER_DISPLAY_NAME}
+- assertVisible: ${REPLY_TEXT}
+- assertVisible: "This status is no longer available|Este estado ya no está disponible"
+- tapOn: "This status is no longer available|Este estado ya no está disponible"
+# Real, if slightly funny, finding — NOT fixed, noted here and in the README: the snackbar
+# ChatViewModel.onStatusQuoteClicked shows for the expired branch is a hardcoded Spanish literal
+# ("Este estado ya no está disponible", ChatViewModel.kt) instead of
+# stringResource(R.string.status_no_longer_available) — unlike the bubble text above (which IS
+# correctly localized). On this suite's English-locale emulators the snackbar shows Spanish while
+# the bubble right above it correctly shows English. This is a pre-existing pattern across this
+# whole file (ChatSchedulingDelegate/ChatForwardDelegate/ChatQuickSendDelegate/
+# ChatContactCardDelegate all hardcode Spanish ChatEffect.ShowSnackbar text too), not something
+# newly introduced by this feature, so it's out of scope to fix here — flagged, not fixed.
+# Optional so this flow's real pass/fail doesn't hinge on catching a transient snackbar in time.
+- extendedWaitUntil:
+    visible: "Este estado ya no está disponible"
+    timeout: 3000
+    optional: true
+# The real assertion: tapping an expired quote must NOT navigate to the story viewer — still on
+# ChatScreen (chat_top_bar_title, not e.g. status_reply_field from a reopened viewer).
+- assertVisible:
+    id: "chat_top_bar_title"

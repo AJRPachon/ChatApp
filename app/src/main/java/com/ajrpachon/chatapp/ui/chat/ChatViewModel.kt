@@ -395,6 +395,7 @@ class ChatViewModel(
             is ChatIntent.SearchQueryChanged -> searchDelegate.searchMessages(intent.query)
             is ChatIntent.ToggleReaction -> toggleReaction(intent.messageId, intent.emoji)
             is ChatIntent.JumpToMessage -> searchDelegate.jumpToMessage(intent.messageId)
+            is ChatIntent.StatusQuoteClicked -> onStatusQuoteClicked(intent.message)
             is ChatIntent.ShowExpiryDialog -> updateState { it.copy(expiryDialogMessageId = intent.messageId) }
             is ChatIntent.DismissExpiryDialog -> updateState { it.copy(expiryDialogMessageId = null) }
             is ChatIntent.SetExpiry -> setExpiry(intent.messageId, intent.expiresAt)
@@ -508,6 +509,19 @@ class ChatViewModel(
     private fun toggleReaction(messageId: String, emoji: String) {
         val uid = currentUserId ?: return
         viewModelScope.launch { catchResult { reactionRepository.toggleReaction(messageId, uid, emoji) } }
+    }
+
+    private fun onStatusQuoteClicked(message: MessageBO) {
+        val ownerId = message.replyToStatusOwnerId
+        val statusId = message.replyToStatusId
+        if (ownerId == null || statusId == null) return
+        viewModelScope.launch {
+            if (message.isStatusReplyExpired()) {
+                sendEffect(ChatEffect.ShowSnackbar("Este estado ya no está disponible"))
+            } else {
+                sendEffect(ChatEffect.NavigateToStatusViewer(ownerId, statusId))
+            }
+        }
     }
 
     private fun sendMessage() {

@@ -42,6 +42,7 @@ import com.github.skydoves.navgraph.annotations.NavEdge
 import com.ajrpachon.chatapp.CallRoute
 import com.ajrpachon.chatapp.ChatRoute
 import com.ajrpachon.chatapp.GroupInfoRoute
+import com.ajrpachon.chatapp.StatusViewerRoute
 import com.ajrpachon.chatapp.UserInfoRoute
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -53,6 +54,7 @@ import java.io.File
 @NavEdge(to = CallRoute::class, label = "Start Call")
 @NavEdge(to = GroupInfoRoute::class, label = "Group Info")
 @NavEdge(to = UserInfoRoute::class, label = "User Info")
+@NavEdge(to = StatusViewerRoute::class, label = "Open Quoted Status")
 @NavDestination(route = ChatRoute::class)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,6 +68,7 @@ fun ChatScreen(
     onOpenPdf: (url: String, filename: String) -> Unit = { _, _ -> },
     onOpenMediaGallery: () -> Unit = {},
     onNavigateToConversation: (conversationId: String, otherUserName: String) -> Unit = { _, _ -> },
+    onOpenStatusViewer: (ownerId: String, statusId: String) -> Unit = { _, _ -> },
 ) {
     val vm: ChatViewModel = koinViewModel(key = conversationId, parameters = { parametersOf(ChatArgs(conversationId, otherUserName)) })
     val state by vm.state.collectAsStateWithLifecycle()
@@ -136,6 +139,7 @@ fun ChatScreen(
                     context.startActivity(android.content.Intent.createChooser(shareIntent, exportConversationLabel))
                 }
                 is ChatEffect.NavigateToConversation -> onNavigateToConversation(effect.conversationId, effect.otherUserName)
+                is ChatEffect.NavigateToStatusViewer -> onOpenStatusViewer(effect.ownerId, effect.statusId)
                 is ChatEffect.InviteContact -> {
                     val smsIntent = android.content.Intent(
                         android.content.Intent.ACTION_SENDTO,

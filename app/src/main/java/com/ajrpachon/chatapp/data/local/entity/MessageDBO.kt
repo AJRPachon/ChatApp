@@ -37,4 +37,11 @@ data class MessageDBO(
     @ColumnInfo(name = "isPinned") val isPinned: Boolean = false,
     @ColumnInfo(name = "isSaved") val isSaved: Boolean = false,
     @ColumnInfo(name = "sendStatus") val sendStatus: String = "sent", // "pending" | "failed" | "sent"
+    @ColumnInfo(name = "replyToStatusId") val replyToStatusId: String? = null,
+    @ColumnInfo(name = "replyToStatusOwnerId") val replyToStatusOwnerId: String? = null,
+    @ColumnInfo(name = "replyToStatusText") val replyToStatusText: String? = null,
+    @ColumnInfo(name = "replyToStatusImageUrl") val replyToStatusImageUrl: String? = null,
+    @ColumnInfo(name = "replyToStatusVideoUrl") val replyToStatusVideoUrl: String? = null,
+    @ColumnInfo(name = "replyToStatusBackgroundColor") val replyToStatusBackgroundColor: Long? = null,
+    @ColumnInfo(name = "replyToStatusExpiresAt") val replyToStatusExpiresAt: Long? = null,
 )

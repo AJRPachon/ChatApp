@@ -471,6 +471,10 @@
     <string name="status_compose_placeholder">¿Qué está pasando?</string>
     <string name="status_publish">Publicar</string>
     <string name="status_cancel">Cancelar</string>
+    <string name="status_reply_placeholder">Responder al estado…</string>
+    <string name="status_reply_send_cd">Enviar respuesta</string>
+    <string name="status_no_longer_available">Este estado ya no está disponible</string>
+    <string name="status_reply_quote_label">Estado</string>
 
     <!-- PdfViewerScreen -->
     <string name="pdf_share_chooser_title">Compartir PDF</string>

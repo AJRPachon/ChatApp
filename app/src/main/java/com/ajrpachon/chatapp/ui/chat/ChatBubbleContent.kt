@@ -509,6 +509,92 @@ internal fun ReplyQuote(
     }
 }
 
+/**
+ * Quoted-status reference (WhatsApp-style "replied to your status") — [ReplyQuote]'s sibling for
+ * [MessageBO.isStatusReply] instead of a reply-to-message. Always clickable regardless of
+ * [MessageBO.isStatusReplyExpired] — [onClick] (wired to ChatViewModel.onStatusQuoteClicked)
+ * is what decides whether that opens the story viewer or shows the "no longer available"
+ * snackbar, so this composable doesn't need to duplicate that check.
+ */
+@Composable
+internal fun StatusReplyQuote(
+    message: MessageBO,
+    isFromMe: Boolean,
+    onClick: () -> Unit = {},
+) {
+    val accent = MaterialTheme.colorScheme.primary
+    val bg = if (isFromMe)
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+    else
+        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+    val expired = message.isStatusReplyExpired()
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .widthIn(min = 120.dp)
+            .clip(RoundedCornerShape(6.dp))
+            .background(bg)
+            .clickable { onClick() }
+            .padding(6.dp),
+    ) {
+        if (!expired) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(
+                        message.replyToStatusBackgroundColor?.let { Color(it) }
+                            ?: MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                val thumbUrl = message.replyToStatusImageUrl ?: message.replyToStatusVideoUrl
+                if (thumbUrl != null) {
+                    AsyncImage(
+                        model = thumbUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else if (!message.replyToStatusText.isNullOrBlank()) {
+                    Text(
+                        text = message.replyToStatusText.take(1).uppercase(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White,
+                    )
+                }
+            }
+            Spacer(Modifier.width(6.dp))
+        }
+        Column {
+            Text(
+                text = stringResource(R.string.status_reply_quote_label),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = accent,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = if (expired) {
+                    stringResource(R.string.status_no_longer_available)
+                } else {
+                    message.replyToStatusText?.takeIf { it.isNotBlank() }
+                        ?: message.replyToStatusVideoUrl?.let { "🎥" }
+                        ?: message.replyToStatusImageUrl?.let { "📷" }
+                        ?: ""
+                },
+                style = MaterialTheme.typography.bodySmall,
+                fontStyle = if (expired) FontStyle.Italic else FontStyle.Normal,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
 @Composable
 internal fun LinkPreviewCard(data: LinkPreviewData) {
     val context = LocalContext.current

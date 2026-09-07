@@ -466,6 +466,10 @@
     <string name="status_compose_placeholder">What\'s happening?</string>
     <string name="status_publish">Post</string>
     <string name="status_cancel">Cancel</string>
+    <string name="status_reply_placeholder">Reply to status…</string>
+    <string name="status_reply_send_cd">Send reply</string>
+    <string name="status_no_longer_available">This status is no longer available</string>
+    <string name="status_reply_quote_label">Status</string>
 
     <!-- PdfViewerScreen -->
     <string name="pdf_share_chooser_title">Share PDF</string>
