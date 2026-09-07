@@ -25,7 +25,8 @@ class StatusViewModel(
 
     init {
         viewModelScope.launch {
-            statusRepository.observeActiveStatuses().collect { statuses ->
+            val contactIds = contactIds()
+            statusRepository.observeActiveStatuses(contactIds).collect { statuses ->
                 updateState { it.copy(statuses = statuses) }
             }
         }
@@ -51,15 +52,26 @@ class StatusViewModel(
     private fun sync() {
         viewModelScope.launch {
             updateState { it.copy(isLoading = true) }
-            catchResult {
-                val currentUser = getCurrentUserUseCase().first() ?: return@catchResult
-                val contactIds = conversationRepository
-                    .getLocalConversations(currentUser.id)
-                    .mapNotNull { if (!it.isGroup) it.otherUserId else null }
-                statusRepository.syncStatuses(contactIds)
-            }.onFailure { e -> AppLogger.e(TAG, "sync failed", e) }
+            catchResult { statusRepository.syncStatuses(contactIds()) }
+                .onFailure { e -> AppLogger.e(TAG, "sync failed", e) }
             updateState { it.copy(isLoading = false) }
         }
+    }
+
+    private suspend fun contactIds(): List<String> {
+        val currentUser = getCurrentUserUseCase().first() ?: return emptyList()
+        // getLocalConversations only reads Room — right after a fresh login (or a reinstall),
+        // that table can still be empty because ConversationListViewModel's own sync hasn't
+        // landed yet. Since this contactIds set is captured once and handed to
+        // observeActiveStatuses for the lifetime of this ViewModel, a premature empty read here
+        // would mean a contact's status never becomes visible for the rest of the session, no
+        // matter how the Realtime side of things is doing. Force a real sync first so this
+        // reflects the actual server-side conversation list, not whatever Room happened to hold
+        // at this exact moment.
+        catchResult { conversationRepository.syncConversations(currentUser.id) }
+        return conversationRepository
+            .getLocalConversations(currentUser.id)
+            .mapNotNull { if (!it.isGroup) it.otherUserId else null }
     }
 
     private fun postTextStatus() {

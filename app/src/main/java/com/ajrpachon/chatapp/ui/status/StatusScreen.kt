@@ -52,6 +52,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -102,7 +103,13 @@ fun StatusBar(
     // Own statuses are represented by the "My status" slot below, not as a
     // separate contact-like avatar mixed in with everyone else's.
     val myStatuses = state.statuses.filter { it.isFromMe }
-    val contactStatuses = state.statuses.filterNot { it.isFromMe }
+    // One avatar per CONTACT, not per status: a contact with several active statuses must still
+    // show a single circle here (mirrors Instagram/WhatsApp) — tapping it opens all of their
+    // statuses in sequence via StatusIntent.FilterUserStatuses/StatusViewerScreen, which already
+    // groups by userId correctly. state.statuses is ordered by createdAt DESC
+    // (StatusDao.observeActive), so distinctBy keeps each contact's MOST RECENT status as the
+    // representative shown here, with the most-recently-active contact first.
+    val contactStatuses = state.statuses.filterNot { it.isFromMe }.distinctBy { it.userId }
 
     Column(modifier = modifier) {
         LazyRow(
@@ -171,7 +178,8 @@ private fun AddStatusButton(
                     .size(52.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primaryContainer)
-                    .clickable(onClick = onAddText),
+                    .clickable(onClick = onAddText)
+                    .testTag("status_add_text_button"),
             ) {
                 Icon(
                     Icons.Default.Add,
@@ -216,7 +224,8 @@ private fun MyStatusAvatar(
                     .size(56.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
-                    .clickable(interactionSource = null, indication = null, onClick = onView),
+                    .clickable(interactionSource = null, indication = null, onClick = onView)
+                    .testTag("status_my_avatar"),
             ) {
                 ChatAppAvatar(name = status.userName, url = status.userAvatarUrl, size = 52.dp)
             }
@@ -232,7 +241,13 @@ private fun MyStatusAvatar(
                     // background) and before clickable, so clip/background paint only the small
                     // circle while clickable binds to the full enlarged bounds.
                     .minimumInteractiveComponentSize()
-                    .clickable { showAddMenu = true },
+                    .clickable { showAddMenu = true }
+                    // Opens the DropdownMenu below — its own items stay
+                    // text-selected in Maestro flows (testTagsAsResourceId
+                    // doesn't propagate into a DropdownMenu's Popup window),
+                    // but this launcher button itself lives on the main
+                    // screen and is safely id-selectable.
+                    .testTag("status_add_more_button"),
             ) {
                 Icon(
                     Icons.Default.Add,
@@ -273,7 +288,16 @@ private fun StatusAvatar(status: StatusBO, onClick: () -> Unit) {
                 .size(56.dp)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
-                .clickable(interactionSource = null, indication = null, onClick = onClick),
+                .clickable(interactionSource = null, indication = null, onClick = onClick)
+                // Per-user tag (not a shared static id) so a two-device test can tap
+                // specifically this contact's status ring instead of "some avatar in
+                // the row" — see .maestro/flows/status_visibility/. Keyed by userName
+                // (the account's displayName) rather than userId: the id is a backend
+                // UUID a Maestro flow has no practical way to look up ahead of time,
+                // while the displayName is already the stable, known value this suite
+                // parametrizes flows with elsewhere (e.g. open_conversation.yaml's
+                // CONTACT_NAME).
+                .testTag("status_avatar_${status.userName}"),
         ) {
             ChatAppAvatar(
                 name = status.userName,
@@ -309,11 +333,17 @@ private fun ComposeStatusDialog(
                 onValueChange = onTextChange,
                 placeholder = { Text(stringResource(R.string.status_compose_placeholder)) },
                 maxLines = 4,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("status_compose_text_field"),
             )
         },
         confirmButton = {
-            TextButton(onClick = onPost, enabled = text.isNotBlank()) { Text(stringResource(R.string.status_publish)) }
+            TextButton(
+                onClick = onPost,
+                enabled = text.isNotBlank(),
+                modifier = Modifier.testTag("status_publish_button"),
+            ) { Text(stringResource(R.string.status_publish)) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.status_cancel)) }
@@ -447,6 +477,9 @@ fun StatusViewerScreen(
                             .clip(RoundedCornerShape(2.dp)),
                         color = Color.White,
                         trackColor = Color.White.copy(alpha = 0.4f),
+                        // M3's default draws a small stop-indicator dot at the track's end —
+                        // out of place on this thin Instagram/WhatsApp-style story segment bar.
+                        drawStopIndicator = {},
                     )
                 }
             }
