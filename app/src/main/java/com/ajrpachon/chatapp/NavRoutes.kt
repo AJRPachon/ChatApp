@@ -169,10 +169,6 @@ fun chatNavEntry(
     is InvitationsRoute -> NavEntry(key) {
         InvitationsScreen(
             onBack = dropUnlessResumed { backStack.removeLastOrNull() },
-            onNavigateToChat = { id, name ->
-                backStack.removeAll { it is InvitationsRoute }
-                backStack.add(ChatRoute(id, name))
-            },
         )
     }
 

@@ -1,12 +1,10 @@
 package com.ajrpachon.chatapp.ui.invitations
 
-import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.InvitationBO
 import com.ajrpachon.chatapp.domain.model.InvitationStatus
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.usecase.CancelSentInvitationUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
-import com.ajrpachon.chatapp.domain.usecase.GetOrCreateConversationUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetSentInvitationsUseCase
 import com.ajrpachon.chatapp.domain.usecase.ObserveInvitationsUseCase
 import com.ajrpachon.chatapp.domain.usecase.RespondInvitationUseCase
@@ -35,7 +33,6 @@ class InvitationsViewModelTest {
     private val getCurrentUserUseCase = mockk<GetCurrentUserUseCase>()
     private val observeInvitationsUseCase = mockk<ObserveInvitationsUseCase>()
     private val respondInvitationUseCase = mockk<RespondInvitationUseCase>()
-    private val getOrCreateConversationUseCase = mockk<GetOrCreateConversationUseCase>()
     private val getSentInvitationsUseCase = mockk<GetSentInvitationsUseCase>()
     private val cancelSentInvitationUseCase = mockk<CancelSentInvitationUseCase>()
 
@@ -57,11 +54,6 @@ class InvitationsViewModelTest {
         createdAt = Instant.fromEpochMilliseconds(0),
     )
 
-    private val fakeConversation = mockk<ConversationBO>(relaxed = true).also {
-        every { it.id } returns "conv1"
-        every { it.name } returns "Sender One"
-    }
-
     private val userFlow = MutableStateFlow<UserBO?>(currentUser)
     private val invitationsFlow = MutableStateFlow<List<InvitationBO>>(emptyList())
 
@@ -75,7 +67,6 @@ class InvitationsViewModelTest {
         getCurrentUserUseCase = getCurrentUserUseCase,
         observeInvitationsUseCase = observeInvitationsUseCase,
         respondInvitationUseCase = respondInvitationUseCase,
-        getOrCreateConversationUseCase = getOrCreateConversationUseCase,
         getSentInvitationsUseCase = getSentInvitationsUseCase,
         cancelSentInvitationUseCase = cancelSentInvitationUseCase,
     )
@@ -90,10 +81,9 @@ class InvitationsViewModelTest {
     }
 
     @Test
-    fun `Accept success emits NavigateToChat effect`() = runTest(mainDispatcherRule.scheduler) {
+    fun `Accept success emits ShowMessage effect without navigating`() = runTest(mainDispatcherRule.scheduler) {
         invitationsFlow.value = listOf(invitation("inv1"))
         coEvery { respondInvitationUseCase.accept("inv1") } returns Result.success(Unit)
-        coEvery { getOrCreateConversationUseCase("user1", "sender1") } returns fakeConversation
 
         val vm = buildViewModel()
         advanceUntilIdle()
@@ -101,8 +91,7 @@ class InvitationsViewModelTest {
         advanceUntilIdle()
 
         val effect = vm.effect.first()
-        assertTrue(effect is InvitationsEffect.NavigateToChat)
-        assertEquals("conv1", (effect as InvitationsEffect.NavigateToChat).conversationId)
+        assertTrue(effect is InvitationsEffect.ShowMessage)
     }
 
     @Test
