@@ -1,7 +1,9 @@
 package com.ajrpachon.chatapp.ui.invitations
 
+import com.ajrpachon.chatapp.domain.usecase.CancelSentInvitationUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetOrCreateConversationUseCase
+import com.ajrpachon.chatapp.domain.usecase.GetSentInvitationsUseCase
 import com.ajrpachon.chatapp.domain.usecase.ObserveInvitationsUseCase
 import com.ajrpachon.chatapp.domain.usecase.RespondInvitationUseCase
 import androidx.lifecycle.viewModelScope
@@ -17,6 +19,8 @@ class InvitationsViewModel(
     private val observeInvitationsUseCase: ObserveInvitationsUseCase,
     private val respondInvitationUseCase: RespondInvitationUseCase,
     private val getOrCreateConversationUseCase: GetOrCreateConversationUseCase,
+    private val getSentInvitationsUseCase: GetSentInvitationsUseCase,
+    private val cancelSentInvitationUseCase: CancelSentInvitationUseCase,
 ) : BaseViewModel<InvitationsState, InvitationsEffect>(InvitationsState()) {
 
     private var currentUserId: String? = null
@@ -41,7 +45,41 @@ class InvitationsViewModel(
         when (intent) {
             is InvitationsIntent.Accept -> respond(intent.invitationId, accept = true)
             is InvitationsIntent.Reject -> respond(intent.invitationId, accept = false)
+            is InvitationsIntent.SelectTab -> selectTab(intent.tab)
+            is InvitationsIntent.CancelSent -> cancelSent(intent.invitationId)
             is InvitationsIntent.DismissError -> updateState { it.copy(error = null) }
+        }
+    }
+
+    private fun selectTab(tab: InvitationsTab) {
+        updateState { it.copy(selectedTab = tab) }
+        if (tab == InvitationsTab.SENT) loadSentInvitations()
+    }
+
+    private fun loadSentInvitations() {
+        val uid = currentUserId ?: return
+        viewModelScope.launch {
+            updateState { it.copy(isSentLoading = true) }
+            getSentInvitationsUseCase(uid)
+                .onSuccess { sent -> updateState { it.copy(sentInvitations = sent, isSentLoading = false) } }
+                .onFailure { e ->
+                    AppLogger.e(TAG, "Get sent invitations failed", e)
+                    updateState { it.copy(isSentLoading = false, error = e.message) }
+                }
+        }
+    }
+
+    private fun cancelSent(id: String) {
+        viewModelScope.launch {
+            cancelSentInvitationUseCase(id)
+                .onSuccess {
+                    sendEffect(InvitationsEffect.ShowMessage("Invitación cancelada"))
+                    loadSentInvitations()
+                }
+                .onFailure { e ->
+                    AppLogger.e(TAG, "Cancel sent invitation failed", e)
+                    updateState { it.copy(error = e.message) }
+                }
         }
     }
 

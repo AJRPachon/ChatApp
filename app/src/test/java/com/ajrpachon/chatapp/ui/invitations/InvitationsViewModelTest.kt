@@ -4,8 +4,10 @@ import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.InvitationBO
 import com.ajrpachon.chatapp.domain.model.InvitationStatus
 import com.ajrpachon.chatapp.domain.model.UserBO
+import com.ajrpachon.chatapp.domain.usecase.CancelSentInvitationUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetOrCreateConversationUseCase
+import com.ajrpachon.chatapp.domain.usecase.GetSentInvitationsUseCase
 import com.ajrpachon.chatapp.domain.usecase.ObserveInvitationsUseCase
 import com.ajrpachon.chatapp.domain.usecase.RespondInvitationUseCase
 import com.ajrpachon.chatapp.util.MainDispatcherRule
@@ -34,6 +36,8 @@ class InvitationsViewModelTest {
     private val observeInvitationsUseCase = mockk<ObserveInvitationsUseCase>()
     private val respondInvitationUseCase = mockk<RespondInvitationUseCase>()
     private val getOrCreateConversationUseCase = mockk<GetOrCreateConversationUseCase>()
+    private val getSentInvitationsUseCase = mockk<GetSentInvitationsUseCase>()
+    private val cancelSentInvitationUseCase = mockk<CancelSentInvitationUseCase>()
 
     private val sender = UserBO(
         id = "sender1",
@@ -72,6 +76,8 @@ class InvitationsViewModelTest {
         observeInvitationsUseCase = observeInvitationsUseCase,
         respondInvitationUseCase = respondInvitationUseCase,
         getOrCreateConversationUseCase = getOrCreateConversationUseCase,
+        getSentInvitationsUseCase = getSentInvitationsUseCase,
+        cancelSentInvitationUseCase = cancelSentInvitationUseCase,
     )
 
     @Test
@@ -166,6 +172,60 @@ class InvitationsViewModelTest {
         assertEquals(2, vm.state.value.invitations.size)
     }
 
+    @Test
+    fun `SelectTab SENT loads sent invitations`() = runTest(mainDispatcherRule.scheduler) {
+        coEvery { getSentInvitationsUseCase("user1") } returns Result.success(listOf(sentInvitation("sent1")))
+
+        val vm = buildViewModel()
+        advanceUntilIdle()
+        vm.onIntent(InvitationsIntent.SelectTab(InvitationsTab.SENT))
+        advanceUntilIdle()
+
+        assertEquals(InvitationsTab.SENT, vm.state.value.selectedTab)
+        assertEquals(1, vm.state.value.sentInvitations.size)
+        assertEquals(false, vm.state.value.isSentLoading)
+    }
+
+    @Test
+    fun `SelectTab SENT failure updates error state`() = runTest(mainDispatcherRule.scheduler) {
+        coEvery { getSentInvitationsUseCase("user1") } returns Result.failure(RuntimeException("fetch failed"))
+
+        val vm = buildViewModel()
+        advanceUntilIdle()
+        vm.onIntent(InvitationsIntent.SelectTab(InvitationsTab.SENT))
+        advanceUntilIdle()
+
+        assertEquals("fetch failed", vm.state.value.error)
+        assertEquals(false, vm.state.value.isSentLoading)
+    }
+
+    @Test
+    fun `CancelSent success shows message and reloads sent list`() = runTest(mainDispatcherRule.scheduler) {
+        coEvery { getSentInvitationsUseCase("user1") } returns Result.success(emptyList())
+        coEvery { cancelSentInvitationUseCase("sent1") } returns Result.success(Unit)
+
+        val vm = buildViewModel()
+        advanceUntilIdle()
+        vm.onIntent(InvitationsIntent.CancelSent("sent1"))
+        advanceUntilIdle()
+
+        val effect = vm.effect.first()
+        assertTrue(effect is InvitationsEffect.ShowMessage)
+        coEvery { getSentInvitationsUseCase("user1") } returns Result.success(emptyList())
+    }
+
+    @Test
+    fun `CancelSent failure updates error state`() = runTest(mainDispatcherRule.scheduler) {
+        coEvery { cancelSentInvitationUseCase("sent1") } returns Result.failure(RuntimeException("cancel failed"))
+
+        val vm = buildViewModel()
+        advanceUntilIdle()
+        vm.onIntent(InvitationsIntent.CancelSent("sent1"))
+        advanceUntilIdle()
+
+        assertEquals("cancel failed", vm.state.value.error)
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private fun invitation(id: String) = InvitationBO(
@@ -174,5 +234,14 @@ class InvitationsViewModelTest {
         receiverId = currentUser.id,
         status = InvitationStatus.PENDING,
         createdAt = Instant.fromEpochMilliseconds(0),
+    )
+
+    private fun sentInvitation(id: String) = InvitationBO(
+        id = id,
+        sender = currentUser,
+        receiverId = sender.id,
+        status = InvitationStatus.PENDING,
+        createdAt = Instant.fromEpochMilliseconds(0),
+        receiver = sender,
     )
 }

@@ -299,6 +299,15 @@
     <string name="invitations_top_bar_title">Invitations</string>
     <string name="invitations_no_pending">You have no pending invitations</string>
     <string name="invitations_username">@%1$s</string>
+    <string name="invitations_wants_to_add_you">wants to add you as a contact</string>
+    <string name="invitations_filter_received">Received · %1$d</string>
+    <string name="invitations_filter_sent">Sent</string>
+    <string name="invitations_accept_cd">Accept invitation</string>
+    <string name="invitations_decline_cd">Decline invitation</string>
+    <string name="invitations_cancel_cd">Cancel invitation</string>
+    <string name="invitations_no_sent">You haven\'t sent any invitations</string>
+    <string name="invitations_sent_accepted">Connected</string>
+    <string name="invitations_sent_rejected">Declined</string>
 
     <!-- Conversations -->
     <string name="conversations_notification_sound_title">Notification sound</string>
