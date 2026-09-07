@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -574,7 +575,16 @@ fun ProfileScreen(
                             }
                         }
                         if (state.twoFactor.isLoading) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            // Match the buttons' own rendered height (14.dp vertical content
+                            // padding + labelLarge's line height ≈ 48.dp) so swapping between
+                            // spinner and button doesn't resize this row — and the Card around
+                            // it — out from under the user mid-tap.
+                            Box(
+                                modifier = Modifier.height(48.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            }
                         } else if (state.twoFactor.isEnrolled) {
                             ChatAppDestructiveButton(
                                 text = stringResource(R.string.profile_2fa_deactivate),
