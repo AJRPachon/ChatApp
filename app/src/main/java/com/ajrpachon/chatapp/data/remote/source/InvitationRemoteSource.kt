@@ -53,8 +53,12 @@ class InvitationRemoteSource(private val supabase: SupabaseClient) {
             return existing.copy(status = "pending")
         }
 
+        // Postgrest defaults inserts to `Prefer: return=minimal` (empty body) — decodeSingle()
+        // against that empty body is exactly what threw "Expected start of the array '[', but
+        // had 'EOF' instead" here. select() switches to `return=representation` so the inserted
+        // row (with its DB-generated id) actually comes back to decode.
         return supabase.postgrest["invitations"]
-            .insert(mapOf("sender_id" to senderId, "receiver_id" to receiverId))
+            .insert(mapOf("sender_id" to senderId, "receiver_id" to receiverId)) { select() }
             .decodeSingle<InvitationDTO>()
     }
 
