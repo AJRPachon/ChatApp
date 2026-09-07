@@ -6,7 +6,6 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -17,6 +16,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -34,10 +34,13 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
@@ -45,6 +48,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -62,12 +66,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.R
@@ -319,7 +325,20 @@ fun ProfileScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            ChatAppTopBar(title = stringResource(R.string.profile_top_bar_title), onBack = onBack)
+            ChatAppTopBar(title = stringResource(R.string.profile_top_bar_title), onBack = onBack) {
+                IconButton(
+                    onClick = { showQrSheet = true },
+                    modifier = Modifier
+                        .size(52.dp)
+                        .testTag("profile_my_qr_code_button"),
+                ) {
+                    Icon(
+                        Icons.Default.QrCode,
+                        contentDescription = stringResource(R.string.profile_my_qr_code_button),
+                        modifier = Modifier.size(28.dp),
+                    )
+                }
+            }
         },
     ) { innerPadding ->
         Column(
@@ -338,7 +357,9 @@ fun ProfileScreen(
                     modifier = Modifier
                         .size(96.dp)
                         .clip(CircleShape)
-                        .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                        // Design canvas: a plain primaryContainer-filled circle, no border ring —
+                        // matches Signal_PrimaryContainer/Signal_OnPrimaryContainer exactly.
+                        .background(MaterialTheme.colorScheme.primaryContainer)
                         .clickable(enabled = !state.isUploadingAvatar) {
                             avatarLauncher.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -358,7 +379,7 @@ fun ProfileScreen(
                             Icons.Default.Person,
                             contentDescription = null,
                             modifier = Modifier.size(56.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
                         )
                     }
                     if (state.isUploadingAvatar) {
@@ -388,7 +409,17 @@ fun ProfileScreen(
                 }
             }
 
-            Spacer(Modifier.size(16.dp))
+            Spacer(Modifier.size(12.dp))
+
+            // @handle sits directly under the photo (per user request — not the canvas's literal
+            // name-then-handle order); email is intentionally not shown here at all anymore.
+            Text(
+                stringResource(R.string.profile_username_display, state.username),
+                style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace),
+                color = MaterialTheme.colorScheme.primary,
+            )
+
+            Spacer(Modifier.size(12.dp))
 
             val keyboard = LocalSoftwareKeyboardController.current
             ChatAppTextField(
@@ -411,253 +442,386 @@ fun ProfileScreen(
             if (state.isSavingDisplayName) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp))
             }
-            Text(
-                stringResource(R.string.profile_username_display, state.username),
-                style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace),
-                color = MaterialTheme.colorScheme.primary,
-            )
-            if (state.email.isNotBlank()) {
-                Text(
-                    state.email,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.outline,
-                )
-            }
 
             Spacer(Modifier.size(24.dp))
-            HorizontalDivider()
-            Spacer(Modifier.size(8.dp))
 
-            Row(
+            CategoryLabel(stringResource(R.string.profile_category_privacy))
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                colors = categoryCardColors(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
             ) {
-                Column {
-                    Text(
-                        stringResource(R.string.profile_show_online_status_title),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                    Text(
-                        stringResource(R.string.profile_show_online_status_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline,
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        IconChip(Icons.Default.Visibility)
+                        Column {
+                            Text(
+                                stringResource(R.string.profile_show_online_status_title),
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                            Text(
+                                stringResource(R.string.profile_show_online_status_description),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.outline,
+                            )
+                        }
+                    }
+                    Switch(
+                        checked = state.showOnlineStatus,
+                        onCheckedChange = { vm.onIntent(ProfileIntent.ToggleOnlineStatus(it)) },
+                        modifier = Modifier.testTag("profile_online_status_switch"),
                     )
                 }
-                Switch(
-                    checked = state.showOnlineStatus,
-                    onCheckedChange = { vm.onIntent(ProfileIntent.ToggleOnlineStatus(it)) },
-                    modifier = Modifier.testTag("profile_online_status_switch"),
-                )
             }
 
-            HorizontalDivider()
-            Spacer(Modifier.size(8.dp))
+            Spacer(Modifier.size(16.dp))
 
-            // ── Apariencia ──────────────────────────────────────────────────
-            Column(
+            CategoryLabel(stringResource(R.string.profile_category_appearance))
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                colors = categoryCardColors(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
             ) {
-                Text(
-                    stringResource(R.string.profile_appearance_title),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
                 ThemeSelector(
                     selected = state.themePreference,
                     onSelect = { vm.onIntent(ProfileIntent.SetTheme(it)) },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
                 )
             }
 
-            HorizontalDivider()
+            Spacer(Modifier.size(16.dp))
 
-            ChatAppSecondaryButton(
-                text = stringResource(R.string.profile_my_qr_code_button),
-                onClick = { showQrSheet = true },
-                leadingIcon = Icons.Default.QrCode,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("profile_my_qr_code_button"),
-            )
-
-            HorizontalDivider()
-
-            // ── App Lock ───────────────────────────────────────────────────
-            Row(
+            CategoryLabel(stringResource(R.string.profile_category_security))
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                colors = categoryCardColors(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
             ) {
+                Column {
+                    // ── App Lock ───────────────────────────────────────────
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            IconChip(Icons.Default.Fingerprint)
+                            Column {
+                                Text(
+                                    stringResource(R.string.profile_app_lock_title),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                )
+                                Text(
+                                    stringResource(R.string.profile_app_lock_description),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.outline,
+                                )
+                            }
+                        }
+                        Switch(
+                            checked = state.isAppLockEnabled,
+                            onCheckedChange = { vm.onIntent(ProfileIntent.ToggleAppLock) },
+                            modifier = Modifier.testTag("profile_app_lock_switch"),
+                        )
+                    }
+
+                    HorizontalDivider()
+
+                    // ── 2FA ────────────────────────────────────────────────
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            IconChip(Icons.Default.Shield)
+                            Column {
+                                Text(
+                                    stringResource(R.string.profile_2fa_title),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                )
+                                Text(
+                                    if (state.twoFactor.isEnrolled) {
+                                        stringResource(R.string.profile_2fa_active)
+                                    } else {
+                                        stringResource(R.string.profile_2fa_inactive)
+                                    },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (state.twoFactor.isEnrolled)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.outline,
+                                )
+                            }
+                        }
+                        if (state.twoFactor.isLoading) {
+                            // Match the buttons' own rendered height (14.dp vertical content
+                            // padding + labelLarge's line height ≈ 48.dp) so swapping between
+                            // spinner and button doesn't resize this row — and the Card around
+                            // it — out from under the user mid-tap.
+                            Box(
+                                modifier = Modifier.height(48.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            }
+                        } else if (state.twoFactor.isEnrolled) {
+                            ChatAppDestructiveButton(
+                                text = stringResource(R.string.profile_2fa_deactivate),
+                                onClick = { vm.onIntent(ProfileIntent.Disable2FA) },
+                            )
+                        } else {
+                            ChatAppSecondaryButton(
+                                text = stringResource(R.string.profile_2fa_activate),
+                                onClick = { vm.onIntent(ProfileIntent.Enroll2FA) },
+                                leadingIcon = Icons.Default.Shield,
+                            )
+                        }
+                    }
+
+                    HorizontalDivider()
+
+                    // ── Sesiones activas ────────────────────────────────────
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onSessionAudit() }
+                            .padding(16.dp)
+                            .testTag("profile_session_audit_row"),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        IconChip(Icons.Default.DevicesOther)
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                stringResource(R.string.profile_sessions_title),
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                            Text(
+                                stringResource(R.string.profile_sessions_description),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.outline,
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.size(16.dp))
+
+            CategoryLabel(stringResource(R.string.profile_category_data))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = categoryCardColors(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            ) {
+                // ── Copia de seguridad ─────────────────────────────────────
                 Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onBackup() }
+                        .padding(16.dp)
+                        .testTag("profile_backup_row"),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.weight(1f),
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Fingerprint,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                    Column {
+                    IconChip(Icons.Default.CloudUpload)
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            stringResource(R.string.profile_app_lock_title),
+                            stringResource(R.string.profile_backup_title),
                             style = MaterialTheme.typography.bodyLarge,
                         )
                         Text(
-                            stringResource(R.string.profile_app_lock_description),
+                            stringResource(R.string.profile_backup_description),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.outline,
                         )
                     }
                 }
-                Switch(
-                    checked = state.isAppLockEnabled,
-                    onCheckedChange = { vm.onIntent(ProfileIntent.ToggleAppLock) },
-                    modifier = Modifier.testTag("profile_app_lock_switch"),
-                )
             }
 
-            HorizontalDivider()
-
-            // ── 2FA ────────────────────────────────────────────────────────
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        stringResource(R.string.profile_2fa_title),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                    Text(
-                        if (state.twoFactor.isEnrolled) {
-                            stringResource(R.string.profile_2fa_active)
-                        } else {
-                            stringResource(R.string.profile_2fa_inactive)
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (state.twoFactor.isEnrolled)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.outline,
-                    )
-                }
-                if (state.twoFactor.isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                } else if (state.twoFactor.isEnrolled) {
-                    ChatAppDestructiveButton(
-                        text = stringResource(R.string.profile_2fa_deactivate),
-                        onClick = { vm.onIntent(ProfileIntent.Disable2FA) },
-                    )
-                } else {
-                    ChatAppSecondaryButton(
-                        text = stringResource(R.string.profile_2fa_activate),
-                        onClick = { vm.onIntent(ProfileIntent.Enroll2FA) },
-                        leadingIcon = Icons.Default.Shield,
-                    )
-                }
-            }
-
-            HorizontalDivider()
-
-            // ── Copia de seguridad ─────────────────────────────────────────
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onBackup() }
-                    .padding(vertical = 12.dp)
-                    .testTag("profile_backup_row"),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Icon(
-                    Icons.Default.CloudUpload,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        stringResource(R.string.profile_backup_title),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                    Text(
-                        stringResource(R.string.profile_backup_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                }
-            }
-            HorizontalDivider()
-
-            // ── Sesiones activas ───────────────────────────────────────────
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onSessionAudit() }
-                    .padding(vertical = 12.dp)
-                    .testTag("profile_session_audit_row"),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Icon(
-                    Icons.Default.DevicesOther,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        stringResource(R.string.profile_sessions_title),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                    Text(
-                        stringResource(R.string.profile_sessions_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                }
-            }
-            HorizontalDivider()
+            Spacer(Modifier.size(24.dp))
             Spacer(Modifier.weight(1f))
 
-            ChatAppDestructiveButton(
-                text = stringResource(R.string.profile_sign_out),
-                onClick = { vm.signOut() },
-                leadingIcon = Icons.AutoMirrored.Filled.Logout,
+            // ── Cuenta ───────────────────────────────────────────────────────
+            // Design canvas groups sign-out/delete as flat rows in a category Card (icon chip +
+            // label, danger variant for the destructive one) rather than as standalone outlined
+            // buttons — matches every other category's look. "Sign out on all devices" has no
+            // canvas equivalent (it's a real feature the mockup didn't happen to show); it gets
+            // the same row treatment as its sibling actions.
+            CategoryLabel(stringResource(R.string.profile_category_account))
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .testTag("profile_sign_out_button"),
-            )
-            Spacer(Modifier.size(8.dp))
-            ChatAppDestructiveButton(
-                text = stringResource(R.string.profile_sign_out_all_devices),
-                onClick = { vm.requestSignOutAll() },
-                leadingIcon = Icons.AutoMirrored.Filled.Logout,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("profile_sign_out_all_button"),
-            )
-            Spacer(Modifier.size(8.dp))
-            if (state.isDeletingAccount) {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .padding(bottom = 24.dp)
-                        .size(24.dp)
-                        .testTag("profile_deleting_account_indicator"),
-                )
-            } else {
-                ChatAppDestructiveButton(
-                    text = stringResource(R.string.profile_delete_account),
-                    onClick = { vm.requestDeleteAccount() },
-                    leadingIcon = Icons.Default.DeleteForever,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 24.dp)
-                        .testTag("profile_delete_account_button"),
-                )
+                    .padding(bottom = 24.dp),
+                colors = categoryCardColors(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            ) {
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { vm.signOut() }
+                            .padding(16.dp)
+                            .testTag("profile_sign_out_button"),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        IconChip(Icons.AutoMirrored.Filled.Logout)
+                        Text(
+                            stringResource(R.string.profile_sign_out),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
+
+                    HorizontalDivider()
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { vm.requestSignOutAll() }
+                            .padding(16.dp)
+                            .testTag("profile_sign_out_all_button"),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        IconChip(Icons.AutoMirrored.Filled.Logout)
+                        Text(
+                            stringResource(R.string.profile_sign_out_all_devices),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
+
+                    HorizontalDivider()
+
+                    if (state.isDeletingAccount) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.Center,
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .testTag("profile_deleting_account_indicator"),
+                            )
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { vm.requestDeleteAccount() }
+                                .padding(16.dp)
+                                .testTag("profile_delete_account_button"),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            IconChip(Icons.Default.DeleteForever, danger = true)
+                            Text(
+                                stringResource(R.string.profile_delete_account),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
+                }
             }
         }
+    }
+}
+
+/**
+ * Container color for a category [Card] that actually reads as a distinct surface against the
+ * screen background — plain `CardDefaults.cardColors()` defaults to `surfaceContainerLow`, which
+ * sits only ~1% lighter than the screen background (`surface`) in this palette and made every
+ * category card nearly invisible. Light theme wants the WHITEST tier (`surfaceContainerLowest`,
+ * with a hint of elevation to read as "above" the page); dark theme wants a tier CLEARLY lighter
+ * than the near-black background (`surfaceContainer`, no elevation needed — the tone jump alone
+ * reads fine). Since those are two different named tokens (not the same one resolved two ways),
+ * this picks by the background's actual luminance rather than hardcoding light/dark.
+ */
+@Composable
+private fun categoryCardColors() = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) {
+    CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+} else {
+    CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest)
+}
+
+/**
+ * Small monospace section label above a settings [Card] (Privacidad, Apariencia, Seguridad,
+ * Datos) — groups the flat settings list into visually distinct categories. Matches the design
+ * canvas: left-aligned flush with the Card below it, not centered. Needs fillMaxWidth() here —
+ * this Column's horizontalAlignment is CenterHorizontally, so without it this short Text would
+ * hug its own content width and center as a block instead of hugging the Card's left edge.
+ */
+@Composable
+private fun CategoryLabel(text: String) {
+    Text(
+        text = text.uppercase(),
+        // labelMedium is already SemiBold app-wide (Type.kt), on the generic Monospace font
+        // family — that family has no distinct weight files, so Compose's synthetic-bold
+        // fallback renders SemiBold/Bold/ExtraBold all but identically at this size. Bumping
+        // size + letter-spacing on top of ExtraBold is what actually reads as "stands out more".
+        style = MaterialTheme.typography.labelMedium.copy(
+            fontSize = 13.sp,
+            letterSpacing = 1.2.sp,
+        ),
+        fontWeight = FontWeight.ExtraBold,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 4.dp, bottom = 8.dp),
+    )
+}
+
+/**
+ * Small rounded-square icon container used at the start of a settings row — matches the design
+ * canvas's `.icon-chip` (32dp, 8dp corner radius, background = the screen's own background so it
+ * reads as a subtle chip against the white category Card, not an accent color per row).
+ */
+@Composable
+private fun IconChip(icon: androidx.compose.ui.graphics.vector.ImageVector, danger: Boolean = false) {
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(
+                if (danger) MaterialTheme.colorScheme.errorContainer
+                else MaterialTheme.colorScheme.background,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(17.dp),
+        )
     }
 }
 

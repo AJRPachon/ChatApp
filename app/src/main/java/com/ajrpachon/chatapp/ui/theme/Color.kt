@@ -2,26 +2,28 @@ package com.ajrpachon.chatapp.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// ── "Señal" — graphite / amber, disciplina de terminal ─────────────────────
-// Base casi monocroma (grafito con sesgo verde-azulado) con un único acento
-// ámbar. Contenedores y outline se apoyan en la misma familia de grises para
-// que el ámbar sea lo único que llame la atención.
+// ── "Señal Media" — grafito / terracota + acero, disciplina de terminal ────
+// Base casi monocroma (grafito con sesgo verde-azulado, sin cambios) con dos
+// acentos: terracota (antes ámbar) para primary, acero azulado (antes verde)
+// para secondary/tertiary. Contenedores y outline se apoyan en la misma
+// familia de grises que ya tenía la app — solo cambia qué hue llama la
+// atención.
 
 // ── Light scheme ─────────────────────────────────────────────────────────
-val Signal_Primary = Color(0xFF8A6423)
+val Signal_Primary = Color(0xFFF0916D)
 val Signal_OnPrimary = Color(0xFFFFFFFF)
-val Signal_PrimaryContainer = Color(0xFFF6E1B8)
-val Signal_OnPrimaryContainer = Color(0xFF2B1D02)
+val Signal_PrimaryContainer = Color(0xFFFBE5DA)
+val Signal_OnPrimaryContainer = Color(0xFF4A2515)
 
-val Signal_Secondary = Color(0xFF3F6358)
+val Signal_Secondary = Color(0xFF3D6EA5)
 val Signal_OnSecondary = Color(0xFFFFFFFF)
-val Signal_SecondaryContainer = Color(0xFFD2E9DF)
-val Signal_OnSecondaryContainer = Color(0xFF06201A)
+val Signal_SecondaryContainer = Color(0xFFE3EAF7)
+val Signal_OnSecondaryContainer = Color(0xFF22324A)
 
-val Signal_Tertiary = Color(0xFF1F6B48)
+val Signal_Tertiary = Color(0xFF6C9BD1)
 val Signal_OnTertiary = Color(0xFFFFFFFF)
-val Signal_TertiaryContainer = Color(0xFFB4EFCE)
-val Signal_OnTertiaryContainer = Color(0xFF002111)
+val Signal_TertiaryContainer = Color(0xFFD2E0F5)
+val Signal_OnTertiaryContainer = Color(0xFF102A43)
 
 val Signal_Error = Color(0xFFA8402F)
 val Signal_OnError = Color(0xFFFFFFFF)
@@ -42,23 +44,23 @@ val Signal_Outline = Color(0xFF71827E)
 val Signal_OutlineVariant = Color(0xFFD6E0DD)
 val Signal_InverseSurface = Color(0xFF202B2C)
 val Signal_InverseOnSurface = Color(0xFFEFF4F2)
-val Signal_InversePrimary = Color(0xFFE4B975)
+val Signal_InversePrimary = Color(0xFFFFB08F)
 
 // ── Dark scheme ─────────────────────────────────────────────────────────
-val Signal_PrimaryDark = Color(0xFFD9A455)
-val Signal_OnPrimaryDark = Color(0xFF191106)
-val Signal_PrimaryContainerDark = Color(0xFF4C3814)
-val Signal_OnPrimaryContainerDark = Color(0xFFF2D9AE)
+val Signal_PrimaryDark = Color(0xFFFFC7A8)
+val Signal_OnPrimaryDark = Color(0xFF401500)
+val Signal_PrimaryContainerDark = Color(0xFF6B3420)
+val Signal_OnPrimaryContainerDark = Color(0xFFFBE0D2)
 
-val Signal_SecondaryDark = Color(0xFF96C4B8)
-val Signal_OnSecondaryDark = Color(0xFF0A2820)
-val Signal_SecondaryContainerDark = Color(0xFF234A40)
-val Signal_OnSecondaryContainerDark = Color(0xFFB9E2D6)
+val Signal_SecondaryDark = Color(0xFFA9C7E8)
+val Signal_OnSecondaryDark = Color(0xFF0A2038)
+val Signal_SecondaryContainerDark = Color(0xFF243452)
+val Signal_OnSecondaryContainerDark = Color(0xFFDCE7FA)
 
-val Signal_TertiaryDark = Color(0xFF7FE0B3)
-val Signal_OnTertiaryDark = Color(0xFF06291B)
-val Signal_TertiaryContainerDark = Color(0xFF16402C)
-val Signal_OnTertiaryContainerDark = Color(0xFFB7EDD3)
+val Signal_TertiaryDark = Color(0xFFA8C8F0)
+val Signal_OnTertiaryDark = Color(0xFF06233F)
+val Signal_TertiaryContainerDark = Color(0xFF1D2C46)
+val Signal_OnTertiaryContainerDark = Color(0xFFDCE7FA)
 
 val Signal_ErrorDark = Color(0xFFE2705F)
 val Signal_OnErrorDark = Color(0xFF2A0B04)
@@ -79,7 +81,7 @@ val Signal_OutlineDark = Color(0xFF8AA09B)
 val Signal_OutlineVariantDark = Color(0xFF28353A)
 val Signal_InverseSurfaceDark = Color(0xFFE9F2EF)
 val Signal_InverseOnSurfaceDark = Color(0xFF1B262A)
-val Signal_InversePrimaryDark = Color(0xFF8A6423)
+val Signal_InversePrimaryDark = Color(0xFFF0916D)
 
 // ── Avatar placeholder colors ────────────────────────────────────────────
 // Independientes del tema: identifican a la persona, no a la marca.
