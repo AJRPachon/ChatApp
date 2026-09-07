@@ -223,9 +223,12 @@
     <string name="profile_change_photo_content_description">Change photo</string>
     <string name="profile_display_name_label">Display name</string>
     <string name="profile_username_display">@%1$s</string>
+    <string name="profile_category_privacy">Privacy</string>
+    <string name="profile_category_appearance">Appearance</string>
+    <string name="profile_category_security">Security</string>
+    <string name="profile_category_data">Data</string>
     <string name="profile_show_online_status_title">Show online status</string>
     <string name="profile_show_online_status_description">Others can see when you\'re active</string>
-    <string name="profile_appearance_title">Appearance</string>
     <string name="profile_theme_system">System</string>
     <string name="profile_theme_light">Light</string>
     <string name="profile_theme_dark">Dark</string>
