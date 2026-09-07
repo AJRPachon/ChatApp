@@ -90,6 +90,11 @@ unitarios (`app/src/test`) e instrumentados (`app/src/androidTest`).
       02_poster_post.yaml
       03_viewer_verify_live.yaml
       run.sh
+    status_reply/           # flujo multi-dispositivo, fuera de la suite de un solo device
+      01_poster_post.yaml
+      02_replier_reply.yaml
+      03_expired_quote_verify.yaml  # opcional, no lo orquesta run.sh — ver su propia cabecera
+      run.sh
   subflows/               # bloques reutilizables, solo vía `runFlow`, nunca standalone
     login_qa.yaml               # parametrizado: env LOGIN_EMAIL / LOGIN_PASSWORD
     logout.yaml
@@ -342,7 +347,12 @@ texto para no depender de eso. Los cinco añadidos para
   absoluto: la aserción real (`status_avatar_<nombre>` visible sin haber
   relanzado la app) ya prueba lo que hace falta, y un
   `takeScreenshot` deja el contenido revisable a mano si algún día hace
-  falta.
+  falta. **Matiz añadido al construir `flows/status_reply/`**: esto es
+  cierto para texto plano, pero NO para nodos interactivos — un
+  `OutlinedTextField`/`IconButton` en esta misma pantalla (la barra de
+  respuesta a un estado, ver "Flujo multi-dispositivo (Responder a
+  Estado)" más abajo) sí se encuentra por `id` sin workaround. Ver esa
+  sección para el detalle completo.
 - **Un campo de búsqueda puede colisionar con su propio resultado**: en
   "Nuevo grupo", buscar "claudeqa2" deja ese texto tanto en el campo de
   búsqueda como en la fila de resultado — `tapOn: "claudeqa2"` es
@@ -598,6 +608,139 @@ bash .maestro/flows/status_visibility/run.sh \
   emulator-5556 claude.qa2.chatapp@gmail.com "$QA_PASSWORD" \
   emulator-5554 "$QA_EMAIL" "$QA_PASSWORD" claudeqa
 ```
+
+## Flujo multi-dispositivo (Responder a Estado)
+
+`flows/status_reply/` prueba la funcionalidad de "responder a un Estado" (estilo WhatsApp):
+`StatusScreen.kt`'s barra de respuesta (visible solo para el estado de OTRA cuenta —
+`if (!current.isFromMe)`), que envía la respuesta como un mensaje real de chat 1:1 con el dueño
+del estado, con un snapshot desnormalizado del estado citado (`StatusReplyContext`/columnas
+`reply_to_status_*` en `messages`, migración `20260907152503_add_status_reply_to_messages.sql`),
+y la burbuja del chat (`ChatBubbleContent.kt`'s `StatusReplyQuote`) que permite reabrir el visor
+en ese estado exacto o, si ya expiró, muestra "ya no está disponible" en su lugar. Igual que
+`flows/status_visibility/` y `flows/realtime/`, necesita dos dispositivos a la vez y vive en su
+propia carpeta, fuera de `config.yaml`/`maestro test .maestro/flows`.
+
+A diferencia de `status_visibility/`, esto NO es una coreografía de visibilidad en vivo — no hace
+falta que el dispositivo que responde esté ya inactivo antes de publicar. La funcionalidad bajo
+prueba es la respuesta en sí (navegación, contenido citado, reapertura), y esa visibilidad ya la
+cubre `status_visibility/` por separado — así que el dispositivo que responde simplemente inicia
+sesión DESPUÉS de que el paso 1 haya publicado, y un sync normal de apertura
+(`StatusViewModel.init{}`) ya es suficiente para verlo. Por eso son solo 2 pasos, no 3.
+
+**Precondición** (misma que `status_visibility/`): las dos cuentas QA ya tienen una conversación
+1:1 permanente entre ellas, que es lo que hace que `StatusRepositoryImpl.observeActiveStatuses`
+incluya al poster en el `contactIds` del que responde. Ya satisfecha para
+`@claudeqa`/`@claudeqa2`, nada que preparar.
+
+**Esta rama (`feat/status-reply`) todavía no está en `develop`** — a diferencia del resto de esta
+suite, no se puede asumir que lo que ya esté instalado en los emuladores QA sea esta funcionalidad.
+Antes de ejecutar este flujo, compilar e instalar la build actual de esta rama en los dos
+emuladores (`./gradlew installDebug --no-daemon`, instala en todos los dispositivos conectados a
+la vez — verificado con `Pixel9ProXL_API36_A`/`_B`).
+
+Son 2 pasos secuenciales (más un 3º opcional, ver más abajo):
+
+1. **`01_poster_post.yaml`** (dispositivo que publica): login, publica un estado de texto con un
+   token único (`STATUS_TOKEN`). Lógica de publicación copiada literalmente de
+   `status_visibility/02_poster_post.yaml` (mismas dos ramas de estado inicial de "My status" y el
+   mismo "settle wait" contra el mismo tipo de condición de carrera — ver la cabecera de ese
+   archivo). Mismo trade-off de "sin paso de limpieza" que `status_visibility/`.
+2. **`02_replier_reply.yaml`** (dispositivo que responde): login, abre el estado del poster, y
+   responde vía `status_reply_field`/`status_reply_send_button`. Comprueba: (a) que la respuesta
+   navega de verdad al chat 1:1 (`chat_top_bar_title`), (b) que la burbuja enviada cita el
+   contenido real del estado (`STATUS_TOKEN`, no solo *algún* texto de cita), y (c) que tocar esa
+   cita reabre el visor en el estado correcto.
+
+`run.sh` orquesta los pasos 1-2:
+
+```bash
+bash .maestro/flows/status_reply/run.sh \
+  <poster_device> <poster_email> <poster_password> \
+  <replier_device> <replier_email> <replier_password> <poster_display_name>
+
+# Ejemplo real con las dos cuentas QA:
+set -a && source .maestro/.env && set +a
+bash .maestro/flows/status_reply/run.sh \
+  emulator-5554 "$QA_EMAIL" "$QA_PASSWORD" \
+  emulator-5556 claude.qa2.chatapp@gmail.com "$QA_PASSWORD" claudeqa
+```
+
+Verificado end-to-end varias veces seguidas con los dos emuladores QA reales — ver hallazgos
+abajo para el detalle de qué se comprobó y cómo.
+
+**Hallazgo 1 — `StatusViewerScreen` SÍ expone la barra de respuesta a Maestro, corrigiendo
+parcialmente la nota de "Selectores: por qué id y no texto" de más arriba.** Esa nota (escrita al
+construir `status_visibility/`) decía que esta pantalla no exponía NADA de su contenido Compose a
+Maestro. Verificado de nuevo aquí, con la barra de respuesta ya en la pantalla: sigue siendo
+cierto para texto plano (nombre/hora de cabecera, texto del propio estado — ver Hallazgo 2), pero
+`status_reply_field` (un `OutlinedTextField`) y `status_reply_send_button` (un `IconButton`) SÍ se
+encuentran por `id` sin ningún workaround — `assertVisible`/`tapOn`/`inputText` funcionaron a la
+primera contra un build real de esta rama. Consistente con el resto de esta pantalla: un
+`TextField`/`IconButton` siempre publica un nodo de semántica combinada (lo necesita para
+IME/clicks), mientras que un `Text` suelto dentro de un árbol edge-to-edge, aparentemente no
+llega de forma fiable al lector de árbol de Maestro — la misma distinción que ya explicaba el
+banner de incógnito (ver esa sección más arriba). Sin necesidad de `tapOn: point: "x%,y%"` ni
+ningún otro rodeo de coordenadas.
+
+**Hallazgo 2 — texto plano sigue sin exponerse, verificado de nuevo en este contexto concreto**:
+un intento explícito de leer el propio texto del estado reabierto (`STATUS_TOKEN`) vía
+`extendedWaitUntil` nunca lo encontró — la nota original de `status_visibility/` sigue vigente
+tal cual. Este intento acabó siendo, además, la causa de un hallazgo more interesante — ver el
+siguiente punto.
+
+**Hallazgo 3 — una falsa alarma de bug de app, investigada a fondo y descartada correctamente
+(documentado en detalle en la cabecera de `02_replier_reply.yaml`, no solo aquí)**: el intento del
+Hallazgo 2 usaba un `extendedWaitUntil` opcional con timeout de 5000ms, colocado justo ANTES del
+`takeScreenshot` final. Como ese texto nunca se encuentra, esa espera siempre consumía sus 5000ms
+completos — un valor que coincide casi exactamente con el temporizador de auto-avance de
+`StatusViewerScreen` (`ChatConstants.STORY_DURATION_MS = 5000ms`, `StatusScreen.kt`: un estado sin
+respuesta en curso avanza solo al siguiente cada 5s). El resultado: el screenshot final competía
+con ese temporizador, y a veces capturaba el estado correcto y a veces el siguiente (uno más
+antiguo) — pareciendo, a primera vista, que reabrir la cita llevaba al estado equivocado. Se
+investigó como un bug real: se reprodujo con una ejecución real de Maestro, se encontró una causa
+plausible en el código (`StatusViewModel` se crea de cero por cada `StatusViewerRoute` — ver
+`MainActivity.kt`'s `rememberViewModelStoreNavEntryDecorator()` — combinado con un
+`remember { mutableIntStateOf(initialIndex) }` sin key que podría fijar un índice 0 erróneo antes
+de que `state.userStatuses` terminara de cargar), y se implementó y compiló un fix real para
+`StatusScreen.kt`. Antes de darlo por bueno, se aisló correctamente: se revirtió el código de la
+app, se quitó SOLO la espera de 5000ms de este flow, y se corrió el round-trip completo tres veces
+seguidas contra la app SIN MODIFICAR — las tres veces reabrió el estado correcto. Eso confirmó que
+la app nunca tuvo el bug: la propia espera de este flow competía contra el temporizador de la app,
+y quitar la espera (no parchear la app) era el fix correcto. El cambio de código se descartó por
+completo (no queda ningún cambio de producción de esta investigación). Queda documentado con este
+nivel de detalle porque la lección importa tanto como la conclusión: un "bug de app" que aparece
+de forma intermitente al usarlo desde Maestro necesita aislarse de la propia temporización del
+test antes de confiar en él lo suficiente como para parchear producción.
+
+**Hallazgo 4 — el snackbar de "estado expirado" está codificado en español, sin importar el
+idioma del dispositivo (real, no arreglado, fuera de alcance de esta tarea)**:
+`ChatViewModel.onStatusQuoteClicked` muestra `ChatEffect.ShowSnackbar("Este estado ya no está
+disponible")` como literal en español en vez de `stringResource(R.string.status_no_longer_available)`
+— a diferencia del propio texto de la burbuja (`StatusReplyQuote`), que SÍ usa el string
+localizado correctamente. Verificado en `03_expired_quote_verify.yaml`, ejecutado contra un
+emulador en inglés: la burbuja mostró correctamente "This status is no longer available" pero el
+snackbar al tocarla mostró el literal en español. Es un patrón preexistente en todo
+`ChatViewModel.kt`/sus delegates (`ChatSchedulingDelegate`, `ChatForwardDelegate`,
+`ChatQuickSendDelegate`, `ChatContactCardDelegate` hacen lo mismo con sus propios snackbars), no
+algo introducido por esta funcionalidad — señalado aquí, no arreglado, por estar fuera del alcance
+de esta tarea (que pedía quedarse centrada en la funcionalidad de responder a Estados).
+
+**Caso de estado expirado — cubierto, pero como paso manual aparte (`03_expired_quote_verify.yaml`,
+NO orquestado por `run.sh`)**: no hay forma de esperar 24h reales ni de falsear el reloj del
+dispositivo desde dentro de la app, así que este paso asume que ya se ejecutó, a mano, un UPDATE
+real contra el proyecto de Supabase ya enlazado (`supabase db query --linked -f archivo.sql`),
+poniendo `reply_to_status_expires_at` de la fila del mensaje creado por `02_replier_reply.yaml` en
+el pasado — con match exacto por `content` (el `REPLY_TEXT` de esa ejecución), así que nunca puede
+tocar otra fila. Ejecutado de verdad una vez (ver la SQL exacta y su resultado en la cabecera de
+`03_expired_quote_verify.yaml`): tras relanzar la app y reabrir el chat (fuerza
+`ChatViewModel.init`'s `messageRepository.syncRemote(...)`), la burbuja cambió correctamente de
+mostrar el texto del estado a mostrar "This status is no longer available", y tocarla NO navegó al
+visor (se quedó en `ChatScreen`, `chat_top_bar_title` seguía visible) — la aserción real de que el
+código de expiración (`MessageBO.isStatusReplyExpired()`) funciona de punta a punta. `run.sh` no
+incluye este paso (necesita la SQL manual de por medio, el mismo tipo de precedente
+manual/SQL que ya tiene esta suite en otros sitios) — se ejecuta aparte, siguiendo las
+instrucciones de la propia cabecera de ese archivo.
 
 ## Grupo real de prueba y sus flows de adjuntos
 

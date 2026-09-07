@@ -1,0 +1,153 @@
+appId: com.ajrpachon.chatapp
+---
+# Step 2 of 2 — run on the REPLIER device, after step 1 has posted the status
+# on the poster device. See ../../README.md "Flujo multi-dispositivo
+# (Responder a Estado)". Logs in fresh (normal fetch-on-open sync is enough
+# here, see 01_poster_post.yaml's header on why this isn't a live-push
+# choreography like status_visibility/), opens the poster's story, replies to
+# it via the new reply bar, and verifies the reply landed in the 1:1 chat
+# with the right quoted content, then reopens the quote and confirms it's
+# back in the story viewer.
+#
+# *** CRITICAL FINDING, verified for real, that contradicts this suite's
+# existing "StatusViewerScreen exposes NOTHING to Maestro" note (see
+# ../../README.md "Selectores: por qué id y no texto") ***
+# That finding is about *plain Text* content (header name/timestamp, story
+# text) with no interaction semantics. It does NOT hold for the new reply
+# bar: `status_reply_field` (an OutlinedTextField) and
+# `status_reply_send_button` (an IconButton) — both focusable/clickable
+# Compose nodes — ARE found by `id` on this exact screen, verified directly:
+# assertVisible/tapOn/inputText against both worked first try against a real
+# build of this branch on a real emulator (Pixel9ProXL_API36_B), no
+# workaround needed. Consistent with the rest of this screen: a `TextField`
+# or `IconButton` always publishes a merged semantics node (it has to, for
+# IME/click handling), whereas a bare `Text` inside an edge-to-edge subtree
+# apparently doesn't reliably reach Maestro's tree reader — the same
+# distinction already seen for the incognito banner (see this README
+# section: an item's own clickable text worked as a substitute for the
+# non-clickable banner text that didn't). So: id-selectors work fine for
+# `status_reply_field`/`status_reply_send_button`, no coordinate-tap
+# workaround was needed here.
+#
+# *** REAL TIMING HAZARD FOUND AND WORKED AROUND: story auto-advance ***
+# StatusScreen.kt's StatusViewerScreen composable auto-advances currentIndex
+# on a fixed `ChatConstants.STORY_DURATION_MS` (5000ms) timer
+# (`LaunchedEffect(currentIndex, isVideo, replyText.isNotBlank())`,
+# UiConstants.kt) — typing a reply pauses it (`replyText.isBlank()` guards
+# the timer), but ONLY once the field is non-blank; the instant right after
+# opening the viewer is NOT paused. The two QA accounts already carry
+# several still-active (<24h) statuses each from earlier, uncleaned runs of
+# this flow and of status_visibility/ (see both files' "no cleanup step"
+# notes), so `state.userStatuses` for the poster is a real multi-item list,
+# not a single story — meaning if this flow dawdles for more than ~5s
+# between opening the viewer and starting to type, it silently auto-advances
+# past the freshly-posted status (index 0, StatusDao.observeActive orders
+# createdAt DESC) onto an older one, and the reply would end up attached to
+# the WRONG status. Reproduced by accident while developing this flow (via
+# disjoint ad-hoc `maestro test` invocations minutes apart — not a realistic
+# shape for a real flow file, but it proved the timer is real and does what
+# the code says). The fix is simply what a normal continuous flow already
+# does: tap the avatar, then immediately tap the reply field and type —
+# no `extendedWaitUntil`/`waitForAnimationToEnd` inserted in between, so the
+# whole sequence finishes well inside the 5s window in one Maestro session.
+#
+# Run with (replier device):
+#   maestro test .maestro/flows/status_reply/02_replier_reply.yaml --device <REPLIER_DEVICE_ID> \
+#     -e LOGIN_EMAIL=<replier email> -e LOGIN_PASSWORD=<replier password> \
+#     -e POSTER_DISPLAY_NAME=<poster displayName, e.g. claudeqa> \
+#     -e STATUS_TOKEN="Maestro status-reply target <unique token>" \
+#     -e REPLY_TEXT="Maestro status-reply <unique token>"
+- runFlow:
+    file: ../../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${LOGIN_EMAIL}
+      LOGIN_PASSWORD: ${LOGIN_PASSWORD}
+- extendedWaitUntil:
+    visible:
+      id: "status_avatar_${POSTER_DISPLAY_NAME}"
+    timeout: 20000
+- tapOn:
+    id: "status_avatar_${POSTER_DISPLAY_NAME}"
+# No wait here on purpose — see the auto-advance timing note above. The
+# reply bar (status_reply_field) only renders for a status where
+# `!current.isFromMe` (StatusScreen.kt), which is exactly this case (we're
+# viewing the OTHER account's story), so its mere presence is itself a
+# correctness check, not just a UI-readiness one.
+- tapOn:
+    id: "status_reply_field"
+- inputText: ${REPLY_TEXT}
+- hideKeyboard
+- tapOn:
+    id: "status_reply_send_button"
+# StatusViewModel.replyToStatus -> ReplyToStatusUseCase creates/reuses the 1:1
+# conversation and sends the reply as a real message there, then
+# StatusEffect.NavigateToChat fires and StatusScreen.kt's collector navigates
+# — chat_top_bar_title appearing IS the "did it actually navigate" assertion.
+- extendedWaitUntil:
+    visible:
+      id: "chat_top_bar_title"
+    timeout: 15000
+# Confirms it's the right conversation (the poster's, not some other one) —
+# username text, not translated, safe per this README's text-selector rule.
+- assertVisible: ${POSTER_DISPLAY_NAME}
+# The core "does the reply actually reference the story" assertion: both the
+# quoted status's own denormalized snapshot text (STATUS_TOKEN) and our sent
+# reply's own content (REPLY_TEXT) must be visible in the bubble.
+# Text-selector, not id: StatusReplyQuote (ChatBubbleContent.kt) has no
+# testTag, and none was added — R.string.status_reply_quote_label
+# ("Estado"/"Status") and R.string.status_no_longer_available are NOT
+# byte-identical between values/ and values-en/ (checked directly), so per
+# this README's locale-parity rule they aren't safe standalone text
+# selectors anyway. STATUS_TOKEN/REPLY_TEXT (unique per run, generated by
+# run.sh) sidestep that entirely — same "user-generated/dynamic content is a
+# safe text selector" precedent as open_conversation.yaml's CONTACT_NAME and
+# status_visibility/'s own STATUS_TOKEN — and additionally prove the actual
+# referenced content, not just that *some* quote rendered.
+- assertVisible: ${STATUS_TOKEN}
+- assertVisible: ${REPLY_TEXT}
+# Tap the quote (its content text lies inside StatusReplyQuote's own
+# `Modifier.clickable`, wired to ChatViewModel.onStatusQuoteClicked) to
+# reopen the story viewer at that exact status.
+- tapOn: ${STATUS_TOKEN}
+# Real assertion that it reopened the VIEWER (not a blank/crashed screen,
+# not silently doing nothing): status_reply_field only renders inside
+# StatusViewerScreen, and only for a story that isn't the viewer's own — so
+# its reappearance is a stronger, id-based version of status_visibility/'s
+# avatar-based "did it open" check, made possible by the same id-exposure
+# finding documented above.
+- extendedWaitUntil:
+    visible:
+      id: "status_reply_field"
+    timeout: 10000
+# Screenshot taken IMMEDIATELY on reopening, before anything else — see the auto-advance timing
+# note above (ChatConstants.STORY_DURATION_MS = 5000ms).
+#
+# *** A chased-and-resolved false alarm, documented in full because the investigation is worth
+# more than the one-line conclusion ***
+# An earlier version of this file additionally did an optional `extendedWaitUntil` (5000ms
+# timeout) here, BEFORE the screenshot, trying to also confirm the reopened story's own text
+# content (STATUS_TOKEN) was on screen — investigating whether this screen's plain Text is
+# exposed to Maestro now that it has more content than when the original "StatusViewerScreen
+# exposes NOTHING" finding (this README's "Selectores: por qué id y no texto") was written. That
+# text is never found (same finding still holds — a bare Text node, no interaction semantics,
+# still doesn't reach Maestro's tree reader here, same as the header name/timestamp), so that
+# `extendedWaitUntil` always ran its FULL 5000ms — which lines up almost exactly with the story's
+# own 5000ms auto-advance timer. That made the screenshot AFTER it flaky: whichever side of that
+# exact boundary the scheduling landed on, it sometimes captured the correctly-reopened status and
+# sometimes the NEXT one over (silently auto-advanced away by a hair before the shutter).
+#
+# This looked, at first, exactly like a real app bug — and was investigated as one: reproduced via
+# a real Maestro run (the reopened status didn't match STATUS_TOKEN), traced to a plausible root
+# cause in StatusScreen.kt/StatusViewModel.kt (a freshly-created StatusViewModel per
+# StatusViewerRoute backstack entry — see MainActivity.kt's rememberViewModelStoreNavEntryDecorator
+# — combined with a keyless `remember { mutableIntStateOf(initialIndex) }` that could plausibly
+# lock in a stale index-0 fallback before state.userStatuses finished loading), and a real code fix
+# was written and built for it. Before committing to that fix, it was isolated properly: the
+# production code was reverted, ONLY this flow file's race (the 5000ms probe above) was removed,
+# and the full round trip was rerun three times in a row on the unmodified app — all three landed
+# on the correct status every time. That settled it: the app was never actually buggy: this
+# probe's own 5000ms wait was racing the story's own 5000ms timer, and dropping the probe (not
+# patching the app) was the correct fix. The code change was discarded. Left here, in this much
+# detail, as a reminder that a convincing-looking app bug found via Maestro still needs to be
+# isolated from the test's OWN timing before trusting it enough to patch production code over it.
+- takeScreenshot: reply_quote_reopened_viewer
