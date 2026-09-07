@@ -1,0 +1,22 @@
+appId: com.ajrpachon.chatapp
+---
+# Step 1 of 3 in the cross-device Status visibility flow — see
+# ../../README.md "Flujo multi-dispositivo (Estado / Status)" for the full
+# choreography. Run this FIRST, on the device that will VIEW the status:
+# signs in and leaves the app sitting idle on ConversationListScreen (where
+# StatusBar / StatusViewModel live). Don't relaunch/clearState this device
+# again until step 3 has run — the whole point is to have this device's
+# StatusViewModel already alive and collecting
+# StatusRepositoryImpl.observeActiveStatuses() (which now subscribes to
+# Supabase Realtime changes on `user_status` for as long as it's collected)
+# when the status arrives, so step 3 proves a live push instead of a
+# fetch-on-open.
+#
+# Run with (viewer device, e.g. @claudeqa2 waiting to see @claudeqa's status):
+#   maestro test .maestro/flows/status_visibility/01_viewer_wait.yaml --device <VIEWER_DEVICE_ID> \
+#     -e LOGIN_EMAIL=<viewer email> -e LOGIN_PASSWORD=<viewer password>
+- runFlow:
+    file: ../../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${LOGIN_EMAIL}
+      LOGIN_PASSWORD: ${LOGIN_PASSWORD}

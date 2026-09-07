@@ -1,0 +1,91 @@
+appId: com.ajrpachon.chatapp
+---
+# Step 2 of 3 — run on the POSTER device, after step 1 has the viewer
+# device idle on ConversationListScreen. See ../../README.md "Flujo
+# multi-dispositivo (Estado / Status)". Signs in and posts a real text
+# status carrying a unique token (STATUS_TOKEN, generated once by run.sh
+# and shared with step 3 so a stale/leftover status from a previous run can
+# never produce a false pass there).
+#
+# "status_my_avatar" becoming visible here is the real
+# persisted/uploaded assertion, not just an optimistic local echo:
+# StatusRepositoryImpl.postTextStatus() calls remoteSource.postStatus(dto)
+# FIRST and only upserts into the local DB (statusDao.upsert, the thing
+# StatusViewModel/StatusBar observes to render "My status") after that
+# remote call has returned successfully — verified directly in
+# StatusRepositoryImpl.kt. If the remote post failed, the avatar would
+# never appear and this extendedWaitUntil would time out.
+#
+# NOTE — no cleanup step exists here (unlike flows/realtime/'s step 4):
+# StatusViewModel.deleteStatus()/StatusIntent.DeleteStatus exists but
+# StatusScreen.kt never dispatches it from any UI affordance (see this
+# README's "StatusIntent.DeleteStatus no está conectado a ninguna UI").
+# Each run leaves one more real status on the poster's QA account,
+# self-expiring only after STATUS_TTL_MS (24h, StatusRepositoryImpl) —
+# an accepted trade-off, same spirit as the permanent "Maestro Test
+# Group" (see this README's "Grupo real de prueba").
+#
+# Handles both starting states of "My status": empty (AddStatusButton,
+# id status_add_text_button) or an own active status already posted
+# within the last 24h by an earlier run of this same flow (in which case
+# AddStatusButton is gone and MyStatusAvatar's "+" badge, id
+# status_add_more_button, is what opens the same compose dialog instead —
+# via a DropdownMenu, so its item is selected by text, not id: see this
+# README's "Selectores: por qué id y no texto" / DropdownMenu exception).
+# Both `when` conditions below check the POSITIVE, mutually-exclusive
+# marker for their own branch (AddStatusButton/MyStatusAvatar are never
+# both rendered at once) rather than one branch's `notVisible` of the
+# OTHER branch's marker — that negative form broke in practice: once the
+# first branch's tap opens the compose dialog, the button it just tapped
+# stops being visible (covered by the dialog's scrim), which made the
+# second block's "notVisible" condition true too and fire a second,
+# wrong tap.
+#
+# Run with (poster device):
+#   maestro test .maestro/flows/status_visibility/02_poster_post.yaml --device <POSTER_DEVICE_ID> \
+#     -e LOGIN_EMAIL=<poster email> -e LOGIN_PASSWORD=<poster password> \
+#     -e STATUS_TOKEN="Maestro status <unique token>"
+- runFlow:
+    file: ../../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${LOGIN_EMAIL}
+      LOGIN_PASSWORD: ${LOGIN_PASSWORD}
+# Give the initial status sync (StatusViewModel's init{} — both the realtime-backed
+# observeActiveStatuses collector and the explicit Refresh/sync()) a moment to settle before
+# deciding which "My status" starting state we're in. Right after a fresh clearState+login,
+# Room is momentarily empty, so AddStatusButton (status_add_text_button) briefly renders even
+# when the poster already has an own active status from an earlier run of this same flow
+# (still within its 24h TTL) — the sync flips it to MyStatusAvatar a moment later. A human
+# could never tap fast enough to land in that window; an automated tap sometimes does
+# (reproduced directly: the tap landed, but by the time the dialog would show, the button
+# underneath had already been replaced, so nothing opened).
+- extendedWaitUntil:
+    visible:
+      id: "status_settle_wait_marker_that_never_exists"
+    timeout: 3500
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: "status_add_text_button"
+    commands:
+      - tapOn:
+          id: "status_add_text_button"
+- runFlow:
+    when:
+      visible:
+        id: "status_add_more_button"
+    commands:
+      - tapOn:
+          id: "status_add_more_button"
+      - tapOn: "Agregar estado de texto|Add text status"
+- assertVisible: "Nuevo estado|New status"
+- waitForAnimationToEnd
+- tapOn: "¿Qué está pasando\\?|What's happening\\?"
+- inputText: ${STATUS_TOKEN}
+- hideKeyboard
+- tapOn: "Publicar|Post"
+- extendedWaitUntil:
+    visible:
+      id: "status_my_avatar"
+    timeout: 20000
