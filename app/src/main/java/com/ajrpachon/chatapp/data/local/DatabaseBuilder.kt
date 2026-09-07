@@ -314,6 +314,20 @@ private val migration36To37 = object : Migration(36, 37) {
     }
 }
 
+private val migration37To38 = object : Migration(37, 38) {
+    override fun migrate(connection: SQLiteConnection) {
+        // Reply-to-status (WhatsApp-style story replies): a snapshot of the status carried on
+        // the reply message itself, not a live reference — see StatusReplyContext's doc.
+        connection.execSQL("ALTER TABLE messages ADD COLUMN replyToStatusId TEXT DEFAULT NULL")
+        connection.execSQL("ALTER TABLE messages ADD COLUMN replyToStatusOwnerId TEXT DEFAULT NULL")
+        connection.execSQL("ALTER TABLE messages ADD COLUMN replyToStatusText TEXT DEFAULT NULL")
+        connection.execSQL("ALTER TABLE messages ADD COLUMN replyToStatusImageUrl TEXT DEFAULT NULL")
+        connection.execSQL("ALTER TABLE messages ADD COLUMN replyToStatusVideoUrl TEXT DEFAULT NULL")
+        connection.execSQL("ALTER TABLE messages ADD COLUMN replyToStatusBackgroundColor INTEGER DEFAULT NULL")
+        connection.execSQL("ALTER TABLE messages ADD COLUMN replyToStatusExpiresAt INTEGER DEFAULT NULL")
+    }
+}
+
 private val migration26To27 = object : Migration(26, 27) {
     override fun migrate(connection: SQLiteConnection) {
         connection.execSQL(
@@ -442,5 +456,5 @@ internal val allMigrations = arrayOf(
     MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
     MIGRATION_9_10, MIGRATION_10_11, migration11To12,
     migration12To13, migration13To14, migration14To15, migration15To16, migration16To17,
-    migration17To18, migration18To19, migration19To20, migration20To21, migration21To22, migration22To23, migration23To24, migration24To25, migration25To26, migration26To27, migration27To28, migration28To29, migration29To30, migration30To31, migration31To32, migration32To33, migration33To34, migration34To35, migration35To36, migration36To37,
+    migration17To18, migration18To19, migration19To20, migration20To21, migration21To22, migration22To23, migration23To24, migration24To25, migration25To26, migration26To27, migration27To28, migration28To29, migration29To30, migration30To31, migration31To32, migration32To33, migration33To34, migration34To35, migration35To36, migration36To37, migration37To38,
 )

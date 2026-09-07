@@ -2,6 +2,7 @@ package com.ajrpachon.chatapp.domain.repository
 
 import androidx.paging.PagingData
 import com.ajrpachon.chatapp.domain.model.MessageBO
+import com.ajrpachon.chatapp.domain.model.StatusReplyContext
 import kotlinx.coroutines.flow.Flow
 
 // 24 methods, all genuinely one concept (message CRUD/lifecycle + conversation-scoped queries) —
@@ -37,6 +38,7 @@ interface MessageRepository {
         fileMimeType: String? = null,
         videoUrl: String? = null,
         otherUserId: String? = null,
+        statusReply: StatusReplyContext? = null,
     ): MessageBO
     suspend fun uploadImage(conversationId: String, bytes: ByteArray, mimeType: String): String
     suspend fun uploadAudio(conversationId: String, bytes: ByteArray): String

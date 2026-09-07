@@ -185,6 +185,7 @@ internal fun MessageBubble(
     onReply: () -> Unit,
     isHighlighted: Boolean = false,
     onReplyClick: (String) -> Unit = {},
+    onStatusQuoteClick: () -> Unit = {},
     onDelete: (() -> Unit)? = null,
     onEdit: (() -> Unit)? = null,
     onSelfDestruct: (() -> Unit)? = null,
@@ -338,7 +339,7 @@ internal fun MessageBubble(
             ) {
                 val hasMedia = message.imageUrl != null || message.gifUrl != null
                 val hasHeader = (isGroup && !message.isFromMe && message.senderName.isNotBlank()) ||
-                    message.replyToId != null
+                    message.replyToId != null || message.isStatusReply
                 // A bare photo/GIF (no caption, no audio) bleeds to the bubble's own edges —
                 // clipped by Surface's shape — instead of sitting inside the same padded column
                 // as text, so it reads as a photo, not a text bubble with a picture stuffed in
@@ -361,6 +362,14 @@ internal fun MessageBubble(
                             content = message.replyToContent ?: "",
                             isFromMe = message.isFromMe,
                             onClick = { onReplyClick(message.replyToId) },
+                        )
+                        if (!hasMedia) Spacer(Modifier.height(6.dp))
+                    }
+                    if (message.isStatusReply) {
+                        StatusReplyQuote(
+                            message = message,
+                            isFromMe = message.isFromMe,
+                            onClick = onStatusQuoteClick,
                         )
                         if (!hasMedia) Spacer(Modifier.height(6.dp))
                     }

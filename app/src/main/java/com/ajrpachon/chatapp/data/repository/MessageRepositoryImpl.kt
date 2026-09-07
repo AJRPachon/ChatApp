@@ -16,6 +16,7 @@ import com.ajrpachon.chatapp.data.mapper.toDBO
 import com.ajrpachon.chatapp.data.remote.dto.MessageDTO
 import com.ajrpachon.chatapp.data.remote.source.MessageRemoteSource
 import com.ajrpachon.chatapp.domain.model.MessageBO
+import com.ajrpachon.chatapp.domain.model.StatusReplyContext
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import com.ajrpachon.chatapp.utils.AnalyticsEvents
@@ -103,6 +104,7 @@ class MessageRepositoryImpl(
         fileMimeType: String?,
         videoUrl: String?,
         otherUserId: String?,
+        statusReply: StatusReplyContext?,
     ): MessageBO {
         // Attempt E2EE for 1:1 text messages (skip for media/call messages and group chats)
         val (finalContent, isEncrypted) = if (
@@ -140,6 +142,13 @@ class MessageRepositoryImpl(
             fileMimeType = fileMimeType,
             videoUrl = videoUrl,
             isEncrypted = isEncrypted,
+            replyToStatusId = statusReply?.statusId,
+            replyToStatusOwnerId = statusReply?.statusOwnerId,
+            replyToStatusText = statusReply?.statusText,
+            replyToStatusImageUrl = statusReply?.statusImageUrl,
+            replyToStatusVideoUrl = statusReply?.statusVideoUrl,
+            replyToStatusBackgroundColor = statusReply?.statusBackgroundColor,
+            replyToStatusExpiresAt = statusReply?.statusExpiresAt?.let { Instant.fromEpochMilliseconds(it).toString() },
         )
         remoteSource.sendMessage(messageDto)
         val messageDbo = messageDto.toDBO()

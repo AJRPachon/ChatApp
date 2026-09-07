@@ -14,7 +14,11 @@ data class StatusState(
     val userStatuses: List<StatusBO> = emptyList(),
 )
 
-sealed interface StatusEffect
+sealed interface StatusEffect {
+    /** A reply was sent — navigate into the resulting 1:1 conversation, WhatsApp-style. */
+    data class NavigateToChat(val conversationId: String, val otherUserName: String) : StatusEffect
+    data class ShowMessage(val text: String) : StatusEffect
+}
 
 sealed interface StatusIntent {
     data object Refresh : StatusIntent
@@ -28,4 +32,6 @@ sealed interface StatusIntent {
     data class DeleteStatus(val statusId: String) : StatusIntent
     /** Filters [allStatuses] by [userId] and stores the result in [StatusState.userStatuses]. */
     data class FilterUserStatuses(val allStatuses: List<StatusBO>, val userId: String) : StatusIntent
+    /** Sends [text] as a reply to [status], WhatsApp-style — see ReplyToStatusUseCase. */
+    data class ReplyToStatus(val status: StatusBO, val text: String) : StatusIntent
 }

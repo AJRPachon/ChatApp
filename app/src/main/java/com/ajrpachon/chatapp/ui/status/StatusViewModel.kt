@@ -2,10 +2,12 @@ package com.ajrpachon.chatapp.ui.status
 
 import android.net.Uri
 import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.domain.model.StatusBO
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.StatusRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.ReadUriAsBytesUseCase
+import com.ajrpachon.chatapp.domain.usecase.ReplyToStatusUseCase
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.UploadLimits.checkImageSize
@@ -21,6 +23,7 @@ class StatusViewModel(
     private val conversationRepository: ConversationRepository,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val readUriAsBytes: ReadUriAsBytesUseCase,
+    private val replyToStatusUseCase: ReplyToStatusUseCase,
 ) : BaseViewModel<StatusState, StatusEffect>(StatusState()) {
 
     init {
@@ -46,6 +49,22 @@ class StatusViewModel(
             is StatusIntent.DeleteStatus -> deleteStatus(intent.statusId)
             is StatusIntent.FilterUserStatuses ->
                 updateState { it.copy(userStatuses = intent.allStatuses.filter { s -> s.userId == intent.userId }) }
+            is StatusIntent.ReplyToStatus -> replyToStatus(intent.status, intent.text)
+        }
+    }
+
+    private fun replyToStatus(status: StatusBO, text: String) {
+        if (text.isBlank()) return
+        viewModelScope.launch {
+            val currentUser = getCurrentUserUseCase().first() ?: return@launch
+            replyToStatusUseCase(currentUser.id, status, text)
+                .onSuccess { result ->
+                    sendEffect(StatusEffect.NavigateToChat(result.conversationId, result.otherUserName))
+                }
+                .onFailure { e ->
+                    AppLogger.e(TAG, "Reply to status failed", e)
+                    sendEffect(StatusEffect.ShowMessage(e.message ?: "No se pudo enviar la respuesta"))
+                }
         }
     }
 

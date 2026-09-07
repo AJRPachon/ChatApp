@@ -38,6 +38,15 @@ fun MessageDTO.toDBO() = MessageDBO(
     expiresAt = expiresAt?.let { runCatching { Instant.parse(it).toEpochMilliseconds() }.getOrNull() },
     // Messages arriving from the server are always "sent"
     sendStatus = "sent",
+    replyToStatusId = replyToStatusId,
+    replyToStatusOwnerId = replyToStatusOwnerId,
+    replyToStatusText = replyToStatusText,
+    replyToStatusImageUrl = MediaUrlValidator.sanitize(replyToStatusImageUrl),
+    replyToStatusVideoUrl = MediaUrlValidator.sanitize(replyToStatusVideoUrl),
+    replyToStatusBackgroundColor = replyToStatusBackgroundColor,
+    replyToStatusExpiresAt = replyToStatusExpiresAt?.let {
+        runCatching { Instant.parse(it).toEpochMilliseconds() }.getOrNull()
+    },
 )
 
 fun MessageDBO.toBO(currentUserId: String, senderName: String, senderAvatarUrl: String? = null) = MessageBO(
@@ -78,4 +87,11 @@ fun MessageDBO.toBO(currentUserId: String, senderName: String, senderAvatarUrl: 
         "failed" -> SendStatus.FAILED
         else -> SendStatus.SENT
     },
+    replyToStatusId = replyToStatusId,
+    replyToStatusOwnerId = replyToStatusOwnerId,
+    replyToStatusText = replyToStatusText,
+    replyToStatusImageUrl = replyToStatusImageUrl,
+    replyToStatusVideoUrl = replyToStatusVideoUrl,
+    replyToStatusBackgroundColor = replyToStatusBackgroundColor,
+    replyToStatusExpiresAt = replyToStatusExpiresAt,
 )

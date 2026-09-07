@@ -7,6 +7,8 @@ import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.StatusRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.ReadUriAsBytesUseCase
+import com.ajrpachon.chatapp.domain.usecase.ReplyToStatusUseCase
+import com.ajrpachon.chatapp.domain.usecase.StatusReplyResult
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -14,6 +16,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -34,6 +37,7 @@ class StatusViewModelTest {
     private val conversationRepository = mockk<ConversationRepository>(relaxed = true)
     private val getCurrentUserUseCase = mockk<GetCurrentUserUseCase>()
     private val readUriAsBytes = mockk<ReadUriAsBytesUseCase>(relaxed = true)
+    private val replyToStatusUseCase = mockk<ReplyToStatusUseCase>()
 
     private val statusesFlow = MutableStateFlow<List<StatusBO>>(emptyList())
 
@@ -54,7 +58,9 @@ class StatusViewModelTest {
         coEvery { statusRepository.syncStatuses(any()) } returns Unit
     }
 
-    private fun buildVm() = StatusViewModel(statusRepository, conversationRepository, getCurrentUserUseCase, readUriAsBytes)
+    private fun buildVm() = StatusViewModel(
+        statusRepository, conversationRepository, getCurrentUserUseCase, readUriAsBytes, replyToStatusUseCase,
+    )
 
     // ── initial state ─────────────────────────────────────────────────────────
 
@@ -232,6 +238,51 @@ class StatusViewModelTest {
         advanceUntilIdle()
 
         assertEquals("error de red", vm.state.value.error)
+    }
+
+    // ── ReplyToStatus ─────────────────────────────────────────────────────────
+
+    @Test
+    fun `ReplyToStatus success emits NavigateToChat effect`() = runTest(mainDispatcherRule.scheduler) {
+        val status = fakeStatus("s1", "alice")
+        coEvery { replyToStatusUseCase("me", status, "hola") } returns
+            Result.success(StatusReplyResult("conv1", "alice"))
+        val vm = buildVm()
+        advanceUntilIdle()
+
+        vm.onIntent(StatusIntent.ReplyToStatus(status, "hola"))
+        advanceUntilIdle()
+
+        val effect = vm.effect.first()
+        assertTrue(effect is StatusEffect.NavigateToChat)
+        assertEquals("conv1", (effect as StatusEffect.NavigateToChat).conversationId)
+    }
+
+    @Test
+    fun `ReplyToStatus failure emits ShowMessage effect`() = runTest(mainDispatcherRule.scheduler) {
+        val status = fakeStatus("s1", "alice")
+        coEvery { replyToStatusUseCase("me", status, "hola") } returns
+            Result.failure(RuntimeException("network error"))
+        val vm = buildVm()
+        advanceUntilIdle()
+
+        vm.onIntent(StatusIntent.ReplyToStatus(status, "hola"))
+        advanceUntilIdle()
+
+        val effect = vm.effect.first()
+        assertTrue(effect is StatusEffect.ShowMessage)
+    }
+
+    @Test
+    fun `ReplyToStatus with blank text does nothing`() = runTest(mainDispatcherRule.scheduler) {
+        val status = fakeStatus("s1", "alice")
+        val vm = buildVm()
+        advanceUntilIdle()
+
+        vm.onIntent(StatusIntent.ReplyToStatus(status, "   "))
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { replyToStatusUseCase(any(), any(), any()) }
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────

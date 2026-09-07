@@ -76,6 +76,7 @@ import com.ajrpachon.chatapp.domain.usecase.CancelSentInvitationUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetSentInvitationsUseCase
 import com.ajrpachon.chatapp.domain.usecase.ObserveInvitationsUseCase
 import com.ajrpachon.chatapp.domain.usecase.PromoteGroupMemberUseCase
+import com.ajrpachon.chatapp.domain.usecase.ReplyToStatusUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationUseCase
 import com.ajrpachon.chatapp.domain.usecase.RespondInvitationUseCase
 import com.ajrpachon.chatapp.domain.usecase.SearchUsersUseCase
@@ -145,6 +146,7 @@ val useCaseModule = module {
     factoryOf(::RespondInvitationUseCase)
     factoryOf(::GetSentInvitationsUseCase)
     factoryOf(::CancelSentInvitationUseCase)
+    factoryOf(::ReplyToStatusUseCase)
     factoryOf(::CreateGroupUseCase)
     factoryOf(::GetGroupMembersUseCase)
     factoryOf(::UpdateGroupUseCase)

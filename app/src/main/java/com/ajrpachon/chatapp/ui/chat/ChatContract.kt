@@ -336,6 +336,9 @@ sealed interface ChatIntent {
     data class SearchQueryChanged(val query: String) : ChatIntent
     data class ToggleReaction(val messageId: String, val emoji: String) : ChatIntent
     data class JumpToMessage(val messageId: String) : ChatIntent
+    /** Tapped a quoted-status reference in a bubble — [MessageBO.replyToStatusExpiresAt] decides
+     *  whether this opens the story viewer or shows "no longer available". */
+    data class StatusQuoteClicked(val message: MessageBO) : ChatIntent
     data class ShowExpiryDialog(val messageId: String) : ChatIntent
     data object DismissExpiryDialog : ChatIntent
     // expiresAt: null = remove expiry, positive = epoch millis
@@ -413,4 +416,6 @@ sealed interface ChatEffect {
     data class ShowShareSheet(val uri: android.net.Uri) : ChatEffect
     data class NavigateToConversation(val conversationId: String, val otherUserName: String) : ChatEffect
     data class InviteContact(val phoneNumber: String, val text: String) : ChatEffect
+    /** Quoted-status tap, still within its 24h window — open it in the story viewer. */
+    data class NavigateToStatusViewer(val ownerId: String, val statusId: String) : ChatEffect
 }

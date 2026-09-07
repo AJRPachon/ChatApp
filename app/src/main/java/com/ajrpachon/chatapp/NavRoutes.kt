@@ -60,7 +60,7 @@ import kotlinx.serialization.Serializable
 @Serializable data class PdfViewerRoute(val url: String, val filename: String) : NavKey
 @Serializable data object GlobalSearchRoute : NavKey
 @Serializable data class ChatMediaGalleryRoute(val conversationId: String, val conversationName: String) : NavKey
-@Serializable data class StatusViewerRoute(val userId: String) : NavKey
+@Serializable data class StatusViewerRoute(val userId: String, val initialStatusId: String? = null) : NavKey
 
 // ── NavEntry providers ─────────────────────────────────────────────────────
 
@@ -162,6 +162,9 @@ fun chatNavEntry(
             },
             onNavigateToConversation = { id, name ->
                 backStack.add(ChatRoute(id, name))
+            },
+            onOpenStatusViewer = { ownerId, statusId ->
+                backStack.add(StatusViewerRoute(ownerId, statusId))
             },
         )
     }
@@ -323,7 +326,12 @@ fun miscNavEntry(
     is StatusViewerRoute -> NavEntry(key) {
         StatusViewerScreen(
             userId = key.userId,
+            initialStatusId = key.initialStatusId,
             onClose = dropUnlessResumed { backStack.removeLastOrNull() },
+            onNavigateToChat = { id, name ->
+                backStack.removeAll { it is StatusViewerRoute }
+                backStack.add(ChatRoute(id, name))
+            },
         )
     }
 

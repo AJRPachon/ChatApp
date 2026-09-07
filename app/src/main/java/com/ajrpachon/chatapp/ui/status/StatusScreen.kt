@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -25,12 +27,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
@@ -52,6 +56,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -358,10 +363,14 @@ fun StatusViewerScreen(
     statuses: List<StatusBO>,
     initialIndex: Int = 0,
     onClose: () -> Unit,
+    onSendReply: (StatusBO, String) -> Unit = { _, _ -> },
 ) {
     var currentIndex by remember { mutableIntStateOf(initialIndex) }
     val current = statuses.getOrNull(currentIndex) ?: run { onClose(); return }
     val isVideo = current.videoUrl != null
+    // Typing a reply pauses auto-advance — mirrors WhatsApp/Instagram, and stops the story from
+    // moving on (or closing) mid-reply.
+    var replyText by remember(currentIndex) { mutableStateOf("") }
 
     // Text/image stories advance on a fixed timer; video stories advance when
     // playback finishes, with the progress bar following the player position
@@ -369,8 +378,8 @@ fun StatusViewerScreen(
     val timedProgress = remember(currentIndex) { Animatable(0f) }
     var videoProgress by remember(currentIndex) { mutableFloatStateOf(0f) }
 
-    LaunchedEffect(currentIndex, isVideo) {
-        if (!isVideo) {
+    LaunchedEffect(currentIndex, isVideo, replyText.isNotBlank()) {
+        if (!isVideo && replyText.isBlank()) {
             timedProgress.snapTo(0f)
             timedProgress.animateTo(
                 targetValue = 1f,
@@ -487,7 +496,9 @@ fun StatusViewerScreen(
 
         // Tap zones to navigate — no ripple: a full-screen highlight on every
         // tap would be distracting for a story viewer (Instagram/WhatsApp
-        // don't show one either).
+        // don't show one either). Drawn before the reply bar below, so where
+        // the two overlap at the bottom, the reply bar (a later Box sibling —
+        // topmost in both z-order and hit-testing) wins touches, not this Row.
         Row(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
@@ -506,6 +517,54 @@ fun StatusViewerScreen(
                     },
             )
         }
+
+        // Reply bar — only for someone else's status; replying to your own doesn't make sense
+        // (mirrors WhatsApp, which shows a viewer list there instead).
+        if (!current.isFromMe) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .imePadding()
+                    .padding(12.dp),
+            ) {
+                val keyboard = LocalSoftwareKeyboardController.current
+                OutlinedTextField(
+                    value = replyText,
+                    onValueChange = { replyText = it },
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("status_reply_field"),
+                    placeholder = { Text(stringResource(R.string.status_reply_placeholder), color = Color.White.copy(alpha = 0.6f)) },
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = Color.White),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color.White,
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.6f),
+                        cursorColor = Color.White,
+                    ),
+                    maxLines = 4,
+                )
+                Spacer(Modifier.width(8.dp))
+                IconButton(
+                    enabled = replyText.isNotBlank(),
+                    onClick = {
+                        onSendReply(current, replyText)
+                        replyText = ""
+                        keyboard?.hide()
+                    },
+                    modifier = Modifier.testTag("status_reply_send_button"),
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.Send,
+                        contentDescription = stringResource(R.string.status_reply_send_cd),
+                        tint = if (replyText.isNotBlank()) Color.White else Color.White.copy(alpha = 0.4f),
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -516,19 +575,44 @@ fun StatusViewerScreen(
 fun StatusViewerScreen(
     userId: String,
     onClose: () -> Unit,
+    // Set when opened from a chat's quoted-status reply — jumps straight to that story instead
+    // of always starting at index 0. If the story already expired/was deleted it just won't be
+    // in state.userStatuses; ChatScreen already checked replyToStatusExpiresAt before navigating
+    // here, so that case shouldn't normally reach this screen at all.
+    initialStatusId: String? = null,
+    onNavigateToChat: (conversationId: String, otherUserName: String) -> Unit = { _, _ -> },
     vm: StatusViewModel = koinViewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
 
     LaunchedEffect(state.statuses, userId) {
         vm.onIntent(StatusIntent.FilterUserStatuses(state.statuses, userId))
     }
 
-    StatusViewerScreen(
-        statuses = state.userStatuses,
-        initialIndex = 0,
-        onClose = onClose,
-    )
+    LaunchedEffect(Unit) {
+        vm.effect.collect { effect ->
+            when (effect) {
+                is StatusEffect.NavigateToChat -> onNavigateToChat(effect.conversationId, effect.otherUserName)
+                is StatusEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.text)
+            }
+        }
+    }
+
+    Box {
+        StatusViewerScreen(
+            statuses = state.userStatuses,
+            initialIndex = initialStatusId
+                ?.let { id -> state.userStatuses.indexOfFirst { it.id == id }.takeIf { it >= 0 } }
+                ?: 0,
+            onClose = onClose,
+            onSendReply = { status, text -> vm.onIntent(StatusIntent.ReplyToStatus(status, text)) },
+        )
+        androidx.compose.material3.SnackbarHost(
+            snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
 }
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)

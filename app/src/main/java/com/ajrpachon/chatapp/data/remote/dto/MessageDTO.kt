@@ -32,4 +32,11 @@ data class MessageDTO(
     @SerialName("file_mime_type") val fileMimeType: String? = null,
     @SerialName("video_url") val videoUrl: String? = null,
     @SerialName("expires_at") val expiresAt: String? = null,
+    @SerialName("reply_to_status_id") val replyToStatusId: String? = null,
+    @SerialName("reply_to_status_owner_id") val replyToStatusOwnerId: String? = null,
+    @SerialName("reply_to_status_text") val replyToStatusText: String? = null,
+    @SerialName("reply_to_status_image_url") val replyToStatusImageUrl: String? = null,
+    @SerialName("reply_to_status_video_url") val replyToStatusVideoUrl: String? = null,
+    @SerialName("reply_to_status_background_color") val replyToStatusBackgroundColor: Long? = null,
+    @SerialName("reply_to_status_expires_at") val replyToStatusExpiresAt: String? = null,
 )
