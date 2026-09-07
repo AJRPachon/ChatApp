@@ -227,6 +227,7 @@
     <string name="profile_category_appearance">Appearance</string>
     <string name="profile_category_security">Security</string>
     <string name="profile_category_data">Data</string>
+    <string name="profile_category_account">Account</string>
     <string name="profile_show_online_status_title">Show online status</string>
     <string name="profile_show_online_status_description">Others can see when you\'re active</string>
     <string name="profile_theme_system">System</string>

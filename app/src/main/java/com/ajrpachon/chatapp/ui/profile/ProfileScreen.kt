@@ -6,7 +6,6 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -34,6 +33,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -341,7 +341,9 @@ fun ProfileScreen(
                     modifier = Modifier
                         .size(96.dp)
                         .clip(CircleShape)
-                        .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                        // Design canvas: a plain primaryContainer-filled circle, no border ring —
+                        // matches Signal_PrimaryContainer/Signal_OnPrimaryContainer exactly.
+                        .background(MaterialTheme.colorScheme.primaryContainer)
                         .clickable(enabled = !state.isUploadingAvatar) {
                             avatarLauncher.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -361,7 +363,7 @@ fun ProfileScreen(
                             Icons.Default.Person,
                             contentDescription = null,
                             modifier = Modifier.size(56.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
                         )
                     }
                     if (state.isUploadingAvatar) {
@@ -442,16 +444,23 @@ fun ProfileScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Column {
-                        Text(
-                            stringResource(R.string.profile_show_online_status_title),
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                        Text(
-                            stringResource(R.string.profile_show_online_status_description),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.outline,
-                        )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        IconChip(Icons.Default.Visibility)
+                        Column {
+                            Text(
+                                stringResource(R.string.profile_show_online_status_title),
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                            Text(
+                                stringResource(R.string.profile_show_online_status_description),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.outline,
+                            )
+                        }
                     }
                     Switch(
                         checked = state.showOnlineStatus,
@@ -511,11 +520,7 @@ fun ProfileScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             modifier = Modifier.weight(1f),
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Fingerprint,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
+                            IconChip(Icons.Default.Fingerprint)
                             Column {
                                 Text(
                                     stringResource(R.string.profile_app_lock_title),
@@ -545,23 +550,30 @@ fun ProfileScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                stringResource(R.string.profile_2fa_title),
-                                style = MaterialTheme.typography.bodyLarge,
-                            )
-                            Text(
-                                if (state.twoFactor.isEnrolled) {
-                                    stringResource(R.string.profile_2fa_active)
-                                } else {
-                                    stringResource(R.string.profile_2fa_inactive)
-                                },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (state.twoFactor.isEnrolled)
-                                    MaterialTheme.colorScheme.primary
-                                else
-                                    MaterialTheme.colorScheme.outline,
-                            )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            IconChip(Icons.Default.Shield)
+                            Column {
+                                Text(
+                                    stringResource(R.string.profile_2fa_title),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                )
+                                Text(
+                                    if (state.twoFactor.isEnrolled) {
+                                        stringResource(R.string.profile_2fa_active)
+                                    } else {
+                                        stringResource(R.string.profile_2fa_inactive)
+                                    },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (state.twoFactor.isEnrolled)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.outline,
+                                )
+                            }
                         }
                         if (state.twoFactor.isLoading) {
                             CircularProgressIndicator(modifier = Modifier.size(24.dp))
@@ -591,11 +603,7 @@ fun ProfileScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Icon(
-                            Icons.Default.DevicesOther,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        IconChip(Icons.Default.DevicesOther)
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 stringResource(R.string.profile_sessions_title),
@@ -629,11 +637,7 @@ fun ProfileScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Icon(
-                        Icons.Default.CloudUpload,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    IconChip(Icons.Default.CloudUpload)
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             stringResource(R.string.profile_backup_title),
@@ -651,41 +655,89 @@ fun ProfileScreen(
             Spacer(Modifier.size(24.dp))
             Spacer(Modifier.weight(1f))
 
-            ChatAppDestructiveButton(
-                text = stringResource(R.string.profile_sign_out),
-                onClick = { vm.signOut() },
-                leadingIcon = Icons.AutoMirrored.Filled.Logout,
+            // ── Cuenta ───────────────────────────────────────────────────────
+            // Design canvas groups sign-out/delete as flat rows in a category Card (icon chip +
+            // label, danger variant for the destructive one) rather than as standalone outlined
+            // buttons — matches every other category's look. "Sign out on all devices" has no
+            // canvas equivalent (it's a real feature the mockup didn't happen to show); it gets
+            // the same row treatment as its sibling actions.
+            CategoryLabel(stringResource(R.string.profile_category_account))
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .testTag("profile_sign_out_button"),
-            )
-            Spacer(Modifier.size(8.dp))
-            ChatAppDestructiveButton(
-                text = stringResource(R.string.profile_sign_out_all_devices),
-                onClick = { vm.requestSignOutAll() },
-                leadingIcon = Icons.AutoMirrored.Filled.Logout,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("profile_sign_out_all_button"),
-            )
-            Spacer(Modifier.size(8.dp))
-            if (state.isDeletingAccount) {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .padding(bottom = 24.dp)
-                        .size(24.dp)
-                        .testTag("profile_deleting_account_indicator"),
-                )
-            } else {
-                ChatAppDestructiveButton(
-                    text = stringResource(R.string.profile_delete_account),
-                    onClick = { vm.requestDeleteAccount() },
-                    leadingIcon = Icons.Default.DeleteForever,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 24.dp)
-                        .testTag("profile_delete_account_button"),
-                )
+                    .padding(bottom = 24.dp),
+                colors = categoryCardColors(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            ) {
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { vm.signOut() }
+                            .padding(16.dp)
+                            .testTag("profile_sign_out_button"),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        IconChip(Icons.AutoMirrored.Filled.Logout)
+                        Text(
+                            stringResource(R.string.profile_sign_out),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
+
+                    HorizontalDivider()
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { vm.requestSignOutAll() }
+                            .padding(16.dp)
+                            .testTag("profile_sign_out_all_button"),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        IconChip(Icons.AutoMirrored.Filled.Logout)
+                        Text(
+                            stringResource(R.string.profile_sign_out_all_devices),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
+
+                    HorizontalDivider()
+
+                    if (state.isDeletingAccount) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.Center,
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .testTag("profile_deleting_account_indicator"),
+                            )
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { vm.requestDeleteAccount() }
+                                .padding(16.dp)
+                                .testTag("profile_delete_account_button"),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            IconChip(Icons.Default.DeleteForever, danger = true)
+                            Text(
+                                stringResource(R.string.profile_delete_account),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -725,6 +777,32 @@ private fun CategoryLabel(text: String) {
             .fillMaxWidth()
             .padding(start = 4.dp, bottom = 8.dp),
     )
+}
+
+/**
+ * Small rounded-square icon container used at the start of a settings row — matches the design
+ * canvas's `.icon-chip` (32dp, 8dp corner radius, background = the screen's own background so it
+ * reads as a subtle chip against the white category Card, not an accent color per row).
+ */
+@Composable
+private fun IconChip(icon: androidx.compose.ui.graphics.vector.ImageVector, danger: Boolean = false) {
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(
+                if (danger) MaterialTheme.colorScheme.errorContainer
+                else MaterialTheme.colorScheme.background,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(17.dp),
+        )
+    }
 }
 
 @Composable
