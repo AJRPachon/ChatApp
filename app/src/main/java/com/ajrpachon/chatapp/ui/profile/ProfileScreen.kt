@@ -393,7 +393,17 @@ fun ProfileScreen(
                 }
             }
 
-            Spacer(Modifier.size(16.dp))
+            Spacer(Modifier.size(12.dp))
+
+            // @handle sits directly under the photo (per user request — not the canvas's literal
+            // name-then-handle order); email is intentionally not shown here at all anymore.
+            Text(
+                stringResource(R.string.profile_username_display, state.username),
+                style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace),
+                color = MaterialTheme.colorScheme.primary,
+            )
+
+            Spacer(Modifier.size(12.dp))
 
             val keyboard = LocalSoftwareKeyboardController.current
             ChatAppTextField(
@@ -415,18 +425,6 @@ fun ProfileScreen(
             )
             if (state.isSavingDisplayName) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp))
-            }
-            Text(
-                stringResource(R.string.profile_username_display, state.username),
-                style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace),
-                color = MaterialTheme.colorScheme.primary,
-            )
-            if (state.email.isNotBlank()) {
-                Text(
-                    state.email,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.outline,
-                )
             }
 
             Spacer(Modifier.size(24.dp))
