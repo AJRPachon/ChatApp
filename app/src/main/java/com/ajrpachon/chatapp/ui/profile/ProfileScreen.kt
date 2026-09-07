@@ -328,11 +328,14 @@ fun ProfileScreen(
             ChatAppTopBar(title = stringResource(R.string.profile_top_bar_title), onBack = onBack) {
                 IconButton(
                     onClick = { showQrSheet = true },
-                    modifier = Modifier.testTag("profile_my_qr_code_button"),
+                    modifier = Modifier
+                        .size(52.dp)
+                        .testTag("profile_my_qr_code_button"),
                 ) {
                     Icon(
                         Icons.Default.QrCode,
                         contentDescription = stringResource(R.string.profile_my_qr_code_button),
+                        modifier = Modifier.size(28.dp),
                     )
                 }
             }
