@@ -329,12 +329,23 @@ internal fun MessageBubble(
             horizontalAlignment = if (message.isFromMe) Alignment.End else Alignment.Start,
         ) {
         ChatBubbleSlot(isFromMe = message.isFromMe) { maxBubbleWidth ->
+            // A custom chat theme's bubbleColor is a fixed pastel/dark RGB, unrelated to the
+            // current light/dark MaterialTheme scheme — Surface's automatic contentColorFor()
+            // can't derive a matching "on" color for it and falls back to the ambient content
+            // color, which is wrong (e.g. light dark-mode text on a light pastel bubble, nearly
+            // invisible). Only applies to sent bubbles with a custom color; the default
+            // primaryContainer/surfaceVariant bubbles are real theme tokens and contrast
+            // correctly on their own. See ChatThemeColors.bubbleContentColor().
+            val customContentColor = if (message.isFromMe && outgoingBubbleColor != Color.Unspecified) {
+                outgoingBubbleColor.bubbleContentColor()
+            } else null
             Surface(
                 shape = MaterialTheme.shapes.small,
                 color = if (message.isFromMe) {
                     if (outgoingBubbleColor != Color.Unspecified) outgoingBubbleColor
                     else MaterialTheme.colorScheme.primaryContainer
                 } else MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = customContentColor ?: Color.Unspecified,
                 modifier = Modifier.widthIn(max = maxBubbleWidth),
             ) {
                 val hasMedia = message.imageUrl != null || message.gifUrl != null
@@ -361,6 +372,7 @@ internal fun MessageBubble(
                             senderName = message.replyToSenderName ?: "",
                             content = message.replyToContent ?: "",
                             isFromMe = message.isFromMe,
+                            contentColorOverride = customContentColor,
                             onClick = { onReplyClick(message.replyToId) },
                         )
                         if (!hasMedia) Spacer(Modifier.height(6.dp))
@@ -369,6 +381,7 @@ internal fun MessageBubble(
                         StatusReplyQuote(
                             message = message,
                             isFromMe = message.isFromMe,
+                            contentColorOverride = customContentColor,
                             onClick = onStatusQuoteClick,
                         )
                         if (!hasMedia) Spacer(Modifier.height(6.dp))
