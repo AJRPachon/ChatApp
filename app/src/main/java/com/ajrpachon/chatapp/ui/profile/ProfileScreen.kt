@@ -710,7 +710,10 @@ private fun categoryCardColors() = if (MaterialTheme.colorScheme.background.lumi
 
 /**
  * Small monospace section label above a settings [Card] (Privacidad, Apariencia, Seguridad,
- * Datos) — groups the flat settings list into visually distinct categories.
+ * Datos) — groups the flat settings list into visually distinct categories. Matches the design
+ * canvas: left-aligned flush with the Card below it, not centered. Needs fillMaxWidth() here —
+ * this Column's horizontalAlignment is CenterHorizontally, so without it this short Text would
+ * hug its own content width and center as a block instead of hugging the Card's left edge.
  */
 @Composable
 private fun CategoryLabel(text: String) {
@@ -718,7 +721,9 @@ private fun CategoryLabel(text: String) {
         text = text.uppercase(),
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 4.dp, bottom = 8.dp),
     )
 }
 
