@@ -5,6 +5,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.postgrest.result.PostgrestResult
 import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.channel
@@ -29,6 +30,15 @@ class InvitationRemoteSource(private val supabase: SupabaseClient) {
                     eq("receiver_id", userId)
                     eq("status", "pending")
                 }
+            }
+            .decodeListOrEmpty<InvitationDTO>()
+
+    // Invitations screen's "Sent" tab — every invitation I sent, any status, receiver embedded.
+    suspend fun getSentInvitations(userId: String): List<InvitationDTO> =
+        supabase.postgrest["invitations"]
+            .select(Columns.raw("*, receiver:profiles!receiver_id(*)")) {
+                filter { eq("sender_id", userId) }
+                order("created_at", Order.DESCENDING)
             }
             .decodeListOrEmpty<InvitationDTO>()
 

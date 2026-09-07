@@ -11,4 +11,5 @@ data class InvitationDTO(
     @SerialName("status") val status: String,
     @SerialName("created_at") val createdAt: String,
     @SerialName("sender") val sender: UserDTO? = null,
+    @SerialName("receiver") val receiver: UserDTO? = null,
 )

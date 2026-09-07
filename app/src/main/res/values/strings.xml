@@ -304,6 +304,15 @@
     <string name="invitations_top_bar_title">Invitaciones</string>
     <string name="invitations_no_pending">No tienes invitaciones pendientes</string>
     <string name="invitations_username">@%1$s</string>
+    <string name="invitations_wants_to_add_you">quiere añadirte como contacto</string>
+    <string name="invitations_filter_received">Recibidas · %1$d</string>
+    <string name="invitations_filter_sent">Enviadas</string>
+    <string name="invitations_accept_cd">Aceptar invitación</string>
+    <string name="invitations_decline_cd">Rechazar invitación</string>
+    <string name="invitations_cancel_cd">Cancelar invitación</string>
+    <string name="invitations_no_sent">No has enviado invitaciones</string>
+    <string name="invitations_sent_accepted">Conectados</string>
+    <string name="invitations_sent_rejected">Rechazada</string>
 
     <!-- Conversations -->
     <string name="conversations_notification_sound_title">Sonido de notificación</string>
