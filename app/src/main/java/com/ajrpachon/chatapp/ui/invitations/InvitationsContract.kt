@@ -23,5 +23,4 @@ sealed interface InvitationsIntent {
 
 sealed interface InvitationsEffect {
     data class ShowMessage(val text: String) : InvitationsEffect
-    data class NavigateToChat(val conversationId: String, val name: String) : InvitationsEffect
 }

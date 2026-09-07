@@ -40,17 +40,13 @@ import com.ajrpachon.chatapp.ui.components.ChatAppAvatar
 import com.ajrpachon.chatapp.ui.components.ChatAppTopBar
 import com.ajrpachon.chatapp.ui.components.InvitationsSkeleton
 import com.github.skydoves.navgraph.annotations.NavDestination
-import com.github.skydoves.navgraph.annotations.NavEdge
-import com.ajrpachon.chatapp.ChatRoute
 import com.ajrpachon.chatapp.InvitationsRoute
 import org.koin.androidx.compose.koinViewModel
 
-@NavEdge(to = ChatRoute::class, label = "Accept Invitation")
 @NavDestination(route = InvitationsRoute::class)
 @Composable
 fun InvitationsScreen(
     onBack: () -> Unit,
-    onNavigateToChat: (conversationId: String, name: String) -> Unit = { _, _ -> },
 ) {
     val vm: InvitationsViewModel = koinViewModel()
     val state by vm.state.collectAsStateWithLifecycle()
@@ -60,7 +56,6 @@ fun InvitationsScreen(
         vm.effect.collect { effect ->
             when (effect) {
                 is InvitationsEffect.ShowMessage -> snackbar.showSnackbar(effect.text)
-                is InvitationsEffect.NavigateToChat -> onNavigateToChat(effect.conversationId, effect.name)
             }
         }
     }
