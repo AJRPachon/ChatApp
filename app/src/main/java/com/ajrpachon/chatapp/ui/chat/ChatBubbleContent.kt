@@ -38,6 +38,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -193,7 +194,7 @@ internal fun MessageFooterContent(
                 Text(
                     text = stringResource(R.string.chat_translating),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    color = LocalContentColor.current.copy(alpha = 0.6f),
                 )
             }
         } else if (translatedText != null) {
@@ -202,7 +203,7 @@ internal fun MessageFooterContent(
                 Text(
                     text = translatedText,
                     style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
+                    color = LocalContentColor.current.copy(alpha = 0.75f),
                     modifier = Modifier.weight(1f),
                 )
                 IconButton(onClick = onDismissTranslation) {
@@ -250,7 +251,7 @@ internal fun MessageFooterContent(
             Text(
                 stringResource(R.string.chat_edited_label),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                color = LocalContentColor.current.copy(alpha = 0.4f),
                 modifier = Modifier.padding(end = 2.dp),
             )
         }
@@ -260,7 +261,7 @@ internal fun MessageFooterContent(
             Text(
                 text = timeText,
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                color = LocalContentColor.current.copy(alpha = 0.5f),
                 modifier = Modifier.padding(end = 2.dp),
             )
             if (message.isFromMe) {
@@ -372,7 +373,7 @@ internal fun ReadReceiptIcon(isRead: Boolean, unreadTint: Color? = null) {
         tint = if (isRead)
             Color(0xFF4FC3F7)
         else
-            unreadTint ?: MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+            unreadTint ?: LocalContentColor.current.copy(alpha = 0.45f),
     )
 }
 
@@ -394,7 +395,7 @@ internal fun SendStatusIcon(
             Icon(
                 imageVector = Icons.Default.Schedule,
                 contentDescription = stringResource(R.string.chat_pending_send),
-                tint = neutralTint ?: MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                tint = neutralTint ?: LocalContentColor.current.copy(alpha = 0.4f),
                 modifier = Modifier.size(12.dp),
             )
         SendStatus.FAILED ->
@@ -501,7 +502,7 @@ internal fun ReplyQuote(
             Text(
                 text = content,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                color = LocalContentColor.current.copy(alpha = 0.7f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -587,7 +588,7 @@ internal fun StatusReplyQuote(
                 },
                 style = MaterialTheme.typography.bodySmall,
                 fontStyle = if (expired) FontStyle.Italic else FontStyle.Normal,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                color = LocalContentColor.current.copy(alpha = 0.7f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
