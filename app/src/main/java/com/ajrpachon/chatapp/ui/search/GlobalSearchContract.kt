@@ -6,6 +6,7 @@ data class GlobalSearchResultItem(
     val conversationName: String,
     val content: String,
     val createdAtMs: Long,
+    val isGroup: Boolean = false,
 )
 
 data class GlobalSearchState(
