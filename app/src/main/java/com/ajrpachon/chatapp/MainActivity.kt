@@ -10,6 +10,13 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.core.content.ContextCompat
 import androidx.compose.material3.AlertDialog
@@ -42,6 +49,7 @@ import com.ajrpachon.chatapp.ui.call.IncomingCallIntent
 import com.ajrpachon.chatapp.domain.model.isGroupCall
 import com.ajrpachon.chatapp.ui.call.IncomingCallScreen
 import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
+import com.ajrpachon.chatapp.ui.common.MotionConstants.NAV_TRANSITION_MS
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import com.ajrpachon.chatapp.domain.model.ThemePreference
 import com.ajrpachon.chatapp.domain.repository.ThemeRepository
@@ -229,6 +237,36 @@ class MainActivity : ComponentActivity() {
                         rememberSaveableStateHolderNavEntryDecorator(),
                         rememberViewModelStoreNavEntryDecorator(),
                     ),
+                    // Motion for every screen-to-screen navigation in the app — NavDisplay has no
+                    // transitionSpec/popTransitionSpec of its own by default, so without this every
+                    // push/pop across the whole app (opening a chat, Profile, Invitations, a call...)
+                    // was an instant, un-animated cut. Material's "shared axis X": pushing slides the
+                    // new screen in from the right while the one underneath slides out partway left
+                    // (both cross-fading together), and popping reverses it — forward always reads as
+                    // "deeper", back always reads as "returning", matching the platform's own
+                    // Activity/Fragment transition convention. `it / 3` and `it / 4` (not `it`, a full
+                    // off-screen slide) keep the outgoing screen partially visible throughout, which
+                    // is what makes the two screens read as one continuous motion instead of two
+                    // separate slides. Deliberately doesn't set predictivePopTransitionSpec (the
+                    // gesture-back preview) — a separate, newer/more involved API; out of scope here.
+                    transitionSpec = {
+                        (
+                            slideInHorizontally(tween(NAV_TRANSITION_MS, easing = FastOutSlowInEasing)) { it / 3 } +
+                                fadeIn(tween(NAV_TRANSITION_MS))
+                            ) togetherWith (
+                            slideOutHorizontally(tween(NAV_TRANSITION_MS, easing = FastOutSlowInEasing)) { -it / 4 } +
+                                fadeOut(tween(NAV_TRANSITION_MS / 2))
+                            )
+                    },
+                    popTransitionSpec = {
+                        (
+                            slideInHorizontally(tween(NAV_TRANSITION_MS, easing = FastOutSlowInEasing)) { -it / 4 } +
+                                fadeIn(tween(NAV_TRANSITION_MS))
+                            ) togetherWith (
+                            slideOutHorizontally(tween(NAV_TRANSITION_MS, easing = FastOutSlowInEasing)) { it / 3 } +
+                                fadeOut(tween(NAV_TRANSITION_MS / 2))
+                            )
+                    },
                     entryProvider = { key -> appNavEntryProvider(key, backStack) },
                 )
 

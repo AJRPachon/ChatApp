@@ -1,5 +1,12 @@
 package com.ajrpachon.chatapp.ui.chat
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -58,10 +65,14 @@ import androidx.compose.ui.unit.dp
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.MessageLimits
+import com.ajrpachon.chatapp.ui.common.MotionConstants
 import com.ajrpachon.chatapp.ui.components.ChatAppTextField
 import kotlinx.coroutines.launch
 
 // ── Chat input bar ────────────────────────────────────────────────────────────
+
+/** What the trailing slot of [NormalInputBar] currently shows — the mic↔send morph's states. */
+private enum class TrailingAction { UPLOAD_SPACER, UPLOADING, SEND, MIC }
 
 @Suppress("LongParameterList")
 @Composable
@@ -139,36 +150,58 @@ internal fun NormalInputBar(
             supportingText = if (inputText.length >= MessageLimits.MAX_CONTENT_LENGTH - 100)
                 "${inputText.length}/${MessageLimits.MAX_CONTENT_LENGTH}" else null,
         )
-        if (mediaUploadProgress != null) {
-            Spacer(modifier = Modifier.size(40.dp))
-        } else if (isUploadingImage) {
-            CircularProgressIndicator(modifier = Modifier.size(40.dp).padding(8.dp))
-        } else if (inputText.isNotBlank()) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(androidx.compose.foundation.shape.CircleShape)
-                    .combinedClickable(
-                        enabled = !isSending,
-                        onClick = onSend,
-                        onLongClick = onSchedule,
+        val trailingAction = when {
+            mediaUploadProgress != null -> TrailingAction.UPLOAD_SPACER
+            isUploadingImage -> TrailingAction.UPLOADING
+            inputText.isNotBlank() -> TrailingAction.SEND
+            else -> TrailingAction.MIC
+        }
+        // The mic↔send swap (and the upload states around it) used to be a plain if/else-if — an
+        // instant, un-animated swap every time the field goes from empty to non-empty, one of the
+        // most-repeated interactions in the whole app. AnimatedContent + a fade/scale pop makes the
+        // outgoing icon shrink away while the incoming one grows in, instead of just replacing one
+        // icon with another mid-frame.
+        AnimatedContent(
+            targetState = trailingAction,
+            transitionSpec = {
+                (
+                    fadeIn(tween(MotionConstants.MICRO_ANIM_MS)) +
+                        scaleIn(tween(MotionConstants.MICRO_ANIM_MS), initialScale = 0.7f)
+                    ) togetherWith (
+                    fadeOut(tween(MotionConstants.MICRO_ANIM_MS)) +
+                        scaleOut(tween(MotionConstants.MICRO_ANIM_MS), targetScale = 0.7f)
                     )
-                    .testTag("chat_send_button"),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    Icons.AutoMirrored.Filled.Send,
-                    contentDescription = stringResource(R.string.chat_send_hold_to_schedule_cd),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            }
-        } else {
-            IconButton(
-                onClick = onMic,
-                enabled = !busy,
-                modifier = Modifier.testTag("chat_mic_button"),
-            ) {
-                Icon(Icons.Default.Mic, contentDescription = stringResource(R.string.chat_record_audio_cd))
+            },
+            label = "chat_input_trailing_action",
+        ) { targetAction ->
+            when (targetAction) {
+                TrailingAction.UPLOAD_SPACER -> Spacer(modifier = Modifier.size(40.dp))
+                TrailingAction.UPLOADING -> CircularProgressIndicator(modifier = Modifier.size(40.dp).padding(8.dp))
+                TrailingAction.SEND -> Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .combinedClickable(
+                            enabled = !isSending,
+                            onClick = onSend,
+                            onLongClick = onSchedule,
+                        )
+                        .testTag("chat_send_button"),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.Send,
+                        contentDescription = stringResource(R.string.chat_send_hold_to_schedule_cd),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                TrailingAction.MIC -> IconButton(
+                    onClick = onMic,
+                    enabled = !busy,
+                    modifier = Modifier.testTag("chat_mic_button"),
+                ) {
+                    Icon(Icons.Default.Mic, contentDescription = stringResource(R.string.chat_record_audio_cd))
+                }
             }
         }
     }

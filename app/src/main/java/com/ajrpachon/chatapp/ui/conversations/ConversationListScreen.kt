@@ -3,6 +3,8 @@ package com.ajrpachon.chatapp.ui.conversations
 import com.ajrpachon.chatapp.ui.chat.formatAudioDuration
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -80,6 +82,7 @@ import kotlinx.coroutines.launch
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.ui.common.ChatConstants
+import com.ajrpachon.chatapp.ui.common.MotionConstants
 import com.ajrpachon.chatapp.ui.common.formatConversationTime
 import com.ajrpachon.chatapp.domain.model.NotificationSound
 import com.ajrpachon.chatapp.ui.components.ChatAppAvatar
@@ -402,6 +405,15 @@ fun ConversationListScreen(
                             menuConvId = null
                             vm.onIntent(ConversationListIntent.ShowSoundPicker(conv.id))
                         },
+                        // A new message bumping a conversation to the top (or one getting deleted/
+                        // archived out of the list) previously jumped instantly — animateItem()
+                        // (keyed by the stable conv.id above) smoothly reorders/fades instead, the
+                        // same reorder-on-new-message motion WhatsApp/Telegram/Signal all have.
+                        modifier = Modifier.animateItem(
+                            fadeInSpec = tween(MotionConstants.LIST_ITEM_ANIM_MS),
+                            placementSpec = tween(MotionConstants.LIST_ITEM_ANIM_MS, easing = FastOutSlowInEasing),
+                            fadeOutSpec = tween(MotionConstants.LIST_ITEM_ANIM_MS),
+                        ),
                     )
                 }
             }
@@ -482,12 +494,13 @@ private fun ConversationItem(
     onDelete: () -> Unit,
     onArchive: () -> Unit,
     onSoundPicker: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val lastMsg = conversation.lastMessage
     val fromMe = lastMsg?.isFromMe == true
     val hasUnread = conversation.unreadCount > 0
 
-    Box {
+    Box(modifier = modifier) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
