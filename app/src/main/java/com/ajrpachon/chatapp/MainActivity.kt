@@ -288,6 +288,31 @@ class MainActivity : ComponentActivity() {
                                 )
                         }
                     },
+                    // Without this, an edge-swipe back gesture only plays popTransitionSpec's
+                    // fixed-duration animation AFTER you lift your finger — nothing moves while you're
+                    // actually dragging, which is exactly what read as "sosa"/lifeless: modern Android
+                    // apps show the outgoing screen shrinking/sliding away live, tracking your finger,
+                    // the whole time you're swiping (the "predictive back" preview, Android 13+). Same
+                    // ContentTransform logic as popTransitionSpec above (deliberately identical, per
+                    // Android's own recipe for this — https://developer.android.com/guide/navigation/
+                    // navigation-3/recipes/animations) — the difference is entirely that NavDisplay
+                    // drives *this* one continuously off the live gesture progress instead of firing it
+                    // once on commit. Requires enableOnBackInvokedCallback (AndroidManifest.xml) to
+                    // actually receive gesture-progress callbacks from the OS in the first place.
+                    predictivePopTransitionSpec = {
+                        if (initialState.key is StatusViewerRoute || initialState.key is CallRoute) {
+                            fadeIn(tween(NAV_TRANSITION_MS / 2)) togetherWith
+                                (fadeOut(tween(NAV_TRANSITION_MS)) + scaleOut(tween(NAV_TRANSITION_MS), targetScale = 0.92f))
+                        } else {
+                            (
+                                slideInHorizontally(tween(NAV_TRANSITION_MS, easing = FastOutSlowInEasing)) { -it / 4 } +
+                                    fadeIn(tween(NAV_TRANSITION_MS))
+                                ) togetherWith (
+                                slideOutHorizontally(tween(NAV_TRANSITION_MS, easing = FastOutSlowInEasing)) { it / 3 } +
+                                    fadeOut(tween(NAV_TRANSITION_MS / 2))
+                                )
+                        }
+                    },
                     entryProvider = { key -> appNavEntryProvider(key, backStack) },
                 )
 
