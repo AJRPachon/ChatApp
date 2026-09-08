@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
@@ -334,10 +335,16 @@ internal fun MessageBubble(
             // can't derive a matching "on" color for it and falls back to the ambient content
             // color, which is wrong (e.g. light dark-mode text on a light pastel bubble, nearly
             // invisible). Only applies to sent bubbles with a custom color; the default
-            // primaryContainer/surfaceVariant bubbles are real theme tokens and contrast
-            // correctly on their own. See ChatThemeColors.bubbleContentColor().
-            val customContentColor = if (message.isFromMe && outgoingBubbleColor != Color.Unspecified) {
+            // primaryContainer bubble is a real theme token and contrasts correctly on its own.
+            // See ChatThemeColors.bubbleContentColor().
+            val isDarkTheme = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+            // Received bubbles (surfaceVariant) technically already contrast fine via Surface's
+            // automatic derivation (onSurfaceVariant) — this forces pure white instead as an
+            // explicit design choice for the other party's text in dark mode specifically.
+            val bubbleContentColorOverride = if (message.isFromMe && outgoingBubbleColor != Color.Unspecified) {
                 outgoingBubbleColor.bubbleContentColor()
+            } else if (!message.isFromMe && isDarkTheme) {
+                Color.White
             } else null
             Surface(
                 shape = MaterialTheme.shapes.small,
@@ -345,7 +352,7 @@ internal fun MessageBubble(
                     if (outgoingBubbleColor != Color.Unspecified) outgoingBubbleColor
                     else MaterialTheme.colorScheme.primaryContainer
                 } else MaterialTheme.colorScheme.surfaceVariant,
-                contentColor = customContentColor ?: Color.Unspecified,
+                contentColor = bubbleContentColorOverride ?: Color.Unspecified,
                 modifier = Modifier.widthIn(max = maxBubbleWidth),
             ) {
                 val hasMedia = message.imageUrl != null || message.gifUrl != null
@@ -372,7 +379,7 @@ internal fun MessageBubble(
                             senderName = message.replyToSenderName ?: "",
                             content = message.replyToContent ?: "",
                             isFromMe = message.isFromMe,
-                            contentColorOverride = customContentColor,
+                            contentColorOverride = bubbleContentColorOverride,
                             onClick = { onReplyClick(message.replyToId) },
                         )
                         if (!hasMedia) Spacer(Modifier.height(6.dp))
@@ -381,7 +388,7 @@ internal fun MessageBubble(
                         StatusReplyQuote(
                             message = message,
                             isFromMe = message.isFromMe,
-                            contentColorOverride = customContentColor,
+                            contentColorOverride = bubbleContentColorOverride,
                             onClick = onStatusQuoteClick,
                         )
                         if (!hasMedia) Spacer(Modifier.height(6.dp))
