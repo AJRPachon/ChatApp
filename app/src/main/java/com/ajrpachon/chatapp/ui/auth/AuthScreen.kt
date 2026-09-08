@@ -6,6 +6,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -50,6 +51,7 @@ import android.provider.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -62,7 +64,9 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -179,7 +183,7 @@ private fun LoginContent(
     onGoogleSignIn: () -> Unit,
     contentPadding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.foundation.layout.PaddingValues(),
 ) {
-    Column(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .imePadding()
@@ -188,188 +192,206 @@ private fun LoginContent(
             // column, so the gradient background isn't pushed down before it paints.
             .padding(bottom = contentPadding.calculateBottomPadding()),
     ) {
-        // ── Scrollable content (hero + card) ──────────────────────────────────
-        // Weighted + scrollable on its own, separate from the switch-mode link below: on a
-        // short/tall screen the link stays pinned to the true bottom instead of trailing the
-        // card by a fixed 20dp gap, and only when the hero+card genuinely overflow the
-        // available height does this part scroll independently.
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState()),
-        ) {
-            // ── Gradient hero ───────────────────────────────────────────────────
-            // No fixed height: this Box wraps the hero Column's own (now taller) height instead
-            // of a hardcoded dp value, so it always extends exactly as far as the content needs
-            // — including the status bar's real height on this device, whatever that is. The
-            // old version fixed this Box at 260dp AND padded the *outer* column by the
-            // Scaffold's status-bar inset AND padded this Box's own content by
-            // statusBarsPadding again — two top insets stacked, leaving a plain, un-gradiented
-            // strip above a hard seam where the color cut in abruptly. Now there's exactly one
-            // statusBarsPadding, on the content, and the gradient behind it simply follows.
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.primaryContainer,
-                                MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f),
-                                MaterialTheme.colorScheme.surface,
-                            ),
-                        ),
-                    ),
-                contentAlignment = Alignment.TopCenter,
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .statusBarsPadding()
-                        .padding(top = 40.dp, bottom = 36.dp),
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(88.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Chat,
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                        )
-                    }
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                        stringResource(R.string.auth_app_name),
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Text(
-                        stringResource(R.string.auth_tagline),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-
-            // ── Form card ───────────────────────────────────────────────────────
-            // The form lives in its own floating card instead of flush against the hero above —
-            // separates the brand moment (gradient, logo, title) from the task (the fields), and
-            // gives the screen a resting composition instead of one long stacked column that
-            // ends in a lot of empty space below.
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-                shape = MaterialTheme.shapes.large,
-                color = MaterialTheme.colorScheme.surfaceContainerLow,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                shadowElevation = 8.dp,
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    // ── Social buttons ─────────────────────────────────────────
-                    // Not ChatAppOutlinedButton: its leadingIcon always renders through Icon(),
-                    // which force-tints the whole vector with LocalContentColor — fine for the
-                    // app's own monochrome icons, but it would flatten Google's real
-                    // multi-color "G" mark into a single-color blob. Image() doesn't tint, so
-                    // the vector's own per-path fillColors (ic_google.xml) survive — same
-                    // shape/padding as ChatAppOutlinedButton otherwise, for visual consistency
-                    // with the rest of the screen.
-                    OutlinedButton(
-                        onClick = onGoogleSignIn,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.small,
-                        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp),
-                    ) {
-                        Image(
-                            imageVector = ImageVector.vectorResource(R.drawable.ic_google),
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(stringResource(R.string.auth_continue_with_google))
-                    }
-
-                    Spacer(Modifier.height(20.dp))
-
-                    // ── Divider ───────────────────────────────────────────────
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        HorizontalDivider(modifier = Modifier.weight(1f))
-                        Text(
-                            stringResource(R.string.auth_or_continue_with_email),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.outline,
-                        )
-                        HorizontalDivider(modifier = Modifier.weight(1f))
-                    }
-
-                    Spacer(Modifier.height(20.dp))
-
-                    // ── Email/password tabs ─────────────────────────────────────
-                    Surface(
-                        shape = RoundedCornerShape(50),
-                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Row(modifier = Modifier.padding(4.dp)) {
-                            val isSignIn = state.authMode == AuthMode.SIGN_IN
-                            Surface(
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(50),
-                                color = if (isSignIn) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-                                onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_IN)) },
-                            ) {
-                                Text(
-                                    stringResource(R.string.auth_sign_in_tab),
-                                    modifier = Modifier.padding(vertical = 10.dp),
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = if (isSignIn) FontWeight.SemiBold else FontWeight.Normal,
-                                    color = if (isSignIn) MaterialTheme.colorScheme.onPrimaryContainer
-                                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                )
-                            }
-                            Surface(
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(50),
-                                color = if (!isSignIn) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-                                onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_UP)) },
-                            ) {
-                                Text(
-                                    stringResource(R.string.auth_sign_up_tab),
-                                    modifier = Modifier.padding(vertical = 10.dp),
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = if (!isSignIn) FontWeight.SemiBold else FontWeight.Normal,
-                                    color = if (!isSignIn) MaterialTheme.colorScheme.onPrimaryContainer
-                                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(Modifier.height(16.dp))
-
-                    EmailPasswordForm(state = state, onIntent = onIntent)
-                }
-            }
+        // ── Bottom-pinned switch-mode link, keyboard-safe ───────────────────────
+        // A weight(1f) spacer can't live inside a scrollable Column — verticalScroll gives its
+        // content infinite height, which crashes weight outright. Instead, measure the hero+card
+        // block and the link block, and fill the *actual* leftover space by hand: the link sits
+        // pinned to the true bottom only while there's room to spare. The moment `maxHeight`
+        // shrinks below what the content needs — e.g. the keyboard opening, since it's inside
+        // imePadding() above — the filler collapses to 0dp and the link falls back into the
+        // normal scroll flow after the card, instead of staying glued right above the keyboard.
+        val density = LocalDensity.current
+        val availableHeightPx = with(density) { maxHeight.roundToPx() }
+        var heroCardHeightPx by remember { mutableIntStateOf(0) }
+        var linkBlockHeightPx by remember { mutableIntStateOf(0) }
+        val fillerHeight = with(density) {
+            (availableHeightPx - heroCardHeightPx - linkBlockHeightPx).coerceAtLeast(0).toDp()
         }
 
-        // Switch-mode link is pinned to the bottom of the screen, outside the scrollable area
-        // above — not just trailing the card with a small gap.
-        AuthSwitchModeLink(state = state, onIntent = onIntent)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState()),
+        ) {
+            Column(modifier = Modifier.onSizeChanged { heroCardHeightPx = it.height }) {
+                // ── Gradient hero ───────────────────────────────────────────────
+                // No fixed height: this Box wraps the hero Column's own (now taller) height
+                // instead of a hardcoded dp value, so it always extends exactly as far as the
+                // content needs — including the status bar's real height on this device,
+                // whatever that is. The old version fixed this Box at 260dp AND padded the
+                // *outer* column by the Scaffold's status-bar inset AND padded this Box's own
+                // content by statusBarsPadding again — two top insets stacked, leaving a plain,
+                // un-gradiented strip above a hard seam where the color cut in abruptly. Now
+                // there's exactly one statusBarsPadding, on the content, and the gradient
+                // behind it simply follows.
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.primaryContainer,
+                                    MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f),
+                                    MaterialTheme.colorScheme.surface,
+                                ),
+                            ),
+                        ),
+                    contentAlignment = Alignment.TopCenter,
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .statusBarsPadding()
+                            .padding(top = 40.dp, bottom = 36.dp),
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(88.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Chat,
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                            )
+                        }
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            stringResource(R.string.auth_app_name),
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            stringResource(R.string.auth_tagline),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
 
-        Spacer(Modifier.height(24.dp))
+                // ── Form card ───────────────────────────────────────────────────
+                // The form lives in its own floating card instead of flush against the hero
+                // above — separates the brand moment (gradient, logo, title) from the task (the
+                // fields), and gives the screen a resting composition instead of one long
+                // stacked column that ends in a lot of empty space below.
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp),
+                    shape = MaterialTheme.shapes.large,
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    shadowElevation = 8.dp,
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        // ── Social buttons ─────────────────────────────────────
+                        // Not ChatAppOutlinedButton: its leadingIcon always renders through
+                        // Icon(), which force-tints the whole vector with LocalContentColor —
+                        // fine for the app's own monochrome icons, but it would flatten
+                        // Google's real multi-color "G" mark into a single-color blob. Image()
+                        // doesn't tint, so the vector's own per-path fillColors (ic_google.xml)
+                        // survive — same shape/padding as ChatAppOutlinedButton otherwise, for
+                        // visual consistency with the rest of the screen.
+                        OutlinedButton(
+                            onClick = onGoogleSignIn,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = MaterialTheme.shapes.small,
+                            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp),
+                        ) {
+                            Image(
+                                imageVector = ImageVector.vectorResource(R.drawable.ic_google),
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.auth_continue_with_google))
+                        }
+
+                        Spacer(Modifier.height(20.dp))
+
+                        // ── Divider ───────────────────────────────────────────
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            HorizontalDivider(modifier = Modifier.weight(1f))
+                            Text(
+                                stringResource(R.string.auth_or_continue_with_email),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.outline,
+                            )
+                            HorizontalDivider(modifier = Modifier.weight(1f))
+                        }
+
+                        Spacer(Modifier.height(20.dp))
+
+                        // ── Email/password tabs ─────────────────────────────────
+                        Surface(
+                            shape = RoundedCornerShape(50),
+                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Row(modifier = Modifier.padding(4.dp)) {
+                                val isSignIn = state.authMode == AuthMode.SIGN_IN
+                                Surface(
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(50),
+                                    color = if (isSignIn) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                                    onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_IN)) },
+                                ) {
+                                    Text(
+                                        stringResource(R.string.auth_sign_in_tab),
+                                        modifier = Modifier.padding(vertical = 10.dp),
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = if (isSignIn) FontWeight.SemiBold else FontWeight.Normal,
+                                        color = if (isSignIn) MaterialTheme.colorScheme.onPrimaryContainer
+                                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                    )
+                                }
+                                Surface(
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(50),
+                                    color = if (!isSignIn) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                                    onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_UP)) },
+                                ) {
+                                    Text(
+                                        stringResource(R.string.auth_sign_up_tab),
+                                        modifier = Modifier.padding(vertical = 10.dp),
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = if (!isSignIn) FontWeight.SemiBold else FontWeight.Normal,
+                                        color = if (!isSignIn) MaterialTheme.colorScheme.onPrimaryContainer
+                                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(Modifier.height(16.dp))
+
+                        EmailPasswordForm(state = state, onIntent = onIntent)
+                    }
+                }
+            }
+
+            // Fills the leftover space (0dp once the keyboard eats into it) so the link below
+            // sits at the true bottom when there's room, and falls back to trailing the card
+            // with normal scroll otherwise — see the comment above this composable's root.
+            Spacer(Modifier.height(fillerHeight))
+
+            Column(modifier = Modifier.onSizeChanged { linkBlockHeightPx = it.height }) {
+                AuthSwitchModeLink(state = state, onIntent = onIntent)
+                Spacer(Modifier.height(24.dp))
+            }
+        }
     }
 }
 
