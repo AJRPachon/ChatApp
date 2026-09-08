@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.ui.auth
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -178,13 +179,23 @@ private fun LoginContent(
             .fillMaxSize()
             .imePadding()
             .verticalScroll(rememberScrollState())
-            .padding(contentPadding),
+            // Only the BOTTOM inset (nav bar) is consumed here — the top inset lives on the
+            // hero's own statusBarsPadding below, applied to its content instead of the whole
+            // column, so the gradient background isn't pushed down before it paints.
+            .padding(bottom = contentPadding.calculateBottomPadding()),
     ) {
-        // ── Gradient hero header ───────────────────────────────────────────────
+        // ── Gradient hero ───────────────────────────────────────────────────────
+        // No fixed height: this Box wraps the hero Column's own (now taller) height instead of
+        // a hardcoded dp value, so it always extends exactly as far as the content needs —
+        // including the status bar's real height on this device, whatever that is. The old
+        // version fixed this Box at 260dp AND padded the *outer* column by the Scaffold's
+        // status-bar inset AND padded this Box's own content by statusBarsPadding again — two
+        // top insets stacked, leaving a plain, un-gradiented strip above a hard seam where the
+        // color cut in abruptly. Now there's exactly one statusBarsPadding, on the content, and
+        // the gradient behind it simply follows.
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(260.dp)
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
@@ -193,11 +204,15 @@ private fun LoginContent(
                             MaterialTheme.colorScheme.surface,
                         ),
                     ),
-                )
-                .statusBarsPadding(),
-            contentAlignment = Alignment.Center,
+                ),
+            contentAlignment = Alignment.TopCenter,
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .padding(top = 40.dp, bottom = 36.dp),
+            ) {
                 Box(
                     modifier = Modifier
                         .size(88.dp)
@@ -227,17 +242,24 @@ private fun LoginContent(
             }
         }
 
-        // ── Form card ─────────────────────────────────────────────────────────
+        // ── Form card ───────────────────────────────────────────────────────────
+        // The form lives in its own floating card instead of flush against the hero above —
+        // separates the brand moment (gradient, logo, title) from the task (the fields), and
+        // gives the screen a resting composition instead of one long stacked column that ends
+        // in a lot of empty space below.
         Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surface,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            shape = MaterialTheme.shapes.large,
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            shadowElevation = 8.dp,
         ) {
             Column(
-                modifier = Modifier.padding(horizontal = 24.dp),
+                modifier = Modifier.padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Spacer(Modifier.height(8.dp))
-
                 // ── Social buttons ─────────────────────────────────────────────
                 ChatAppOutlinedButton(
                     text = stringResource(R.string.auth_continue_with_google),
@@ -309,9 +331,47 @@ private fun LoginContent(
                 Spacer(Modifier.height(16.dp))
 
                 EmailPasswordForm(state = state, onIntent = onIntent)
-
-                Spacer(Modifier.height(32.dp))
             }
+        }
+
+        Spacer(Modifier.height(20.dp))
+
+        // Switch-mode link sits outside/below the card, on the open surface — not another row
+        // inside it.
+        AuthSwitchModeLink(state = state, onIntent = onIntent)
+
+        Spacer(Modifier.height(24.dp))
+    }
+}
+
+@Composable
+private fun AuthSwitchModeLink(
+    state: AuthState,
+    onIntent: (AuthIntent) -> Unit,
+) {
+    val isSignUp = state.authMode == AuthMode.SIGN_UP
+    if (!isSignUp) {
+        if (state.showRegisterSuggestion) {
+            TextButton(
+                onClick = { onIntent(AuthIntent.SwitchToRegister) },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.auth_no_account_register_here))
+            }
+        } else {
+            TextButton(
+                onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_UP)) },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.auth_no_account_register))
+            }
+        }
+    } else {
+        TextButton(
+            onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_IN)) },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.auth_have_account_sign_in))
         }
     }
 }
@@ -430,31 +490,8 @@ private fun EmailPasswordForm(
             .fillMaxWidth()
             .testTag("auth_submit_button"),
     )
-
-    if (!isSignUp) {
-        if (state.showRegisterSuggestion) {
-            TextButton(
-                onClick = { onIntent(AuthIntent.SwitchToRegister) },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.auth_no_account_register_here))
-            }
-        } else {
-            TextButton(
-                onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_UP)) },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.auth_no_account_register))
-            }
-        }
-    } else {
-        TextButton(
-            onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_IN)) },
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(R.string.auth_have_account_sign_in))
-        }
-    }
+    // Switch-mode link now lives outside the card — see AuthSwitchModeLink, called from
+    // LoginContent after this form's Surface.
 }
 
 // ── MFA Challenge ──────────────────────────────────────────────────────────────
