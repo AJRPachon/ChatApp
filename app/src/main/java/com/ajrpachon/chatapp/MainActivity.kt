@@ -14,6 +14,8 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
@@ -247,25 +249,44 @@ class MainActivity : ComponentActivity() {
                     // Activity/Fragment transition convention. `it / 3` and `it / 4` (not `it`, a full
                     // off-screen slide) keep the outgoing screen partially visible throughout, which
                     // is what makes the two screens read as one continuous motion instead of two
-                    // separate slides. Deliberately doesn't set predictivePopTransitionSpec (the
-                    // gesture-back preview) — a separate, newer/more involved API; out of scope here.
+                    // separate slides.
+                    //
+                    // StatusViewerRoute/CallRoute are the exception: both are full-bleed, edge-to-edge
+                    // immersive overlays (a story's own colored/photo background, a call's camera feed)
+                    // opened "on top of" whatever you were doing, not a new place in the app's normal
+                    // screen hierarchy — sliding them in/out alongside the screen underneath like a
+                    // regular page reads as the wrong kind of motion for them (WhatsApp/Instagram don't
+                    // slide a story open either). They get a fade+scale "modal" pop/dismiss instead:
+                    // grows in from slightly smaller when opened, shrinks back down when closed —
+                    // scale target chosen conservatively (0.92f) so it reads as "settling into place"
+                    // rather than a jarring zoom.
                     transitionSpec = {
-                        (
-                            slideInHorizontally(tween(NAV_TRANSITION_MS, easing = FastOutSlowInEasing)) { it / 3 } +
-                                fadeIn(tween(NAV_TRANSITION_MS))
-                            ) togetherWith (
-                            slideOutHorizontally(tween(NAV_TRANSITION_MS, easing = FastOutSlowInEasing)) { -it / 4 } +
+                        if (targetState.key is StatusViewerRoute || targetState.key is CallRoute) {
+                            (fadeIn(tween(NAV_TRANSITION_MS)) + scaleIn(tween(NAV_TRANSITION_MS), initialScale = 0.92f)) togetherWith
                                 fadeOut(tween(NAV_TRANSITION_MS / 2))
-                            )
+                        } else {
+                            (
+                                slideInHorizontally(tween(NAV_TRANSITION_MS, easing = FastOutSlowInEasing)) { it / 3 } +
+                                    fadeIn(tween(NAV_TRANSITION_MS))
+                                ) togetherWith (
+                                slideOutHorizontally(tween(NAV_TRANSITION_MS, easing = FastOutSlowInEasing)) { -it / 4 } +
+                                    fadeOut(tween(NAV_TRANSITION_MS / 2))
+                                )
+                        }
                     },
                     popTransitionSpec = {
-                        (
-                            slideInHorizontally(tween(NAV_TRANSITION_MS, easing = FastOutSlowInEasing)) { -it / 4 } +
-                                fadeIn(tween(NAV_TRANSITION_MS))
-                            ) togetherWith (
-                            slideOutHorizontally(tween(NAV_TRANSITION_MS, easing = FastOutSlowInEasing)) { it / 3 } +
-                                fadeOut(tween(NAV_TRANSITION_MS / 2))
-                            )
+                        if (initialState.key is StatusViewerRoute || initialState.key is CallRoute) {
+                            fadeIn(tween(NAV_TRANSITION_MS / 2)) togetherWith
+                                (fadeOut(tween(NAV_TRANSITION_MS)) + scaleOut(tween(NAV_TRANSITION_MS), targetScale = 0.92f))
+                        } else {
+                            (
+                                slideInHorizontally(tween(NAV_TRANSITION_MS, easing = FastOutSlowInEasing)) { -it / 4 } +
+                                    fadeIn(tween(NAV_TRANSITION_MS))
+                                ) togetherWith (
+                                slideOutHorizontally(tween(NAV_TRANSITION_MS, easing = FastOutSlowInEasing)) { it / 3 } +
+                                    fadeOut(tween(NAV_TRANSITION_MS / 2))
+                                )
+                        }
                     },
                     entryProvider = { key -> appNavEntryProvider(key, backStack) },
                 )
