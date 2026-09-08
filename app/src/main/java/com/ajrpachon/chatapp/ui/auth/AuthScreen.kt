@@ -2,10 +2,12 @@ package com.ajrpachon.chatapp.ui.auth
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,6 +37,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -57,6 +61,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
@@ -67,9 +72,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
-import com.ajrpachon.chatapp.ui.components.ChatAppOutlinedButton
 import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
 import com.ajrpachon.chatapp.ui.components.ChatAppTextField
 import com.github.skydoves.navgraph.annotations.NavDestination
@@ -261,11 +266,27 @@ private fun LoginContent(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 // ── Social buttons ─────────────────────────────────────────────
-                ChatAppOutlinedButton(
-                    text = stringResource(R.string.auth_continue_with_google),
+                // Not ChatAppOutlinedButton: its leadingIcon always renders through Icon(),
+                // which force-tints the whole vector with LocalContentColor — fine for the
+                // app's own monochrome icons, but it would flatten Google's real multi-color
+                // "G" mark into a single-color blob. Image() doesn't tint, so the vector's own
+                // per-path fillColors (ic_google.xml) survive — same shape/padding as
+                // ChatAppOutlinedButton otherwise, for visual consistency with the rest of the
+                // screen.
+                OutlinedButton(
                     onClick = onGoogleSignIn,
                     modifier = Modifier.fillMaxWidth(),
-                )
+                    shape = MaterialTheme.shapes.small,
+                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp),
+                ) {
+                    Image(
+                        imageVector = ImageVector.vectorResource(R.drawable.ic_google),
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.auth_continue_with_google))
+                }
 
                 Spacer(Modifier.height(20.dp))
 
