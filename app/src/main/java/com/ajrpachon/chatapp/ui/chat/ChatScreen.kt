@@ -61,6 +61,9 @@ import java.io.File
 fun ChatScreen(
     conversationId: String,
     otherUserName: String,
+    // Set when opened from a global search result — jumps straight to and highlights this
+    // message once the first page of history has loaded, instead of opening at the bottom.
+    highlightMessageId: String? = null,
     onBack: () -> Unit,
     onStartCall: (CallBO) -> Unit = {},
     onGroupInfo: () -> Unit = {},
@@ -110,6 +113,21 @@ fun ChatScreen(
     LaunchedEffect(state.search.highlightedMessageId) {
         val id = state.search.highlightedMessageId ?: return@LaunchedEffect
         onScrollToMessage(id)
+    }
+
+    // Opened from a global search result: route it through the exact same jump-to-message
+    // mechanism in-chat search already uses (ChatIntent.JumpToMessage -> ChatSearchDelegate ->
+    // state.search.highlightedMessageId -> the LaunchedEffect above), rather than a second,
+    // parallel scroll path. Waits for the first page of Paging history to actually load first —
+    // dispatching immediately on screen entry would race a fresh ChatViewModel's paging source
+    // (itemCount still 0), and onScrollToMessage silently no-ops if the id isn't in the current
+    // snapshot yet. Same known limitation as in-chat search's own jump-to: only finds the message
+    // if it's within whatever's already loaded (first page here) — doesn't page further back to
+    // hunt for an arbitrarily old one.
+    LaunchedEffect(highlightMessageId) {
+        val id = highlightMessageId ?: return@LaunchedEffect
+        snapshotFlow { lazyPagingItems.itemCount }.first { it > 0 }
+        vm.onIntent(ChatIntent.JumpToMessage(id))
     }
 
     // MutableState (not `by remember`/`by rememberSaveable`) because ChatDialogHost also
