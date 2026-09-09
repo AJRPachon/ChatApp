@@ -223,9 +223,13 @@
     <string name="profile_change_photo_content_description">Cambiar foto</string>
     <string name="profile_display_name_label">Nombre de display</string>
     <string name="profile_username_display">@%1$s</string>
+    <string name="profile_category_privacy">Privacidad</string>
+    <string name="profile_category_appearance">Apariencia</string>
+    <string name="profile_category_security">Seguridad</string>
+    <string name="profile_category_data">Datos</string>
+    <string name="profile_category_account">Cuenta</string>
     <string name="profile_show_online_status_title">Mostrar en línea</string>
     <string name="profile_show_online_status_description">Los demás pueden ver cuándo estás activo</string>
-    <string name="profile_appearance_title">Apariencia</string>
     <string name="profile_theme_system">Sistema</string>
     <string name="profile_theme_light">Claro</string>
     <string name="profile_theme_dark">Oscuro</string>
@@ -304,6 +308,15 @@
     <string name="invitations_top_bar_title">Invitaciones</string>
     <string name="invitations_no_pending">No tienes invitaciones pendientes</string>
     <string name="invitations_username">@%1$s</string>
+    <string name="invitations_wants_to_add_you">quiere añadirte como contacto</string>
+    <string name="invitations_filter_received">Recibidas · %1$d</string>
+    <string name="invitations_filter_sent">Enviadas</string>
+    <string name="invitations_accept_cd">Aceptar invitación</string>
+    <string name="invitations_decline_cd">Rechazar invitación</string>
+    <string name="invitations_cancel_cd">Cancelar invitación</string>
+    <string name="invitations_no_sent">No has enviado invitaciones</string>
+    <string name="invitations_sent_accepted">Conectados</string>
+    <string name="invitations_sent_rejected">Rechazada</string>
 
     <!-- Conversations -->
     <string name="conversations_notification_sound_title">Sonido de notificación</string>
@@ -458,6 +471,10 @@
     <string name="status_compose_placeholder">¿Qué está pasando?</string>
     <string name="status_publish">Publicar</string>
     <string name="status_cancel">Cancelar</string>
+    <string name="status_reply_placeholder">Responder al estado…</string>
+    <string name="status_reply_send_cd">Enviar respuesta</string>
+    <string name="status_no_longer_available">Este estado ya no está disponible</string>
+    <string name="status_reply_quote_label">Estado</string>
 
     <!-- PdfViewerScreen -->
     <string name="pdf_share_chooser_title">Compartir PDF</string>

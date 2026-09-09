@@ -1,7 +1,8 @@
 package com.ajrpachon.chatapp.ui.invitations
 
+import com.ajrpachon.chatapp.domain.usecase.CancelSentInvitationUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
-import com.ajrpachon.chatapp.domain.usecase.GetOrCreateConversationUseCase
+import com.ajrpachon.chatapp.domain.usecase.GetSentInvitationsUseCase
 import com.ajrpachon.chatapp.domain.usecase.ObserveInvitationsUseCase
 import com.ajrpachon.chatapp.domain.usecase.RespondInvitationUseCase
 import androidx.lifecycle.viewModelScope
@@ -16,7 +17,8 @@ class InvitationsViewModel(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val observeInvitationsUseCase: ObserveInvitationsUseCase,
     private val respondInvitationUseCase: RespondInvitationUseCase,
-    private val getOrCreateConversationUseCase: GetOrCreateConversationUseCase,
+    private val getSentInvitationsUseCase: GetSentInvitationsUseCase,
+    private val cancelSentInvitationUseCase: CancelSentInvitationUseCase,
 ) : BaseViewModel<InvitationsState, InvitationsEffect>(InvitationsState()) {
 
     private var currentUserId: String? = null
@@ -41,12 +43,45 @@ class InvitationsViewModel(
         when (intent) {
             is InvitationsIntent.Accept -> respond(intent.invitationId, accept = true)
             is InvitationsIntent.Reject -> respond(intent.invitationId, accept = false)
+            is InvitationsIntent.SelectTab -> selectTab(intent.tab)
+            is InvitationsIntent.CancelSent -> cancelSent(intent.invitationId)
             is InvitationsIntent.DismissError -> updateState { it.copy(error = null) }
         }
     }
 
+    private fun selectTab(tab: InvitationsTab) {
+        updateState { it.copy(selectedTab = tab) }
+        if (tab == InvitationsTab.SENT) loadSentInvitations()
+    }
+
+    private fun loadSentInvitations() {
+        val uid = currentUserId ?: return
+        viewModelScope.launch {
+            updateState { it.copy(isSentLoading = true) }
+            getSentInvitationsUseCase(uid)
+                .onSuccess { sent -> updateState { it.copy(sentInvitations = sent, isSentLoading = false) } }
+                .onFailure { e ->
+                    AppLogger.e(TAG, "Get sent invitations failed", e)
+                    updateState { it.copy(isSentLoading = false, error = e.message) }
+                }
+        }
+    }
+
+    private fun cancelSent(id: String) {
+        viewModelScope.launch {
+            cancelSentInvitationUseCase(id)
+                .onSuccess {
+                    sendEffect(InvitationsEffect.ShowMessage("Invitación cancelada"))
+                    loadSentInvitations()
+                }
+                .onFailure { e ->
+                    AppLogger.e(TAG, "Cancel sent invitation failed", e)
+                    updateState { it.copy(error = e.message) }
+                }
+        }
+    }
+
     private fun respond(id: String, accept: Boolean) {
-        val invitation = state.value.invitations.firstOrNull { it.id == id } ?: return
         viewModelScope.launch {
             val result = if (accept)
                 respondInvitationUseCase.accept(id)
@@ -55,20 +90,12 @@ class InvitationsViewModel(
 
             result
                 .onSuccess {
-                    if (accept) {
-                        val uid = currentUserId
-                        if (uid != null) {
-                            catchResult {
-                                val conv = getOrCreateConversationUseCase(uid, invitation.sender.id)
-                                sendEffect(InvitationsEffect.NavigateToChat(conv.id, invitation.sender.displayName))
-                            }.onFailure { e ->
-                                AppLogger.e(TAG, "Create conversation after accept failed", e)
-                                sendEffect(InvitationsEffect.ShowMessage("Invitación aceptada"))
-                            }
-                        }
-                    } else {
-                        sendEffect(InvitationsEffect.ShowMessage("Invitación rechazada"))
-                    }
+                    // Accepting just marks the invitation accepted and stays on this screen — no
+                    // auto-navigation into the new chat. The conversation still gets created
+                    // lazily the next time either side opens it (SendInvitationUseCase already
+                    // handles UserRelationship.CONNECTED that way from New Chat).
+                    val message = if (accept) "Invitación aceptada" else "Invitación rechazada"
+                    sendEffect(InvitationsEffect.ShowMessage(message))
                 }
                 .onFailure { e ->
                     AppLogger.e(TAG, "Respond invitation failed", e)

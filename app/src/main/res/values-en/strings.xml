@@ -223,9 +223,13 @@
     <string name="profile_change_photo_content_description">Change photo</string>
     <string name="profile_display_name_label">Display name</string>
     <string name="profile_username_display">@%1$s</string>
+    <string name="profile_category_privacy">Privacy</string>
+    <string name="profile_category_appearance">Appearance</string>
+    <string name="profile_category_security">Security</string>
+    <string name="profile_category_data">Data</string>
+    <string name="profile_category_account">Account</string>
     <string name="profile_show_online_status_title">Show online status</string>
     <string name="profile_show_online_status_description">Others can see when you\'re active</string>
-    <string name="profile_appearance_title">Appearance</string>
     <string name="profile_theme_system">System</string>
     <string name="profile_theme_light">Light</string>
     <string name="profile_theme_dark">Dark</string>
@@ -299,6 +303,15 @@
     <string name="invitations_top_bar_title">Invitations</string>
     <string name="invitations_no_pending">You have no pending invitations</string>
     <string name="invitations_username">@%1$s</string>
+    <string name="invitations_wants_to_add_you">wants to add you as a contact</string>
+    <string name="invitations_filter_received">Received · %1$d</string>
+    <string name="invitations_filter_sent">Sent</string>
+    <string name="invitations_accept_cd">Accept invitation</string>
+    <string name="invitations_decline_cd">Decline invitation</string>
+    <string name="invitations_cancel_cd">Cancel invitation</string>
+    <string name="invitations_no_sent">You haven\'t sent any invitations</string>
+    <string name="invitations_sent_accepted">Connected</string>
+    <string name="invitations_sent_rejected">Declined</string>
 
     <!-- Conversations -->
     <string name="conversations_notification_sound_title">Notification sound</string>
@@ -453,6 +466,10 @@
     <string name="status_compose_placeholder">What\'s happening?</string>
     <string name="status_publish">Post</string>
     <string name="status_cancel">Cancel</string>
+    <string name="status_reply_placeholder">Reply to status…</string>
+    <string name="status_reply_send_cd">Send reply</string>
+    <string name="status_no_longer_available">This status is no longer available</string>
+    <string name="status_reply_quote_label">Status</string>
 
     <!-- PdfViewerScreen -->
     <string name="pdf_share_chooser_title">Share PDF</string>

@@ -27,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -36,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
@@ -185,6 +187,7 @@ internal fun MessageBubble(
     onReply: () -> Unit,
     isHighlighted: Boolean = false,
     onReplyClick: (String) -> Unit = {},
+    onStatusQuoteClick: () -> Unit = {},
     onDelete: (() -> Unit)? = null,
     onEdit: (() -> Unit)? = null,
     onSelfDestruct: (() -> Unit)? = null,
@@ -328,17 +331,35 @@ internal fun MessageBubble(
             horizontalAlignment = if (message.isFromMe) Alignment.End else Alignment.Start,
         ) {
         ChatBubbleSlot(isFromMe = message.isFromMe) { maxBubbleWidth ->
+            val bubbleColor = if (message.isFromMe) {
+                if (outgoingBubbleColor != Color.Unspecified) outgoingBubbleColor
+                else MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            }
             Surface(
                 shape = MaterialTheme.shapes.small,
-                color = if (message.isFromMe) {
-                    if (outgoingBubbleColor != Color.Unspecified) outgoingBubbleColor
-                    else MaterialTheme.colorScheme.primaryContainer
-                } else MaterialTheme.colorScheme.surfaceVariant,
+                color = bubbleColor,
+                // A per-conversation ChatTheme bubble color (ChatThemeColors.kt) isn't part of
+                // the MaterialTheme color scheme, so Surface's default
+                // contentColorFor(color) can't match it against a scheme swatch and falls back
+                // to whatever LocalContentColor is inherited from outside — in dark mode that's
+                // a light/near-white color, which made every custom-themed outgoing bubble's
+                // text (and everything else nested in it: audio waveforms, reply quotes, the
+                // footer) unreadable on the theme's light pastel background. Picking black or
+                // white by the bubble's own luminance keeps it readable in both app themes,
+                // whichever ChatTheme color is picked; scheme colors keep using
+                // contentColorFor as before.
+                contentColor = if (message.isFromMe && outgoingBubbleColor != Color.Unspecified) {
+                    if (outgoingBubbleColor.luminance() > 0.5f) Color.Black.copy(alpha = 0.87f) else Color.White
+                } else {
+                    contentColorFor(bubbleColor)
+                },
                 modifier = Modifier.widthIn(max = maxBubbleWidth),
             ) {
                 val hasMedia = message.imageUrl != null || message.gifUrl != null
                 val hasHeader = (isGroup && !message.isFromMe && message.senderName.isNotBlank()) ||
-                    message.replyToId != null
+                    message.replyToId != null || message.isStatusReply
                 // A bare photo/GIF (no caption, no audio) bleeds to the bubble's own edges —
                 // clipped by Surface's shape — instead of sitting inside the same padded column
                 // as text, so it reads as a photo, not a text bubble with a picture stuffed in
@@ -361,6 +382,14 @@ internal fun MessageBubble(
                             content = message.replyToContent ?: "",
                             isFromMe = message.isFromMe,
                             onClick = { onReplyClick(message.replyToId) },
+                        )
+                        if (!hasMedia) Spacer(Modifier.height(6.dp))
+                    }
+                    if (message.isStatusReply) {
+                        StatusReplyQuote(
+                            message = message,
+                            isFromMe = message.isFromMe,
+                            onClick = onStatusQuoteClick,
                         )
                         if (!hasMedia) Spacer(Modifier.height(6.dp))
                     }

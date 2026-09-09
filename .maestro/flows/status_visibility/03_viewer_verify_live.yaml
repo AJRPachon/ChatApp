@@ -1,0 +1,51 @@
+appId: com.ajrpachon.chatapp
+---
+# Step 3 of 3 — run on the SAME viewer device as step 1, right after step 2
+# completes on the poster device. Deliberately has NO launchApp/login: it
+# continues from wherever step 1 left the app (idle on
+# ConversationListScreen), which is what makes this an actual
+# live-Realtime-push assertion for Status visibility, not a fetch-on-open
+# — see ../../README.md "Flujo multi-dispositivo (Estado / Status)".
+#
+# PRECONDITION — verified in code: StatusRepositoryImpl.observeActiveStatuses
+# only resyncs contactIds from
+# conversationRepository.getLocalConversations(currentUserId) — i.e. a
+# status is only visible to accounts that already share a 1:1 conversation
+# with the poster. @claudeqa/@claudeqa2 already have a permanent one (used
+# throughout this whole suite — flows/realtime/, every flows/group_*.yaml
+# via "Maestro Test Group", forward_message_dialog_navigation.yaml...), so
+# this precondition is already satisfied and no extra one-time setup flow
+# was added. If these were two brand-new/unconnected accounts instead, THIS
+# FLOW WOULD NOT PASS until a conversation exists between them first (e.g.
+# subflows/open_conversation.yaml once from either side).
+#
+# StatusDao.observeActive orders by createdAt DESC and StatusViewerScreen
+# opens at initialIndex 0, so the just-posted status (the newest) is always
+# the first story shown for that user.
+#
+# NO in-viewer text assertion here (deliberately, not an oversight) — see
+# ../../README.md "Selectores: por qué id y no texto". StatusViewerScreen
+# draws fully edge-to-edge, and Maestro's accessibility-tree reader returns
+# ZERO nodes for its entire Compose content on this screen (confirmed with a
+# full recursive dump of the captured hierarchy: only the system status-bar
+# icons show up, not even the header name/timestamp, let alone the story
+# text) — the exact same class of driver limitation already documented for
+# the incognito banner, not a new app bug and not something this flow can
+# route around by waiting longer. A screenshot is taken instead so the
+# actual content is still checkable by a human from the run's debug
+# artifacts. The real, reliable assertion for "another user can see it live"
+# is the extendedWaitUntil above: the avatar appearing at all, on a device
+# that never relaunched since step 1, only happens if
+# StatusRepositoryImpl's realtime resync actually worked.
+#
+# Run with (same viewer device as step 1, no login needed — continuing the
+# same app instance):
+#   maestro test .maestro/flows/status_visibility/03_viewer_verify_live.yaml --device <VIEWER_DEVICE_ID> \
+#     -e POSTER_DISPLAY_NAME=<poster's displayName, e.g. claudeqa>
+- extendedWaitUntil:
+    visible:
+      id: "status_avatar_${POSTER_DISPLAY_NAME}"
+    timeout: 20000
+- tapOn:
+    id: "status_avatar_${POSTER_DISPLAY_NAME}"
+- takeScreenshot: viewer_story_content

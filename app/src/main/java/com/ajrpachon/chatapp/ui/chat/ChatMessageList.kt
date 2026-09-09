@@ -1,6 +1,8 @@
 package com.ajrpachon.chatapp.ui.chat
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -34,6 +36,7 @@ import androidx.paging.compose.itemKey
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.ReactionBO
+import com.ajrpachon.chatapp.ui.common.MotionConstants
 import com.ajrpachon.chatapp.ui.components.ChatMessagesSkeleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -155,7 +158,19 @@ internal fun ChatMessageList(
                     && prevMessage.senderId == message.senderId
 
                 if (!isInsideGroup) {
-                Box(Modifier.padding(top = 8.dp)) {
+                // A new message sliding/fading in as it's sent or received (instead of just
+                // appearing), and an older one smoothly closing the gap when deleted — instead of
+                // both previously popping in/out instantly. Keyed by the stable message.id above
+                // (lazyPagingItems.itemKey), so paging doesn't false-trigger it on unrelated scrolls.
+                Box(
+                    Modifier
+                        .padding(top = 8.dp)
+                        .animateItem(
+                            fadeInSpec = tween(MotionConstants.LIST_ITEM_ANIM_MS),
+                            placementSpec = tween(MotionConstants.LIST_ITEM_ANIM_MS, easing = FastOutSlowInEasing),
+                            fadeOutSpec = tween(MotionConstants.LIST_ITEM_ANIM_MS),
+                        ),
+                ) {
                     val isImageGroupStart = message.isGroupableImage()
                     if (isImageGroupStart) {
                         // Collect consecutive images from the same sender starting at this index.
@@ -193,6 +208,7 @@ internal fun ChatMessageList(
                                 onReply = { vm.onIntent(ChatIntent.SetReply(message)) },
                                 isHighlighted = message.id == highlightedMessageId,
                                 onReplyClick = onScrollToMessage,
+                            onStatusQuoteClick = { vm.onIntent(ChatIntent.StatusQuoteClicked(message)) },
                                 onDelete = if (message.isFromMe) {{ vm.onIntent(ChatIntent.DeleteMessage(message.id)) }} else null,
                                 onEdit = if (message.isFromMe && message.content.isNotBlank()) {{ vm.onIntent(ChatIntent.StartEdit(message)) }} else null,
                                 onSelfDestruct = if (message.isFromMe) {{ vm.onIntent(ChatIntent.ShowExpiryDialog(message.id)) }} else null,
@@ -234,6 +250,7 @@ internal fun ChatMessageList(
                             onReply = { vm.onIntent(ChatIntent.SetReply(message)) },
                             isHighlighted = message.id == highlightedMessageId,
                             onReplyClick = onScrollToMessage,
+                            onStatusQuoteClick = { vm.onIntent(ChatIntent.StatusQuoteClicked(message)) },
                             onDelete = if (message.isFromMe) {{ vm.onIntent(ChatIntent.DeleteMessage(message.id)) }} else null,
                             onEdit = if (message.isFromMe && message.content.isNotBlank()) {{ vm.onIntent(ChatIntent.StartEdit(message)) }} else null,
                             onSelfDestruct = if (message.isFromMe) {{ vm.onIntent(ChatIntent.ShowExpiryDialog(message.id)) }} else null,

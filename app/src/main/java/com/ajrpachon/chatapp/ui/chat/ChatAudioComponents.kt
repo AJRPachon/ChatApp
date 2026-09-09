@@ -26,6 +26,7 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -340,7 +341,13 @@ internal fun AudioPlayerRow(
     onSpeedChange: (Float) -> Unit = {},
 ) {
     val activeColor = MaterialTheme.colorScheme.primary
-    val inactiveColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
+    // LocalContentColor, not the app-wide onSurface: this player renders nested inside a chat
+    // bubble's Surface, whose contentColor tracks that specific bubble's own background — the
+    // default incoming/outgoing scheme colors, or a per-conversation ChatTheme color, which
+    // MessageBubble picks black/white text for by its own luminance. onSurface ignores all of
+    // that and is only ever correct for the *app's* background, not the bubble's — on a light
+    // ChatTheme bubble in dark mode it produced a near-white, near-invisible waveform/timestamp.
+    val inactiveColor = LocalContentColor.current.copy(alpha = 0.25f)
     val progress = if (durationMs > 0) currentMs.toFloat() / durationMs else 0f
 
     // Use the actual recorded amplitude data when available (resampled to a fixed bar count so
@@ -420,7 +427,7 @@ internal fun AudioPlayerRow(
                 Text(
                     text = formatAudioDuration(if (currentMs > 0) currentMs else durationMs),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    color = LocalContentColor.current.copy(alpha = 0.6f),
                 )
                 // Message send time (+ status icon if it's mine), under the end of the waveform.
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -428,7 +435,7 @@ internal fun AudioPlayerRow(
                         Text(
                             text = sentTime,
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            color = LocalContentColor.current.copy(alpha = 0.6f),
                         )
                     }
                     if (isFromMe && sendStatus != null) {

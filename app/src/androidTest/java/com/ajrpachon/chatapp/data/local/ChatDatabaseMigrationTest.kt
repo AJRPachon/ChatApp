@@ -50,7 +50,7 @@ class ChatDatabaseMigrationTest {
     )
 
     @Test
-    fun migrate1To37_realDataSurvivesTheFullChain() {
+    fun migrate1To38_realDataSurvivesTheFullChain() {
         // Arrange: a v1 database with one real row in `messages` — the v1 schema (per
         // app/schemas/.../1.json) is just id, conversationId, senderId, content, isRead,
         // createdAt.
@@ -61,16 +61,16 @@ class ChatDatabaseMigrationTest {
         )
         v1.close()
 
-        // Act: replay every registered migration, 1 -> 37 — validated against the real
-        // app/schemas/.../37.json export. runMigrationsAndValidate fails loudly on any mismatch
-        // between what the migrations actually produce and what Room's own schema for v37
+        // Act: replay every registered migration, 1 -> 38 — validated against the real
+        // app/schemas/.../38.json export. runMigrationsAndValidate fails loudly on any mismatch
+        // between what the migrations actually produce and what Room's own schema for v38
         // expects (a missing column, a wrong type, an index that doesn't match, etc.).
-        val migrated = helper.runMigrationsAndValidate(37, allMigrations.toList())
+        val migrated = helper.runMigrationsAndValidate(38, allMigrations.toList())
 
-        // Assert: the v1 row is still there and unharmed after all 36 migrations.
+        // Assert: the v1 row is still there and unharmed after all 37 migrations.
         val statement = migrated.prepare("SELECT content FROM messages WHERE id = 'msg-1'")
         try {
-            assertTrue("expected the v1 row to still exist after migrating to v37", statement.step())
+            assertTrue("expected the v1 row to still exist after migrating to v38", statement.step())
             assertEquals("hola desde v1", statement.getText(0))
         } finally {
             statement.close()

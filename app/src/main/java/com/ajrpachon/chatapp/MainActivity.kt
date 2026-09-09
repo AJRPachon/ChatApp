@@ -10,6 +10,15 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.core.content.ContextCompat
 import androidx.compose.material3.AlertDialog
@@ -42,6 +51,7 @@ import com.ajrpachon.chatapp.ui.call.IncomingCallIntent
 import com.ajrpachon.chatapp.domain.model.isGroupCall
 import com.ajrpachon.chatapp.ui.call.IncomingCallScreen
 import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
+import com.ajrpachon.chatapp.ui.common.MotionConstants.NAV_TRANSITION_MS
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import com.ajrpachon.chatapp.domain.model.ThemePreference
 import com.ajrpachon.chatapp.domain.repository.ThemeRepository
@@ -229,6 +239,80 @@ class MainActivity : ComponentActivity() {
                         rememberSaveableStateHolderNavEntryDecorator(),
                         rememberViewModelStoreNavEntryDecorator(),
                     ),
+                    // Motion for every screen-to-screen navigation in the app — NavDisplay has no
+                    // transitionSpec/popTransitionSpec of its own by default, so without this every
+                    // push/pop across the whole app (opening a chat, Profile, Invitations, a call...)
+                    // was an instant, un-animated cut. Material's "shared axis X": pushing slides the
+                    // new screen in from the right while the one underneath slides out partway left
+                    // (both cross-fading together), and popping reverses it — forward always reads as
+                    // "deeper", back always reads as "returning", matching the platform's own
+                    // Activity/Fragment transition convention. `it / 3` and `it / 4` (not `it`, a full
+                    // off-screen slide) keep the outgoing screen partially visible throughout, which
+                    // is what makes the two screens read as one continuous motion instead of two
+                    // separate slides.
+                    //
+                    // StatusViewerRoute/CallRoute are the exception: both are full-bleed, edge-to-edge
+                    // immersive overlays (a story's own colored/photo background, a call's camera feed)
+                    // opened "on top of" whatever you were doing, not a new place in the app's normal
+                    // screen hierarchy — sliding them in/out alongside the screen underneath like a
+                    // regular page reads as the wrong kind of motion for them (WhatsApp/Instagram don't
+                    // slide a story open either). They get a fade+scale "modal" pop/dismiss instead:
+                    // grows in from slightly smaller when opened, shrinks back down when closed —
+                    // scale target chosen conservatively (0.92f) so it reads as "settling into place"
+                    // rather than a jarring zoom.
+                    transitionSpec = {
+                        if (targetState.key is StatusViewerRoute || targetState.key is CallRoute) {
+                            (fadeIn(tween(NAV_TRANSITION_MS)) + scaleIn(tween(NAV_TRANSITION_MS), initialScale = 0.92f)) togetherWith
+                                fadeOut(tween(NAV_TRANSITION_MS / 2))
+                        } else {
+                            (
+                                slideInHorizontally(tween(NAV_TRANSITION_MS, easing = FastOutSlowInEasing)) { it / 3 } +
+                                    fadeIn(tween(NAV_TRANSITION_MS))
+                                ) togetherWith (
+                                slideOutHorizontally(tween(NAV_TRANSITION_MS, easing = FastOutSlowInEasing)) { -it / 4 } +
+                                    fadeOut(tween(NAV_TRANSITION_MS / 2))
+                                )
+                        }
+                    },
+                    popTransitionSpec = {
+                        if (initialState.key is StatusViewerRoute || initialState.key is CallRoute) {
+                            fadeIn(tween(NAV_TRANSITION_MS / 2)) togetherWith
+                                (fadeOut(tween(NAV_TRANSITION_MS)) + scaleOut(tween(NAV_TRANSITION_MS), targetScale = 0.92f))
+                        } else {
+                            (
+                                slideInHorizontally(tween(NAV_TRANSITION_MS, easing = FastOutSlowInEasing)) { -it / 4 } +
+                                    fadeIn(tween(NAV_TRANSITION_MS))
+                                ) togetherWith (
+                                slideOutHorizontally(tween(NAV_TRANSITION_MS, easing = FastOutSlowInEasing)) { it / 3 } +
+                                    fadeOut(tween(NAV_TRANSITION_MS / 2))
+                                )
+                        }
+                    },
+                    // Without this, an edge-swipe back gesture only plays popTransitionSpec's
+                    // fixed-duration animation AFTER you lift your finger — nothing moves while you're
+                    // actually dragging, which is exactly what read as "sosa"/lifeless: modern Android
+                    // apps show the outgoing screen shrinking/sliding away live, tracking your finger,
+                    // the whole time you're swiping (the "predictive back" preview, Android 13+). Same
+                    // ContentTransform logic as popTransitionSpec above (deliberately identical, per
+                    // Android's own recipe for this — https://developer.android.com/guide/navigation/
+                    // navigation-3/recipes/animations) — the difference is entirely that NavDisplay
+                    // drives *this* one continuously off the live gesture progress instead of firing it
+                    // once on commit. Requires enableOnBackInvokedCallback (AndroidManifest.xml) to
+                    // actually receive gesture-progress callbacks from the OS in the first place.
+                    predictivePopTransitionSpec = {
+                        if (initialState.key is StatusViewerRoute || initialState.key is CallRoute) {
+                            fadeIn(tween(NAV_TRANSITION_MS / 2)) togetherWith
+                                (fadeOut(tween(NAV_TRANSITION_MS)) + scaleOut(tween(NAV_TRANSITION_MS), targetScale = 0.92f))
+                        } else {
+                            (
+                                slideInHorizontally(tween(NAV_TRANSITION_MS, easing = FastOutSlowInEasing)) { -it / 4 } +
+                                    fadeIn(tween(NAV_TRANSITION_MS))
+                                ) togetherWith (
+                                slideOutHorizontally(tween(NAV_TRANSITION_MS, easing = FastOutSlowInEasing)) { it / 3 } +
+                                    fadeOut(tween(NAV_TRANSITION_MS / 2))
+                                )
+                        }
+                    },
                     entryProvider = { key -> appNavEntryProvider(key, backStack) },
                 )
 

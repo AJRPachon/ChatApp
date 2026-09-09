@@ -38,6 +38,7 @@ fun InvitationDTO.toBO(): InvitationBO {
             else -> InvitationStatus.PENDING
         },
         createdAt = runCatching { Instant.parse(createdAt) }.getOrElse { Instant.fromEpochMilliseconds(0) },
+        receiver = receiver?.toBO(),
     )
 }
 

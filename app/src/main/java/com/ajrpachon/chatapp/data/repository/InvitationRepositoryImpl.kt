@@ -98,6 +98,14 @@ class InvitationRepositoryImpl(
     override suspend fun unblockUser(blockerId: String, blockedId: String): Result<Unit> =
         catchResult { remoteSource.unblockUser(blockerId, blockedId) }
 
+    override suspend fun getSentInvitations(userId: String): Result<List<InvitationBO>> = catchResult {
+        remoteSource.getSentInvitations(userId).map { it.toBO() }
+    }
+
+    override suspend fun cancelSentInvitation(invitationId: String): Result<Unit> = catchResult {
+        remoteSource.updateStatus(invitationId, "rejected")
+    }
+
     override suspend fun getPendingReceivedInvitation(currentUserId: String, senderId: String): InvitationBO? {
         val invitations = catchResult {
             remoteSource.getRelationshipInvitations(currentUserId, senderId)

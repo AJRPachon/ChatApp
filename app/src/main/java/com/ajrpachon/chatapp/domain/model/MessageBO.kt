@@ -38,10 +38,22 @@ data class MessageBO(
     val isPinned: Boolean = false,
     val isSaved: Boolean = false,
     val sendStatus: SendStatus = SendStatus.SENT,
+    // Reply-to-status (WhatsApp-style): a snapshot taken when this message was sent, not a live
+    // reference — see StatusReplyContext's doc for why.
+    val replyToStatusId: String? = null,
+    val replyToStatusOwnerId: String? = null,
+    val replyToStatusText: String? = null,
+    val replyToStatusImageUrl: String? = null,
+    val replyToStatusVideoUrl: String? = null,
+    val replyToStatusBackgroundColor: Long? = null,
+    val replyToStatusExpiresAt: Long? = null,
 ) {
     fun isExpired(): Boolean = expiresAt != null && expiresAt <= System.currentTimeMillis()
     fun expiresInSeconds(): Long? = expiresAt?.let { ((it - System.currentTimeMillis()) / 1000).coerceAtLeast(0) }
     val isCallMessage: Boolean get() = callType != null
+    val isStatusReply: Boolean get() = replyToStatusId != null
+    fun isStatusReplyExpired(): Boolean =
+        replyToStatusExpiresAt != null && replyToStatusExpiresAt <= System.currentTimeMillis()
 
     fun replySnippet(): String = when {
         callType != null -> if (callType == "video") "Videollamada" else "Llamada de voz"

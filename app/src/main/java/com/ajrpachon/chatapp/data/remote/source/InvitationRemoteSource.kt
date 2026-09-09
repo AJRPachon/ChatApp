@@ -5,6 +5,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.postgrest.result.PostgrestResult
 import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.channel
@@ -32,6 +33,15 @@ class InvitationRemoteSource(private val supabase: SupabaseClient) {
             }
             .decodeListOrEmpty<InvitationDTO>()
 
+    // Invitations screen's "Sent" tab — every invitation I sent, any status, receiver embedded.
+    suspend fun getSentInvitations(userId: String): List<InvitationDTO> =
+        supabase.postgrest["invitations"]
+            .select(Columns.raw("*, receiver:profiles!receiver_id(*)")) {
+                filter { eq("sender_id", userId) }
+                order("created_at", Order.DESCENDING)
+            }
+            .decodeListOrEmpty<InvitationDTO>()
+
     suspend fun sendInvitation(senderId: String, receiverId: String): InvitationDTO {
         // If a previous rejected invitation exists, reset it to pending
         val existing = supabase.postgrest["invitations"]
@@ -53,8 +63,12 @@ class InvitationRemoteSource(private val supabase: SupabaseClient) {
             return existing.copy(status = "pending")
         }
 
+        // Postgrest defaults inserts to `Prefer: return=minimal` (empty body) — decodeSingle()
+        // against that empty body is exactly what threw "Expected start of the array '[', but
+        // had 'EOF' instead" here. select() switches to `return=representation` so the inserted
+        // row (with its DB-generated id) actually comes back to decode.
         return supabase.postgrest["invitations"]
-            .insert(mapOf("sender_id" to senderId, "receiver_id" to receiverId))
+            .insert(mapOf("sender_id" to senderId, "receiver_id" to receiverId)) { select() }
             .decodeSingle<InvitationDTO>()
     }
 

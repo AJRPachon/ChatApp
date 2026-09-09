@@ -2,6 +2,7 @@ package com.ajrpachon.chatapp.domain.usecase
 
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.MessageLimits
+import com.ajrpachon.chatapp.domain.model.StatusReplyContext
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import com.ajrpachon.chatapp.utils.AnalyticsEvents
@@ -34,6 +35,7 @@ class SendMessageUseCase(
         videoUrl: String? = null,
         // E2EE: pass the other user's ID for 1:1 conversations (null for group chats)
         otherUserId: String? = null,
+        statusReply: StatusReplyContext? = null,
     ): Result<MessageBO> = catchResult {
         require(
             content.isNotBlank() || imageUrl != null || audioUrl != null ||
@@ -52,6 +54,7 @@ class SendMessageUseCase(
             fileUrl, fileName, fileSize, fileMimeType,
             videoUrl = videoUrl,
             otherUserId = otherUserId,
+            statusReply = statusReply,
         )
         // Call-summary messages (callType != null) are not user-authored content — call
         // analytics are logged symmetrically from CallViewModel itself instead, covering both

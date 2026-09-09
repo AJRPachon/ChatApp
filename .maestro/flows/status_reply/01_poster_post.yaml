@@ -1,0 +1,69 @@
+appId: com.ajrpachon.chatapp
+---
+# Step 1 of 2 in the cross-device "reply to status" flow — see
+# ../../README.md "Flujo multi-dispositivo (Responder a Estado)" for the full
+# choreography. Run this FIRST, on the device that will POST the status that
+# the other device is going to reply to.
+#
+# Unlike flows/status_visibility/ (which proves a *live Realtime push* of
+# visibility, and therefore needs the viewer already idle on
+# ConversationListScreen BEFORE the poster posts), this flow is about reply
+# mechanics, not visibility timing — status_visibility/ already covers "does a
+# status posted by one QA account reach the other's device". So here the
+# replier device simply logs in AFTER this step has finished and does a
+# normal fetch-on-open sync (StatusViewModel's init{}/sync()) to see the
+# status — no need for a 3-step live-push dance.
+#
+# Posting logic copied verbatim from status_visibility/02_poster_post.yaml
+# (same two starting-state branches for "My status": AddStatusButton and its
+# empty-state icon vs MyStatusAvatar's "+" badge/DropdownMenu when an own
+# active status already exists from an earlier run — see that file's header
+# comment for the full rationale on both branches and why the "settle wait"
+# marker below is needed). "status_my_avatar" becoming visible is the real
+# persisted/uploaded assertion (StatusRepositoryImpl.postTextStatus posts
+# remote first, upserts local after), not an optimistic local echo.
+#
+# NOTE — no cleanup step here either, same trade-off as status_visibility/:
+# StatusIntent.DeleteStatus exists but nothing in StatusScreen.kt dispatches
+# it, so this leaves one more real (but harmless, no readable PII) status on
+# the poster's QA account, self-expiring after STATUS_TTL_MS (24h).
+#
+# Run with (poster device):
+#   maestro test .maestro/flows/status_reply/01_poster_post.yaml --device <POSTER_DEVICE_ID> \
+#     -e LOGIN_EMAIL=<poster email> -e LOGIN_PASSWORD=<poster password> \
+#     -e STATUS_TOKEN="Maestro status-reply target <unique token>"
+- runFlow:
+    file: ../../subflows/login_qa.yaml
+    env:
+      LOGIN_EMAIL: ${LOGIN_EMAIL}
+      LOGIN_PASSWORD: ${LOGIN_PASSWORD}
+- extendedWaitUntil:
+    visible:
+      id: "status_settle_wait_marker_that_never_exists"
+    timeout: 3500
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: "status_add_text_button"
+    commands:
+      - tapOn:
+          id: "status_add_text_button"
+- runFlow:
+    when:
+      visible:
+        id: "status_add_more_button"
+    commands:
+      - tapOn:
+          id: "status_add_more_button"
+      - tapOn: "Agregar estado de texto|Add text status"
+- assertVisible: "Nuevo estado|New status"
+- waitForAnimationToEnd
+- tapOn: "¿Qué está pasando\\?|What's happening\\?"
+- inputText: ${STATUS_TOKEN}
+- hideKeyboard
+- tapOn: "Publicar|Post"
+- extendedWaitUntil:
+    visible:
+      id: "status_my_avatar"
+    timeout: 20000

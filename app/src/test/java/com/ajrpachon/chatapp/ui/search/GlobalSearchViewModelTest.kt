@@ -76,7 +76,24 @@ class GlobalSearchViewModelTest {
         assertEquals("msg-1", vm.state.value.results[0].messageId)
         assertEquals("Team Chat", vm.state.value.results[0].conversationName)
         assertEquals("hello world", vm.state.value.results[0].content)
+        // isGroup is read off the looked-up conversation (true here) — a tapped result needs
+        // this to open ChatRoute with the right isGroup, not always false.
+        assertTrue(vm.state.value.results[0].isGroup)
         assertFalse(vm.state.value.isLoading)
+    }
+
+    @Test
+    fun `isGroup defaults to false when conversation lookup returns null`() = runTest(mainDispatcherRule.scheduler) {
+        coEvery { messageRepository.searchAllMessages("hello") } returns listOf(message("msg-1", "conv-missing", "hi"))
+        coEvery { conversationRepository.getById("conv-missing") } returns null
+
+        val vm = buildViewModel()
+        advanceUntilIdle()
+
+        vm.onIntent(GlobalSearchIntent.QueryChanged("hello"))
+        advanceUntilIdle()
+
+        assertFalse(vm.state.value.results[0].isGroup)
     }
 
     @Test

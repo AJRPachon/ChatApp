@@ -16,20 +16,25 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
@@ -48,9 +53,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -101,7 +110,13 @@ fun StatusBar(
     // Own statuses are represented by the "My status" slot below, not as a
     // separate contact-like avatar mixed in with everyone else's.
     val myStatuses = state.statuses.filter { it.isFromMe }
-    val contactStatuses = state.statuses.filterNot { it.isFromMe }
+    // One avatar per CONTACT, not per status: a contact with several active statuses must still
+    // show a single circle here (mirrors Instagram/WhatsApp) — tapping it opens all of their
+    // statuses in sequence via StatusIntent.FilterUserStatuses/StatusViewerScreen, which already
+    // groups by userId correctly. state.statuses is ordered by createdAt DESC
+    // (StatusDao.observeActive), so distinctBy keeps each contact's MOST RECENT status as the
+    // representative shown here, with the most-recently-active contact first.
+    val contactStatuses = state.statuses.filterNot { it.isFromMe }.distinctBy { it.userId }
 
     Column(modifier = modifier) {
         LazyRow(
@@ -170,7 +185,8 @@ private fun AddStatusButton(
                     .size(52.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primaryContainer)
-                    .clickable(onClick = onAddText),
+                    .clickable(onClick = onAddText)
+                    .testTag("status_add_text_button"),
             ) {
                 Icon(
                     Icons.Default.Add,
@@ -215,7 +231,8 @@ private fun MyStatusAvatar(
                     .size(56.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
-                    .clickable(interactionSource = null, indication = null, onClick = onView),
+                    .clickable(interactionSource = null, indication = null, onClick = onView)
+                    .testTag("status_my_avatar"),
             ) {
                 ChatAppAvatar(name = status.userName, url = status.userAvatarUrl, size = 52.dp)
             }
@@ -231,7 +248,13 @@ private fun MyStatusAvatar(
                     // background) and before clickable, so clip/background paint only the small
                     // circle while clickable binds to the full enlarged bounds.
                     .minimumInteractiveComponentSize()
-                    .clickable { showAddMenu = true },
+                    .clickable { showAddMenu = true }
+                    // Opens the DropdownMenu below — its own items stay
+                    // text-selected in Maestro flows (testTagsAsResourceId
+                    // doesn't propagate into a DropdownMenu's Popup window),
+                    // but this launcher button itself lives on the main
+                    // screen and is safely id-selectable.
+                    .testTag("status_add_more_button"),
             ) {
                 Icon(
                     Icons.Default.Add,
@@ -272,7 +295,16 @@ private fun StatusAvatar(status: StatusBO, onClick: () -> Unit) {
                 .size(56.dp)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
-                .clickable(interactionSource = null, indication = null, onClick = onClick),
+                .clickable(interactionSource = null, indication = null, onClick = onClick)
+                // Per-user tag (not a shared static id) so a two-device test can tap
+                // specifically this contact's status ring instead of "some avatar in
+                // the row" — see .maestro/flows/status_visibility/. Keyed by userName
+                // (the account's displayName) rather than userId: the id is a backend
+                // UUID a Maestro flow has no practical way to look up ahead of time,
+                // while the displayName is already the stable, known value this suite
+                // parametrizes flows with elsewhere (e.g. open_conversation.yaml's
+                // CONTACT_NAME).
+                .testTag("status_avatar_${status.userName}"),
         ) {
             ChatAppAvatar(
                 name = status.userName,
@@ -308,11 +340,17 @@ private fun ComposeStatusDialog(
                 onValueChange = onTextChange,
                 placeholder = { Text(stringResource(R.string.status_compose_placeholder)) },
                 maxLines = 4,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("status_compose_text_field"),
             )
         },
         confirmButton = {
-            TextButton(onClick = onPost, enabled = text.isNotBlank()) { Text(stringResource(R.string.status_publish)) }
+            TextButton(
+                onClick = onPost,
+                enabled = text.isNotBlank(),
+                modifier = Modifier.testTag("status_publish_button"),
+            ) { Text(stringResource(R.string.status_publish)) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.status_cancel)) }
@@ -327,10 +365,18 @@ fun StatusViewerScreen(
     statuses: List<StatusBO>,
     initialIndex: Int = 0,
     onClose: () -> Unit,
+    onSendReply: (StatusBO, String) -> Unit = { _, _ -> },
 ) {
     var currentIndex by remember { mutableIntStateOf(initialIndex) }
     val current = statuses.getOrNull(currentIndex) ?: run { onClose(); return }
     val isVideo = current.videoUrl != null
+    // Tapping the reply field pauses auto-advance immediately — mirrors WhatsApp/Instagram, and
+    // stops the story from moving on (or closing) while the user is still deciding what to type,
+    // not just once they've typed something. Resumes as soon as the field loses focus, which
+    // happens both on send (focus cleared explicitly below) and if the user dismisses the
+    // keyboard/taps away without sending.
+    var replyText by remember(currentIndex) { mutableStateOf("") }
+    var isReplyFieldFocused by remember(currentIndex) { mutableStateOf(false) }
 
     // Text/image stories advance on a fixed timer; video stories advance when
     // playback finishes, with the progress bar following the player position
@@ -338,8 +384,8 @@ fun StatusViewerScreen(
     val timedProgress = remember(currentIndex) { Animatable(0f) }
     var videoProgress by remember(currentIndex) { mutableFloatStateOf(0f) }
 
-    LaunchedEffect(currentIndex, isVideo) {
-        if (!isVideo) {
+    LaunchedEffect(currentIndex, isVideo, isReplyFieldFocused, replyText.isNotBlank()) {
+        if (!isVideo && !isReplyFieldFocused && replyText.isBlank()) {
             timedProgress.snapTo(0f)
             timedProgress.animateTo(
                 targetValue = 1f,
@@ -385,11 +431,15 @@ fun StatusViewerScreen(
         }
 
         // Header (avatar bubble + name + progress bar), on top of the media.
+        // statusBarsPadding() keeps it clear of the status bar — this screen draws
+        // full-bleed behind system bars, so a fixed padding alone isn't reliable
+        // across devices with different status bar / cutout heights.
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.TopCenter)
-                .padding(top = 24.dp),
+                .statusBarsPadding()
+                .padding(top = 8.dp),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -442,6 +492,9 @@ fun StatusViewerScreen(
                             .clip(RoundedCornerShape(2.dp)),
                         color = Color.White,
                         trackColor = Color.White.copy(alpha = 0.4f),
+                        // M3's default draws a small stop-indicator dot at the track's end —
+                        // out of place on this thin Instagram/WhatsApp-style story segment bar.
+                        drawStopIndicator = {},
                     )
                 }
             }
@@ -449,7 +502,9 @@ fun StatusViewerScreen(
 
         // Tap zones to navigate — no ripple: a full-screen highlight on every
         // tap would be distracting for a story viewer (Instagram/WhatsApp
-        // don't show one either).
+        // don't show one either). Drawn before the reply bar below, so where
+        // the two overlap at the bottom, the reply bar (a later Box sibling —
+        // topmost in both z-order and hit-testing) wins touches, not this Row.
         Row(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
@@ -468,6 +523,57 @@ fun StatusViewerScreen(
                     },
             )
         }
+
+        // Reply bar — only for someone else's status; replying to your own doesn't make sense
+        // (mirrors WhatsApp, which shows a viewer list there instead).
+        if (!current.isFromMe) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .imePadding()
+                    .padding(12.dp),
+            ) {
+                val keyboard = LocalSoftwareKeyboardController.current
+                val focusManager = LocalFocusManager.current
+                OutlinedTextField(
+                    value = replyText,
+                    onValueChange = { replyText = it },
+                    modifier = Modifier
+                        .weight(1f)
+                        .onFocusChanged { isReplyFieldFocused = it.isFocused }
+                        .testTag("status_reply_field"),
+                    placeholder = { Text(stringResource(R.string.status_reply_placeholder), color = Color.White.copy(alpha = 0.6f)) },
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = Color.White),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color.White,
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.6f),
+                        cursorColor = Color.White,
+                    ),
+                    maxLines = 4,
+                )
+                Spacer(Modifier.width(8.dp))
+                IconButton(
+                    enabled = replyText.isNotBlank(),
+                    onClick = {
+                        onSendReply(current, replyText)
+                        replyText = ""
+                        keyboard?.hide()
+                        focusManager.clearFocus()
+                    },
+                    modifier = Modifier.testTag("status_reply_send_button"),
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.Send,
+                        contentDescription = stringResource(R.string.status_reply_send_cd),
+                        tint = if (replyText.isNotBlank()) Color.White else Color.White.copy(alpha = 0.4f),
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -478,19 +584,44 @@ fun StatusViewerScreen(
 fun StatusViewerScreen(
     userId: String,
     onClose: () -> Unit,
+    // Set when opened from a chat's quoted-status reply — jumps straight to that story instead
+    // of always starting at index 0. If the story already expired/was deleted it just won't be
+    // in state.userStatuses; ChatScreen already checked replyToStatusExpiresAt before navigating
+    // here, so that case shouldn't normally reach this screen at all.
+    initialStatusId: String? = null,
+    onNavigateToChat: (conversationId: String, otherUserName: String) -> Unit = { _, _ -> },
     vm: StatusViewModel = koinViewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
 
     LaunchedEffect(state.statuses, userId) {
         vm.onIntent(StatusIntent.FilterUserStatuses(state.statuses, userId))
     }
 
-    StatusViewerScreen(
-        statuses = state.userStatuses,
-        initialIndex = 0,
-        onClose = onClose,
-    )
+    LaunchedEffect(Unit) {
+        vm.effect.collect { effect ->
+            when (effect) {
+                is StatusEffect.NavigateToChat -> onNavigateToChat(effect.conversationId, effect.otherUserName)
+                is StatusEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.text)
+            }
+        }
+    }
+
+    Box {
+        StatusViewerScreen(
+            statuses = state.userStatuses,
+            initialIndex = initialStatusId
+                ?.let { id -> state.userStatuses.indexOfFirst { it.id == id }.takeIf { it >= 0 } }
+                ?: 0,
+            onClose = onClose,
+            onSendReply = { status, text -> vm.onIntent(StatusIntent.ReplyToStatus(status, text)) },
+        )
+        androidx.compose.material3.SnackbarHost(
+            snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
 }
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
