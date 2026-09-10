@@ -265,7 +265,15 @@ internal fun MessageFooterContent(
                 modifier = Modifier.padding(end = 2.dp),
             )
             if (message.isFromMe) {
-                SendStatusIcon(sendStatus = message.sendStatus, isRead = message.isRead)
+                // Pending/sent-unread tint defaults to onSurface too (see SendStatusIcon), which
+                // suffers the same custom-bubble contrast problem as everything else here — pass
+                // the ambient content color explicitly rather than threading yet another override
+                // param through; read (blue) and failed (error) stay fixed either way.
+                SendStatusIcon(
+                    sendStatus = message.sendStatus,
+                    isRead = message.isRead,
+                    neutralTint = LocalContentColor.current.copy(alpha = 0.45f),
+                )
             }
         }
     }
@@ -373,7 +381,7 @@ internal fun ReadReceiptIcon(isRead: Boolean, unreadTint: Color? = null) {
         tint = if (isRead)
             Color(0xFF4FC3F7)
         else
-            unreadTint ?: LocalContentColor.current.copy(alpha = 0.45f),
+            unreadTint ?: MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
     )
 }
 
@@ -395,7 +403,7 @@ internal fun SendStatusIcon(
             Icon(
                 imageVector = Icons.Default.Schedule,
                 contentDescription = stringResource(R.string.chat_pending_send),
-                tint = neutralTint ?: LocalContentColor.current.copy(alpha = 0.4f),
+                tint = neutralTint ?: MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                 modifier = Modifier.size(12.dp),
             )
         SendStatus.FAILED ->
@@ -468,13 +476,22 @@ internal fun ReplyQuote(
     senderName: String,
     content: String,
     isFromMe: Boolean,
+    // Set only for a sent bubble using a custom ChatTheme color (see MessageBubble's
+    // customContentColor) — MaterialTheme.colorScheme.primary/onSurface assume they're drawn on
+    // the app's real theme surface, which isn't true once the bubble itself is a fixed pastel/
+    // dark RGB unrelated to the current light/dark scheme. When set, this quote's own tint and
+    // text are derived from it instead so they stay legible on that bubble in either system theme.
+    contentColorOverride: Color? = null,
     onClick: () -> Unit = {},
 ) {
-    val accent = MaterialTheme.colorScheme.primary
-    val bg = if (isFromMe)
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-    else
-        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+    val accent = contentColorOverride ?: MaterialTheme.colorScheme.primary
+    val bg = when {
+        contentColorOverride != null -> contentColorOverride.copy(alpha = 0.14f)
+        isFromMe -> MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+    }
+    val bodyColor = contentColorOverride?.copy(alpha = 0.75f)
+        ?: MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
 
     Row(
         modifier = Modifier
@@ -502,7 +519,7 @@ internal fun ReplyQuote(
             Text(
                 text = content,
                 style = MaterialTheme.typography.bodySmall,
-                color = LocalContentColor.current.copy(alpha = 0.7f),
+                color = bodyColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -521,13 +538,19 @@ internal fun ReplyQuote(
 internal fun StatusReplyQuote(
     message: MessageBO,
     isFromMe: Boolean,
+    // See ReplyQuote's contentColorOverride doc — same reasoning, same source (MessageBubble's
+    // customContentColor for a sent bubble on a custom ChatTheme color).
+    contentColorOverride: Color? = null,
     onClick: () -> Unit = {},
 ) {
-    val accent = MaterialTheme.colorScheme.primary
-    val bg = if (isFromMe)
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-    else
-        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+    val accent = contentColorOverride ?: MaterialTheme.colorScheme.primary
+    val bg = when {
+        contentColorOverride != null -> contentColorOverride.copy(alpha = 0.14f)
+        isFromMe -> MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+    }
+    val bodyColor = contentColorOverride?.copy(alpha = 0.75f)
+        ?: MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
     val expired = message.isStatusReplyExpired()
 
     Row(
@@ -588,7 +611,7 @@ internal fun StatusReplyQuote(
                 },
                 style = MaterialTheme.typography.bodySmall,
                 fontStyle = if (expired) FontStyle.Italic else FontStyle.Normal,
-                color = LocalContentColor.current.copy(alpha = 0.7f),
+                color = bodyColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
