@@ -158,7 +158,7 @@ com.ajrpachon.chatapp/
 │   │                                 repositorios locales: DraftRepository, IncognitoRepository,
 │   │                                 WallpaperRepository, AiAssistantRepository, PollRepository,
 │   │                                 ContactRepository, ScheduledMessageRepository
-│   └── usecase/                      Un caso de uso por archivo (20 en total)
+│   └── usecase/                      Un caso de uso por archivo (23 en total)
 │
 ├── 🔵 data/                       ← Implementa las interfaces del dominio
 │   ├── local/
@@ -167,8 +167,8 @@ com.ajrpachon.chatapp/
 │   │   │                             stickers, recibos de lectura, carpetas, difusión,
 │   │   │                             eventos de chat, sesiones y mensajes programados
 │   │   ├── dao/                      15 DAOs de acceso a la BD
-│   │   ├── ChatDatabase.kt           Base de datos Room (versión 37, cifrada con SQLCipher)
-│   │   ├── DatabaseBuilder.kt        Migraciones v1 → v37 (36 migraciones explícitas)
+│   │   ├── ChatDatabase.kt           Base de datos Room (versión 38, cifrada con SQLCipher)
+│   │   ├── DatabaseBuilder.kt        Migraciones v1 → v38 (37 migraciones explícitas)
 │   │   └── DatabaseKeyProvider.kt    Clave AES-256 en Android KeyStore
 │   ├── remote/
 │   │   ├── dto/                      Data Transfer Objects de Supabase
@@ -268,7 +268,7 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | ![Compose](https://img.shields.io/badge/-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white) **Jetpack Compose BOM** | 2026.08.00 | UI declarativa |
 | ![M3](https://img.shields.io/badge/-Material%203-757575?logo=materialdesign&logoColor=white) **Material 3** | (BOM) | Sistema de diseño |
 | **Navigation 3** | 1.1.7 | Navegación entre pantallas |
-| ![Room](https://img.shields.io/badge/-Room-FF6F00?logo=android&logoColor=white) **Room** | 2.8.4 | Base de datos local (v37, 21 entidades, 15 DAOs) |
+| ![Room](https://img.shields.io/badge/-Room-FF6F00?logo=android&logoColor=white) **Room** | 2.8.4 | Base de datos local (v38, 21 entidades, 15 DAOs) |
 | **SQLCipher** | 4.18.0 | Cifrado AES-256 de la base de datos Room |
 | ![Koin](https://img.shields.io/badge/-Koin-F97316?logoColor=white) **Koin** | 4.2.2 | Inyección de dependencias |
 | **Kotlin Coroutines + Flow** | 1.11.0 | Concurrencia y streams asíncronos |
@@ -307,20 +307,21 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | **Robolectric** | 4.16.1 | Tests unitarios con contexto Android |
 | **Room Testing** | 2.8.4 | Tests de integración en memoria para DAOs |
 
-**482 tests** repartidos en 60 ficheros:
+**503 tests** repartidos en 62 ficheros:
 
 **ViewModels**
 
 | Fichero | Tests |
 |---|---|
 | `ChatViewModelTest` | 24 |
-| `StatusViewModelTest` | 16 |
+| `StatusViewModelTest` | 19 |
+| `InvitationsViewModelTest` | 11 |
 | `CreateGroupViewModelTest` | 11 |
 | `NewChatViewModelTest` | 10 |
-| `InvitationsViewModelTest` | 7 |
+| `ProfileViewModelTest` | 8 |
+| `GlobalSearchViewModelTest` | 6 |
 | `UserInfoViewModelTest` | 6 |
 | `ConversationListViewModelTest` | 5 |
-| `GlobalSearchViewModelTest` | 5 |
 | `GifPickerViewModelTest` | 5 |
 | `ChatMediaGalleryViewModelTest` | 4 |
 | `EmojiPickerViewModelTest` | 4 |
@@ -363,6 +364,7 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | `UpdateGroupUseCaseTest` | 7 |
 | `ExportConversationUseCaseTest` | 6 |
 | `BlockUserUseCaseTest` | 6 |
+| `ReplyToStatusUseCaseTest` | 5 |
 | `RespondInvitationUseCaseTest` | 4 |
 | `PromoteGroupMemberUseCaseTest` | 4 |
 | `ObserveConversationsUseCaseTest` | 4 |

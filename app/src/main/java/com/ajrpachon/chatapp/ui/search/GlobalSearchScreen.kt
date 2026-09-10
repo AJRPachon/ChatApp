@@ -48,7 +48,7 @@ import java.util.Locale
 @Composable
 fun GlobalSearchScreen(
     onBack: () -> Unit,
-    onOpenConversation: (conversationId: String, conversationName: String, isGroup: Boolean) -> Unit,
+    onOpenConversation: (conversationId: String, conversationName: String, isGroup: Boolean, messageId: String) -> Unit,
 ) {
     val vm: GlobalSearchViewModel = koinViewModel()
     val state by vm.state.collectAsStateWithLifecycle()
@@ -149,7 +149,7 @@ private fun NoResultsState(query: String) {
 @Composable
 private fun ResultsList(
     results: List<GlobalSearchResultItem>,
-    onOpenConversation: (conversationId: String, conversationName: String, isGroup: Boolean) -> Unit,
+    onOpenConversation: (conversationId: String, conversationName: String, isGroup: Boolean, messageId: String) -> Unit,
 ) {
     val dateFormat = remember { SimpleDateFormat("dd MMM HH:mm", Locale.getDefault()) }
     LazyColumn {
@@ -157,7 +157,9 @@ private fun ResultsList(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onOpenConversation(result.conversationId, result.conversationName, false) }
+                    .clickable {
+                        onOpenConversation(result.conversationId, result.conversationName, result.isGroup, result.messageId)
+                    }
                     .padding(horizontal = 16.dp, vertical = 12.dp),
             ) {
                 Text(

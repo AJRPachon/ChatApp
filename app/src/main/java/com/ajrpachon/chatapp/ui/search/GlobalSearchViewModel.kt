@@ -37,13 +37,14 @@ class GlobalSearchViewModel(
                         emit(GlobalSearchState(query = query, isLoading = true))
                         val messages = messageRepository.searchAllMessages(query)
                         val results = messages.map { msg ->
-                            val conversationName = conversationRepository.getById(msg.conversationId)?.name ?: "Chat"
+                            val conversation = conversationRepository.getById(msg.conversationId)
                             GlobalSearchResultItem(
                                 messageId = msg.id,
                                 conversationId = msg.conversationId,
-                                conversationName = conversationName,
+                                conversationName = conversation?.name ?: "Chat",
                                 content = msg.content,
                                 createdAtMs = msg.createdAt.toEpochMilliseconds(),
+                                isGroup = conversation?.isGroup ?: false,
                             )
                         }
                         analyticsTracker.logEvent(

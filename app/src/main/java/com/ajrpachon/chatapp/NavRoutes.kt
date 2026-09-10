@@ -31,7 +31,14 @@ import kotlinx.serialization.Serializable
 @NavGraphRoot
 @Serializable data object AuthRoute : NavKey
 @Serializable data object ConversationListRoute : NavKey
-@Serializable data class ChatRoute(val conversationId: String, val otherUserName: String = "", val isGroup: Boolean = false) : NavKey
+@Serializable data class ChatRoute(
+    val conversationId: String,
+    val otherUserName: String = "",
+    val isGroup: Boolean = false,
+    // Set when opened from a search result (global search) — jumps straight to and highlights
+    // this message instead of opening at the bottom, mirroring in-chat search's own jump-to.
+    val highlightMessageId: String? = null,
+) : NavKey
 @Serializable data object InvitationsRoute : NavKey
 @Serializable data object NewChatRoute : NavKey
 @Serializable data object ProfileRoute : NavKey
@@ -124,6 +131,7 @@ fun chatNavEntry(
         ChatScreen(
             conversationId = key.conversationId,
             otherUserName = key.otherUserName,
+            highlightMessageId = key.highlightMessageId,
             onBack = dropUnlessResumed { backStack.removeLastOrNull() },
             onStartCall = { call ->
                 backStack.add(
@@ -308,9 +316,9 @@ fun miscNavEntry(
     is GlobalSearchRoute -> NavEntry(key) {
         GlobalSearchScreen(
             onBack = dropUnlessResumed { backStack.removeLastOrNull() },
-            onOpenConversation = { id, name, isGroup ->
+            onOpenConversation = { id, name, isGroup, messageId ->
                 backStack.removeAll { it is GlobalSearchRoute }
-                backStack.add(ChatRoute(id, name, isGroup))
+                backStack.add(ChatRoute(id, name, isGroup, highlightMessageId = messageId))
             },
         )
     }
