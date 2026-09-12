@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.chat
 
+import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.GetGroupMembersUseCase
@@ -14,6 +15,7 @@ import kotlinx.coroutines.launch
 
 private const val TAG = "ChatGroupPresenceDelegate"
 private const val MEMBERSHIP_POLL_INTERVAL_MS = 3_000L
+private const val ONLINE_STATUS_REFRESH_INTERVAL_MS = 15_000L
 
 /**
  * Handles group-conversation presence: polling membership sync, observing the live member list
@@ -45,6 +47,11 @@ class ChatGroupPresenceDelegate(
     private val memberOnlineStatuses = MutableStateFlow<Map<String, Boolean>>(emptyMap())
     private var memberObserveJob: Job? = null
 
+    // Last user snapshot observed per member from userRepository.observeUserById(...), cached so
+    // the ticker below can re-evaluate UserBO.isOnline() against the current clock even if a
+    // member's Flow has gone silent (they killed the app, so their presence heartbeat stopped).
+    private var lastObservedMembers: Map<String, UserBO?> = emptyMap()
+
     fun start(uid: String) {
         scope.launch {
             memberOnlineStatuses.collect { map ->
@@ -59,6 +66,12 @@ class ChatGroupPresenceDelegate(
             }
         }
         scope.launch {
+            while (isActive) {
+                delay(ONLINE_STATUS_REFRESH_INTERVAL_MS)
+                memberOnlineStatuses.value = lastObservedMembers.mapValues { (_, user) -> user?.isOnline() == true }
+            }
+        }
+        scope.launch {
             var previousIsMember = true
             catchResult {
                 getGroupMembersUseCase(conversationId).collect { members ->
@@ -67,10 +80,12 @@ class ChatGroupPresenceDelegate(
                     memberObserveJob?.cancel()
                     memberObserveJob = launch {
                         memberOnlineStatuses.value = emptyMap()
+                        lastObservedMembers = emptyMap()
                         for (member in members) {
                             launch {
                                 catchResult {
                                     userRepository.observeUserById(member.userId).collect { user ->
+                                        lastObservedMembers = lastObservedMembers + (member.userId to user)
                                         memberOnlineStatuses.value = memberOnlineStatuses.value + (member.userId to (user?.isOnline() == true))
                                     }
                                 }
