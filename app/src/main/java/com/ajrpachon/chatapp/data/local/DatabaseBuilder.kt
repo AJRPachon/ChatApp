@@ -440,6 +440,18 @@ private val migration29To30 = object : Migration(29, 30) {
     }
 }
 
+private val migration38To39 = object : Migration(38, 39) {
+    override fun migrate(connection: SQLiteConnection) {
+        // Self-healing migration: some dev/QA builds reached DATABASE_VERSION 38 while the
+        // on-disk schema still lacked index_broadcast_list_members_listId (the version number
+        // was reused mid-development before the app's first release, so migration28To29 — which
+        // already creates this index — never ran against those particular installs). Re-issuing
+        // the same idempotent CREATE INDEX IF NOT EXISTS here heals any device stuck in that
+        // inconsistent v38-without-index state, without touching data.
+        connection.execSQL("CREATE INDEX IF NOT EXISTS index_broadcast_list_members_listId ON broadcast_list_members(listId)")
+    }
+}
+
 /**
  * Every registered migration, oldest to newest — the single source of truth `buildChatDatabase`
  * wires into `.addMigrations(...)`, and what `ChatDatabaseMigrationTest`
@@ -456,5 +468,5 @@ internal val allMigrations = arrayOf(
     MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
     MIGRATION_9_10, MIGRATION_10_11, migration11To12,
     migration12To13, migration13To14, migration14To15, migration15To16, migration16To17,
-    migration17To18, migration18To19, migration19To20, migration20To21, migration21To22, migration22To23, migration23To24, migration24To25, migration25To26, migration26To27, migration27To28, migration28To29, migration29To30, migration30To31, migration31To32, migration32To33, migration33To34, migration34To35, migration35To36, migration36To37, migration37To38,
+    migration17To18, migration18To19, migration19To20, migration20To21, migration21To22, migration22To23, migration23To24, migration24To25, migration25To26, migration26To27, migration27To28, migration28To29, migration29To30, migration30To31, migration31To32, migration32To33, migration33To34, migration34To35, migration35To36, migration36To37, migration37To38, migration38To39,
 )

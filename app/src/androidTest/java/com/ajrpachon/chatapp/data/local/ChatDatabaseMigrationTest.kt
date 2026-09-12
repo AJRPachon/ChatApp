@@ -13,11 +13,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Exercises the app's real migration chain (`allMigrations` in DatabaseBuilder.kt — 36
- * migrations, v1 -> v37) end-to-end against the actual exported schemas in `app/schemas/`. This
- * is the check `chatapp-room-migration`'s own "Verifying" step never runs: that a database
- * created at an OLD version, holding real data, survives the full chain to today's version
- * without Room's own schema validation failing and without losing that data.
+ * Exercises the app's real migration chain (`allMigrations` in DatabaseBuilder.kt, v1 -> v39)
+ * end-to-end against the actual exported schemas in `app/schemas/`. This is the check
+ * `chatapp-room-migration`'s own "Verifying" step never runs: that a database created at an OLD
+ * version, holding real data, survives the full chain to today's version without Room's own
+ * schema validation failing and without losing that data.
  *
  * Deliberately does NOT use SQLCipher (`SupportOpenHelperFactory`) — encryption is a separate,
  * already-covered concern (see the on-device check performed when sqlcipher-android was bumped
@@ -32,25 +32,33 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class ChatDatabaseMigrationTest {
 
-    private val testDbName = "chat-migration-test.db"
-
-    @get:Rule
-    val helper = MigrationTestHelper(
+    // Each @Test needs its own on-disk file name: MigrationTestHelper's teardown does not
+    // reliably wipe the underlying SQLite file between test methods that share one instrumented
+    // process, so two tests pointed at the same file name can leak state across each other
+    // (e.g. the second test's createDatabase(1) failing because the file was already left at a
+    // later version by a previous test).
+    private fun helperFor(dbName: String) = MigrationTestHelper(
         instrumentation = InstrumentationRegistry.getInstrumentation(),
-        file = InstrumentationRegistry.getInstrumentation().targetContext.getDatabasePath(testDbName),
+        file = InstrumentationRegistry.getInstrumentation().targetContext.getDatabasePath(dbName),
         driver = BundledSQLiteDriver(),
         databaseClass = ChatDatabase::class,
         databaseFactory = {
             Room.databaseBuilder<ChatDatabase>(
                 context = InstrumentationRegistry.getInstrumentation().targetContext,
-                name = testDbName,
+                name = dbName,
             ).setDriver(BundledSQLiteDriver()).build()
         },
         autoMigrationSpecs = emptyList(),
     )
 
+    @get:Rule
+    val helper = helperFor("chat-migration-test.db")
+
+    @get:Rule
+    val selfHealHelper = helperFor("chat-migration-test-38-39.db")
+
     @Test
-    fun migrate1To38_realDataSurvivesTheFullChain() {
+    fun migrate1To39_realDataSurvivesTheFullChain() {
         // Arrange: a v1 database with one real row in `messages` — the v1 schema (per
         // app/schemas/.../1.json) is just id, conversationId, senderId, content, isRead,
         // createdAt.
@@ -61,17 +69,51 @@ class ChatDatabaseMigrationTest {
         )
         v1.close()
 
-        // Act: replay every registered migration, 1 -> 38 — validated against the real
-        // app/schemas/.../38.json export. runMigrationsAndValidate fails loudly on any mismatch
-        // between what the migrations actually produce and what Room's own schema for v38
+        // Act: replay every registered migration, 1 -> 39 — validated against the real
+        // app/schemas/.../39.json export. runMigrationsAndValidate fails loudly on any mismatch
+        // between what the migrations actually produce and what Room's own schema for v39
         // expects (a missing column, a wrong type, an index that doesn't match, etc.).
-        val migrated = helper.runMigrationsAndValidate(38, allMigrations.toList())
+        val migrated = helper.runMigrationsAndValidate(39, allMigrations.toList())
 
-        // Assert: the v1 row is still there and unharmed after all 37 migrations.
+        // Assert: the v1 row is still there and unharmed after all migrations.
         val statement = migrated.prepare("SELECT content FROM messages WHERE id = 'msg-1'")
         try {
-            assertTrue("expected the v1 row to still exist after migrating to v38", statement.step())
+            assertTrue("expected the v1 row to still exist after migrating to v39", statement.step())
             assertEquals("hola desde v1", statement.getText(0))
+        } finally {
+            statement.close()
+        }
+        migrated.close()
+    }
+
+    @Test
+    fun migrate38To39_selfHealsMissingBroadcastListMembersIndex() {
+        // Arrange: reproduce the real-world regression seen on a physical device — a DB that
+        // reached version 38 without index_broadcast_list_members_listId, because the version
+        // number was reused mid-development (pre-release) before migration28To29 — which
+        // creates that index — actually ran against that particular install. Build a real v38
+        // database via `createDatabase`, then explicitly drop the index to simulate that
+        // inconsistent state.
+        val v38 = selfHealHelper.createDatabase(38)
+        v38.execSQL("DROP INDEX IF EXISTS index_broadcast_list_members_listId")
+        v38.close()
+
+        // Act: migration38To39 re-issues CREATE INDEX IF NOT EXISTS for that same index. Passing
+        // the full registered list is fine and matches how `buildChatDatabase` wires
+        // migrations in production — MigrationTestHelper only applies the ones needed to go
+        // from the DB's current version (38) to the target (39), i.e. just migration38To39.
+        val migrated = selfHealHelper.runMigrationsAndValidate(39, allMigrations.toList())
+
+        // Assert: the index exists again after the self-healing migration.
+        val statement = migrated.prepare(
+            "SELECT name FROM sqlite_master WHERE type = 'index' " +
+                "AND name = 'index_broadcast_list_members_listId'"
+        )
+        try {
+            assertTrue(
+                "expected index_broadcast_list_members_listId to be recreated by migration38To39",
+                statement.step(),
+            )
         } finally {
             statement.close()
         }
