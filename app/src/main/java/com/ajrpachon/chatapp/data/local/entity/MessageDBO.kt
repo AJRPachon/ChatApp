@@ -15,6 +15,7 @@ data class MessageDBO(
     val imageUrl: String? = null,
     val audioUrl: String? = null,
     @ColumnInfo(name = "audioDurationMs") val audioDurationMs: Long? = null,
+    @ColumnInfo(name = "audioAmplitudes") val audioAmplitudes: String? = null,
     val replyToId: String? = null,
     val replyToContent: String? = null,
     val replyToSenderName: String? = null,

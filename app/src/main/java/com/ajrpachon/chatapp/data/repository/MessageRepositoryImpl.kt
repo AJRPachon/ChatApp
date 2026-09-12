@@ -90,6 +90,7 @@ class MessageRepositoryImpl(
         imageUrl: String?,
         audioUrl: String?,
         audioDurationMs: Long?,
+        audioAmplitudes: String?,
         replyToId: String?,
         replyToContent: String?,
         replyToSenderName: String?,
@@ -128,6 +129,7 @@ class MessageRepositoryImpl(
             imageUrl = imageUrl,
             audioUrl = audioUrl,
             audioDurationMs = audioDurationMs,
+            audioAmplitudes = audioAmplitudes,
             replyToId = replyToId,
             replyToContent = replyToContent,
             replyToSenderName = replyToSenderName,
@@ -150,8 +152,10 @@ class MessageRepositoryImpl(
             replyToStatusBackgroundColor = statusReply?.statusBackgroundColor,
             replyToStatusExpiresAt = statusReply?.statusExpiresAt?.let { Instant.fromEpochMilliseconds(it).toString() },
         )
+        AppLogger.d(TAG, "DIAG sendMessage BEFORE insert audioDurationMs=$audioDurationMs dto.audioDurationMs=${messageDto.audioDurationMs}")
         remoteSource.sendMessage(messageDto)
         val messageDbo = messageDto.toDBO()
+        AppLogger.d(TAG, "DIAG sendMessage AFTER dto.toDBO() dbo.audioDurationMs=${messageDbo.audioDurationMs} id=${messageDbo.id}")
         messageDao.upsert(messageDbo)
         val sender = userDao.getById(senderId)
         val senderName = sender?.displayName ?: senderId

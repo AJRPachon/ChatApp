@@ -101,8 +101,10 @@ internal fun MessageFooterContent(
     onToggleSelect: () -> Unit = {},
 ) {
     if (message.audioUrl != null && MediaUrlValidator.isValid(message.audioUrl)) {
+        val amplitudeHistory = remember(message.audioAmplitudes) { parseAmplitudes(message.audioAmplitudes) }
         RemoteAudioPlayer(
             url = message.audioUrl,
+            amplitudeHistory = amplitudeHistory,
             senderAvatarUrl = message.senderAvatarUrl,
             senderInitial = message.senderName.firstOrNull()?.uppercase() ?: "?",
             sentTime = timeText,

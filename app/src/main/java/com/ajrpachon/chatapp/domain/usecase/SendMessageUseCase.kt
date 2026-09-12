@@ -20,6 +20,7 @@ class SendMessageUseCase(
         imageUrl: String? = null,
         audioUrl: String? = null,
         audioDurationMs: Long? = null,
+        audioAmplitudes: String? = null,
         replyToId: String? = null,
         replyToContent: String? = null,
         replyToSenderName: String? = null,
@@ -47,7 +48,7 @@ class SendMessageUseCase(
         }
         val message = messageRepository.sendMessage(
             conversationId, senderId, content.trim(),
-            imageUrl, audioUrl, audioDurationMs,
+            imageUrl, audioUrl, audioDurationMs, audioAmplitudes,
             replyToId, replyToContent, replyToSenderName,
             callType, callStatus, callDuration,
             gifUrl, stickerUrl,
