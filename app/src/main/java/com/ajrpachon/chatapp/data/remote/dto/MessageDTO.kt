@@ -14,6 +14,7 @@ data class MessageDTO(
     @SerialName("image_url") val imageUrl: String? = null,
     @SerialName("audio_url") val audioUrl: String? = null,
     @SerialName("audio_duration_ms") val audioDurationMs: Long? = null,
+    @SerialName("audio_amplitudes") val audioAmplitudes: String? = null,
     @SerialName("reply_to_id") val replyToId: String? = null,
     @SerialName("reply_to_content") val replyToContent: String? = null,
     @SerialName("reply_to_sender_name") val replyToSenderName: String? = null,

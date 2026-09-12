@@ -13,7 +13,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Exercises the app's real migration chain (`allMigrations` in DatabaseBuilder.kt, v1 -> v39)
+ * Exercises the app's real migration chain (`allMigrations` in DatabaseBuilder.kt, v1 -> v40)
  * end-to-end against the actual exported schemas in `app/schemas/`. This is the check
  * `chatapp-room-migration`'s own "Verifying" step never runs: that a database created at an OLD
  * version, holding real data, survives the full chain to today's version without Room's own
@@ -57,8 +57,11 @@ class ChatDatabaseMigrationTest {
     @get:Rule
     val selfHealHelper = helperFor("chat-migration-test-38-39.db")
 
+    @get:Rule
+    val audioAmplitudesHelper = helperFor("chat-migration-test-39-40.db")
+
     @Test
-    fun migrate1To39_realDataSurvivesTheFullChain() {
+    fun migrate1To40_realDataSurvivesTheFullChain() {
         // Arrange: a v1 database with one real row in `messages` — the v1 schema (per
         // app/schemas/.../1.json) is just id, conversationId, senderId, content, isRead,
         // createdAt.
@@ -69,16 +72,16 @@ class ChatDatabaseMigrationTest {
         )
         v1.close()
 
-        // Act: replay every registered migration, 1 -> 39 — validated against the real
-        // app/schemas/.../39.json export. runMigrationsAndValidate fails loudly on any mismatch
-        // between what the migrations actually produce and what Room's own schema for v39
+        // Act: replay every registered migration, 1 -> 40 — validated against the real
+        // app/schemas/.../40.json export. runMigrationsAndValidate fails loudly on any mismatch
+        // between what the migrations actually produce and what Room's own schema for v40
         // expects (a missing column, a wrong type, an index that doesn't match, etc.).
-        val migrated = helper.runMigrationsAndValidate(39, allMigrations.toList())
+        val migrated = helper.runMigrationsAndValidate(40, allMigrations.toList())
 
         // Assert: the v1 row is still there and unharmed after all migrations.
         val statement = migrated.prepare("SELECT content FROM messages WHERE id = 'msg-1'")
         try {
-            assertTrue("expected the v1 row to still exist after migrating to v39", statement.step())
+            assertTrue("expected the v1 row to still exist after migrating to v40", statement.step())
             assertEquals("hola desde v1", statement.getText(0))
         } finally {
             statement.close()
@@ -114,6 +117,36 @@ class ChatDatabaseMigrationTest {
                 "expected index_broadcast_list_members_listId to be recreated by migration38To39",
                 statement.step(),
             )
+        } finally {
+            statement.close()
+        }
+        migrated.close()
+    }
+
+    @Test
+    fun migrate39To40_addsAudioAmplitudesColumnToMessages() {
+        // Arrange: a real v39 database (already includes the self-healed broadcast list members
+        // index from migration38To39) with one message row inserted before the amplitudes column
+        // existed.
+        val v39 = audioAmplitudesHelper.createDatabase(39)
+        v39.execSQL(
+            "INSERT INTO messages (id, conversationId, senderId, content, isRead, createdAt, " +
+                "isEncrypted, isDeleted, isEdited, isPinned, isSaved, sendStatus) " +
+                "VALUES ('msg-39', 'conv-1', 'user-1', 'hola desde v39', 0, 2000, " +
+                "0, 0, 0, 0, 0, 'sent')"
+        )
+        v39.close()
+
+        // Act: migration39To40 adds the nullable audioAmplitudes TEXT column.
+        val migrated = audioAmplitudesHelper.runMigrationsAndValidate(40, allMigrations.toList())
+
+        // Assert: the pre-existing row survives with audioAmplitudes defaulting to NULL.
+        val statement = migrated.prepare(
+            "SELECT audioAmplitudes FROM messages WHERE id = 'msg-39'"
+        )
+        try {
+            assertTrue("expected the v39 row to still exist after migrating to v40", statement.step())
+            assertTrue("expected audioAmplitudes to be NULL by default", statement.isNull(0))
         } finally {
             statement.close()
         }

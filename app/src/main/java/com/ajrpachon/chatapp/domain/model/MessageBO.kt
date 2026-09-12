@@ -17,6 +17,10 @@ data class MessageBO(
     val imageUrl: String? = null,
     val audioUrl: String? = null,
     val audioDurationMs: Long? = null,
+    // Comma-separated, resampled amplitude waveform captured while recording — see
+    // ChatAudioComponents.serializeAmplitudes/parseAmplitudes — so a received voice message can
+    // render the sender's real waveform at rest, not just a per-URL fake one.
+    val audioAmplitudes: String? = null,
     val replyToId: String? = null,
     val replyToContent: String? = null,
     val replyToSenderName: String? = null,

@@ -234,6 +234,7 @@ Deno.serve(async (req) => {
         image_url: null,
         audio_url: null,
         audio_duration_ms: null,
+        audio_amplitudes: null,
         gif_url: null,
         sticker_url: null,
         file_url: null,

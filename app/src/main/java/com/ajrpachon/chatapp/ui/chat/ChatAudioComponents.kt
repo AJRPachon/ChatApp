@@ -74,6 +74,27 @@ internal fun formatAudioDuration(ms: Int): String {
     return "%d:%02d".format(total / 60, total % 60)
 }
 
+/** Serializes a recorded amplitude history into the compact, fixed-size string persisted with
+ *  the message (Room + Supabase) so a *received* voice message can render its sender's real
+ *  waveform at rest, instead of only a per-URL fake one. Resampled to [AUDIO_BAR_COUNT] here
+ *  (not the raw, potentially thousands-of-samples history) to keep the stored string small and
+ *  independent of recording length. */
+internal fun serializeAmplitudes(history: List<Float>): String? {
+    if (history.isEmpty()) return null
+    // Locale.US, not the device default: "%.3f".format() on a comma-decimal locale (e.g. Spanish)
+    // would emit "0,123" and corrupt this comma-delimited string on parse.
+    return resampleToBars(history, barCount = AUDIO_BAR_COUNT)
+        .joinToString(",") { String.format(java.util.Locale.US, "%.3f", it) }
+}
+
+/** Inverse of [serializeAmplitudes]. Returns an empty list (triggering the seeded-random
+ *  fallback in [AudioPlayerRow]) for null/blank/unparseable input, e.g. voice messages sent
+ *  before this field existed. */
+internal fun parseAmplitudes(raw: String?): List<Float> {
+    if (raw.isNullOrBlank()) return emptyList()
+    return runCatching { raw.split(",").map { it.trim().toFloat() } }.getOrDefault(emptyList())
+}
+
 // ── Recording indicator ───────────────────────────────────────────────────────
 
 @Composable
@@ -238,6 +259,7 @@ internal fun LocalAudioPlayer(filePath: String, amplitudeHistory: List<Float> = 
 internal fun RemoteAudioPlayer(
     url: String,
     modifier: Modifier = Modifier,
+    amplitudeHistory: List<Float> = emptyList(),
     senderAvatarUrl: String? = null,
     senderInitial: String = "?",
     sentTime: String? = null,
@@ -287,6 +309,7 @@ internal fun RemoteAudioPlayer(
             else { mp.start(); isPlaying = true; hasPlayedOnce = true }
         },
         waveformSeed = url.hashCode(),
+        realWaveform = amplitudeHistory,
         senderAvatarUrl = senderAvatarUrl,
         senderInitial = senderInitial,
         sentTime = sentTime,

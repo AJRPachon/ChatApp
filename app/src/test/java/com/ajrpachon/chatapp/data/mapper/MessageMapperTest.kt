@@ -66,6 +66,28 @@ class MessageMapperTest {
         assertNull(dbo.videoUrl)
     }
 
+    // ── audio amplitudes (waveform, always visible on received voice messages) ─────
+
+    @Test
+    fun `toDBO maps audioAmplitudes from DTO`() {
+        val dto = fakeDto().let { it.copy(audioAmplitudes = "0.100,0.900,0.400") }
+        val dbo = dto.toDBO()
+        assertEquals("0.100,0.900,0.400", dbo.audioAmplitudes)
+    }
+
+    @Test
+    fun `toBO maps audioAmplitudes from DBO`() {
+        val dbo = fakeDbo().let { it.copy(audioAmplitudes = "0.100,0.900,0.400") }
+        val bo = dbo.toBO("user1", "Alice")
+        assertEquals("0.100,0.900,0.400", bo.audioAmplitudes)
+    }
+
+    @Test
+    fun `toBO maps null audioAmplitudes when absent`() {
+        val bo = fakeDbo().toBO("user1", "Alice")
+        assertNull(bo.audioAmplitudes)
+    }
+
     // ── toBO — file fields ────────────────────────────────────────────────────
 
     @Test
