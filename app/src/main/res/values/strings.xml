@@ -347,6 +347,7 @@
     <string name="conversations_from_me_prefix">Tú: %1$s</string>
     <string name="conversations_gif">GIF</string>
     <string name="conversations_audio">🎤 Audio (%1$s)</string>
+    <string name="conversations_audio_unknown_duration">🎤 Audio</string>
     <string name="conversations_poll">📊 Encuesta</string>
     <string name="conversations_contact">👤 Contacto</string>
     <string name="conversations_muted_content_description">Silenciado</string>
