@@ -11,10 +11,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-// sendMessage has 20 params — use anyArgs() to avoid fragile positional any() chains
+// sendMessage has 21 params — use anyArgs() to avoid fragile positional any() chains
 private fun stubSend(repo: MessageRepository, result: MessageBO) {
     coEvery {
-        repo.sendMessage(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        repo.sendMessage(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
     } returns result
 }
 
@@ -45,7 +45,7 @@ class SendMessageUseCaseTest {
             messageRepository.sendMessage(
                 "conv1", "user1", "Hello",
                 any(), any(), any(), any(), any(), any(), any(), any(), any(),
-                any(), any(), any(), any(), any(), any(), any(), any(),
+                any(), any(), any(), any(), any(), any(), any(), any(), any(),
             )
         }
     }
@@ -172,7 +172,7 @@ class SendMessageUseCaseTest {
     @Test
     fun `returns failure when repository throws`() = runTest {
         coEvery {
-            messageRepository.sendMessage(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+            messageRepository.sendMessage(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
         } throws RuntimeException("network error")
 
         val result = useCase("conv1", "user1", "Hello")

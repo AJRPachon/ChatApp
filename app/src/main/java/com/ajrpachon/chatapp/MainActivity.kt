@@ -88,6 +88,15 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
+        // enableEdgeToEdge() sets window.isNavigationBarContrastEnforced = true on API 29-34,
+        // which paints a translucent system scrim over the 3-button navigation bar. Screens with
+        // their own bottom bar (e.g. ChatScreen's ChatBottomBar) already paint a solid background
+        // that extends into the navigationBars inset, so that scrim only dims/shifts that color
+        // and can read as a seam right at the nav bar — disable it so our own bottom bar color is
+        // what's actually shown, uncontested, all the way to the screen edge.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+        }
         super.onCreate(savedInstanceState)
         requestNotificationPermissionIfNeeded()
         checkRootAndWarnIfNeeded()

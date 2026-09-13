@@ -27,7 +27,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -331,30 +330,29 @@ internal fun MessageBubble(
             horizontalAlignment = if (message.isFromMe) Alignment.End else Alignment.Start,
         ) {
         ChatBubbleSlot(isFromMe = message.isFromMe) { maxBubbleWidth ->
-            val bubbleColor = if (message.isFromMe) {
-                if (outgoingBubbleColor != Color.Unspecified) outgoingBubbleColor
-                else MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
-            }
+            // A custom chat theme's bubbleColor is a fixed pastel/dark RGB, unrelated to the
+            // current light/dark MaterialTheme scheme — Surface's automatic contentColorFor()
+            // can't derive a matching "on" color for it and falls back to the ambient content
+            // color, which is wrong (e.g. light dark-mode text on a light pastel bubble, nearly
+            // invisible). Only applies to sent bubbles with a custom color; the default
+            // primaryContainer bubble is a real theme token and contrasts correctly on its own.
+            // See ChatThemeColors.bubbleContentColor().
+            val isDarkTheme = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+            // Received bubbles (surfaceVariant) technically already contrast fine via Surface's
+            // automatic derivation (onSurfaceVariant) — this forces pure white instead as an
+            // explicit design choice for the other party's text in dark mode specifically.
+            val bubbleContentColorOverride = if (message.isFromMe && outgoingBubbleColor != Color.Unspecified) {
+                outgoingBubbleColor.bubbleContentColor()
+            } else if (!message.isFromMe && isDarkTheme) {
+                Color.White
+            } else null
             Surface(
                 shape = MaterialTheme.shapes.small,
-                color = bubbleColor,
-                // A per-conversation ChatTheme bubble color (ChatThemeColors.kt) isn't part of
-                // the MaterialTheme color scheme, so Surface's default
-                // contentColorFor(color) can't match it against a scheme swatch and falls back
-                // to whatever LocalContentColor is inherited from outside — in dark mode that's
-                // a light/near-white color, which made every custom-themed outgoing bubble's
-                // text (and everything else nested in it: audio waveforms, reply quotes, the
-                // footer) unreadable on the theme's light pastel background. Picking black or
-                // white by the bubble's own luminance keeps it readable in both app themes,
-                // whichever ChatTheme color is picked; scheme colors keep using
-                // contentColorFor as before.
-                contentColor = if (message.isFromMe && outgoingBubbleColor != Color.Unspecified) {
-                    if (outgoingBubbleColor.luminance() > 0.5f) Color.Black.copy(alpha = 0.87f) else Color.White
-                } else {
-                    contentColorFor(bubbleColor)
-                },
+                color = if (message.isFromMe) {
+                    if (outgoingBubbleColor != Color.Unspecified) outgoingBubbleColor
+                    else MaterialTheme.colorScheme.primaryContainer
+                } else MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = bubbleContentColorOverride ?: Color.Unspecified,
                 modifier = Modifier.widthIn(max = maxBubbleWidth),
             ) {
                 val hasMedia = message.imageUrl != null || message.gifUrl != null
@@ -381,6 +379,7 @@ internal fun MessageBubble(
                             senderName = message.replyToSenderName ?: "",
                             content = message.replyToContent ?: "",
                             isFromMe = message.isFromMe,
+                            contentColorOverride = bubbleContentColorOverride,
                             onClick = { onReplyClick(message.replyToId) },
                         )
                         if (!hasMedia) Spacer(Modifier.height(6.dp))
@@ -389,6 +388,7 @@ internal fun MessageBubble(
                         StatusReplyQuote(
                             message = message,
                             isFromMe = message.isFromMe,
+                            contentColorOverride = bubbleContentColorOverride,
                             onClick = onStatusQuoteClick,
                         )
                         if (!hasMedia) Spacer(Modifier.height(6.dp))

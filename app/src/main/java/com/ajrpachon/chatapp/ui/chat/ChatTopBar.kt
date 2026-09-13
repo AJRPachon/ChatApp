@@ -25,7 +25,6 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.NotificationsOff
-import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.PhoneInTalk
 import androidx.compose.material.icons.filled.PhotoLibrary
@@ -34,7 +33,6 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Videocam
-import androidx.compose.material.icons.filled.Wallpaper
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -311,22 +309,12 @@ internal fun ChatTopBar(
                                 }
                             },
                         )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.chat_chat_theme)) },
-                            leadingIcon = { Icon(Icons.Default.Palette, contentDescription = null) },
-                            onClick = {
-                                menuExpanded = false
-                                vm.onIntent(ChatIntent.OpenThemePicker)
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.chat_wallpaper)) },
-                            leadingIcon = { Icon(Icons.Default.Wallpaper, contentDescription = null) },
-                            onClick = {
-                                menuExpanded = false
-                                vm.onIntent(ChatIntent.OpenWallpaperPicker)
-                            },
-                        )
+                        // TODO: reactivar "Tema del chat" / "Fondo del chat" cuando se retome la
+                        // feature de personalización visual de la conversación. El desarrollo
+                        // subyacente (ChatTheme, ChatThemeRepository, WallpaperRepository,
+                        // ChatThemePickerSheet, WallpaperPickerSheet, los intents OpenThemePicker/
+                        // OpenWallpaperPicker en ChatViewModel) sigue intacto — solo se oculta esta
+                        // entrada de menú para que el usuario no pueda cambiarlo por ahora.
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.chat_export_conversation)) },
                             leadingIcon = {

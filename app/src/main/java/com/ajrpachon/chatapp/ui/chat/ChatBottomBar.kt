@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -43,11 +44,21 @@ import com.ajrpachon.chatapp.ui.components.OfflineBanner
  * `rememberLauncherForActivityResult` was originally called, and passing the finished
  * permission-check-then-launch lambda through is simpler than re-typing 10 launcher generics
  * across this boundary for no benefit.
+ *
+ * [containerColor] must match [ChatScreen]'s `Scaffold.containerColor` (the resolved chat-theme
+ * background, or [MaterialTheme.colorScheme.background] when no custom theme is active). This
+ * bar's `Surface` extends its own background down into the `navigationBars` inset (see the
+ * `windowInsetsPadding` below) — left at its M3 default (`colorScheme.surface`), that area would
+ * paint a color that only accidentally matches the scaffold's background for the default theme,
+ * producing a visible seam right at the gesture-nav-bar zone whenever a custom [ChatTheme] (e.g.
+ * MIDNIGHT) is active. Passing the same resolved color keeps the background continuous all the
+ * way to the real screen edge.
  */
 @Composable
 internal fun ChatBottomBar(
     state: ChatState,
     vm: ChatViewModel,
+    containerColor: Color,
     onGallery: () -> Unit,
     onCamera: () -> Unit,
     onMic: () -> Unit,
@@ -60,7 +71,7 @@ internal fun ChatBottomBar(
         AnimatedVisibility(visible = !state.isOnline) {
             OfflineBanner()
         }
-        if (state.isCurrentUserMember) Surface(shadowElevation = 4.dp) {
+        if (state.isCurrentUserMember) Surface(color = containerColor, shadowElevation = 4.dp) {
             Column(modifier = Modifier.windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars))) {
                 val editingMessage = state.editingMessage
                 if (editingMessage != null) {

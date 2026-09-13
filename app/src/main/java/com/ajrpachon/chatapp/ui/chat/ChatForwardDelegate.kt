@@ -52,6 +52,7 @@ class ChatForwardDelegate(
                 messageRepository.sendMessage(
                     conversationId = targetConversationId, senderId = uid, content = message.content,
                     imageUrl = message.imageUrl, audioUrl = message.audioUrl, audioDurationMs = message.audioDurationMs,
+                    audioAmplitudes = message.audioAmplitudes,
                     gifUrl = message.gifUrl, stickerUrl = message.stickerUrl,
                 )
                 sendEffect(ChatEffect.ShowSnackbar("Mensaje reenviado"))
@@ -90,6 +91,7 @@ class ChatForwardDelegate(
                     messageRepository.sendMessage(
                         conversationId = targetConversationId, senderId = uid, content = message.content,
                         imageUrl = message.imageUrl, audioUrl = message.audioUrl, audioDurationMs = message.audioDurationMs,
+                        audioAmplitudes = message.audioAmplitudes,
                         gifUrl = message.gifUrl, stickerUrl = message.stickerUrl,
                     )
                     forwarded++

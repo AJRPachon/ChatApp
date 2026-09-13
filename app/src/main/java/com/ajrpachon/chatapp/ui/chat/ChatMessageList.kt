@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -73,6 +72,13 @@ internal fun ChatMessageList(
     scope: CoroutineScope,
     reactions: Map<String, List<ReactionBO>>,
     chatThemeColors: ChatThemeColors,
+    // Resolved once in ChatScreen (wallpaper color > chat theme's backgroundTint > default) and
+    // shared with the Scaffold/ChatBottomBar background — see ChatScreen's `scaffoldContainerColor`
+    // doc comment. Must not be recomputed independently here: doing so (this Box used to fall
+    // back straight to `MaterialTheme.colorScheme.background` whenever no wallpaper was set,
+    // ignoring an active theme's tint) is exactly what left a hard seam between the message list
+    // and the bar below it.
+    backgroundColor: Color,
     highlightedMessageId: String?,
     showScrollToBottom: Boolean,
     innerPadding: PaddingValues,
@@ -86,10 +92,7 @@ internal fun ChatMessageList(
     Box(
         Modifier
             .fillMaxSize()
-            .background(
-                state.wallpaper.color?.let { Color(it) }
-                    ?: MaterialTheme.colorScheme.background
-            )
+            .background(backgroundColor)
     ) {
         val isInitialLoad = lazyPagingItems.loadState.refresh is LoadState.Loading
             && lazyPagingItems.itemCount == 0
