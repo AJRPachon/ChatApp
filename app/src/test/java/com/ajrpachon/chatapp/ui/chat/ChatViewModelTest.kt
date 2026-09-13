@@ -157,7 +157,7 @@ class ChatViewModelTest {
         every { conversationRepository.observeConversations(any()) } returns flowOf(emptyList())
         every { networkMonitor.isOnline } returns flowOf(true)
         coEvery {
-            sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+            sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
         } returns Result.success(mockk<MessageBO>(relaxed = true))
     }
 
@@ -319,7 +319,7 @@ class ChatViewModelTest {
         runCurrent()
 
         assertEquals("", vm.state.value.inputText)
-        coVerify { sendMessageUseCase("conv1", "user1", "Hi!", any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        coVerify { sendMessageUseCase("conv1", "user1", "Hi!", any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -330,12 +330,12 @@ class ChatViewModelTest {
         vm.onIntent(ChatIntent.Send)
         runCurrent()
 
-        coVerify(exactly = 0) { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
     fun `Send sets error when sendMessageUseCase fails`() = chatViewModelTest {
-        coEvery { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns
+        coEvery { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns
                 Result.failure(RuntimeException("network error"))
 
         val vm = buildViewModel()
@@ -349,7 +349,7 @@ class ChatViewModelTest {
 
     @Test
     fun `DismissError clears error state`() = chatViewModelTest {
-        coEvery { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns
+        coEvery { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns
                 Result.failure(RuntimeException("oops"))
 
         val vm = buildViewModel()

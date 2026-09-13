@@ -438,6 +438,24 @@ fun ConversationListScreen(
     }
 }
 
+/**
+ * Preview label for a voice-message last-message row.
+ *
+ * `audioDurationMs` is only ever populated by the client that recorded the note (there is no
+ * cheap way to recover it afterwards short of downloading the audio file, which is exactly what
+ * this stored field exists to avoid — see the `add_audio_duration` migration). A `null`/`<= 0`
+ * value therefore means "unknown", never "empty recording": rendering it as `(0:00)` would assert
+ * a false fact about a message that may well be a real, many-second recording. Omitting the
+ * parenthetical entirely for that case is the honest fallback.
+ */
+@Composable
+private fun audioPreviewLabel(durationMs: Long?): String =
+    if (durationMs != null && durationMs > 0) {
+        stringResource(R.string.conversations_audio, formatAudioDuration(durationMs.toInt()))
+    } else {
+        stringResource(R.string.conversations_audio_unknown_duration)
+    }
+
 @Composable
 private fun ArchivedConversationItem(
     conversation: ConversationBO,
@@ -468,10 +486,7 @@ private fun ArchivedConversationItem(
             )
             conversation.lastMessage?.let { msg ->
                 val previewText = when {
-                    msg.audioUrl != null -> stringResource(
-                        R.string.conversations_audio,
-                        formatAudioDuration((msg.audioDurationMs ?: 0L).toInt()),
-                    )
+                    msg.audioUrl != null -> audioPreviewLabel(msg.audioDurationMs)
                     msg.content.startsWith("poll:") -> stringResource(R.string.conversations_poll)
                     msg.content.startsWith("contact:") -> stringResource(R.string.conversations_contact)
                     else -> msg.content
@@ -612,8 +627,7 @@ private fun ConversationItem(
                                 )
                             }
                             lastMsg?.audioUrl != null -> {
-                                val durationText = formatAudioDuration((lastMsg.audioDurationMs ?: 0L).toInt())
-                                val label = stringResource(R.string.conversations_audio, durationText)
+                                val label = audioPreviewLabel(lastMsg.audioDurationMs)
                                 Text(
                                     text = if (fromMe) stringResource(R.string.conversations_from_me_prefix, label) else label,
                                     style = MaterialTheme.typography.bodyMedium,

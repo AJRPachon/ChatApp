@@ -29,6 +29,7 @@ import androidx.compose.runtime.withFrameNanos
 import kotlinx.coroutines.flow.first
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
@@ -298,10 +299,22 @@ fun ChatScreen(
     val latestPinned = state.latestPinnedMessage
     var pinnedBannerVisible by rememberSaveable(latestPinned?.id) { mutableStateOf(true) }
 
-    val scaffoldContainerColor = if (chatThemeColors.backgroundTint == androidx.compose.ui.graphics.Color.Transparent) {
-        MaterialTheme.colorScheme.background
-    } else {
-        chatThemeColors.backgroundTint
+    // Chat wallpaper (a per-conversation solid color from `WallpaperRepository`) and chat theme
+    // (`ChatThemeRepository`'s `backgroundTint`) are two independent, separately-persisted
+    // settings — either can be set without the other, and both can outlive the now-hidden
+    // ChatTopBar menu that used to let users change them (see ChatBottomBar's doc comment).
+    // ChatMessageList's own background must resolve to this exact same color: it used to fall
+    // back straight to `MaterialTheme.colorScheme.background` whenever no wallpaper was set,
+    // silently ignoring an active theme's backgroundTint, which left a hard seam between the
+    // message list and the Scaffold/ChatBottomBar background right where the two disagreed —
+    // reading as the chat's background not reaching the real edge of the screen. Wallpaper wins
+    // when set (it's the more specific, user-picked backdrop); otherwise the theme's tint;
+    // otherwise the plain default.
+    val wallpaperColor = state.wallpaper.color
+    val scaffoldContainerColor = when {
+        wallpaperColor != null -> Color(wallpaperColor)
+        chatThemeColors.backgroundTint != Color.Transparent -> chatThemeColors.backgroundTint
+        else -> MaterialTheme.colorScheme.background
     }
 
     Scaffold(
@@ -326,6 +339,7 @@ fun ChatScreen(
             ChatBottomBar(
                 state = state,
                 vm = vm,
+                containerColor = scaffoldContainerColor,
                 onGallery = {
                     galleryLauncher.launch(
                         androidx.activity.result.PickVisualMediaRequest(
@@ -390,6 +404,7 @@ fun ChatScreen(
             scope = scope,
             reactions = reactions,
             chatThemeColors = chatThemeColors,
+            backgroundColor = scaffoldContainerColor,
             highlightedMessageId = highlightedMessageId,
             showScrollToBottom = showScrollToBottom,
             innerPadding = innerPadding,

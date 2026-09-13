@@ -100,6 +100,8 @@ class ChatAudioRecordingDelegate(
         val userId = getState().currentUserId ?: return
         val filePath = getState().audioState.pendingFilePath ?: return
         val durationMs = getState().audioState.recordingDurationMs
+        val amplitudes = serializeAmplitudes(getState().audioState.amplitudeHistory)
+        AppLogger.d(TAG, "DIAG sendAudio durationMs=$durationMs")
         val reply = getState().replyingTo
         scope.launch {
             sendEffect(ChatEffect.ScrollToBottom)
@@ -110,8 +112,9 @@ class ChatAudioRecordingDelegate(
                 val audioUrl = messageRepository.uploadAudio(conversationId, bytes)
                 sendMessageUseCase(
                     conversationId, userId, "", audioUrl = audioUrl, audioDurationMs = durationMs,
+                    audioAmplitudes = amplitudes,
                     replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
-                )
+                ).getOrThrow()
                 catchResult { File(filePath).delete() }
                 updateState { it.copy(audioState = AudioState()) }
             }.onFailure { e ->
