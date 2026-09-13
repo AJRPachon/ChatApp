@@ -65,6 +65,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -78,6 +79,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.ConversationBO
@@ -99,6 +102,11 @@ import com.ajrpachon.chatapp.InvitationsRoute
 import com.ajrpachon.chatapp.NewChatRoute
 import com.ajrpachon.chatapp.ProfileRoute
 import org.koin.androidx.compose.koinViewModel
+
+// UserBO.isOnline() only re-evaluates when read; without this tick, an item whose participant Flow
+// has gone quiet (they killed the app, so their presence heartbeat stopped) would keep showing the
+// online dot forever. One ticker for the whole list -- see [ConversationListScreen].
+private const val ONLINE_STATUS_REFRESH_INTERVAL_MS = 15_000L
 
 @NavEdge(to = ChatRoute::class, label = "Open Chat")
 @NavEdge(to = NewChatRoute::class, label = "New Chat")
@@ -125,6 +133,7 @@ fun ConversationListScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val chatArchivedMessage = stringResource(R.string.conversations_chat_archived)
+    var onlineStatusTick by remember { mutableLongStateOf(0L) }
 
     LaunchedEffect(Unit) {
         vm.effect.collect { effect ->
@@ -132,6 +141,13 @@ fun ConversationListScreen(
                 is ConversationListEffect.NavigateToChat ->
                     onOpenConversation(effect.conversationId, effect.conversationName, effect.isGroup)
             }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        while (isActive) {
+            delay(ONLINE_STATUS_REFRESH_INTERVAL_MS)
+            onlineStatusTick = System.currentTimeMillis()
         }
     }
 
@@ -369,6 +385,7 @@ fun ConversationListScreen(
                     ConversationItem(
                         conversation = conv,
                         currentUserId = state.currentUserId,
+                        onlineStatusTick = onlineStatusTick,
                         draft = state.drafts[conv.id],
                         showMenu = menuConvId == conv.id,
                         onClick = dropUnlessResumed {
@@ -498,6 +515,7 @@ private fun ArchivedConversationItem(
 private fun ConversationItem(
     conversation: ConversationBO,
     currentUserId: String?,
+    onlineStatusTick: Long = 0L,
     draft: String? = null,
     showMenu: Boolean,
     onClick: () -> Unit,
@@ -523,8 +541,13 @@ private fun ConversationItem(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            val isOtherUserOnline = !conversation.isGroup &&
-                conversation.participants.any { it.id != currentUserId && it.isOnline() }
+            // Keyed on onlineStatusTick so the periodic tick from ConversationListScreen forces a
+            // fresh isOnline() re-evaluation even when `conversation` itself hasn't changed (the
+            // other user's profile Flow goes silent once they kill their app).
+            val isOtherUserOnline = remember(conversation, currentUserId, onlineStatusTick) {
+                !conversation.isGroup &&
+                    conversation.participants.any { it.id != currentUserId && it.isOnline() }
+            }
             Box {
                 ChatAppAvatar(
                     name = conversation.name,

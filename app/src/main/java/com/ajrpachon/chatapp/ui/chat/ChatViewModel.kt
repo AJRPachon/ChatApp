@@ -12,6 +12,7 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.ajrpachon.chatapp.domain.model.ChatTheme
+import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.repository.AiAssistantRepository
 import com.ajrpachon.chatapp.domain.repository.ChatThemeRepository
 import com.ajrpachon.chatapp.domain.repository.ContactRepository
@@ -55,6 +56,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
@@ -227,6 +229,12 @@ class ChatViewModel(
     private var draftSaveJob: Job? = null
     private val requestedLinkPreviewUrls = mutableSetOf<String>()
 
+    // Last user snapshot observed from userRepository.observeUserById(otherUserId), cached so the
+    // online-status ticker can re-evaluate UserBO.isOnline() against the current clock without a
+    // Flow re-emission (the other user's app being killed stops their presence heartbeat writes,
+    // so the Flow can go silent for good while they silently go offline).
+    private var lastObservedOtherUser: UserBO? = null
+
     init {
         viewModelScope.launch {
             networkMonitor.isOnline.collect { online -> updateState { it.copy(isOnline = online) } }
@@ -282,6 +290,7 @@ class ChatViewModel(
                 if (otherUserId != null) {
                     launch {
                         userRepository.observeUserById(otherUserId).collect { user ->
+                            lastObservedOtherUser = user
                             updateState {
                                 it.copy(
                                     otherUserAvatarUrl = user?.avatarUrl ?: it.otherUserAvatarUrl,
@@ -292,6 +301,22 @@ class ChatViewModel(
                         }
                     }
                     launch { catchResult { userRepository.getUserById(otherUserId) } }
+                    // The Flow above only re-emits when the other user's profile row is written to
+                    // (their PresenceManager heartbeat). If they kill the app, writes stop and the
+                    // Flow goes silent, so isOtherUserOnline would stay stuck at its last value even
+                    // though ONLINE_THRESHOLD_MS has since elapsed. Re-evaluate on a clock tick too.
+                    launch {
+                        while (isActive) {
+                            delay(ONLINE_STATUS_REFRESH_INTERVAL_MS)
+                            val user = lastObservedOtherUser
+                            updateState {
+                                it.copy(
+                                    isOtherUserOnline = user?.isOnline() == true,
+                                    otherUserLastSeenMs = user?.lastSeen?.toEpochMilliseconds() ?: it.otherUserLastSeenMs,
+                                )
+                            }
+                        }
+                    }
                 }
                 launch {
                     conversationRepository.observeById(conversationId).collect { c ->
@@ -678,5 +703,6 @@ class ChatViewModel(
 
     companion object {
         private const val TAG = "ChatViewModel"
+        private const val ONLINE_STATUS_REFRESH_INTERVAL_MS = 15_000L
     }
 }
