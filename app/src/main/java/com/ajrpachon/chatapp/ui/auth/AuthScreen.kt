@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.ui.auth
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -21,13 +22,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Security
@@ -58,7 +57,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
@@ -69,6 +67,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -79,8 +78,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.ui.common.AppSplashScreen
 import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
 import com.ajrpachon.chatapp.ui.components.ChatAppTextField
+import com.ajrpachon.chatapp.ui.theme.Signal_SurfaceDark
 import com.github.skydoves.navgraph.annotations.NavDestination
 import com.github.skydoves.navgraph.annotations.NavEdge
 import com.ajrpachon.chatapp.AuthRoute
@@ -132,13 +133,21 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
         }
     }
 
+    // AuthViewModel's own init block (a second integrity check + session restore) keeps this
+    // true for a beat after MainActivity's splash has already come down. Render the same
+    // AppSplashScreen rather than a bare spinner: MainActivity's splash gate only waits on ITS
+    // OWN integrity check + initial route, not on this screen's, so without this the branded
+    // splash would hand off to an unbranded spinner on a blank screen for however long this
+    // second check takes — exactly the kind of jump the design is meant to hide. AppSplashScreen
+    // has no reveal animation to replay, so mounting it again here is a silent continuation, not
+    // a restart.
+    if (state.isLoading) {
+        AppSplashScreen(darkTheme = MaterialTheme.colorScheme.background == Signal_SurfaceDark)
+        return
+    }
+
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { innerPadding ->
         when {
-            state.isLoading -> Box(
-                modifier = Modifier.fillMaxSize().padding(innerPadding),
-                contentAlignment = Alignment.Center,
-            ) { CircularProgressIndicator() }
-
             state.needsMfaChallenge -> Box(
                 modifier = Modifier.fillMaxSize().padding(innerPadding),
                 contentAlignment = Alignment.Center,
@@ -204,9 +213,15 @@ private fun LoginContent(
         val availableHeightPx = with(density) { maxHeight.roundToPx() }
         var heroCardHeightPx by remember { mutableIntStateOf(0) }
         var linkBlockHeightPx by remember { mutableIntStateOf(0) }
-        val fillerHeight = with(density) {
+        val targetFillerHeight = with(density) {
             (availableHeightPx - heroCardHeightPx - linkBlockHeightPx).coerceAtLeast(0).toDp()
         }
+        // heroCardHeightPx always lags one frame behind the real layout (onSizeChanged only
+        // reports it after the fact), so while the card's height is itself animating — e.g. the
+        // confirm-password field expanding in on sign-up — targetFillerHeight corrects itself
+        // discretely every frame instead of tracking smoothly, which reads as the link block
+        // jumping. Animating the filler itself smooths that catch-up into one continuous move.
+        val fillerHeight by animateDpAsState(targetValue = targetFillerHeight, label = "auth_filler_height")
 
         Column(
             modifier = Modifier
@@ -242,23 +257,18 @@ private fun LoginContent(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
                             .statusBarsPadding()
-                            .padding(top = 40.dp, bottom = 36.dp),
+                            .padding(top = 20.dp, bottom = 36.dp),
                     ) {
-                        Box(
+                        // Fondo siempre oscuro (#0E1516), como en el resto de apariciones del
+                        // glifo de marca (icono de lanzador, splash) — el contenedor del icono no
+                        // sigue el tema claro/oscuro de la app, es parte fija de la identidad visual.
+                        Image(
+                            painter = painterResource(R.drawable.ic_launcher_foreground),
+                            contentDescription = null,
                             modifier = Modifier
-                                .size(88.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Chat,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.onPrimary,
-                            )
-                        }
-                        Spacer(Modifier.height(16.dp))
+                                .padding(top = 26.dp, bottom = 6.dp)
+                                .size(90.dp)
+                        )
                         Text(
                             stringResource(R.string.auth_app_name),
                             style = MaterialTheme.typography.headlineMedium,

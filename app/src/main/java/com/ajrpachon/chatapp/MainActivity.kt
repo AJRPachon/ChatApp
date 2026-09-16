@@ -10,6 +10,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -45,12 +46,11 @@ import com.ajrpachon.chatapp.ui.auth.IntegrityBlockedScreen
 import com.ajrpachon.chatapp.domain.repository.AppLockRepository
 import com.ajrpachon.chatapp.utils.IntegrityChecker
 import com.ajrpachon.chatapp.utils.IntegrityResult
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.ui.Alignment
 import com.ajrpachon.chatapp.ui.call.IncomingCallIntent
 import com.ajrpachon.chatapp.domain.model.isGroupCall
 import com.ajrpachon.chatapp.ui.call.IncomingCallScreen
 import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
+import com.ajrpachon.chatapp.ui.common.AppSplashScreen
 import com.ajrpachon.chatapp.ui.common.MotionConstants.NAV_TRANSITION_MS
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import com.ajrpachon.chatapp.domain.model.ThemePreference
@@ -86,7 +86,28 @@ class MainActivity : ComponentActivity() {
     private var showRootWarning by mutableStateOf(false)
     private val shouldShowAppLock = mutableStateOf(false)
 
+    // Read from setKeepOnScreenCondition's lambda, which the platform polls on its own thread
+    // outside Compose — set true from a Compose SideEffect on the very first frame Compose draws
+    // (see setContent below), NOT once integrity/route resolve. Android always paints something
+    // of its own before any app process can draw a single frame — that gap can't be skipped — so
+    // the system's SplashScreen (styled as a plain "Opción I" icon on the right background, see
+    // themes.xml) only needs to cover THAT gap. The moment our first Compose frame is ready it
+    // takes over, and that first frame is AppSplashScreen (the full "Splash · oscuro y claro"
+    // design: icon + wordmark + tagline) for as long as the integrity check and initial route
+    // are still resolving — one continuous handoff, system icon straight into the real splash,
+    // with nothing blank or unbranded in between.
+    @Volatile
+    private var contentReady = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
+        splashScreen.setKeepOnScreenCondition { !contentReady }
+        // The default exit transition fades the system's own icon out (~200ms) while our
+        // AppSplashScreen — which reproduces that same icon — is already visible underneath.
+        // Since both icons are similar, that fade reads as the icon briefly going dim/muddy
+        // instead of a clean handoff. Skip the animation: remove the system splash the instant
+        // it's allowed to go, so only our (correct, full-color) icon is ever on screen.
+        splashScreen.setOnExitAnimationListener { it.remove() }
         enableEdgeToEdge()
         // enableEdgeToEdge() sets window.isNavigationBarContrastEnforced = true on API 29-34,
         // which paints a translucent system scrim over the 3-button navigation bar. Screens with
@@ -121,32 +142,17 @@ class MainActivity : ComponentActivity() {
                 ThemePreference.SYSTEM -> isSystemInDarkTheme()
             }
             ChatAppTheme(darkTheme = darkTheme) {
+                // This frame is drawing, so the system SplashScreen can come down now — whether
+                // what follows below is AppSplashScreen or the real content depends on the gate
+                // just after, but either way something of ours is now on screen.
+                SideEffect { contentReady = true }
+
                 // ── 1. Play Integrity gate ──────────────────────────────────
                 val integrityResult by produceState<IntegrityResult?>(initialValue = null) {
                     value = IntegrityChecker.check(this@MainActivity, supabase)
                 }
 
-                when (val integrity = integrityResult) {
-                    null -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
-                        ) { CircularProgressIndicator() }
-                        return@ChatAppTheme
-                    }
-                    is IntegrityResult.Failed -> {
-                        IntegrityBlockedScreen(onExit = { finish() })
-                        return@ChatAppTheme
-                    }
-                    is IntegrityResult.Error -> {
-                        AppLogger.w("MainActivity", "Integrity check error (allowing): ${integrity.message}")
-                    }
-                    is IntegrityResult.Passed -> Unit
-                }
-
-                // ── 2. Normal app flow ──────────────────────────────────────
                 val sessionGuard: SessionGuard = get()
-                val isExpired by sessionExpired
                 val initialRoute by produceState<NavKey?>(initialValue = null) {
                     val hasUser = getCurrentUser().first() != null
                     value = when {
@@ -162,6 +168,25 @@ class MainActivity : ComponentActivity() {
                         else -> ConversationListRoute
                     }
                 }
+
+                if (integrityResult == null || initialRoute == null) {
+                    AppSplashScreen(darkTheme = darkTheme)
+                    return@ChatAppTheme
+                }
+
+                when (val integrity = integrityResult) {
+                    is IntegrityResult.Failed -> {
+                        IntegrityBlockedScreen(onExit = { finish() })
+                        return@ChatAppTheme
+                    }
+                    is IntegrityResult.Error -> {
+                        AppLogger.w("MainActivity", "Integrity check error (allowing): ${integrity.message}")
+                    }
+                    is IntegrityResult.Passed, null -> Unit
+                }
+
+                // ── 2. Normal app flow ──────────────────────────────────────
+                val isExpired by sessionExpired
                 val resolvedRoute = initialRoute ?: return@ChatAppTheme
                 val backStack = rememberNavBackStack(resolvedRoute)
 

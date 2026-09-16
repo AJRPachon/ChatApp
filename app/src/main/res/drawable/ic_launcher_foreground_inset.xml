@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Envuelve ic_launcher_foreground.xml (que no se toca más directamente, por petición expresa)
+  con un inset estándar de Android para reducir el tamaño visible del glifo dentro del canvas de
+  108dp del adaptive icon, sin reescalar las coordenadas del path. Ajustar el % aquí para hacer
+  el icono más grande o más pequeño en vez de editar el vector base.
+-->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_launcher_foreground"
+    android:insetLeft="20.25%"
+    android:insetTop="20.25%"
+    android:insetRight="20.25%"
+    android:insetBottom="20.25%" />

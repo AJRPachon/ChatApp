@@ -3,4 +3,19 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
+
+    <!-- Splash screen. Se aplica solo a la Activity de arranque; installSplashScreen() la
+         reemplaza por Theme.ChatApp en cuanto la UI está lista.
+
+         Esta fase del SISTEMA es muy breve e inevitable (probado: un icono "vacío" hace que
+         el sistema caiga de vuelta al icono real del launcher, con su mismo recorte — no se
+         puede mostrar "nada" aquí). Usa el mismo drawable con inset que el icono del launcher
+         (ic_launcher_foreground_inset, no ic_launcher_foreground directamente) para que el
+         tamaño visible coincida con AppSplashScreen.kt (fase 2, Compose) — ver su iconSize. -->
+    <style name="Theme.ChatApp.Starting" parent="Theme.SplashScreen.IconBackground">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground_inset</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/splash_icon_background</item>
+        <item name="postSplashScreenTheme">@style/Theme.ChatApp</item>
+    </style>
 </resources>

@@ -1,15 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  "Opción I — Burbuja de voz". El glifo (burbuja + onda + insignia) está escalado un 15% más
-  grande sobre las coordenadas anteriores, manteniendo el centro visual del conjunto fijo dentro
-  del viewport de 108dp — ver el mismo ajuste en ic_launcher_monochrome.xml. La onda de voz está
-  tallada como huecos reales (evenOdd) dentro de la burbuja — las cinco barras quedan
-  completamente dentro del contorno, así que el hueco siempre coincide con el naranja de debajo.
-  La insignia se resuelve tallando una muesca directamente en el contorno de la burbuja (el arco
-  A...0 0 0... del tramo superior derecho) en vez de como un círculo evenOdd superpuesto: un
-  círculo superpuesto que sobresale de la esquina (como en el diseño) queda mal recortado por
-  evenOdd donde sobresale del contorno — la muesca evita el problema de raíz, dejando el hueco
-  exacto para el punto de acento sin ningún bulto de color.
+  Capa monocroma (Android 13+ "themed icons"): misma silueta que ic_launcher_foreground —
+  el sistema aplica su propio tinte, así que el color de fillColor es irrelevante (debe ser
+  opaco). Se omite el punto de acento; la onda y la insignia quedan como huecos reales.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -17,7 +10,7 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
     <path
-        android:fillColor="#F0916D"
+        android:fillColor="#FF000000"
         android:fillType="evenOdd"
         android:pathData="M21.30,11.87 L79.00,11.87 A11.62,11.62 0 0 0 95.41,28.30 L95.41,71.44 A10.18,10.18 0 0 1 85.26,81.61 L25.67,81.61 L11.15,96.13 L11.15,22.02 A10.18,10.18 0 0 1 21.30,11.87 Z
                           M25.67,42.37 A2.9,2.9 0 0 1 28.57,39.47 L30.04,39.47 A2.9,2.9 0 0 1 32.94,42.37 L32.94,56.91 A2.9,2.9 0 0 1 30.04,59.81 L28.57,59.81 A2.9,2.9 0 0 1 25.67,56.91 Z
@@ -26,6 +19,6 @@
                           M60.54,36.56 A2.9,2.9 0 0 1 63.44,33.66 L64.91,33.66 A2.9,2.9 0 0 1 67.81,36.56 L67.81,62.72 A2.9,2.9 0 0 1 64.91,65.62 L63.44,65.62 A2.9,2.9 0 0 1 60.54,62.72 Z
                           M72.17,42.37 A2.9,2.9 0 0 1 75.07,39.47 L76.53,39.47 A2.9,2.9 0 0 1 79.43,42.37 L79.43,56.91 A2.9,2.9 0 0 1 76.53,59.81 L75.07,59.81 A2.9,2.9 0 0 1 72.17,56.91 Z" />
     <path
-        android:fillColor="#6C9BD1"
+        android:fillColor="#FF000000"
         android:pathData="M79.35,19.94 A7.99,7.99 0 1 0 95.33,19.94 A7.99,7.99 0 1 0 79.35,19.94 Z" />
 </vector>
