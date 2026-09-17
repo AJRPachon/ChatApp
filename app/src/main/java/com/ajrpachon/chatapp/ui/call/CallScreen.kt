@@ -1,14 +1,10 @@
 package com.ajrpachon.chatapp.ui.call
 
 import android.app.Activity
-import android.os.Build
 import android.content.pm.PackageManager
 import com.ajrpachon.chatapp.ui.common.CallPermissions
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -19,38 +15,25 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BlurOff
-import androidx.compose.material.icons.filled.BlurOn
 import androidx.compose.material.icons.filled.CallEnd
 import androidx.compose.material.icons.filled.Cameraswitch
-import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.ScreenShare
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.StopScreenShare
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.VideocamOff
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -66,7 +49,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -120,19 +102,33 @@ fun CallScreen(
 
     if (!granted) {
         Box(
-            modifier = Modifier.fillMaxSize().background(CallBackground),
+            modifier = Modifier
+                .fillMaxSize()
+                .background(CallBackground),
             contentAlignment = Alignment.Center,
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 CircularProgressIndicator(color = Color.White)
                 Spacer(Modifier.height(16.dp))
-                Text(stringResource(R.string.call_requesting_permissions), color = Color.White.copy(alpha = 0.7f))
+                Text(
+                    stringResource(R.string.call_requesting_permissions),
+                    color = Color.White.copy(alpha = 0.7f)
+                )
             }
         }
         return
     }
 
-    CallScreenContent(callId, conversationId, roomName, callType, otherUserName, isOutgoing, isGroup, onCallEnded)
+    CallScreenContent(
+        callId,
+        conversationId,
+        roomName,
+        callType,
+        otherUserName,
+        isOutgoing,
+        isGroup,
+        onCallEnded
+    )
 }
 
 @Composable
@@ -149,7 +145,18 @@ private fun CallScreenContent(
     val context = LocalContext.current
     val vm: CallViewModel = koinViewModel(
         key = callId,
-        parameters = { parametersOf(CallArgs(callId, conversationId, roomName, callType, isOutgoing, isGroup)) },
+        parameters = {
+            parametersOf(
+                CallArgs(
+                    callId,
+                    conversationId,
+                    roomName,
+                    callType,
+                    isOutgoing,
+                    isGroup
+                )
+            )
+        },
     )
     val state by vm.state.collectAsStateWithLifecycle()
 
@@ -187,18 +194,15 @@ private fun CallScreenContent(
         onToggleMic = { vm.toggleMic() },
         onToggleCamera = { vm.toggleCamera() },
         onSwitchCamera = { vm.switchCamera() },
-        onToggleBackgroundBlur = { vm.toggleBackgroundBlur() },
         onToggleScreenShare = { vm.onIntent(CallIntent.ToggleScreenShare) },
         onHangUp = { vm.hangUp() },
-        onToggleInCallChat = { vm.toggleInCallChat() },
-        onSendInCallMessage = { vm.sendInCallMessage(it) },
     )
 }
 
 // Pure UI over [CallState] — no Koin/LiveKit wiring of its own, so it's directly usable from
 // @Preview below with a hand-built state (real video tracks still won't render without a live
-// LiveKit Room, but every other visual: phase text, controls, colors, in-call chat, layout — is
-// exactly what ships, so editing this function updates those previews live.
+// LiveKit Room, but every other visual: phase text, controls, colors, layout — is exactly what
+// ships, so editing this function updates those previews live.
 @Composable
 private fun CallScreenBody(
     state: CallState,
@@ -208,11 +212,8 @@ private fun CallScreenBody(
     onToggleMic: () -> Unit,
     onToggleCamera: () -> Unit,
     onSwitchCamera: () -> Unit,
-    onToggleBackgroundBlur: () -> Unit,
     onToggleScreenShare: () -> Unit,
     onHangUp: () -> Unit,
-    onToggleInCallChat: () -> Unit,
-    onSendInCallMessage: (String) -> Unit,
 ) {
     val currentRoom = state.room
 
@@ -242,6 +243,7 @@ private fun CallScreenBody(
                         }
                     }
                 }
+
                 tracks.isNotEmpty() && !state.isRemoteVideoMuted -> VideoView(
                     track = tracks.first(),
                     room = currentRoom,
@@ -283,10 +285,27 @@ private fun CallScreenBody(
                     VideoView(
                         track = localVideo,
                         room = currentRoom,
-                        blurred = state.isBackgroundBlurred,
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
+            }
+        }
+
+        // Switch front/back camera (video calls, only when camera is active)
+        if (callType == "video" && !state.isCameraOff) {
+            CallControlButton(
+                onClick = onSwitchCamera,
+                containerColor = Color.White.copy(alpha = 0.2f),
+                iconTint = Color.White,
+                size = 44.dp,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 24.dp, end = 24.dp),
+            ) {
+                Icon(
+                    Icons.Default.Cameraswitch,
+                    contentDescription = stringResource(R.string.call_flip_camera_content_description)
+                )
             }
         }
 
@@ -301,8 +320,17 @@ private fun CallScreenBody(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Icon(Icons.Default.ScreenShare, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-                Text(stringResource(R.string.call_screen_sharing_active), color = Color.White, style = MaterialTheme.typography.labelMedium)
+                Icon(
+                    Icons.Default.ScreenShare,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp)
+                )
+                Text(
+                    stringResource(R.string.call_screen_sharing_active),
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelMedium
+                )
             }
         }
 
@@ -322,23 +350,30 @@ private fun CallScreenBody(
                 CallPhase.CONNECTING -> {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                     Spacer(Modifier.height(8.dp))
-                    Text(stringResource(R.string.call_connecting), color = Color.White.copy(alpha = 0.7f))
+                    Text(
+                        stringResource(R.string.call_connecting),
+                        color = Color.White.copy(alpha = 0.7f)
+                    )
                 }
+
                 CallPhase.RINGING -> Text(
                     stringResource(R.string.call_ringing),
                     color = Color.White.copy(alpha = 0.7f),
                     style = MaterialTheme.typography.bodyLarge,
                 )
+
                 CallPhase.ACTIVE -> Text(
                     formatCallDuration(state.durationSeconds),
                     color = Color.White.copy(alpha = 0.85f),
                     style = MaterialTheme.typography.bodyLarge,
                 )
+
                 CallPhase.ENDED -> Text(
                     stringResource(R.string.call_ended),
                     color = Color.White.copy(alpha = 0.7f),
                     style = MaterialTheme.typography.bodyLarge,
                 )
+
                 CallPhase.ERROR -> Text(
                     state.error ?: stringResource(R.string.call_generic_error),
                     color = MaterialTheme.colorScheme.error,
@@ -379,35 +414,14 @@ private fun CallScreenBody(
                         contentDescription = stringResource(R.string.call_camera_content_description),
                     )
                 }
-                // Switch front/back camera (only when camera is active)
-                if (!state.isCameraOff) {
-                    CallControlButton(
-                        onClick = onSwitchCamera,
-                        containerColor = Color.White.copy(alpha = 0.2f),
-                        iconTint = Color.White,
-                    ) {
-                        Icon(Icons.Default.Cameraswitch, contentDescription = stringResource(R.string.call_flip_camera_content_description))
-                    }
-                    // Background blur toggle (API 31+)
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        CallControlButton(
-                            onClick = onToggleBackgroundBlur,
-                            containerColor = if (state.isBackgroundBlurred) Color.White else Color.White.copy(alpha = 0.2f),
-                            iconTint = if (state.isBackgroundBlurred) Color.Black else Color.White,
-                        ) {
-                            Icon(
-                                imageVector = if (state.isBackgroundBlurred) Icons.Default.BlurOn else Icons.Default.BlurOff,
-                                contentDescription = stringResource(R.string.call_blur_background_content_description),
-                            )
-                        }
-                    }
-                }
             }
 
             // Screen share toggle
             CallControlButton(
                 onClick = onToggleScreenShare,
-                containerColor = if (state.isScreenSharing) CallScreenShareAccent else Color.White.copy(alpha = 0.2f),
+                containerColor = if (state.isScreenSharing) CallScreenShareAccent else Color.White.copy(
+                    alpha = 0.2f
+                ),
                 iconTint = Color.White,
             ) {
                 Icon(
@@ -423,37 +437,11 @@ private fun CallScreenBody(
                 iconTint = Color.White,
                 size = 64.dp,
             ) {
-                Icon(Icons.Default.CallEnd, contentDescription = stringResource(R.string.call_hang_up_content_description))
+                Icon(
+                    Icons.Default.CallEnd,
+                    contentDescription = stringResource(R.string.call_hang_up_content_description)
+                )
             }
-        }
-
-        // Chat FAB (bottom-start)
-        CallControlButton(
-            onClick = onToggleInCallChat,
-            containerColor = if (state.showInCallChat) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.2f),
-            iconTint = Color.White,
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(start = 16.dp, bottom = 64.dp),
-            size = 52.dp,
-        ) {
-            Icon(Icons.Default.Chat, contentDescription = stringResource(R.string.call_in_call_chat_content_description))
-        }
-
-        // In-call chat panel
-        AnimatedVisibility(
-            visible = state.showInCallChat,
-            modifier = Modifier.align(Alignment.BottomCenter),
-            enter = slideInVertically { it },
-            exit = slideOutVertically { it },
-        ) {
-            InCallChatPanel(
-                messages = state.inCallMessages,
-                onSend = onSendInCallMessage,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 140.dp),
-            )
         }
     }
 }
@@ -461,16 +449,12 @@ private fun CallScreenBody(
 // ── Video rendering ───────────────────────────────────────────────────────────
 
 /**
- * Renders [track] via a LiveKit [TextureViewRenderer]. [blurred] applies a background-blur
- * RenderEffect (API 31+) — used for the local PiP preview when [CallState.isBackgroundBlurred]
- * is on; remote/group tiles just leave it false. Previously two near-identical composables
- * (VideoView / BlurredVideoView) differing only in this update block.
+ * Renders [track] via a LiveKit [TextureViewRenderer].
  */
 @Composable
 fun VideoView(
     track: VideoTrack,
     room: Room? = null,
-    blurred: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     key(track) {
@@ -481,98 +465,12 @@ fun VideoView(
                     track.addRenderer(view)
                 }
             },
-            update = { view ->
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    view.setRenderEffect(
-                        if (blurred) android.graphics.RenderEffect.createBlurEffect(
-                            25f, 25f, android.graphics.Shader.TileMode.CLAMP
-                        ) else null
-                    )
-                }
-            },
             onRelease = { view ->
                 track.removeRenderer(view)
                 view.release()
             },
             modifier = modifier,
         )
-    }
-}
-
-// ── In-call chat panel ────────────────────────────────────────────────────────
-
-@Composable
-private fun InCallChatPanel(
-    messages: List<InCallMessage>,
-    onSend: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    var text by remember { mutableStateOf("") }
-    val listState = rememberLazyListState()
-
-    LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty()) listState.animateScrollToItem(messages.lastIndex)
-    }
-
-    Column(
-        modifier = modifier
-            .background(Color(0xCC000000), RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-            .padding(12.dp)
-            .imePadding(),
-    ) {
-        LazyColumn(
-            state = listState,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            items(messages, key = { it.timestamp }) { msg ->
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = msg.sender,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Text(
-                        text = msg.text,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White,
-                    )
-                }
-            }
-        }
-        Spacer(Modifier.height(8.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                modifier = Modifier.weight(1f),
-                placeholder = { Text(stringResource(R.string.call_message_placeholder), color = Color.White.copy(alpha = 0.5f)) },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = Color.White.copy(alpha = 0.5f),
-                    unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
-                ),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                keyboardActions = KeyboardActions(onSend = {
-                    if (text.isNotBlank()) { onSend(text.trim()); text = "" }
-                }),
-                singleLine = true,
-            )
-            IconButton(
-                onClick = {
-                    if (text.isNotBlank()) { onSend(text.trim()); text = "" }
-                },
-            ) {
-                Icon(Icons.Default.Send, contentDescription = stringResource(R.string.call_send_content_description), tint = Color.White)
-            }
-        }
     }
 }
 
@@ -594,8 +492,7 @@ internal fun CallScreenBodyActiveVoicePreview() {
             otherUserName = "Antonio Ramírez",
             isGroup = false,
             onToggleMic = {}, onToggleCamera = {}, onSwitchCamera = {},
-            onToggleBackgroundBlur = {}, onToggleScreenShare = {}, onHangUp = {},
-            onToggleInCallChat = {}, onSendInCallMessage = {},
+            onToggleScreenShare = {}, onHangUp = {},
         )
     }
 }
@@ -610,8 +507,7 @@ internal fun CallScreenBodyConnectingVideoPreview() {
             otherUserName = "Claude QA",
             isGroup = false,
             onToggleMic = {}, onToggleCamera = {}, onSwitchCamera = {},
-            onToggleBackgroundBlur = {}, onToggleScreenShare = {}, onHangUp = {},
-            onToggleInCallChat = {}, onSendInCallMessage = {},
+            onToggleScreenShare = {}, onHangUp = {},
         )
     }
 }
@@ -626,33 +522,26 @@ internal fun CallScreenBodyRingingPreview() {
             otherUserName = "Antonio Ramírez",
             isGroup = false,
             onToggleMic = {}, onToggleCamera = {}, onSwitchCamera = {},
-            onToggleBackgroundBlur = {}, onToggleScreenShare = {}, onHangUp = {},
-            onToggleInCallChat = {}, onSendInCallMessage = {},
+            onToggleScreenShare = {}, onHangUp = {},
         )
     }
 }
 
-@Preview(name = "Voice — muted + in-call chat", showBackground = true)
+@Preview(name = "Voice — muted", showBackground = true)
 @Composable
-internal fun CallScreenBodyMutedWithChatPreview() {
+internal fun CallScreenBodyMutedPreview() {
     ChatAppTheme {
         CallScreenBody(
             state = CallState(
                 phase = CallPhase.ACTIVE,
                 durationSeconds = 42,
                 isMicMuted = true,
-                showInCallChat = true,
-                inCallMessages = listOf(
-                    InCallMessage(sender = "Antonio Ramírez", text = "¿Me oyes bien?"),
-                    InCallMessage(sender = "Tú", text = "Sí, perfecto"),
-                ),
             ),
             callType = "audio",
             otherUserName = "Antonio Ramírez",
             isGroup = false,
             onToggleMic = {}, onToggleCamera = {}, onSwitchCamera = {},
-            onToggleBackgroundBlur = {}, onToggleScreenShare = {}, onHangUp = {},
-            onToggleInCallChat = {}, onSendInCallMessage = {},
+            onToggleScreenShare = {}, onHangUp = {},
         )
     }
 }
@@ -672,8 +561,7 @@ internal fun CallScreenBodyScreenSharingPreview() {
             otherUserName = "Antonio Ramírez",
             isGroup = false,
             onToggleMic = {}, onToggleCamera = {}, onSwitchCamera = {},
-            onToggleBackgroundBlur = {}, onToggleScreenShare = {}, onHangUp = {},
-            onToggleInCallChat = {}, onSendInCallMessage = {},
+            onToggleScreenShare = {}, onHangUp = {},
         )
     }
 }
@@ -688,8 +576,7 @@ internal fun CallScreenBodyEndedPreview() {
             otherUserName = "Antonio Ramírez",
             isGroup = false,
             onToggleMic = {}, onToggleCamera = {}, onSwitchCamera = {},
-            onToggleBackgroundBlur = {}, onToggleScreenShare = {}, onHangUp = {},
-            onToggleInCallChat = {}, onSendInCallMessage = {},
+            onToggleScreenShare = {}, onHangUp = {},
         )
     }
 }
