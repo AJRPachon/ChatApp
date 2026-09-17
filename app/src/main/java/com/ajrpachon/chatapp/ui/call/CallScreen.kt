@@ -222,8 +222,16 @@ private fun CallScreenBody(
             .fillMaxSize()
             .background(CallBackground),
     ) {
-        // Remote video — grid for groups, fullscreen for 1:1
-        if (callType == "video") {
+        // Remote video — screen share always takes priority (any call type); otherwise
+        // camera feeds: grid for groups, fullscreen for 1:1.
+        val remoteScreenShare = state.remoteScreenShareTrack
+        if (remoteScreenShare != null) {
+            VideoView(
+                track = remoteScreenShare,
+                room = currentRoom,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else if (callType == "video") {
             val tracks = state.remoteVideoTracks
             when {
                 isGroup && tracks.size > 1 -> {
