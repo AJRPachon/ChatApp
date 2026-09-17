@@ -6,12 +6,6 @@ import io.livekit.android.room.track.VideoTrack
 
 enum class CallPhase { CONNECTING, RINGING, ACTIVE, ENDED, ERROR }
 
-data class InCallMessage(
-    val sender: String,
-    val text: String,
-    val timestamp: Long = System.currentTimeMillis(),
-)
-
 data class CallState(
     val phase: CallPhase = CallPhase.CONNECTING,
     val room: Room? = null,
@@ -24,10 +18,7 @@ data class CallState(
     val durationSeconds: Int = 0,
     val error: String? = null,
     val isRemoteVideoMuted: Boolean = false,
-    val isBackgroundBlurred: Boolean = false,
     val isScreenSharing: Boolean = false,
-    val showInCallChat: Boolean = false,
-    val inCallMessages: List<InCallMessage> = emptyList(),
 )
 
 sealed class CallIntent {

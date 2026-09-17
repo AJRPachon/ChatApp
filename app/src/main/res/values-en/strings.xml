@@ -284,12 +284,8 @@
     <string name="call_mic_content_description">Microphone</string>
     <string name="call_camera_content_description">Camera</string>
     <string name="call_flip_camera_content_description">Flip camera</string>
-    <string name="call_blur_background_content_description">Blur background</string>
     <string name="call_share_screen_content_description">Share screen</string>
     <string name="call_hang_up_content_description">Hang up</string>
-    <string name="call_in_call_chat_content_description">In-call chat</string>
-    <string name="call_message_placeholder">Message...</string>
-    <string name="call_send_content_description">Send</string>
 
     <!-- Incoming call -->
     <string name="incoming_call_video_incoming">Incoming video call</string>

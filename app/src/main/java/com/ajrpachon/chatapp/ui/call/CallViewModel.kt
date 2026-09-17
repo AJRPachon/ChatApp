@@ -373,10 +373,6 @@ class CallViewModel(
         }
     }
 
-    fun toggleBackgroundBlur() {
-        updateState { it.copy(isBackgroundBlurred = !it.isBackgroundBlurred) }
-    }
-
     fun onIntent(intent: CallIntent) {
         when (intent) {
             is CallIntent.ToggleScreenShare -> {
@@ -414,27 +410,6 @@ class CallViewModel(
             }.onFailure { e ->
                 AppLogger.e(TAG, "stopScreenShare: FAILED", e)
             }
-        }
-    }
-
-    fun toggleInCallChat() {
-        updateState { it.copy(showInCallChat = !it.showInCallChat) }
-    }
-
-    fun sendInCallMessage(text: String) {
-        val trimmed = text.trim()
-        if (trimmed.isBlank()) return
-        val userId = currentUserId ?: return
-        updateState {
-            it.copy(inCallMessages = it.inCallMessages + InCallMessage(sender = userId, text = trimmed))
-        }
-        viewModelScope.launch(Dispatchers.IO) {
-            sendMessageUseCase(
-                conversationId = conversationId,
-                senderId = userId,
-                content = trimmed,
-            ).onFailure { e -> AppLogger.e(TAG, "sendInCallMessage: FAILED", e) }
-             .onSuccess { AppLogger.d(TAG, "sendInCallMessage: OK") }
         }
     }
 
