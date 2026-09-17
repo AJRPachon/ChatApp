@@ -260,11 +260,16 @@ class CallViewModel(
             is RoomEvent.TrackSubscribed -> {
                 val subscribedTrack = event.track
                 if (subscribedTrack is VideoTrack) {
-                    updateState { callState ->
-                        callState.copy(
-                            remoteVideoTrack = subscribedTrack,
-                            remoteVideoTracks = (callState.remoteVideoTracks + subscribedTrack).distinct(),
-                        )
+                    if (event.publication.source == Track.Source.SCREEN_SHARE) {
+                        AppLogger.d(TAG, "TrackSubscribed: remote screen share")
+                        updateState { it.copy(remoteScreenShareTrack = subscribedTrack) }
+                    } else {
+                        updateState { callState ->
+                            callState.copy(
+                                remoteVideoTrack = subscribedTrack,
+                                remoteVideoTracks = (callState.remoteVideoTracks + subscribedTrack).distinct(),
+                            )
+                        }
                     }
                 }
             }
@@ -283,12 +288,17 @@ class CallViewModel(
             is RoomEvent.TrackUnsubscribed -> {
                 val removedTrack = event.track as? VideoTrack
                 if (removedTrack != null) {
-                    updateState { callState ->
-                        val updated = callState.remoteVideoTracks.filter { it !== removedTrack }
-                        callState.copy(
-                            remoteVideoTrack = updated.lastOrNull(),
-                            remoteVideoTracks = updated,
-                        )
+                    if (removedTrack === state.value.remoteScreenShareTrack) {
+                        AppLogger.d(TAG, "TrackUnsubscribed: remote screen share ended")
+                        updateState { it.copy(remoteScreenShareTrack = null) }
+                    } else {
+                        updateState { callState ->
+                            val updated = callState.remoteVideoTracks.filter { it !== removedTrack }
+                            callState.copy(
+                                remoteVideoTrack = updated.lastOrNull(),
+                                remoteVideoTracks = updated,
+                            )
+                        }
                     }
                 }
             }
