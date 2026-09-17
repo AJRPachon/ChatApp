@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Splash screen ("Opción I") en modo oscuro: fondo grafito, la insignia del icono se
+         funde con el fondo (mismo color) en vez de recortarse como chip, igual que el diseño. -->
+    <color name="splash_background">#0E1516</color>
+    <color name="splash_icon_background">#0E1516</color>
+    <color name="splash_badge_accent">#6C9BD1</color>
+</resources>
