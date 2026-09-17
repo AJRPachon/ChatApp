@@ -16,6 +16,8 @@ import io.livekit.android.events.DisconnectReason
 import io.livekit.android.events.ParticipantEvent
 import io.livekit.android.events.RoomEvent
 import io.livekit.android.room.Room
+import io.livekit.android.room.participant.LocalParticipant
+import io.livekit.android.room.participant.Participant
 import io.livekit.android.room.track.CameraPosition
 import io.livekit.android.room.track.LocalVideoTrack
 import io.livekit.android.room.track.Track
@@ -240,6 +242,34 @@ class CallViewModel(
     private fun handleRoomEvent(event: RoomEvent) {
         AppLogger.d(TAG, "handleRoomEvent: ${event::class.simpleName}")
         when (event) {
+            is RoomEvent.ParticipantConnected, is RoomEvent.ParticipantDisconnected -> handleParticipantEvent(event)
+            is RoomEvent.TrackSubscribed, is RoomEvent.TrackUnsubscribed -> handleTrackSubscriptionEvent(event)
+            is RoomEvent.TrackMuted -> setRemoteVideoMuted(event.publication.track, event.participant, muted = true)
+            is RoomEvent.TrackUnmuted -> setRemoteVideoMuted(event.publication.track, event.participant, muted = false)
+            is RoomEvent.Disconnected -> {
+                durationJob?.cancel()
+                AppLogger.e(TAG, "RoomEvent.Disconnected: reason=${event.reason} error=${event.error?.message}")
+                if (event.reason == DisconnectReason.CLIENT_INITIATED) {
+                    updateState { it.copy(phase = CallPhase.ENDED) }
+                } else {
+                    updateState {
+                        it.copy(
+                            phase = CallPhase.ERROR,
+                            error = "${event.reason.name}: ${event.error?.message ?: "desconexión inesperada"}",
+                        )
+                    }
+                }
+            }
+            is RoomEvent.FailedToConnect -> {
+                AppLogger.e(TAG, "RoomEvent.FailedToConnect: ${event.error.message}")
+                updateState { it.copy(phase = CallPhase.ERROR, error = "Error al conectar: ${event.error.message}") }
+            }
+            else -> {}
+        }
+    }
+
+    private fun handleParticipantEvent(event: RoomEvent) {
+        when (event) {
             is RoomEvent.ParticipantConnected -> {
                 AppLogger.d(TAG, "ParticipantConnected: identity=${event.participant.identity}")
                 missedCallJob?.cancel()
@@ -257,69 +287,50 @@ class CallViewModel(
                     endCallLocally(if (phase == CallPhase.ACTIVE) "ended" else "missed")
                 }
             }
+            else -> {}
+        }
+    }
+
+    private fun handleTrackSubscriptionEvent(event: RoomEvent) {
+        when (event) {
             is RoomEvent.TrackSubscribed -> {
                 val subscribedTrack = event.track
-                if (subscribedTrack is VideoTrack) {
-                    if (event.publication.source == Track.Source.SCREEN_SHARE) {
-                        AppLogger.d(TAG, "TrackSubscribed: remote screen share")
-                        updateState { it.copy(remoteScreenShareTrack = subscribedTrack) }
-                    } else {
-                        updateState { callState ->
-                            callState.copy(
-                                remoteVideoTrack = subscribedTrack,
-                                remoteVideoTracks = (callState.remoteVideoTracks + subscribedTrack).distinct(),
-                            )
-                        }
+                if (subscribedTrack !is VideoTrack) return
+                if (event.publication.source == Track.Source.SCREEN_SHARE) {
+                    AppLogger.d(TAG, "TrackSubscribed: remote screen share")
+                    updateState { it.copy(remoteScreenShareTrack = subscribedTrack) }
+                } else {
+                    updateState { callState ->
+                        callState.copy(
+                            remoteVideoTrack = subscribedTrack,
+                            remoteVideoTracks = (callState.remoteVideoTracks + subscribedTrack).distinct(),
+                        )
                     }
-                }
-            }
-            is RoomEvent.TrackMuted -> {
-                if (event.publication.track is VideoTrack && event.participant !is io.livekit.android.room.participant.LocalParticipant) {
-                    AppLogger.d(TAG, "TrackMuted: remote video muted")
-                    updateState { it.copy(isRemoteVideoMuted = true) }
-                }
-            }
-            is RoomEvent.TrackUnmuted -> {
-                if (event.publication.track is VideoTrack && event.participant !is io.livekit.android.room.participant.LocalParticipant) {
-                    AppLogger.d(TAG, "TrackUnmuted: remote video unmuted")
-                    updateState { it.copy(isRemoteVideoMuted = false) }
                 }
             }
             is RoomEvent.TrackUnsubscribed -> {
-                val removedTrack = event.track as? VideoTrack
-                if (removedTrack != null) {
-                    if (removedTrack === state.value.remoteScreenShareTrack) {
-                        AppLogger.d(TAG, "TrackUnsubscribed: remote screen share ended")
-                        updateState { it.copy(remoteScreenShareTrack = null) }
-                    } else {
-                        updateState { callState ->
-                            val updated = callState.remoteVideoTracks.filter { it !== removedTrack }
-                            callState.copy(
-                                remoteVideoTrack = updated.lastOrNull(),
-                                remoteVideoTracks = updated,
-                            )
-                        }
+                val removedTrack = event.track as? VideoTrack ?: return
+                if (removedTrack === state.value.remoteScreenShareTrack) {
+                    AppLogger.d(TAG, "TrackUnsubscribed: remote screen share ended")
+                    updateState { it.copy(remoteScreenShareTrack = null) }
+                } else {
+                    updateState { callState ->
+                        val updated = callState.remoteVideoTracks.filter { it !== removedTrack }
+                        callState.copy(
+                            remoteVideoTrack = updated.lastOrNull(),
+                            remoteVideoTracks = updated,
+                        )
                     }
                 }
             }
-            is RoomEvent.Disconnected -> {
-                durationJob?.cancel()
-                AppLogger.e(TAG, "RoomEvent.Disconnected: reason=${event.reason} error=${event.error?.message}")
-                if (event.reason == DisconnectReason.CLIENT_INITIATED) {
-                    updateState { it.copy(phase = CallPhase.ENDED) }
-                } else {
-                    updateState { it.copy(
-                        phase = CallPhase.ERROR,
-                        error = "${event.reason.name}: ${event.error?.message ?: "desconexión inesperada"}"
-                    ) }
-                }
-            }
-            is RoomEvent.FailedToConnect -> {
-                AppLogger.e(TAG, "RoomEvent.FailedToConnect: ${event.error.message}")
-                updateState { it.copy(phase = CallPhase.ERROR, error = "Error al conectar: ${event.error.message}") }
-            }
             else -> {}
         }
+    }
+
+    private fun setRemoteVideoMuted(track: Track?, participant: Participant, muted: Boolean) {
+        if (track !is VideoTrack || participant is LocalParticipant) return
+        AppLogger.d(TAG, "setRemoteVideoMuted: remote video muted=$muted")
+        updateState { it.copy(isRemoteVideoMuted = muted) }
     }
 
     private suspend fun sendCallSummaryMessage(status: String) = callMessageMutex.withLock {
