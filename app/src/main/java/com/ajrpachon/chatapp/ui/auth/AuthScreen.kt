@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -343,45 +344,31 @@ private fun LoginContent(
                         Spacer(Modifier.height(20.dp))
 
                         // ── Email/password tabs ─────────────────────────────────
+                        // The selected tab must match the track's own height exactly — both use
+                        // RoundedCornerShape(50), which is a percent radius computed from each
+                        // element's OWN size. Insetting the Row vertically (as well as
+                        // horizontally) used to give the inner tab a shorter height than the
+                        // track, so its "fully rounded" radius came out a few dp smaller than the
+                        // track's — a correct capsule on its own, but visibly less round than its
+                        // parent right next to it. Horizontal-only padding keeps the tab's height
+                        // identical to the track's, so both resolve to the same absolute radius.
                         Surface(
                             shape = RoundedCornerShape(50),
                             color = MaterialTheme.colorScheme.surfaceContainerHighest,
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Row(modifier = Modifier.padding(4.dp)) {
+                            Row(modifier = Modifier.padding(horizontal = 4.dp)) {
                                 val isSignIn = state.authMode == AuthMode.SIGN_IN
-                                Surface(
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(50),
-                                    color = if (isSignIn) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                                AuthModeTab(
+                                    text = stringResource(R.string.auth_sign_in_tab),
+                                    selected = isSignIn,
                                     onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_IN)) },
-                                ) {
-                                    Text(
-                                        stringResource(R.string.auth_sign_in_tab),
-                                        modifier = Modifier.padding(vertical = 10.dp),
-                                        style = MaterialTheme.typography.labelLarge,
-                                        fontWeight = if (isSignIn) FontWeight.SemiBold else FontWeight.Normal,
-                                        color = if (isSignIn) MaterialTheme.colorScheme.onPrimaryContainer
-                                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                    )
-                                }
-                                Surface(
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(50),
-                                    color = if (!isSignIn) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                                )
+                                AuthModeTab(
+                                    text = stringResource(R.string.auth_sign_up_tab),
+                                    selected = !isSignIn,
                                     onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_UP)) },
-                                ) {
-                                    Text(
-                                        stringResource(R.string.auth_sign_up_tab),
-                                        modifier = Modifier.padding(vertical = 10.dp),
-                                        style = MaterialTheme.typography.labelLarge,
-                                        fontWeight = if (!isSignIn) FontWeight.SemiBold else FontWeight.Normal,
-                                        color = if (!isSignIn) MaterialTheme.colorScheme.onPrimaryContainer
-                                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                    )
-                                }
+                                )
                             }
                         }
 
@@ -434,6 +421,31 @@ private fun AuthSwitchModeLink(
         ) {
             Text(stringResource(R.string.auth_have_account_sign_in))
         }
+    }
+}
+
+// Sign in / Sign up track segment — see the shape comment above its call site for why the
+// selected fill must share the track's own height instead of insetting on all sides.
+@Composable
+private fun RowScope.AuthModeTab(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.weight(1f),
+        shape = RoundedCornerShape(50),
+        color = if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
+        onClick = onClick,
+    ) {
+        Text(
+            text,
+            modifier = Modifier.padding(vertical = 8.dp, horizontal = 8.dp),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
     }
 }
 
