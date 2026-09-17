@@ -67,6 +67,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -77,6 +78,7 @@ import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.common.formatCallDuration
 import com.ajrpachon.chatapp.ui.theme.CallBackground
 import com.ajrpachon.chatapp.ui.theme.CallScreenShareAccent
+import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import com.github.skydoves.navgraph.annotations.NavDestination
 import io.livekit.android.renderer.TextureViewRenderer
 import io.livekit.android.room.Room
@@ -150,7 +152,6 @@ private fun CallScreenContent(
         parameters = { parametersOf(CallArgs(callId, conversationId, roomName, callType, isOutgoing, isGroup)) },
     )
     val state by vm.state.collectAsStateWithLifecycle()
-    val currentRoom = state.room
 
     // Screen share MediaProjection launcher
     val screenShareLauncher = rememberLauncherForActivityResult(
@@ -177,6 +178,43 @@ private fun CallScreenContent(
             }
         }
     }
+
+    CallScreenBody(
+        state = state,
+        callType = callType,
+        otherUserName = otherUserName,
+        isGroup = isGroup,
+        onToggleMic = { vm.toggleMic() },
+        onToggleCamera = { vm.toggleCamera() },
+        onSwitchCamera = { vm.switchCamera() },
+        onToggleBackgroundBlur = { vm.toggleBackgroundBlur() },
+        onToggleScreenShare = { vm.onIntent(CallIntent.ToggleScreenShare) },
+        onHangUp = { vm.hangUp() },
+        onToggleInCallChat = { vm.toggleInCallChat() },
+        onSendInCallMessage = { vm.sendInCallMessage(it) },
+    )
+}
+
+// Pure UI over [CallState] — no Koin/LiveKit wiring of its own, so it's directly usable from
+// @Preview below with a hand-built state (real video tracks still won't render without a live
+// LiveKit Room, but every other visual: phase text, controls, colors, in-call chat, layout — is
+// exactly what ships, so editing this function updates those previews live.
+@Composable
+private fun CallScreenBody(
+    state: CallState,
+    callType: String,
+    otherUserName: String,
+    isGroup: Boolean,
+    onToggleMic: () -> Unit,
+    onToggleCamera: () -> Unit,
+    onSwitchCamera: () -> Unit,
+    onToggleBackgroundBlur: () -> Unit,
+    onToggleScreenShare: () -> Unit,
+    onHangUp: () -> Unit,
+    onToggleInCallChat: () -> Unit,
+    onSendInCallMessage: (String) -> Unit,
+) {
+    val currentRoom = state.room
 
     Box(
         modifier = Modifier
@@ -319,7 +357,7 @@ private fun CallScreenContent(
         ) {
             // Mute mic
             CallControlButton(
-                onClick = { vm.toggleMic() },
+                onClick = onToggleMic,
                 containerColor = if (state.isMicMuted) Color.White else Color.White.copy(alpha = 0.2f),
                 iconTint = if (state.isMicMuted) Color.Black else Color.White,
             ) {
@@ -332,7 +370,7 @@ private fun CallScreenContent(
             // Camera toggle (video calls only)
             if (callType == "video") {
                 CallControlButton(
-                    onClick = { vm.toggleCamera() },
+                    onClick = onToggleCamera,
                     containerColor = if (state.isCameraOff) Color.White else Color.White.copy(alpha = 0.2f),
                     iconTint = if (state.isCameraOff) Color.Black else Color.White,
                 ) {
@@ -344,7 +382,7 @@ private fun CallScreenContent(
                 // Switch front/back camera (only when camera is active)
                 if (!state.isCameraOff) {
                     CallControlButton(
-                        onClick = { vm.switchCamera() },
+                        onClick = onSwitchCamera,
                         containerColor = Color.White.copy(alpha = 0.2f),
                         iconTint = Color.White,
                     ) {
@@ -353,7 +391,7 @@ private fun CallScreenContent(
                     // Background blur toggle (API 31+)
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                         CallControlButton(
-                            onClick = { vm.toggleBackgroundBlur() },
+                            onClick = onToggleBackgroundBlur,
                             containerColor = if (state.isBackgroundBlurred) Color.White else Color.White.copy(alpha = 0.2f),
                             iconTint = if (state.isBackgroundBlurred) Color.Black else Color.White,
                         ) {
@@ -368,7 +406,7 @@ private fun CallScreenContent(
 
             // Screen share toggle
             CallControlButton(
-                onClick = { vm.onIntent(CallIntent.ToggleScreenShare) },
+                onClick = onToggleScreenShare,
                 containerColor = if (state.isScreenSharing) CallScreenShareAccent else Color.White.copy(alpha = 0.2f),
                 iconTint = Color.White,
             ) {
@@ -380,7 +418,7 @@ private fun CallScreenContent(
 
             // Hang up
             CallControlButton(
-                onClick = { vm.hangUp() },
+                onClick = onHangUp,
                 containerColor = MaterialTheme.colorScheme.error,
                 iconTint = Color.White,
                 size = 64.dp,
@@ -391,7 +429,7 @@ private fun CallScreenContent(
 
         // Chat FAB (bottom-start)
         CallControlButton(
-            onClick = { vm.toggleInCallChat() },
+            onClick = onToggleInCallChat,
             containerColor = if (state.showInCallChat) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.2f),
             iconTint = Color.White,
             modifier = Modifier
@@ -411,7 +449,7 @@ private fun CallScreenContent(
         ) {
             InCallChatPanel(
                 messages = state.inCallMessages,
-                onSend = { vm.sendInCallMessage(it) },
+                onSend = onSendInCallMessage,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 140.dp),
@@ -535,6 +573,124 @@ private fun InCallChatPanel(
                 Icon(Icons.Default.Send, contentDescription = stringResource(R.string.call_send_content_description), tint = Color.White)
             }
         }
+    }
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+// Live-editable: these render the same CallScreenBody the real call screen uses, just fed a
+// hand-built CallState instead of a wired-up CallViewModel/LiveKit Room — so tweaking colors,
+// spacing, control layout, etc. above shows up here immediately (Android Studio's Split or
+// Preview pane, Live Edit) without needing a real call, permissions, or a device. The one thing
+// that can't render here is actual remote/local video — VideoTrack needs a live LiveKit Room —
+// so the video-call previews below stay audio-shaped (icon + name) even though callType="video".
+
+@Preview(name = "Voice — active", showBackground = true)
+@Composable
+internal fun CallScreenBodyActiveVoicePreview() {
+    ChatAppTheme {
+        CallScreenBody(
+            state = CallState(phase = CallPhase.ACTIVE, durationSeconds = 125),
+            callType = "audio",
+            otherUserName = "Antonio Ramírez",
+            isGroup = false,
+            onToggleMic = {}, onToggleCamera = {}, onSwitchCamera = {},
+            onToggleBackgroundBlur = {}, onToggleScreenShare = {}, onHangUp = {},
+            onToggleInCallChat = {}, onSendInCallMessage = {},
+        )
+    }
+}
+
+@Preview(name = "Video — connecting", showBackground = true)
+@Composable
+internal fun CallScreenBodyConnectingVideoPreview() {
+    ChatAppTheme {
+        CallScreenBody(
+            state = CallState(phase = CallPhase.CONNECTING),
+            callType = "video",
+            otherUserName = "Claude QA",
+            isGroup = false,
+            onToggleMic = {}, onToggleCamera = {}, onSwitchCamera = {},
+            onToggleBackgroundBlur = {}, onToggleScreenShare = {}, onHangUp = {},
+            onToggleInCallChat = {}, onSendInCallMessage = {},
+        )
+    }
+}
+
+@Preview(name = "Voice — ringing (outgoing)", showBackground = true)
+@Composable
+internal fun CallScreenBodyRingingPreview() {
+    ChatAppTheme {
+        CallScreenBody(
+            state = CallState(phase = CallPhase.RINGING),
+            callType = "audio",
+            otherUserName = "Antonio Ramírez",
+            isGroup = false,
+            onToggleMic = {}, onToggleCamera = {}, onSwitchCamera = {},
+            onToggleBackgroundBlur = {}, onToggleScreenShare = {}, onHangUp = {},
+            onToggleInCallChat = {}, onSendInCallMessage = {},
+        )
+    }
+}
+
+@Preview(name = "Voice — muted + in-call chat", showBackground = true)
+@Composable
+internal fun CallScreenBodyMutedWithChatPreview() {
+    ChatAppTheme {
+        CallScreenBody(
+            state = CallState(
+                phase = CallPhase.ACTIVE,
+                durationSeconds = 42,
+                isMicMuted = true,
+                showInCallChat = true,
+                inCallMessages = listOf(
+                    InCallMessage(sender = "Antonio Ramírez", text = "¿Me oyes bien?"),
+                    InCallMessage(sender = "Tú", text = "Sí, perfecto"),
+                ),
+            ),
+            callType = "audio",
+            otherUserName = "Antonio Ramírez",
+            isGroup = false,
+            onToggleMic = {}, onToggleCamera = {}, onSwitchCamera = {},
+            onToggleBackgroundBlur = {}, onToggleScreenShare = {}, onHangUp = {},
+            onToggleInCallChat = {}, onSendInCallMessage = {},
+        )
+    }
+}
+
+@Preview(name = "Video — camera off + screen sharing", showBackground = true)
+@Composable
+internal fun CallScreenBodyScreenSharingPreview() {
+    ChatAppTheme {
+        CallScreenBody(
+            state = CallState(
+                phase = CallPhase.ACTIVE,
+                durationSeconds = 300,
+                isCameraOff = true,
+                isScreenSharing = true,
+            ),
+            callType = "video",
+            otherUserName = "Antonio Ramírez",
+            isGroup = false,
+            onToggleMic = {}, onToggleCamera = {}, onSwitchCamera = {},
+            onToggleBackgroundBlur = {}, onToggleScreenShare = {}, onHangUp = {},
+            onToggleInCallChat = {}, onSendInCallMessage = {},
+        )
+    }
+}
+
+@Preview(name = "Voice — call ended", showBackground = true)
+@Composable
+internal fun CallScreenBodyEndedPreview() {
+    ChatAppTheme {
+        CallScreenBody(
+            state = CallState(phase = CallPhase.ENDED),
+            callType = "audio",
+            otherUserName = "Antonio Ramírez",
+            isGroup = false,
+            onToggleMic = {}, onToggleCamera = {}, onSwitchCamera = {},
+            onToggleBackgroundBlur = {}, onToggleScreenShare = {}, onHangUp = {},
+            onToggleInCallChat = {}, onSendInCallMessage = {},
+        )
     }
 }
 
