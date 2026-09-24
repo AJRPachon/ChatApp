@@ -36,9 +36,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -48,6 +50,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
@@ -173,6 +178,40 @@ private fun CallScreenContent(
         if (state.phase == CallPhase.ENDED || state.phase == CallPhase.ERROR) {
             onCallEnded()
         }
+    }
+
+    // Pause the local camera when the app is backgrounded (e.g. CallRoute back press does
+    // moveTaskToBack instead of hanging up, so the call — and its camera — would otherwise keep
+    // running off-screen) and resume it when brought back to the foreground, but only if the
+    // camera was actually on before backgrounding — never re-enable a camera the user had
+    // explicitly turned off themselves. Reuses the existing public toggleCamera() (a plain flip
+    // of isCameraOff) rather than adding new CallViewModel members for this, since the class is
+    // already at detekt's TooManyFunctions ceiling.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        var isFirstResume = true
+        var cameraAutoPaused = false
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_PAUSE -> {
+                    if (callType == "video" && !state.isCameraOff) {
+                        cameraAutoPaused = true
+                        vm.toggleCamera()
+                    }
+                }
+                Lifecycle.Event.ON_RESUME -> {
+                    if (isFirstResume) {
+                        isFirstResume = false
+                    } else if (cameraAutoPaused) {
+                        cameraAutoPaused = false
+                        vm.toggleCamera()
+                    }
+                }
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     // Collect CallEffects (e.g. RequestScreenShare)
@@ -465,7 +504,31 @@ fun VideoView(
     room: Room? = null,
     modifier: Modifier = Modifier,
 ) {
-    key(track) {
+    // Work around a known, still-open LiveKit/WebRTC Android issue (client-sdk-android#302):
+    // TextureViewRenderer's GL rendering stalls on the last frame after the app is backgrounded
+    // (e.g. CallRoute back press now does moveTaskToBack instead of hanging up) and brought back
+    // to the foreground, since the call keeps running instead of the renderer being torn down
+    // and recreated. Re-adding the VideoSink alone (without recreating the View) was NOT enough
+    // to unstick it — TextureViewRenderer only (re)creates its EGL surface from
+    // TextureView.SurfaceTextureListener#onSurfaceTextureAvailable, which fires for a fresh
+    // TextureView but not just from calling init()/addRenderer() again on the existing one.
+    // Forcing the whole AndroidView (and thus the TextureView) to be recreated on every resume
+    // after the first — matching the "notifyDataSetChanged" recipe that fixed this for other
+    // LiveKit Android users — guarantees that callback fires again.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var resumeGeneration by remember { mutableIntStateOf(0) }
+    DisposableEffect(lifecycleOwner) {
+        var isFirstResume = true
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                if (isFirstResume) isFirstResume = false else resumeGeneration++
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    key(track, resumeGeneration) {
         AndroidView<TextureViewRenderer>(
             factory = { ctx ->
                 TextureViewRenderer(ctx).also { view ->

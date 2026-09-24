@@ -265,6 +265,12 @@ class MainActivity : ComponentActivity() {
                     onBack = {
                         when {
                             backStack.lastOrNull() is AppLockRoute -> moveTaskToBack(true)
+                            // An active call must never be hung up by a plain back press/gesture
+                            // — that's what the in-call hang-up button is for. Route back to the
+                            // same "leave the app, keep what's running" behavior as Home instead
+                            // of popping CallRoute off the stack, which would clear CallViewModel
+                            // (rememberViewModelStoreNavEntryDecorator) and disconnect the room.
+                            backStack.lastOrNull() is CallRoute -> moveTaskToBack(true)
                             backStack.size > 1 -> backStack.removeLastOrNull()
                             else -> finish()
                         }
