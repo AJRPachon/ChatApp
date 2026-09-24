@@ -14,6 +14,7 @@ data class CallState(
     val isFrontCamera: Boolean = true,
     val remoteVideoTrack: VideoTrack? = null,
     val remoteVideoTracks: List<VideoTrack> = emptyList(),
+    val remoteScreenShareTrack: VideoTrack? = null,
     val localVideoTrack: LocalVideoTrack? = null,
     val durationSeconds: Int = 0,
     val error: String? = null,
