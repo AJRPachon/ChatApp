@@ -149,7 +149,7 @@ tasks.register<JacocoReport>("jacocoTestReport") {
         html.outputLocation.set(layout.buildDirectory.dir("reports/jacoco/jacocoTestReport/html"))
     }
     classDirectories.setFrom(
-        fileTree(layout.buildDirectory.dir("tmp/kotlin-classes/debug")) {
+        fileTree(layout.buildDirectory.dir("intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes")) {
             exclude(
                 "**/R.class", "**/R\$*.class", "**/BuildConfig.*",
                 "**/Manifest*.*", "**/*Test*.*", "android/**/*.*",
