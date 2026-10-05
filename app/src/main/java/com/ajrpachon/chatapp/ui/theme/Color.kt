@@ -104,3 +104,24 @@ val IncognitoAccent = Color(0xFF7B1FA2)
 val CallAcceptedGreen = Color(0xFF2E7D32)
 val CallBackground = Color(0xFF1A1A2E)
 val CallScreenShareAccent = Color(0xFFFF5722)
+
+// ── Message status ───────────────────────────────────────────────────────
+// Azul de "leído" (doble check): significado fijo, igual en claro y oscuro.
+val ReadReceiptBlue = Color(0xFF4FC3F7)
+
+// ── Chat themes ──────────────────────────────────────────────────────────
+// Paletas elegidas por el usuario para la burbuja y el fondo del chat; son
+// pasteles/oscuros fijos, independientes del esquema claro/oscuro de la app.
+val ChatThemeDefaultBubble = Color(0xFFDCE8FB)
+val ChatThemeOceanBubble = Color(0xFF9CD3E8)
+val ChatThemeOceanBackground = Color(0xFFE8F5FA)
+val ChatThemeSunsetBubble = Color(0xFFF4B8A0)
+val ChatThemeSunsetBackground = Color(0xFFFDF0EB)
+val ChatThemeForestBubble = Color(0xFFA8D5B5)
+val ChatThemeForestBackground = Color(0xFFEBF5EE)
+val ChatThemeLavenderBubble = Color(0xFFCDB8E8)
+val ChatThemeLavenderBackground = Color(0xFFF3EEF9)
+val ChatThemeRoseBubble = Color(0xFFF2A8C0)
+val ChatThemeRoseBackground = Color(0xFFFDF0F4)
+val ChatThemeMidnightBubble = Color(0xFF5D6A8A)
+val ChatThemeMidnightBackground = Color(0xFF1A1F2E)

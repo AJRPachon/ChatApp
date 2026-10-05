@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
@@ -78,6 +77,7 @@ import com.ajrpachon.chatapp.domain.model.StatusBO
 import com.ajrpachon.chatapp.ui.common.ChatConstants
 import com.ajrpachon.chatapp.ui.common.formatStatusAge
 import com.ajrpachon.chatapp.ui.components.ChatAppAvatar
+import com.ajrpachon.chatapp.ui.theme.ChatAppShapeExtras
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -505,7 +505,7 @@ fun StatusViewerScreen(
                 modifier = Modifier
                     .align(Alignment.Center)
                     .padding(32.dp)
-                    .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                    .background(Color.Black.copy(alpha = 0.3f), MaterialTheme.shapes.small)
                     .padding(16.dp),
             )
         }
@@ -569,7 +569,7 @@ fun StatusViewerScreen(
                         modifier = Modifier
                             .weight(1f)
                             .height(3.dp)
-                            .clip(RoundedCornerShape(2.dp)),
+                            .clip(ChatAppShapeExtras.ProgressSegment),
                         color = Color.White,
                         trackColor = Color.White.copy(alpha = 0.4f),
                         // M3's default draws a small stop-indicator dot at the track's end —
@@ -627,7 +627,7 @@ fun StatusViewerScreen(
                         .testTag("status_reply_field"),
                     placeholder = { Text(stringResource(R.string.status_reply_placeholder), color = Color.White.copy(alpha = 0.6f)) },
                     textStyle = MaterialTheme.typography.bodyMedium.copy(color = Color.White),
-                    shape = RoundedCornerShape(24.dp),
+                    shape = MaterialTheme.shapes.extraLarge,
                     colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color.White,
                         unfocusedBorderColor = Color.White.copy(alpha = 0.6f),

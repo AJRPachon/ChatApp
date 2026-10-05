@@ -19,7 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Forward
 import androidx.compose.material.icons.filled.ContentCopy
@@ -70,6 +70,8 @@ import com.ajrpachon.chatapp.domain.model.MediaUrlValidator
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.SendStatus
 import com.ajrpachon.chatapp.ui.emoji.EmojiPickerBottomSheet
+import com.ajrpachon.chatapp.ui.theme.ChatAppShapeExtras
+import com.ajrpachon.chatapp.ui.theme.ReadReceiptBlue
 import com.ajrpachon.chatapp.utils.LinkPreviewData
 
 /**
@@ -338,7 +340,7 @@ internal fun LocationMessageCard(mapsUrl: String, onLongPress: () -> Unit = {}) 
         }
     }
     Surface(
-        shape = RoundedCornerShape(8.dp),
+        shape = MaterialTheme.shapes.small,
         color = MaterialTheme.colorScheme.surfaceVariant,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
         // combinedClickable, not a plain clickable — see GenericFileBubble's onLongPress doc for
@@ -402,7 +404,7 @@ internal fun ReadReceiptIcon(isRead: Boolean, unreadTint: Color? = null) {
         contentDescription = if (isRead) stringResource(R.string.chat_read) else stringResource(R.string.chat_sent),
         modifier = Modifier.size(14.dp),
         tint = if (isRead)
-            Color(0xFF4FC3F7)
+            ReadReceiptBlue
         else
             unreadTint ?: MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
     )
@@ -455,7 +457,7 @@ internal fun MediaMetaOverlay(
 ) {
     Surface(
         color = Color.Black.copy(alpha = 0.45f),
-        shape = RoundedCornerShape(50),
+        shape = CircleShape,
         modifier = modifier.padding(6.dp),
     ) {
         Row(
@@ -519,7 +521,7 @@ internal fun ReplyQuote(
     Row(
         modifier = Modifier
             .widthIn(min = 120.dp)
-            .clip(RoundedCornerShape(6.dp))
+            .clip(ChatAppShapeExtras.Thumbnail)
             .background(bg)
             .height(IntrinsicSize.Min)
             .clickable { onClick() },
@@ -580,7 +582,7 @@ internal fun StatusReplyQuote(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .widthIn(min = 120.dp)
-            .clip(RoundedCornerShape(6.dp))
+            .clip(ChatAppShapeExtras.Thumbnail)
             .background(bg)
             .clickable { onClick() }
             .padding(6.dp),
@@ -589,7 +591,7 @@ internal fun StatusReplyQuote(
             Box(
                 modifier = Modifier
                     .size(32.dp)
-                    .clip(RoundedCornerShape(4.dp))
+                    .clip(MaterialTheme.shapes.extraSmall)
                     .background(
                         message.replyToStatusBackgroundColor?.let { Color(it) }
                             ?: MaterialTheme.colorScheme.surfaceVariant
@@ -646,7 +648,7 @@ internal fun StatusReplyQuote(
 internal fun LinkPreviewCard(data: LinkPreviewData) {
     val context = LocalContext.current
     Surface(
-        shape = RoundedCornerShape(8.dp),
+        shape = MaterialTheme.shapes.small,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = Modifier
             .fillMaxWidth()
@@ -666,7 +668,7 @@ internal fun LinkPreviewCard(data: LinkPreviewData) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(120.dp)
-                        .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)),
+                        .clip(ChatAppShapeExtras.PanelTop),
                 )
             }
             Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {

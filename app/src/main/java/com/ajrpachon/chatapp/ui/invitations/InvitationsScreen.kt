@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -44,6 +43,7 @@ import com.ajrpachon.chatapp.ui.components.InvitationsSkeleton
 import com.github.skydoves.navgraph.annotations.NavDestination
 import com.ajrpachon.chatapp.InvitationsRoute
 import com.ajrpachon.chatapp.domain.model.UserBO
+import com.ajrpachon.chatapp.ui.theme.ChatAppShapeExtras
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import kotlinx.datetime.Instant
 import org.koin.androidx.compose.koinViewModel
@@ -194,7 +194,7 @@ internal fun InvitationsEmptyPreview() {
 private fun FilterChip(text: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
+            .clip(ChatAppShapeExtras.Thumbnail)
             .background(
                 if (selected) MaterialTheme.colorScheme.primary
                 else MaterialTheme.colorScheme.surfaceVariant,
@@ -342,7 +342,7 @@ private fun ActionIcon(
     Box(
         modifier = Modifier
             .size(34.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(MaterialTheme.shapes.small)
             .background(container)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,

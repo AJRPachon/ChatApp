@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Group
@@ -314,7 +313,7 @@ internal fun ImageViewerDialog(
                     .align(Alignment.TopEnd)
                     .statusBarsPadding()
                     .padding(top = 4.dp, end = 8.dp)
-                    .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(50)),
+                    .background(Color.Black.copy(alpha = 0.4f), CircleShape),
             ) {
                 Icon(Icons.Default.Close, contentDescription = stringResource(R.string.chat_close), tint = Color.White)
             }
