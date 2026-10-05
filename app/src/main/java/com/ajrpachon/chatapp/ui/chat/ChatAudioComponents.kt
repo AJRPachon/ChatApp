@@ -339,7 +339,6 @@ private fun applyPlaybackSpeed(mp: MediaPlayer, speed: Float) {
     }
 }
 
-@Suppress("LongParameterList")
 @Composable
 internal fun AudioPlayerRow(
     isPrepared: Boolean,

@@ -8,6 +8,8 @@ import androidx.room.Query
 import com.ajrpachon.chatapp.data.local.entity.MessageDBO
 import kotlinx.coroutines.flow.Flow
 
+// TooManyFunctions: one method per query or update on the single `messages` table. Room turns each into one
+// SQL statement, so the count follows the table's access paths, not mixed responsibilities.
 @Dao
 @Suppress("TooManyFunctions")
 interface MessageDao {

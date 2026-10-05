@@ -5,6 +5,7 @@ import android.app.Application
 import android.location.LocationManager
 import android.net.Uri
 import com.ajrpachon.chatapp.domain.model.LocationMessageFormat
+import com.ajrpachon.chatapp.domain.model.OutgoingMessage
 import com.ajrpachon.chatapp.domain.repository.ContactRepository
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
 import com.ajrpachon.chatapp.utils.AppLogger
@@ -40,8 +41,10 @@ class ChatQuickSendDelegate(
             sendEffect(ChatEffect.ScrollToBottom)
             updateState { it.copy(showStickerPicker = false, replyingTo = null) }
             sendMessageUseCase(
-                conversationId, userId, "", gifUrl = url,
-                replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
+                OutgoingMessage(
+                    conversationId = conversationId, senderId = userId, content = "", gifUrl = url,
+                    replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
+                ),
             ).onFailure { e -> updateState { it.copy(error = e.message ?: "Error al enviar el GIF") } }
         }
     }
@@ -53,8 +56,10 @@ class ChatQuickSendDelegate(
             sendEffect(ChatEffect.ScrollToBottom)
             updateState { it.copy(showStickerPicker = false, replyingTo = null) }
             sendMessageUseCase(
-                conversationId, userId, "", stickerUrl = emoji,
-                replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
+                OutgoingMessage(
+                    conversationId = conversationId, senderId = userId, content = "", stickerUrl = emoji,
+                    replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
+                ),
             ).onFailure { e -> updateState { it.copy(error = e.message ?: "Error al enviar el sticker") } }
         }
     }
@@ -67,8 +72,10 @@ class ChatQuickSendDelegate(
             sendEffect(ChatEffect.ScrollToBottom)
             updateState { it.copy(replyingTo = null) }
             sendMessageUseCase(
-                conversationId, userId, content,
-                replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
+                OutgoingMessage(
+                    conversationId = conversationId, senderId = userId, content = content,
+                    replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
+                ),
             ).onFailure { e -> AppLogger.e(TAG, "sendContact failed", e); updateState { it.copy(error = e.message ?: "Error al enviar el contacto") } }
         }
     }
@@ -109,8 +116,10 @@ class ChatQuickSendDelegate(
             sendEffect(ChatEffect.ScrollToBottom)
             updateState { it.copy(replyingTo = null) }
             sendMessageUseCase(
-                conversationId, userId, LocationMessageFormat.format(mapsUrl),
-                replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
+                OutgoingMessage(
+                    conversationId = conversationId, senderId = userId, content = LocationMessageFormat.format(mapsUrl),
+                    replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
+                ),
             ).onFailure { e -> updateState { it.copy(error = e.message ?: "Error") } }
         }
     }

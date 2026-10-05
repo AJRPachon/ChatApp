@@ -22,6 +22,7 @@ import com.ajrpachon.chatapp.domain.repository.PollRepository
 import com.ajrpachon.chatapp.domain.repository.WallpaperRepository
 import com.ajrpachon.chatapp.domain.model.CallType
 import com.ajrpachon.chatapp.domain.model.MessageBO
+import com.ajrpachon.chatapp.domain.model.OutgoingMessage
 import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
@@ -64,6 +65,8 @@ import java.util.concurrent.TimeUnit
 
 data class ChatArgs(val conversationId: String, val otherUserName: String)
 
+// LongParameterList: constructor injection of every collaborator Koin provides, one parameter per dependency.
+// TooManyFunctions: the handlers behind onIntent. Feature-specific logic already lives in the Chat*Delegate classes.
 @Suppress("LongParameterList", "TooManyFunctions")
 class ChatViewModel(
     args: ChatArgs,
@@ -372,6 +375,8 @@ class ChatViewModel(
         }
     }
 
+    // CyclomaticComplexMethod: pure dispatch, one `when` branch per ChatIntent delegating to a delegate or a private
+    // function. Complexity grows with the number of intents, not with logic. (Its LongMethod entry is in detekt-baseline.xml.)
     @Suppress("CyclomaticComplexMethod")
     fun onIntent(intent: ChatIntent) {
         when (intent) {
@@ -560,8 +565,11 @@ class ChatViewModel(
             updateState { it.copy(isSending = true, inputText = "", replyingTo = null) }
             draftSaveJob?.cancel()
             draftRepository.saveDraft(conversationId, "")
-            val result = sendMessageUseCase(conversationId, userId, text,
-                replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
+            val result = sendMessageUseCase(
+                OutgoingMessage(
+                    conversationId = conversationId, senderId = userId, content = text,
+                    replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
+                ),
             )
             result.onSuccess { msg ->
                 if (disappearingSecs > 0L) {

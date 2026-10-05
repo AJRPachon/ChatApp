@@ -9,7 +9,6 @@ import com.ajrpachon.chatapp.domain.model.MessageBO
  * `MessageRetryWorker` (to drain the queue).
  */
 interface PendingMessageRepository {
-    @Suppress("LongParameterList")
     suspend fun savePendingMessage(
         id: String,
         conversationId: String,

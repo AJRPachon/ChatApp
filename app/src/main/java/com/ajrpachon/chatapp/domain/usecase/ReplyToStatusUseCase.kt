@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.domain.usecase
 
+import com.ajrpachon.chatapp.domain.model.OutgoingMessage
 import com.ajrpachon.chatapp.domain.model.StatusBO
 import com.ajrpachon.chatapp.domain.model.StatusReplyContext
 
@@ -18,18 +19,20 @@ class ReplyToStatusUseCase(
         runCatching {
             val conversation = getOrCreateConversationUseCase(currentUserId, status.userId)
             sendMessageUseCase(
-                conversationId = conversation.id,
-                senderId = currentUserId,
-                content = text,
-                otherUserId = status.userId,
-                statusReply = StatusReplyContext(
-                    statusId = status.id,
-                    statusOwnerId = status.userId,
-                    statusText = status.text,
-                    statusImageUrl = status.imageUrl,
-                    statusVideoUrl = status.videoUrl,
-                    statusBackgroundColor = status.backgroundColor,
-                    statusExpiresAt = status.expiresAt.toEpochMilliseconds(),
+                OutgoingMessage(
+                    conversationId = conversation.id,
+                    senderId = currentUserId,
+                    content = text,
+                    otherUserId = status.userId,
+                    statusReply = StatusReplyContext(
+                        statusId = status.id,
+                        statusOwnerId = status.userId,
+                        statusText = status.text,
+                        statusImageUrl = status.imageUrl,
+                        statusVideoUrl = status.videoUrl,
+                        statusBackgroundColor = status.backgroundColor,
+                        statusExpiresAt = status.expiresAt.toEpochMilliseconds(),
+                    ),
                 ),
             ).getOrThrow()
             StatusReplyResult(conversation.id, status.userName)

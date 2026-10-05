@@ -40,7 +40,7 @@ class ReplyToStatusUseCaseTest {
     @Test
     fun `creates or gets the 1-1 conversation with the status owner`() = runTest {
         coEvery { getOrCreateConversationUseCase("me", "alice") } returns fakeConversation
-        coEvery { sendMessageUseCase(any(), any(), any(), otherUserId = any(), statusReply = any()) } returns
+        coEvery { sendMessageUseCase(any()) } returns
             Result.success(fakeMessage)
 
         useCase("me", status, "qué bien!")
@@ -51,22 +51,22 @@ class ReplyToStatusUseCaseTest {
     @Test
     fun `sends the reply text carrying a snapshot of the status`() = runTest {
         coEvery { getOrCreateConversationUseCase("me", "alice") } returns fakeConversation
-        coEvery { sendMessageUseCase(any(), any(), any(), otherUserId = any(), statusReply = any()) } returns
+        coEvery { sendMessageUseCase(any()) } returns
             Result.success(fakeMessage)
 
         useCase("me", status, "qué bien!")
 
         coVerify {
             sendMessageUseCase(
-                conversationId = "conv1",
-                senderId = "me",
-                content = "qué bien!",
-                otherUserId = "alice",
-                statusReply = match {
-                    it.statusId == "status1" &&
-                        it.statusOwnerId == "alice" &&
-                        it.statusText == "hola a todos" &&
-                        it.statusExpiresAt == status.expiresAt.toEpochMilliseconds()
+                match {
+                    it.conversationId == "conv1" &&
+                        it.senderId == "me" &&
+                        it.content == "qué bien!" &&
+                        it.otherUserId == "alice" &&
+                        it.statusReply?.statusId == "status1" &&
+                        it.statusReply?.statusOwnerId == "alice" &&
+                        it.statusReply?.statusText == "hola a todos" &&
+                        it.statusReply?.statusExpiresAt == status.expiresAt.toEpochMilliseconds()
                 },
             )
         }
@@ -75,7 +75,7 @@ class ReplyToStatusUseCaseTest {
     @Test
     fun `success returns the conversation id and status owner's display name`() = runTest {
         coEvery { getOrCreateConversationUseCase("me", "alice") } returns fakeConversation
-        coEvery { sendMessageUseCase(any(), any(), any(), otherUserId = any(), statusReply = any()) } returns
+        coEvery { sendMessageUseCase(any()) } returns
             Result.success(fakeMessage)
 
         val result = useCase("me", status, "qué bien!").getOrThrow()
@@ -87,7 +87,7 @@ class ReplyToStatusUseCaseTest {
     @Test
     fun `propagates a failure from sendMessageUseCase`() = runTest {
         coEvery { getOrCreateConversationUseCase("me", "alice") } returns fakeConversation
-        coEvery { sendMessageUseCase(any(), any(), any(), otherUserId = any(), statusReply = any()) } returns
+        coEvery { sendMessageUseCase(any()) } returns
             Result.failure(RuntimeException("network error"))
 
         val result = useCase("me", status, "qué bien!")

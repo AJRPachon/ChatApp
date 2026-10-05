@@ -176,7 +176,9 @@ internal fun ChatBubbleSlot(
 
 // ── MessageBubble ─────────────────────────────────────────────────────────────
 
-@Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList", "ReturnCount")
+// ReturnCount: one early return per special message type (contact card, poll, ...) that renders its own bubble;
+// a single-exit `when` would nest the whole regular layout inside it.
+@Suppress("ReturnCount")
 @OptIn(ExperimentalFoundationApi::class, androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 internal fun MessageBubble(

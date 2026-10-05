@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
+// LongParameterList: constructor injection via Koin, one parameter per distinct collaborator.
 @Suppress("LongParameterList")
 class NewChatViewModel(
     private val application: Application,
