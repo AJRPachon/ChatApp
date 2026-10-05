@@ -346,6 +346,10 @@
     <string name="conversations_audio_unknown_duration">🎤 Audio</string>
     <string name="conversations_poll">📊 Encuesta</string>
     <string name="conversations_contact">👤 Contacto</string>
+    <string name="conversations_call_voice">📞 Llamada de voz</string>
+    <string name="conversations_call_video">📹 Videollamada</string>
+    <string name="conversations_call_voice_missed">📞 Llamada perdida</string>
+    <string name="conversations_call_video_missed">📹 Videollamada perdida</string>
     <string name="conversations_muted_content_description">Silenciado</string>
     <string name="conversations_menu_mark_read">Activar notificaciones</string>
     <string name="conversations_menu_mute">Silenciar</string>

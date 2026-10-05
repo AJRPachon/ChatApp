@@ -456,6 +456,26 @@ private fun audioPreviewLabel(durationMs: Long?): String =
         stringResource(R.string.conversations_audio_unknown_duration)
     }
 
+// Call-summary messages (MessageBO.isCallMessage) carry an empty `content` — the actual call
+// info lives in callType/callStatus instead, see CallViewModel.sendCallSummaryMessage — so
+// without this the list preview fell through to the generic `lastMsg.content` branch and
+// rendered nothing. The "missed" label is shown only to the callee (isFromMe == false), mirroring
+// CallMessageBubble's own statusText: the caller's copy of the same summary message reads as a
+// plain voice/video call rather than "missed", since from that side it wasn't missed, it went
+// unanswered. Every other status (ended, rejected, no answer) collapses to that same plain label,
+// matching how little the distinction matters from the conversation list.
+@Composable
+private fun callPreviewLabel(callType: String?, callStatus: String?, isFromMe: Boolean): String {
+    val isVideo = callType == "video"
+    val isMissed = callStatus == "missed" && !isFromMe
+    return when {
+        isVideo && isMissed -> stringResource(R.string.conversations_call_video_missed)
+        isVideo -> stringResource(R.string.conversations_call_video)
+        isMissed -> stringResource(R.string.conversations_call_voice_missed)
+        else -> stringResource(R.string.conversations_call_voice)
+    }
+}
+
 @Composable
 private fun ArchivedConversationItem(
     conversation: ConversationBO,
@@ -486,6 +506,7 @@ private fun ArchivedConversationItem(
             )
             conversation.lastMessage?.let { msg ->
                 val previewText = when {
+                    msg.isCallMessage -> callPreviewLabel(msg.callType, msg.callStatus, msg.isFromMe)
                     msg.audioUrl != null -> audioPreviewLabel(msg.audioDurationMs)
                     msg.content.startsWith("poll:") -> stringResource(R.string.conversations_poll)
                     msg.content.startsWith("contact:") -> stringResource(R.string.conversations_contact)
@@ -618,6 +639,16 @@ private fun ConversationItem(
                                 } else {
                                     stringResource(R.string.conversations_photo_plural, conversation.trailingImageCount)
                                 }
+                                Text(
+                                    text = if (fromMe) stringResource(R.string.conversations_from_me_prefix, label) else label,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                            lastMsg?.isCallMessage == true -> {
+                                val label = callPreviewLabel(lastMsg.callType, lastMsg.callStatus, fromMe)
                                 Text(
                                     text = if (fromMe) stringResource(R.string.conversations_from_me_prefix, label) else label,
                                     style = MaterialTheme.typography.bodyMedium,
