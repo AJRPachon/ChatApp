@@ -45,7 +45,7 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import com.ajrpachon.chatapp.ui.auth.IntegrityBlockedScreen
 import com.ajrpachon.chatapp.domain.repository.AppLockRepository
 import com.ajrpachon.chatapp.utils.IntegrityChecker
-import com.ajrpachon.chatapp.utils.IntegrityResult
+import com.ajrpachon.chatapp.domain.model.IntegrityResultBO
 import com.ajrpachon.chatapp.ui.call.IncomingCallIntent
 import com.ajrpachon.chatapp.domain.model.isGroupCall
 import com.ajrpachon.chatapp.ui.call.IncomingCallScreen
@@ -148,7 +148,7 @@ class MainActivity : ComponentActivity() {
                 SideEffect { contentReady = true }
 
                 // ── 1. Play Integrity gate ──────────────────────────────────
-                val integrityResult by produceState<IntegrityResult?>(initialValue = null) {
+                val integrityResult by produceState<IntegrityResultBO?>(initialValue = null) {
                     value = IntegrityChecker.check(this@MainActivity, supabase)
                 }
 
@@ -175,14 +175,14 @@ class MainActivity : ComponentActivity() {
                 }
 
                 when (val integrity = integrityResult) {
-                    is IntegrityResult.Failed -> {
+                    is IntegrityResultBO.Failed -> {
                         IntegrityBlockedScreen(onExit = { finish() })
                         return@ChatAppTheme
                     }
-                    is IntegrityResult.Error -> {
+                    is IntegrityResultBO.Error -> {
                         AppLogger.w("MainActivity", "Integrity check error (allowing): ${integrity.message}")
                     }
-                    is IntegrityResult.Passed, null -> Unit
+                    is IntegrityResultBO.Passed, null -> Unit
                 }
 
                 // ── 2. Normal app flow ──────────────────────────────────────

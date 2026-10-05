@@ -7,7 +7,7 @@ package com.ajrpachon.chatapp.domain.model
  * WhatsApp), so the message never needs to re-fetch or join against the (by then likely deleted)
  * `user_status` row to know whether to show it.
  */
-data class StatusReplyContext(
+data class StatusReplyContextBO(
     val statusId: String,
     val statusOwnerId: String,
     val statusText: String?,

@@ -3,7 +3,7 @@ package com.ajrpachon.chatapp.ui.chat
 import android.app.Application
 import android.media.MediaRecorder
 import android.os.Build
-import com.ajrpachon.chatapp.domain.model.OutgoingMessage
+import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
 import com.ajrpachon.chatapp.utils.AppLogger
@@ -112,7 +112,7 @@ class ChatAudioRecordingDelegate(
                 val bytes = withContext(Dispatchers.IO) { File(filePath).readBytes() }
                 val audioUrl = messageRepository.uploadAudio(conversationId, bytes)
                 sendMessageUseCase(
-                    OutgoingMessage(
+                    OutgoingMessageBO(
                         conversationId = conversationId, senderId = userId, content = "", audioUrl = audioUrl, audioDurationMs = durationMs,
                         audioAmplitudes = amplitudes,
                         replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,

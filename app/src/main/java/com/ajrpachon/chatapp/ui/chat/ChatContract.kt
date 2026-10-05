@@ -5,7 +5,7 @@ import com.ajrpachon.chatapp.domain.model.ChatTheme
 import com.ajrpachon.chatapp.ui.common.formatDisappearingDuration
 import com.ajrpachon.chatapp.ui.common.formatLastSeen
 import com.ajrpachon.chatapp.domain.model.CallBO
-import com.ajrpachon.chatapp.domain.model.ScheduledMessage
+import com.ajrpachon.chatapp.domain.model.ScheduledMessageBO
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.MessageBO
@@ -148,7 +148,7 @@ data class ChatSchedulingUiState(
     val scheduledAtMs: Long? = null,
     val messageCount: Int = 0,
     val showSheet: Boolean = false,
-    val messages: List<ScheduledMessage> = emptyList(),
+    val messages: List<ScheduledMessageBO> = emptyList(),
 )
 
 /**

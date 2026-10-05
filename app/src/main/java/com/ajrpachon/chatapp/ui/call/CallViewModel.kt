@@ -24,7 +24,7 @@ import io.livekit.android.room.track.Track
 import io.livekit.android.room.track.VideoTrack
 import io.livekit.android.room.track.screencapture.ScreenCaptureParams
 import androidx.lifecycle.viewModelScope
-import com.ajrpachon.chatapp.domain.model.OutgoingMessage
+import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
@@ -347,7 +347,7 @@ class CallViewModel(
         val userId = currentUserId ?: return@withLock
         val duration = if (status == "ended") state.value.durationSeconds else null
         sendMessageUseCase(
-            OutgoingMessage(
+            OutgoingMessageBO(
                 conversationId = conversationId,
                 senderId = userId,
                 content = "",

@@ -1,7 +1,7 @@
 package com.ajrpachon.chatapp.ui.chat
 
 import android.net.Uri
-import com.ajrpachon.chatapp.domain.model.OutgoingMessage
+import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import com.ajrpachon.chatapp.domain.usecase.GetUriMetadataUseCase
 import com.ajrpachon.chatapp.domain.usecase.ReadUriAsBytesUseCase
@@ -76,7 +76,7 @@ class ChatMediaUploadDelegate(
                         val imageUrl = messageRepository.uploadImage(conversationId, bytes, mimeType)
                         val replyForImage = if (index == 0) reply else null
                         sendMessageUseCase(
-                            OutgoingMessage(
+                            OutgoingMessageBO(
                                 conversationId = conversationId, senderId = userId, content = "", imageUrl = imageUrl,
                                 replyToId = replyForImage?.id, replyToContent = replyForImage?.replySnippet(), replyToSenderName = replyForImage?.senderName,
                             ),
@@ -114,7 +114,7 @@ class ChatMediaUploadDelegate(
                 val bytes = readUriAsBytesUseCase(uri.toString())
                 val fileUrl = messageRepository.uploadFile(conversationId, bytes, displayName, mimeType)
                 sendMessageUseCase(
-                    OutgoingMessage(
+                    OutgoingMessageBO(
                         conversationId = conversationId, senderId = userId, content = "", fileUrl = fileUrl, fileName = displayName,
                         fileSize = fileSize, fileMimeType = mimeType,
                         replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
@@ -139,7 +139,7 @@ class ChatMediaUploadDelegate(
                 val bytes = readUriAsBytesUseCase(uri.toString())
                 val videoUrl = messageRepository.uploadVideo(conversationId, bytes)
                 sendMessageUseCase(
-                    OutgoingMessage(
+                    OutgoingMessageBO(
                         conversationId = conversationId, senderId = userId, content = "", videoUrl = videoUrl,
                         replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
                     ),

@@ -3,7 +3,7 @@ package com.ajrpachon.chatapp.data.repository
 import com.ajrpachon.chatapp.data.local.dao.ScheduledMessageDao
 import com.ajrpachon.chatapp.data.local.entity.ScheduledMessageDBO
 import com.ajrpachon.chatapp.data.mapper.toDomain
-import com.ajrpachon.chatapp.domain.model.ScheduledMessage
+import com.ajrpachon.chatapp.domain.model.ScheduledMessageBO
 import com.ajrpachon.chatapp.domain.repository.ScheduledMessageRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -11,10 +11,10 @@ import kotlinx.coroutines.flow.map
 class ScheduledMessageRepositoryImpl(
     private val scheduledMessageDao: ScheduledMessageDao,
 ) : ScheduledMessageRepository {
-    override fun observeAll(): Flow<List<ScheduledMessage>> =
+    override fun observeAll(): Flow<List<ScheduledMessageBO>> =
         scheduledMessageDao.observeAll().map { list -> list.map { it.toDomain() } }
     override suspend fun deleteById(id: String) { scheduledMessageDao.deleteById(id) }
-    override suspend fun getPending(nowMs: Long): List<ScheduledMessage> =
+    override suspend fun getPending(nowMs: Long): List<ScheduledMessageBO> =
         scheduledMessageDao.getPending(nowMs).map { it.toDomain() }
     override suspend fun schedule(
         id: String,

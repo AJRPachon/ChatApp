@@ -2,7 +2,7 @@ package com.ajrpachon.chatapp.domain.repository
 
 import androidx.paging.PagingData
 import com.ajrpachon.chatapp.domain.model.MessageBO
-import com.ajrpachon.chatapp.domain.model.OutgoingMessage
+import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
 import kotlinx.coroutines.flow.Flow
 
 // 24 methods, all genuinely one concept (message CRUD/lifecycle + conversation-scoped queries) —
@@ -16,7 +16,7 @@ interface MessageRepository {
     fun observeMessages(conversationId: String, currentUserId: String, historyVisibleFrom: Long = 0L): Flow<List<MessageBO>>
     fun syncRemote(conversationId: String, historyVisibleFrom: Long = 0L): Flow<Unit>
     fun getMessagesPaged(conversationId: String, currentUserId: String, historyVisibleFrom: Long = 0L): Flow<PagingData<MessageBO>>
-    suspend fun sendMessage(message: OutgoingMessage): MessageBO
+    suspend fun sendMessage(message: OutgoingMessageBO): MessageBO
     suspend fun uploadImage(conversationId: String, bytes: ByteArray, mimeType: String): String
     suspend fun uploadAudio(conversationId: String, bytes: ByteArray): String
     suspend fun uploadFile(conversationId: String, bytes: ByteArray, fileName: String, mimeType: String): String

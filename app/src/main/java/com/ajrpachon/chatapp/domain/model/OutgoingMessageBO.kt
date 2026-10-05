@@ -9,7 +9,7 @@ package com.ajrpachon.chatapp.domain.model
  * payload (text, one attachment, or a call summary) plus optional reply context, so most fields
  * stay null; build it with named arguments and set only what the message needs.
  */
-data class OutgoingMessage(
+data class OutgoingMessageBO(
     val conversationId: String,
     val senderId: String,
     val content: String,
@@ -32,7 +32,7 @@ data class OutgoingMessage(
     val videoUrl: String? = null,
     // E2EE: the other user's ID for 1:1 conversations (null for group chats)
     val otherUserId: String? = null,
-    val statusReply: StatusReplyContext? = null,
+    val statusReply: StatusReplyContextBO? = null,
 ) {
     /** True when the message carries something other than text: media, a file, a sticker or a call summary. */
     val hasNonTextPayload: Boolean

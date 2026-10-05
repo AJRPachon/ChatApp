@@ -1,9 +1,9 @@
 package com.ajrpachon.chatapp.ui.components
 
-import com.ajrpachon.chatapp.domain.model.EmojiCategory
+import com.ajrpachon.chatapp.domain.model.EmojiCategoryBO
 
 data class EmojiPickerState(
-    val categories: List<EmojiCategory> = emptyList(),
+    val categories: List<EmojiCategoryBO> = emptyList(),
     val selectedTab: Int = 0,
 )
 

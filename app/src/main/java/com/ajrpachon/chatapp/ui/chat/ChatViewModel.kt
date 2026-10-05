@@ -22,7 +22,7 @@ import com.ajrpachon.chatapp.domain.repository.PollRepository
 import com.ajrpachon.chatapp.domain.repository.WallpaperRepository
 import com.ajrpachon.chatapp.domain.model.CallType
 import com.ajrpachon.chatapp.domain.model.MessageBO
-import com.ajrpachon.chatapp.domain.model.OutgoingMessage
+import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
 import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
@@ -575,7 +575,7 @@ class ChatViewModel(
             draftSaveJob?.cancel()
             draftRepository.saveDraft(conversationId, "")
             val result = sendMessageUseCase(
-                OutgoingMessage(
+                OutgoingMessageBO(
                     conversationId = conversationId, senderId = userId, content = text,
                     replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
                 ),

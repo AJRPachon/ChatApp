@@ -1,6 +1,6 @@
 package com.ajrpachon.chatapp.domain.repository
 
-import com.ajrpachon.chatapp.utils.IntegrityResult
+import com.ajrpachon.chatapp.domain.model.IntegrityResultBO
 
 data class SessionInfo(val userId: String, val email: String?)
 data class MfaAssuranceLevel(val current: String, val next: String)
@@ -22,7 +22,7 @@ interface AuthRepository {
      * with statusCode 401/429/500) — callers should inspect the exception to show a specific message.
      */
     suspend fun deleteAccount()
-    suspend fun checkIntegrity(): IntegrityResult
+    suspend fun checkIntegrity(): IntegrityResultBO
     // MFA
     suspend fun getMfaAssuranceLevel(): MfaAssuranceLevel?
     suspend fun getVerifiedTotpFactorId(): String?

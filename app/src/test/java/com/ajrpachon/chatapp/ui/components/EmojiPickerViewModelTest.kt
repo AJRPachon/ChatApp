@@ -1,6 +1,6 @@
 package com.ajrpachon.chatapp.ui.components
 
-import com.ajrpachon.chatapp.domain.model.EmojiCategory
+import com.ajrpachon.chatapp.domain.model.EmojiCategoryBO
 import com.ajrpachon.chatapp.domain.repository.EmojiRepository
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import io.mockk.coEvery
@@ -22,8 +22,8 @@ class EmojiPickerViewModelTest {
 
     private val emojiRepository = mockk<EmojiRepository>()
 
-    private val recentCategory = EmojiCategory(category = "Recientes", icon = "🕒", emojis = emptyList())
-    private val smileysCategory = EmojiCategory(category = "Caritas", icon = "😀", emojis = listOf("😀", "😁"))
+    private val recentCategory = EmojiCategoryBO(category = "Recientes", icon = "🕒", emojis = emptyList())
+    private val smileysCategory = EmojiCategoryBO(category = "Caritas", icon = "😀", emojis = listOf("😀", "😁"))
 
     private fun buildViewModel(): EmojiPickerViewModel {
         coEvery { emojiRepository.getCategories() } returns listOf(recentCategory, smileysCategory)

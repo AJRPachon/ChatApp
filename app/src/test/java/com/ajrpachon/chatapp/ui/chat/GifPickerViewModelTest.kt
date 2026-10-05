@@ -1,6 +1,6 @@
 package com.ajrpachon.chatapp.ui.chat
 
-import com.ajrpachon.chatapp.domain.model.GiphyGif
+import com.ajrpachon.chatapp.domain.model.GiphyGifBO
 import com.ajrpachon.chatapp.domain.model.GiphySearchResult
 import com.ajrpachon.chatapp.domain.repository.GiphyRepository
 import com.ajrpachon.chatapp.util.MainDispatcherRule
@@ -23,8 +23,8 @@ class GifPickerViewModelTest {
 
     private val giphyRepository = mockk<GiphyRepository>()
 
-    private val trendingGif = GiphyGif(previewUrl = "preview1", fullUrl = "full1")
-    private val searchedGif = GiphyGif(previewUrl = "preview2", fullUrl = "full2")
+    private val trendingGif = GiphyGifBO(previewUrl = "preview1", fullUrl = "full1")
+    private val searchedGif = GiphyGifBO(previewUrl = "preview2", fullUrl = "full2")
 
     private fun buildViewModel(
         trendingResult: GiphySearchResult = GiphySearchResult.Success(listOf(trendingGif)),
@@ -65,7 +65,7 @@ class GifPickerViewModelTest {
         advanceUntilIdle()
 
         assertEquals(GifPickerError.API_KEY_INVALID, vm.state.value.errorState)
-        assertEquals(emptyList<GiphyGif>(), vm.state.value.gifs)
+        assertEquals(emptyList<GiphyGifBO>(), vm.state.value.gifs)
     }
 
     @Test

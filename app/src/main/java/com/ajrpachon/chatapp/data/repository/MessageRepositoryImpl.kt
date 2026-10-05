@@ -16,7 +16,7 @@ import com.ajrpachon.chatapp.data.mapper.toDBO
 import com.ajrpachon.chatapp.data.mapper.toDTO
 import com.ajrpachon.chatapp.data.remote.source.MessageRemoteSource
 import com.ajrpachon.chatapp.domain.model.MessageBO
-import com.ajrpachon.chatapp.domain.model.OutgoingMessage
+import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import com.ajrpachon.chatapp.utils.AnalyticsEvents
@@ -83,7 +83,7 @@ class MessageRepositoryImpl(
         }.collect { send(it) }
     }
 
-    override suspend fun sendMessage(message: OutgoingMessage): MessageBO {
+    override suspend fun sendMessage(message: OutgoingMessageBO): MessageBO {
         // Attempt E2EE for 1:1 text messages (skip for media/call messages and group chats)
         val otherUserId = message.otherUserId
         val (finalContent, isEncrypted) = if (

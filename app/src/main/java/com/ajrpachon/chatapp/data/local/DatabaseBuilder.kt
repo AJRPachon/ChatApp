@@ -317,7 +317,7 @@ private val migration36To37 = object : Migration(36, 37) {
 private val migration37To38 = object : Migration(37, 38) {
     override fun migrate(connection: SQLiteConnection) {
         // Reply-to-status (WhatsApp-style story replies): a snapshot of the status carried on
-        // the reply message itself, not a live reference — see StatusReplyContext's doc.
+        // the reply message itself, not a live reference — see StatusReplyContextBO's doc.
         connection.execSQL("ALTER TABLE messages ADD COLUMN replyToStatusId TEXT DEFAULT NULL")
         connection.execSQL("ALTER TABLE messages ADD COLUMN replyToStatusOwnerId TEXT DEFAULT NULL")
         connection.execSQL("ALTER TABLE messages ADD COLUMN replyToStatusText TEXT DEFAULT NULL")

@@ -4,7 +4,7 @@ import android.accounts.AccountManager
 import android.content.Context
 import com.ajrpachon.chatapp.data.local.dao.MessageDao
 import com.ajrpachon.chatapp.data.local.entity.MessageDBO
-import com.ajrpachon.chatapp.domain.model.BackupInfo
+import com.ajrpachon.chatapp.domain.model.BackupInfoBO
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.BackupRepository
 import com.ajrpachon.chatapp.utils.AnalyticsEvents
@@ -166,7 +166,7 @@ class BackupRepositoryImpl(
             }
         }
 
-    override suspend fun backup(): BackupInfo = withContext(Dispatchers.IO) {
+    override suspend fun backup(): BackupInfoBO = withContext(Dispatchers.IO) {
         val token = getAccessToken()
 
         val messages = messageDao.getAllMessages()
@@ -209,7 +209,7 @@ class BackupRepositoryImpl(
 
         val sizeMb = "%.2f".format(jsonBytes.size.toDouble() / 1_048_576)
         analyticsTracker.logEvent(AnalyticsEvents.BACKUP_CREATED)
-        BackupInfo(
+        BackupInfoBO(
             lastBackupDate = dateFormat.format(Date()),
             backupSizeMb = sizeMb,
             fileId = existingId ?: "",
@@ -255,7 +255,7 @@ class BackupRepositoryImpl(
         analyticsTracker.logEvent(AnalyticsEvents.BACKUP_RESTORED)
     }
 
-    override suspend fun getLatestBackupInfo(): BackupInfo? = withContext(Dispatchers.IO) {
+    override suspend fun getLatestBackupInfo(): BackupInfoBO? = withContext(Dispatchers.IO) {
         runCatching {
             val token = getAccessToken()
             val encodedQuery = java.net.URLEncoder.encode(
@@ -283,7 +283,7 @@ class BackupRepositoryImpl(
                     if (date != null) dateFormat.format(date) else modifiedTime
                 }.getOrDefault(modifiedTime)
                 val sizeMb = "%.2f".format(sizeBytes.toDouble() / 1_048_576)
-                BackupInfo(
+                BackupInfoBO(
                     lastBackupDate = formattedDate,
                     backupSizeMb = sizeMb,
                     fileId = fileId,
