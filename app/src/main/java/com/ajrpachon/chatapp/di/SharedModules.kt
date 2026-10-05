@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.di
 
 import com.ajrpachon.chatapp.data.backup.BackupRepositoryImpl
+import com.ajrpachon.chatapp.data.remote.source.AiAssistantRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.AuthRemoteSource
 import com.ajrpachon.chatapp.data.repository.AudioRecorderRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.AuthRepositoryImpl
@@ -25,6 +26,7 @@ import com.ajrpachon.chatapp.data.remote.source.InvitationRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.MessageRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.ReactionRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.StatusRemoteSource
+import com.ajrpachon.chatapp.data.remote.source.TypingRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.UserRemoteSource
 import com.ajrpachon.chatapp.data.repository.CallRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.ContactRepositoryImpl
@@ -96,6 +98,8 @@ val remoteModule = module {
     singleOf(::ConversationRemoteSource)
     singleOf(::UserRemoteSource)
     singleOf(::MessageRemoteSource)
+    singleOf(::TypingRemoteSource)
+    singleOf(::AiAssistantRemoteSource)
     singleOf(::InvitationRemoteSource)
     singleOf(::GroupRemoteSource)
     singleOf(::FcmTokenRemoteSource)
