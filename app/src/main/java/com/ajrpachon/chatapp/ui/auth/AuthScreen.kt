@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -48,6 +47,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import android.content.Intent
 import android.provider.Settings
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -422,7 +422,7 @@ private fun LoginContent(
 
                         // ── Email/password tabs ─────────────────────────────────
                         // The selected tab must match the track's own height exactly — both use
-                        // RoundedCornerShape(50), which is a percent radius computed from each
+                        // CircleShape, which is a percent radius computed from each
                         // element's OWN size. Insetting the Row vertically (as well as
                         // horizontally) used to give the inner tab a shorter height than the
                         // track, so its "fully rounded" radius came out a few dp smaller than the
@@ -430,7 +430,7 @@ private fun LoginContent(
                         // parent right next to it. Horizontal-only padding keeps the tab's height
                         // identical to the track's, so both resolve to the same absolute radius.
                         Surface(
-                            shape = RoundedCornerShape(50),
+                            shape = CircleShape,
                             color = MaterialTheme.colorScheme.surfaceContainerHighest,
                             modifier = Modifier.fillMaxWidth(),
                         ) {
@@ -511,7 +511,7 @@ private fun RowScope.AuthModeTab(
 ) {
     Surface(
         modifier = Modifier.weight(1f),
-        shape = RoundedCornerShape(50),
+        shape = CircleShape,
         color = if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
         onClick = onClick,
     ) {

@@ -19,7 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.filled.CheckCircle
@@ -509,7 +509,7 @@ internal fun MessageBubble(
                 grouped.forEach { (emoji, reactors) ->
                     val isMine = reactors.any { it.userId == currentUserId }
                     Surface(
-                        shape = RoundedCornerShape(50),
+                        shape = CircleShape,
                         color = if (isMine) MaterialTheme.colorScheme.primaryContainer
                                 else MaterialTheme.colorScheme.surfaceVariant,
                         modifier = Modifier.combinedClickable(

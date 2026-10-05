@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.HowToVote
 import androidx.compose.material3.Card
@@ -53,7 +52,7 @@ internal fun PollBubble(
 
     ChatBubbleSlot(isFromMe = isFromMe, modifier = Modifier.padding(vertical = 4.dp)) { maxBubbleWidth ->
         Card(
-            shape = RoundedCornerShape(16.dp),
+            shape = MaterialTheme.shapes.large,
             modifier = Modifier.widthIn(min = 220.dp, max = minOf(300.dp, maxBubbleWidth)),
         ) {
             Column(modifier = Modifier.padding(12.dp)) {

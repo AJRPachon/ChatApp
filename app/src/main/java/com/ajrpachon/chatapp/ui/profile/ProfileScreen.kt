@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -296,7 +295,7 @@ fun ProfileContent(
                         textAlign = TextAlign.Center,
                     )
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
+                        shape = MaterialTheme.shapes.small,
                         color = MaterialTheme.colorScheme.surfaceVariant,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
@@ -897,7 +896,7 @@ private fun IconChip(icon: androidx.compose.ui.graphics.vector.ImageVector, dang
     Box(
         modifier = Modifier
             .size(32.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(MaterialTheme.shapes.small)
             .background(
                 if (danger) MaterialTheme.colorScheme.errorContainer
                 else MaterialTheme.colorScheme.background,
@@ -935,7 +934,7 @@ private fun ThemeSelector(
                     .weight(1f)
                     .clickable { onSelect(pref) }
                     .testTag("profile_theme_${pref.name.lowercase()}_option"),
-                shape = RoundedCornerShape(8.dp),
+                shape = MaterialTheme.shapes.small,
                 color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
                         else MaterialTheme.colorScheme.surfaceVariant,
                 contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer

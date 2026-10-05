@@ -3,17 +3,30 @@ package com.ajrpachon.chatapp.ui.chat
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import com.ajrpachon.chatapp.domain.model.ChatTheme
+import com.ajrpachon.chatapp.ui.theme.ChatThemeDefaultBubble
+import com.ajrpachon.chatapp.ui.theme.ChatThemeForestBackground
+import com.ajrpachon.chatapp.ui.theme.ChatThemeForestBubble
+import com.ajrpachon.chatapp.ui.theme.ChatThemeLavenderBackground
+import com.ajrpachon.chatapp.ui.theme.ChatThemeLavenderBubble
+import com.ajrpachon.chatapp.ui.theme.ChatThemeMidnightBackground
+import com.ajrpachon.chatapp.ui.theme.ChatThemeMidnightBubble
+import com.ajrpachon.chatapp.ui.theme.ChatThemeOceanBackground
+import com.ajrpachon.chatapp.ui.theme.ChatThemeOceanBubble
+import com.ajrpachon.chatapp.ui.theme.ChatThemeRoseBackground
+import com.ajrpachon.chatapp.ui.theme.ChatThemeRoseBubble
+import com.ajrpachon.chatapp.ui.theme.ChatThemeSunsetBackground
+import com.ajrpachon.chatapp.ui.theme.ChatThemeSunsetBubble
 
 data class ChatThemeColors(val bubbleColor: Color, val backgroundTint: Color)
 
 fun ChatTheme.toColors(): ChatThemeColors = when (this) {
-    ChatTheme.DEFAULT -> ChatThemeColors(Color(0xFFDCE8FB), Color.Transparent)
-    ChatTheme.OCEAN -> ChatThemeColors(Color(0xFF9CD3E8), Color(0xFFE8F5FA))
-    ChatTheme.SUNSET -> ChatThemeColors(Color(0xFFF4B8A0), Color(0xFFFDF0EB))
-    ChatTheme.FOREST -> ChatThemeColors(Color(0xFFA8D5B5), Color(0xFFEBF5EE))
-    ChatTheme.LAVENDER -> ChatThemeColors(Color(0xFFCDB8E8), Color(0xFFF3EEF9))
-    ChatTheme.ROSE -> ChatThemeColors(Color(0xFFF2A8C0), Color(0xFFFDF0F4))
-    ChatTheme.MIDNIGHT -> ChatThemeColors(Color(0xFF5D6A8A), Color(0xFF1A1F2E))
+    ChatTheme.DEFAULT -> ChatThemeColors(ChatThemeDefaultBubble, Color.Transparent)
+    ChatTheme.OCEAN -> ChatThemeColors(ChatThemeOceanBubble, ChatThemeOceanBackground)
+    ChatTheme.SUNSET -> ChatThemeColors(ChatThemeSunsetBubble, ChatThemeSunsetBackground)
+    ChatTheme.FOREST -> ChatThemeColors(ChatThemeForestBubble, ChatThemeForestBackground)
+    ChatTheme.LAVENDER -> ChatThemeColors(ChatThemeLavenderBubble, ChatThemeLavenderBackground)
+    ChatTheme.ROSE -> ChatThemeColors(ChatThemeRoseBubble, ChatThemeRoseBackground)
+    ChatTheme.MIDNIGHT -> ChatThemeColors(ChatThemeMidnightBubble, ChatThemeMidnightBackground)
 }
 
 /**
