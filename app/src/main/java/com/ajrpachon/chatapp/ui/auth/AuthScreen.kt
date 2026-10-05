@@ -88,6 +88,7 @@ import com.github.skydoves.navgraph.annotations.NavDestination
 import com.github.skydoves.navgraph.annotations.NavEdge
 import com.ajrpachon.chatapp.AuthRoute
 import com.ajrpachon.chatapp.ConversationListRoute
+import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -141,7 +142,7 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
 
     LaunchedEffect(state.error) {
         state.error?.let {
-            snackbar.showSnackbar(it)
+            snackbar.showSnackbar(it.asString(context))
             vm.onIntent(AuthIntent.DismissError)
         }
     }
@@ -648,7 +649,7 @@ private fun EmailPasswordForm(
 @Composable
 private fun MfaChallengeContent(
     code: String,
-    error: String?,
+    error: UiText?,
     isLoading: Boolean,
     onCodeChange: (String) -> Unit,
     onVerify: () -> Unit,
@@ -686,7 +687,7 @@ private fun MfaChallengeContent(
             label = stringResource(R.string.auth_totp_code_label),
             leadingIcon = Icons.Default.Lock,
             isError = error != null,
-            supportingText = error,
+            supportingText = error?.asString(),
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.NumberPassword,
                 imeAction = ImeAction.Done,
@@ -718,7 +719,7 @@ private fun MfaChallengeContent(
 @Composable
 private fun UsernameSetupContent(
     username: String,
-    error: String?,
+    error: UiText?,
     onUsernameChange: (String) -> Unit,
     onConfirm: () -> Unit,
 ) {
@@ -741,7 +742,7 @@ private fun UsernameSetupContent(
             onValueChange = onUsernameChange,
             label = stringResource(R.string.auth_username_label),
             isError = error != null,
-            supportingText = error,
+            supportingText = error?.asString(),
         )
         Spacer(Modifier.height(16.dp))
         ChatAppPrimaryButton(

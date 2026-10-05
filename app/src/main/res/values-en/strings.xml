@@ -571,4 +571,22 @@
     <string name="profile_error_2fa_disable">Could not turn off two-step verification</string>
     <string name="profile_error_save_name">Could not save the name</string>
     <string name="status_error_reply">Could not send the reply</string>
+
+    <string name="auth_error_google">Google sign-in failed</string>
+    <string name="auth_error_password_short">The password must be at least 6 characters</string>
+    <string name="auth_error_passwords_mismatch">The passwords don\'t match</string>
+    <string name="auth_error_credentials_required">Enter your email and password</string>
+    <string name="auth_error_invalid_credentials">Incorrect email or password</string>
+    <string name="auth_error_email_not_confirmed">Verify your email before signing in</string>
+    <string name="auth_error_sign_in">Could not sign in</string>
+    <string name="auth_error_email_registered">This email is already registered. Sign in instead.</string>
+    <string name="auth_error_sign_up">Could not sign up</string>
+    <string name="auth_error_complete_sign_up">Could not complete sign-up</string>
+    <string name="auth_error_mfa_code_length">Enter the 6-digit code</string>
+    <string name="auth_error_mfa_code">Incorrect code. Try again.</string>
+    <string name="auth_error_unexpected">Unexpected error</string>
+    <string name="call_error_disconnected">%1$s: %2$s</string>
+    <string name="call_error_disconnected_unexpected">%1$s: unexpected disconnection</string>
+    <string name="call_error_connect">Could not connect: %1$s</string>
+    <string name="call_error_connect_default">Could not connect</string>
 </resources>

@@ -20,7 +20,10 @@ import io.livekit.android.room.track.Track
 import io.livekit.android.room.track.VideoTrack
 import io.livekit.android.room.track.screencapture.ScreenCaptureParams
 import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
+import com.ajrpachon.chatapp.ui.common.UiText
+import com.ajrpachon.chatapp.ui.common.toUiText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
@@ -65,12 +68,14 @@ private fun CallState.withDisconnected(event: RoomEvent.Disconnected): CallState
     } else {
         copy(
             phase = CallPhase.ERROR,
-            error = "${event.reason.name}: ${event.error?.message ?: "desconexión inesperada"}",
+            error = event.error?.message
+                ?.let { UiText.of(R.string.call_error_disconnected, event.reason.name, it) }
+                ?: UiText.of(R.string.call_error_disconnected_unexpected, event.reason.name),
         )
     }
 
 private fun CallState.withFailedToConnect(event: RoomEvent.FailedToConnect): CallState =
-    copy(phase = CallPhase.ERROR, error = "Error al conectar: ${event.error.message}")
+    copy(phase = CallPhase.ERROR, error = UiText.of(R.string.call_error_connect, event.error.message.orEmpty()))
 
 data class CallArgs(
     val callId: String,
@@ -251,7 +256,7 @@ class CallViewModel(
 
         }.onFailure { e ->
             AppLogger.e(TAG, "joinCall: FAILED", e)
-            updateState { it.copy(phase = CallPhase.ERROR, error = e.message ?: "Error al conectar") }
+            updateState { it.copy(phase = CallPhase.ERROR, error = e.toUiText(R.string.call_error_connect_default)) }
         }
     }
 

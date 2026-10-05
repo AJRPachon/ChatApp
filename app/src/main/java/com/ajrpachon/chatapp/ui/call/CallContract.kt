@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.call
 
+import com.ajrpachon.chatapp.ui.common.UiText
 import io.livekit.android.room.Room
 import io.livekit.android.room.track.LocalVideoTrack
 import io.livekit.android.room.track.VideoTrack
@@ -17,7 +18,7 @@ data class CallState(
     val remoteScreenShareTrack: VideoTrack? = null,
     val localVideoTrack: LocalVideoTrack? = null,
     val durationSeconds: Int = 0,
-    val error: String? = null,
+    val error: UiText? = null,
     val isRemoteVideoMuted: Boolean = false,
     val isScreenSharing: Boolean = false,
 )

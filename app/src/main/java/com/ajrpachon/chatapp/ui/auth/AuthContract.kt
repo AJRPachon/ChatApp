@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.ui.auth
 
 import com.ajrpachon.chatapp.domain.model.UserBO
+import com.ajrpachon.chatapp.ui.common.UiText
 
 enum class AuthMode { SIGN_IN, SIGN_UP }
 
@@ -9,8 +10,8 @@ data class AuthState(
     val currentUser: UserBO? = null,
     val needsUsername: Boolean = false,
     val usernameInput: String = "",
-    val usernameError: String? = null,
-    val error: String? = null,
+    val usernameError: UiText? = null,
+    val error: UiText? = null,
     val authMode: AuthMode = AuthMode.SIGN_IN,
     val emailInput: String = "",
     val passwordInput: String = "",
@@ -20,7 +21,7 @@ data class AuthState(
     val needsMfaChallenge: Boolean = false,
     val mfaFactorId: String? = null,
     val mfaCodeInput: String = "",
-    val mfaError: String? = null,
+    val mfaError: UiText? = null,
     val mfaIsLoading: Boolean = false,
 )
 
