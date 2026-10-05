@@ -11,6 +11,7 @@ import com.ajrpachon.chatapp.domain.usecase.ObserveConversationsUseCase
 import com.ajrpachon.chatapp.domain.usecase.ObserveInvitationsUseCase
 import com.ajrpachon.chatapp.service.PresenceManager
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
+import com.ajrpachon.chatapp.ui.common.toUiText
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.NetworkMonitor
 import com.ajrpachon.chatapp.utils.catchResult
@@ -82,7 +83,7 @@ class ConversationListViewModel(
                 }
             }.onFailure { e ->
                 AppLogger.e("ConversationListViewModel", "Observe conversations failed", e)
-                updateState { it.copy(error = e.message, isLoading = false) }
+                updateState { it.copy(error = e.toUiText(), isLoading = false) }
             }
         }
     }
@@ -96,23 +97,23 @@ class ConversationListViewModel(
             is ConversationListIntent.DeleteConversation ->
                 viewModelScope.launch {
                     catchResult { conversationRepository.deleteConversation(intent.conversationId) }
-                        .onFailure { e -> updateState { it.copy(error = e.message) } }
+                        .onFailure { e -> updateState { it.copy(error = e.toUiText()) } }
                 }
             is ConversationListIntent.ToggleMute ->
                 viewModelScope.launch {
                     catchResult { conversationRepository.toggleMute(intent.conversationId, intent.muted) }
-                        .onFailure { e -> updateState { it.copy(error = e.message) } }
+                        .onFailure { e -> updateState { it.copy(error = e.toUiText()) } }
                 }
             is ConversationListIntent.ClearChat ->
                 viewModelScope.launch {
                     catchResult { conversationRepository.clearChat(intent.conversationId) }
-                        .onFailure { e -> updateState { it.copy(error = e.message) } }
+                        .onFailure { e -> updateState { it.copy(error = e.toUiText()) } }
                 }
             is ConversationListIntent.LeaveGroup ->
                 viewModelScope.launch {
                     val userId = state.value.currentUserId ?: return@launch
                     leaveGroupUseCase(intent.conversationId, userId)
-                        .onFailure { e -> updateState { it.copy(error = e.message) } }
+                        .onFailure { e -> updateState { it.copy(error = e.toUiText()) } }
                 }
             is ConversationListIntent.ToggleSortByUnread -> {
                 updateState { current ->
@@ -155,7 +156,7 @@ class ConversationListViewModel(
             is ConversationListIntent.ArchiveConversation ->
                 viewModelScope.launch {
                     catchResult { conversationRepository.archiveConversation(intent.conversationId, intent.archived) }
-                        .onFailure { e -> updateState { it.copy(error = e.message) } }
+                        .onFailure { e -> updateState { it.copy(error = e.toUiText()) } }
                 }
             is ConversationListIntent.ShowArchivedSheet ->
                 updateState { it.copy(showArchivedSheet = true) }
@@ -168,13 +169,13 @@ class ConversationListViewModel(
             is ConversationListIntent.SetNotificationSound ->
                 viewModelScope.launch {
                     catchResult { notificationSoundRepository.set(intent.conversationId, intent.sound) }
-                        .onFailure { e -> updateState { it.copy(error = e.message) } }
+                        .onFailure { e -> updateState { it.copy(error = e.toUiText()) } }
                     updateState { it.copy(soundPickerConversationId = null) }
                 }
             is ConversationListIntent.SetTheme ->
                 viewModelScope.launch {
                     catchResult { themeRepository.set(intent.theme) }
-                        .onFailure { e -> updateState { it.copy(error = e.message) } }
+                        .onFailure { e -> updateState { it.copy(error = e.toUiText()) } }
                 }
         }
     }

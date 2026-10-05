@@ -2,6 +2,7 @@ package com.ajrpachon.chatapp.ui.profile
 
 import android.graphics.Bitmap
 import com.ajrpachon.chatapp.domain.model.ThemePreference
+import com.ajrpachon.chatapp.ui.common.UiText
 
 data class TwoFactorState(
     val isEnrolled: Boolean = false,
@@ -10,8 +11,8 @@ data class TwoFactorState(
     val qrCodeSvg: String? = null,
     val secret: String? = null,
     val factorId: String? = null,
-    val enrollError: String? = null,
-    val verifyError: String? = null,
+    val enrollError: UiText? = null,
+    val verifyError: UiText? = null,
 )
 
 data class ProfileState(
@@ -29,7 +30,7 @@ data class ProfileState(
     val isAppLockEnabled: Boolean = false,
     val qrBitmap: Bitmap? = null,
     val isDeletingAccount: Boolean = false,
-    val error: String? = null,
+    val error: UiText? = null,
 )
 
 sealed interface ProfileIntent {

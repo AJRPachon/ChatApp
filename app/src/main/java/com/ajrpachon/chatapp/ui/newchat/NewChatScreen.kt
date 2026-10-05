@@ -110,17 +110,17 @@ fun NewChatScreen(
             when (effect) {
                 is NewChatEffect.NavigateToChat -> onOpenConversation(effect.conversationId, effect.otherUserName)
                 is NewChatEffect.NavigateToInvitations -> onOpenInvitations()
-                is NewChatEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.text)
-                is NewChatEffect.ShareText -> shareText(effect.text)
+                is NewChatEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.text.asString(context))
+                is NewChatEffect.ShareText -> shareText(effect.text.asString(context))
                 is NewChatEffect.InviteContact -> {
                     val smsIntent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:${effect.phoneNumber}")).apply {
-                        putExtra("sms_body", effect.text)
+                        putExtra("sms_body", effect.text.asString(context))
                     }
                     // Fall back to the share sheet on devices with no SMS app
                     if (smsIntent.resolveActivity(context.packageManager) != null) {
                         context.startActivity(smsIntent)
                     } else {
-                        shareText(effect.text)
+                        shareText(effect.text.asString(context))
                     }
                 }
             }
@@ -333,7 +333,7 @@ fun NewChatContent(
                 state.error?.let { error ->
                     item {
                         Text(
-                            error,
+                            error.asString(),
                             modifier = Modifier.padding(16.dp),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.error,

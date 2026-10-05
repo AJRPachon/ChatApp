@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.newchat
 
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.model.UserRelationship
 import com.ajrpachon.chatapp.domain.repository.UserRepository
@@ -9,6 +10,7 @@ import com.ajrpachon.chatapp.domain.usecase.GetDeviceContactsUseCase
 import com.ajrpachon.chatapp.domain.usecase.SearchUsersUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationResult
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationUseCase
+import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import com.ajrpachon.chatapp.utils.ClipboardProtection
 import com.ajrpachon.chatapp.utils.ContactSyncManager
@@ -113,7 +115,7 @@ class NewChatViewModelTest {
         assertTrue(effect is NewChatEffect.InviteContact)
         effect as NewChatEffect.InviteContact
         assertEquals("+34600111222", effect.phoneNumber)
-        assertTrue(effect.text.contains("@ana"))
+        assertEquals(UiText.of(R.string.newchat_invite_share_text, "ana"), effect.text)
     }
 
     @Test
@@ -125,7 +127,7 @@ class NewChatViewModelTest {
 
         val effect = vm.effect.first()
         assertTrue(effect is NewChatEffect.ShareText)
-        assertTrue((effect as NewChatEffect.ShareText).text.contains("@ana"))
+        assertEquals(UiText.of(R.string.newchat_invite_share_text, "ana"), (effect as NewChatEffect.ShareText).text)
     }
 
     @Test
@@ -136,7 +138,7 @@ class NewChatViewModelTest {
         advanceUntilIdle()
         val effect = vm.effect.first()
         assertTrue(effect is NewChatEffect.ShowMessage)
-        assertTrue((effect as NewChatEffect.ShowMessage).text.contains("propio"))
+        assertEquals(UiText.StringResource(R.string.newchat_own_qr), (effect as NewChatEffect.ShowMessage).text)
     }
 
     @Test
@@ -212,7 +214,7 @@ class NewChatViewModelTest {
         vm.onIntent(NewChatIntent.QueryChanged("fail"))
         advanceUntilIdle()
         assertNotNull(vm.state.value.error)
-        assertEquals("network error", vm.state.value.error)
+        assertEquals(UiText.Dynamic("network error"), vm.state.value.error)
     }
 
     @Test

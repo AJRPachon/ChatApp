@@ -3,6 +3,7 @@ package com.ajrpachon.chatapp.ui.group
 import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.GroupRole
 import com.ajrpachon.chatapp.domain.model.UserBO
+import com.ajrpachon.chatapp.ui.common.UiText
 
 data class GroupInfoState(
     val members: List<GroupMemberBO> = emptyList(),
@@ -14,7 +15,7 @@ data class GroupInfoState(
     val currentUserRole: GroupRole = GroupRole.MEMBER,
     val isCurrentUserAdmin: Boolean = false,
     val isSaving: Boolean = false,
-    val error: String? = null,
+    val error: UiText? = null,
     val showEditDialog: Boolean = false,
     val showAddMemberSheet: Boolean = false,
     val addMemberQuery: String = "",
@@ -54,7 +55,7 @@ sealed interface GroupInfoIntent {
 
 sealed interface GroupInfoEffect {
     data object NavigateBack : GroupInfoEffect
-    data class ShowMessage(val message: String) : GroupInfoEffect
+    data class ShowMessage(val message: UiText) : GroupInfoEffect
     data class CopyToClipboard(val text: String) : GroupInfoEffect
     data class ShareInviteLink(val url: String) : GroupInfoEffect
 }

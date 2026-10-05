@@ -540,4 +540,35 @@
     <string name="invitations_cancelled">Invitation cancelled</string>
     <string name="invitations_accepted">Invitation accepted</string>
     <string name="invitations_rejected">Invitation declined</string>
+
+    <string name="upload_too_large_image">The image exceeds the maximum allowed size (%1$d MB)</string>
+    <string name="upload_too_large_audio">The audio exceeds the maximum allowed size (%1$d MB)</string>
+    <string name="upload_too_large_avatar">The photo exceeds the maximum allowed size (%1$d MB)</string>
+    <string name="upload_too_large_file">The file exceeds the maximum allowed size (%1$d MB)</string>
+    <string name="upload_too_large_video">The video exceeds the maximum allowed size (%1$d MB)</string>
+    <string name="newchat_code_copied">Code copied</string>
+    <string name="newchat_invite_share_text">Join ChatApp! Find me as @%1$s and let\'s chat 💬</string>
+    <string name="newchat_invitation_pending_for">Invitation sent · Waiting for @%1$s to respond</string>
+    <string name="newchat_invitation_sent_to">Invitation sent to @%1$s!</string>
+    <string name="newchat_cannot_invite">You can\'t send an invitation to @%1$s</string>
+    <string name="newchat_user_blocked">@%1$s blocked</string>
+    <string name="newchat_user_unblocked">@%1$s unblocked</string>
+    <string name="newchat_own_qr">That\'s your own QR code</string>
+    <string name="newchat_user_not_found">User not found</string>
+    <string name="newchat_user_lookup_failed">Could not find the user</string>
+    <string name="group_updated">Group updated</string>
+    <string name="group_photo_updated">Photo updated</string>
+    <string name="group_error_last_admin">You can\'t remove the role of the group\'s only admin</string>
+    <string name="group_member_added">%1$s added to the group</string>
+    <string name="group_error_create">Could not create the group</string>
+    <string name="profile_error_upload_photo">Could not upload the photo</string>
+    <string name="profile_error_session_invalid">Your session is no longer valid. The account may already have been deleted; sign in again to check.</string>
+    <string name="profile_error_too_many_attempts">Too many attempts. Wait a minute and try again.</string>
+    <string name="profile_error_delete_server">The account could not be deleted on the server. Try again later.</string>
+    <string name="profile_error_delete_account">Could not delete the account</string>
+    <string name="profile_error_2fa_start">Could not start two-step verification</string>
+    <string name="profile_error_2fa_code">Incorrect code. Try again.</string>
+    <string name="profile_error_2fa_disable">Could not turn off two-step verification</string>
+    <string name="profile_error_save_name">Could not save the name</string>
+    <string name="status_error_reply">Could not send the reply</string>
 </resources>

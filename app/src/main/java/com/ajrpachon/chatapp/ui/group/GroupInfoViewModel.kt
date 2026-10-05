@@ -2,6 +2,7 @@ package com.ajrpachon.chatapp.ui.group
 import com.ajrpachon.chatapp.utils.catchResult
 
 import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.model.GroupRole
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
@@ -13,6 +14,8 @@ import com.ajrpachon.chatapp.domain.usecase.LeaveGroupUseCase
 import com.ajrpachon.chatapp.domain.usecase.SearchUsersUseCase
 import com.ajrpachon.chatapp.domain.usecase.UpdateGroupUseCase
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
+import com.ajrpachon.chatapp.ui.common.UiText
+import com.ajrpachon.chatapp.ui.common.toUiText
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -109,8 +112,8 @@ class GroupInfoViewModel(
         viewModelScope.launch {
             updateState { it.copy(isSaving = true, showEditDialog = false) }
             updateGroupUseCase(conversationId, name = currentState.groupName, description = currentState.groupDescription)
-                .onFailure { e -> updateState { it.copy(error = e.message) } }
-                .onSuccess { sendEffect(GroupInfoEffect.ShowMessage("Grupo actualizado")) }
+                .onFailure { e -> updateState { it.copy(error = e.toUiText()) } }
+                .onSuccess { sendEffect(GroupInfoEffect.ShowMessage(UiText.StringResource(R.string.group_updated))) }
             updateState { it.copy(isSaving = false) }
         }
     }
@@ -122,8 +125,8 @@ class GroupInfoViewModel(
                 val url = groupRepository.uploadGroupAvatar(conversationId, bytes)
                 updateGroupUseCase(conversationId, avatarUrl = url)
                 updateState { it.copy(groupAvatarUrl = url) }
-                sendEffect(GroupInfoEffect.ShowMessage("Foto actualizada"))
-            }.onFailure { e -> updateState { it.copy(error = e.message) } }
+                sendEffect(GroupInfoEffect.ShowMessage(UiText.StringResource(R.string.group_photo_updated)))
+            }.onFailure { e -> updateState { it.copy(error = e.toUiText()) } }
             updateState { it.copy(isSaving = false) }
         }
     }
@@ -131,7 +134,7 @@ class GroupInfoViewModel(
     private fun removeMember(userId: String) {
         viewModelScope.launch {
             catchResult { groupRepository.removeMember(conversationId, userId) }
-                .onFailure { e -> updateState { it.copy(error = e.message) } }
+                .onFailure { e -> updateState { it.copy(error = e.toUiText()) } }
         }
     }
 
@@ -139,7 +142,7 @@ class GroupInfoViewModel(
         if (!promote) {
             val admins = state.value.members.filter { it.role == GroupRole.ADMIN }
             if (admins.size == 1 && admins[0].userId == userId) {
-                updateState { it.copy(error = "No puedes quitar el rol al único administrador del grupo") }
+                updateState { it.copy(error = UiText.StringResource(R.string.group_error_last_admin)) }
                 return
             }
         }
@@ -147,7 +150,7 @@ class GroupInfoViewModel(
             catchResult {
                 if (promote) groupRepository.promoteMember(conversationId, userId)
                 else groupRepository.demoteMember(conversationId, userId)
-            }.onFailure { e -> updateState { it.copy(error = e.message) } }
+            }.onFailure { e -> updateState { it.copy(error = e.toUiText()) } }
         }
     }
 
@@ -156,7 +159,7 @@ class GroupInfoViewModel(
         viewModelScope.launch {
             leaveGroupUseCase(conversationId, userId)
                 .onSuccess { sendEffect(GroupInfoEffect.NavigateBack) }
-                .onFailure { e -> updateState { it.copy(error = e.message) } }
+                .onFailure { e -> updateState { it.copy(error = e.toUiText()) } }
         }
     }
 
@@ -175,8 +178,8 @@ class GroupInfoViewModel(
         updateState { it.copy(showHistoryDialog = false, pendingAddUser = null, addMemberQuery = "", addMemberResults = emptyList()) }
         viewModelScope.launch {
             catchResult { groupRepository.addMember(conversationId, user.id, canSeeHistory) }
-                .onSuccess { sendEffect(GroupInfoEffect.ShowMessage("${user.displayName} añadido al grupo")) }
-                .onFailure { e -> updateState { it.copy(error = e.message) } }
+                .onSuccess { sendEffect(GroupInfoEffect.ShowMessage(UiText.of(R.string.group_member_added, user.displayName))) }
+                .onFailure { e -> updateState { it.copy(error = e.toUiText()) } }
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.profile
 
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.ThemePreference
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.repository.AppLockRepository
@@ -9,6 +10,7 @@ import com.ajrpachon.chatapp.domain.repository.FcmTokenRepository
 import com.ajrpachon.chatapp.domain.repository.ThemeRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
+import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import com.ajrpachon.chatapp.utils.AppDispatchers
 import io.github.jan.supabase.exceptions.RestException
@@ -145,7 +147,7 @@ class ProfileViewModelTest {
         advanceUntilIdle()
 
         assertFalse(vm.state.value.isDeletingAccount)
-        assertTrue(vm.state.value.error.orEmpty().contains("sesion", ignoreCase = true))
+        assertEquals(UiText.StringResource(R.string.profile_error_session_invalid), vm.state.value.error)
     }
 
     @Test
@@ -158,7 +160,7 @@ class ProfileViewModelTest {
         advanceUntilIdle()
 
         assertFalse(vm.state.value.isDeletingAccount)
-        assertTrue(vm.state.value.error.orEmpty().contains("minuto", ignoreCase = true))
+        assertEquals(UiText.StringResource(R.string.profile_error_too_many_attempts), vm.state.value.error)
     }
 
     @Test
@@ -171,7 +173,7 @@ class ProfileViewModelTest {
         advanceUntilIdle()
 
         assertFalse(vm.state.value.isDeletingAccount)
-        assertTrue(vm.state.value.error.orEmpty().contains("servidor", ignoreCase = true))
+        assertEquals(UiText.StringResource(R.string.profile_error_delete_server), vm.state.value.error)
     }
 
     @Test
@@ -184,6 +186,6 @@ class ProfileViewModelTest {
         advanceUntilIdle()
 
         assertFalse(vm.state.value.isDeletingAccount)
-        assertEquals("boom", vm.state.value.error)
+        assertEquals(UiText.Dynamic("boom"), vm.state.value.error)
     }
 }

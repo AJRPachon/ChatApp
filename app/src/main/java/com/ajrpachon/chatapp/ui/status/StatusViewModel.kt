@@ -2,6 +2,7 @@ package com.ajrpachon.chatapp.ui.status
 
 import android.net.Uri
 import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.StatusBO
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.StatusRepository
@@ -9,6 +10,7 @@ import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.ReadUriAsBytesUseCase
 import com.ajrpachon.chatapp.domain.usecase.ReplyToStatusUseCase
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
+import com.ajrpachon.chatapp.ui.common.toUiText
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.UploadLimits.checkImageSize
 import com.ajrpachon.chatapp.utils.UploadLimits.checkVideoSize
@@ -63,7 +65,7 @@ class StatusViewModel(
                 }
                 .onFailure { e ->
                     AppLogger.e(TAG, "Reply to status failed", e)
-                    sendEffect(StatusEffect.ShowMessage(e.message ?: "No se pudo enviar la respuesta"))
+                    sendEffect(StatusEffect.ShowMessage(e.toUiText(R.string.status_error_reply)))
                 }
         }
     }
@@ -100,7 +102,7 @@ class StatusViewModel(
         updateState { it.copy(showComposeDialog = false) }
         viewModelScope.launch {
             catchResult { statusRepository.postTextStatus(text, color) }
-                .onFailure { e -> updateState { it.copy(error = e.message) } }
+                .onFailure { e -> updateState { it.copy(error = e.toUiText()) } }
         }
     }
 
@@ -111,7 +113,7 @@ class StatusViewModel(
                 val bytes = readUriAsBytes(uri.toString())
                 bytes.checkImageSize()
                 statusRepository.postImageStatus(bytes, null)
-            }.onFailure { e -> updateState { it.copy(error = e.message) } }
+            }.onFailure { e -> updateState { it.copy(error = e.toUiText()) } }
             updateState { it.copy(isLoading = false) }
         }
     }
@@ -123,7 +125,7 @@ class StatusViewModel(
                 val bytes = readUriAsBytes(uri.toString())
                 bytes.checkVideoSize()
                 statusRepository.postVideoStatus(bytes, null)
-            }.onFailure { e -> updateState { it.copy(error = e.message) } }
+            }.onFailure { e -> updateState { it.copy(error = e.toUiText()) } }
             updateState { it.copy(isLoading = false) }
         }
     }
@@ -131,7 +133,7 @@ class StatusViewModel(
     private fun deleteStatus(statusId: String) {
         viewModelScope.launch {
             catchResult { statusRepository.deleteStatus(statusId) }
-                .onFailure { e -> updateState { it.copy(error = e.message) } }
+                .onFailure { e -> updateState { it.copy(error = e.toUiText()) } }
         }
     }
 }
