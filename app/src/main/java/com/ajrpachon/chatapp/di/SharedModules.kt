@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.di
 
 import com.ajrpachon.chatapp.data.backup.BackupRepositoryImpl
+import com.ajrpachon.chatapp.data.remote.source.AuthRemoteSource
 import com.ajrpachon.chatapp.data.repository.AudioRecorderRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.AuthRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.ConversationFileExporterImpl
@@ -90,6 +91,7 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
 val remoteModule = module {
+    singleOf(::AuthRemoteSource)
     singleOf(::CallRemoteSource)
     singleOf(::ConversationRemoteSource)
     singleOf(::UserRemoteSource)
