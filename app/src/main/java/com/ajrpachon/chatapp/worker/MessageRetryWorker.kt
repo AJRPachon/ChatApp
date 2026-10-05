@@ -3,6 +3,7 @@ package com.ajrpachon.chatapp.worker
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.ajrpachon.chatapp.domain.model.OutgoingMessage
 import com.ajrpachon.chatapp.domain.repository.PendingMessageRepository
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
 import com.ajrpachon.chatapp.utils.AppLogger
@@ -24,26 +25,28 @@ class MessageRetryWorker(
         var anyFailed = false
         for (msg in pending) {
             sendMessageUseCase(
-                conversationId = msg.conversationId,
-                senderId = msg.senderId,
-                content = msg.content,
-                imageUrl = msg.imageUrl,
-                audioUrl = msg.audioUrl,
-                audioDurationMs = msg.audioDurationMs,
-                audioAmplitudes = msg.audioAmplitudes,
-                replyToId = msg.replyToId,
-                replyToContent = msg.replyToContent,
-                replyToSenderName = msg.replyToSenderName,
-                callType = msg.callType,
-                callStatus = msg.callStatus,
-                callDuration = msg.callDuration,
-                gifUrl = msg.gifUrl,
-                stickerUrl = msg.stickerUrl,
-                fileUrl = msg.fileUrl,
-                fileName = msg.fileName,
-                fileSize = msg.fileSize,
-                fileMimeType = msg.fileMimeType,
-                videoUrl = msg.videoUrl,
+                OutgoingMessage(
+                    conversationId = msg.conversationId,
+                    senderId = msg.senderId,
+                    content = msg.content,
+                    imageUrl = msg.imageUrl,
+                    audioUrl = msg.audioUrl,
+                    audioDurationMs = msg.audioDurationMs,
+                    audioAmplitudes = msg.audioAmplitudes,
+                    replyToId = msg.replyToId,
+                    replyToContent = msg.replyToContent,
+                    replyToSenderName = msg.replyToSenderName,
+                    callType = msg.callType,
+                    callStatus = msg.callStatus,
+                    callDuration = msg.callDuration,
+                    gifUrl = msg.gifUrl,
+                    stickerUrl = msg.stickerUrl,
+                    fileUrl = msg.fileUrl,
+                    fileName = msg.fileName,
+                    fileSize = msg.fileSize,
+                    fileMimeType = msg.fileMimeType,
+                    videoUrl = msg.videoUrl,
+                ),
             ).onSuccess {
                 messageRepository.updateSendStatus(msg.id, "sent")
                 AppLogger.d(TAG, "Retried and sent message ${msg.id}")

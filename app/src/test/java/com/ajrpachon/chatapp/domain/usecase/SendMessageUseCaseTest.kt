@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.domain.usecase
 
 import com.ajrpachon.chatapp.domain.model.MessageBO
+import com.ajrpachon.chatapp.domain.model.OutgoingMessage
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import io.mockk.coEvery
@@ -11,11 +12,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-// sendMessage has 21 params — use anyArgs() to avoid fragile positional any() chains
 private fun stubSend(repo: MessageRepository, result: MessageBO) {
-    coEvery {
-        repo.sendMessage(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-    } returns result
+    coEvery { repo.sendMessage(any()) } returns result
 }
 
 class SendMessageUseCaseTest {
@@ -25,11 +23,14 @@ class SendMessageUseCaseTest {
     private val useCase = SendMessageUseCase(messageRepository, analyticsTracker)
     private val fakeMessage = mockk<MessageBO>(relaxed = true)
 
+    private fun outgoing(content: String, build: OutgoingMessage.() -> OutgoingMessage = { this }) =
+        OutgoingMessage(conversationId = "conv1", senderId = "user1", content = content).build()
+
     @Test
     fun `returns success when repository sends message`() = runTest {
         stubSend(messageRepository, fakeMessage)
 
-        val result = useCase("conv1", "user1", "Hello")
+        val result = useCase(outgoing("Hello"))
 
         assertTrue(result.isSuccess)
         assertEquals(fakeMessage, result.getOrNull())
@@ -39,20 +40,18 @@ class SendMessageUseCaseTest {
     fun `trims whitespace from content before sending`() = runTest {
         stubSend(messageRepository, fakeMessage)
 
-        useCase("conv1", "user1", "  Hello  ")
+        useCase(outgoing("  Hello  "))
 
         coVerify {
             messageRepository.sendMessage(
-                "conv1", "user1", "Hello",
-                any(), any(), any(), any(), any(), any(), any(), any(), any(),
-                any(), any(), any(), any(), any(), any(), any(), any(), any(),
+                match { it.conversationId == "conv1" && it.senderId == "user1" && it.content == "Hello" },
             )
         }
     }
 
     @Test
     fun `returns failure when content is blank and no media`() = runTest {
-        val result = useCase("conv1", "user1", "   ")
+        val result = useCase(outgoing("   "))
 
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is IllegalArgumentException)
@@ -61,21 +60,21 @@ class SendMessageUseCaseTest {
     @Test
     fun `succeeds with blank content when imageUrl is provided`() = runTest {
         stubSend(messageRepository, fakeMessage)
-        val result = useCase("conv1", "user1", "", imageUrl = "https://img.jpg")
+        val result = useCase(outgoing("") { copy(imageUrl = "https://img.jpg") })
         assertTrue(result.isSuccess)
     }
 
     @Test
     fun `succeeds with blank content when audioUrl is provided`() = runTest {
         stubSend(messageRepository, fakeMessage)
-        val result = useCase("conv1", "user1", "", audioUrl = "https://audio.mp3")
+        val result = useCase(outgoing("") { copy(audioUrl = "https://audio.mp3") })
         assertTrue(result.isSuccess)
     }
 
     @Test
     fun `succeeds with blank content when gifUrl is provided`() = runTest {
         stubSend(messageRepository, fakeMessage)
-        val result = useCase("conv1", "user1", "", gifUrl = "https://gif.gif")
+        val result = useCase(outgoing("") { copy(gifUrl = "https://gif.gif") })
         assertTrue(result.isSuccess)
     }
 
@@ -84,7 +83,7 @@ class SendMessageUseCaseTest {
     @Test
     fun `succeeds with blank content when fileUrl is provided`() = runTest {
         stubSend(messageRepository, fakeMessage)
-        val result = useCase("conv1", "user1", "", fileUrl = "https://storage/file.pdf")
+        val result = useCase(outgoing("") { copy(fileUrl = "https://storage/file.pdf") })
         assertTrue(result.isSuccess)
     }
 
@@ -93,35 +92,24 @@ class SendMessageUseCaseTest {
         stubSend(messageRepository, fakeMessage)
 
         useCase(
-            "conv1", "user1", "",
-            fileUrl = "https://storage/file.pdf",
-            fileName = "document.pdf",
-            fileSize = 1024L,
-            fileMimeType = "application/pdf",
+            outgoing("") {
+                copy(
+                    fileUrl = "https://storage/file.pdf",
+                    fileName = "document.pdf",
+                    fileSize = 1024L,
+                    fileMimeType = "application/pdf",
+                )
+            },
         )
 
         coVerify {
             messageRepository.sendMessage(
-                conversationId = any(),
-                senderId = any(),
-                content = any(),
-                imageUrl = any(),
-                audioUrl = any(),
-                audioDurationMs = any(),
-                replyToId = any(),
-                replyToContent = any(),
-                replyToSenderName = any(),
-                callType = any(),
-                callStatus = any(),
-                callDuration = any(),
-                gifUrl = any(),
-                stickerUrl = any(),
-                fileUrl = "https://storage/file.pdf",
-                fileName = "document.pdf",
-                fileSize = 1024L,
-                fileMimeType = "application/pdf",
-                videoUrl = any(),
-                otherUserId = any(),
+                match {
+                    it.fileUrl == "https://storage/file.pdf" &&
+                        it.fileName == "document.pdf" &&
+                        it.fileSize == 1024L &&
+                        it.fileMimeType == "application/pdf"
+                },
             )
         }
     }
@@ -131,7 +119,7 @@ class SendMessageUseCaseTest {
     @Test
     fun `succeeds with blank content when videoUrl is provided`() = runTest {
         stubSend(messageRepository, fakeMessage)
-        val result = useCase("conv1", "user1", "", videoUrl = "https://storage/video.mp4")
+        val result = useCase(outgoing("") { copy(videoUrl = "https://storage/video.mp4") })
         assertTrue(result.isSuccess)
     }
 
@@ -139,43 +127,20 @@ class SendMessageUseCaseTest {
     fun `passes videoUrl to repository`() = runTest {
         stubSend(messageRepository, fakeMessage)
 
-        useCase("conv1", "user1", "", videoUrl = "https://storage/video.mp4")
+        useCase(outgoing("") { copy(videoUrl = "https://storage/video.mp4") })
 
         coVerify {
-            messageRepository.sendMessage(
-                conversationId = any(),
-                senderId = any(),
-                content = any(),
-                imageUrl = any(),
-                audioUrl = any(),
-                audioDurationMs = any(),
-                replyToId = any(),
-                replyToContent = any(),
-                replyToSenderName = any(),
-                callType = any(),
-                callStatus = any(),
-                callDuration = any(),
-                gifUrl = any(),
-                stickerUrl = any(),
-                fileUrl = any(),
-                fileName = any(),
-                fileSize = any(),
-                fileMimeType = any(),
-                videoUrl = "https://storage/video.mp4",
-                otherUserId = any(),
-            )
+            messageRepository.sendMessage(match { it.videoUrl == "https://storage/video.mp4" })
         }
     }
 
-    // ── blanks with all media null ─────────────────────────────────────────────
+    // ── repository failures ────────────────────────────────────────────────────
 
     @Test
     fun `returns failure when repository throws`() = runTest {
-        coEvery {
-            messageRepository.sendMessage(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } throws RuntimeException("network error")
+        coEvery { messageRepository.sendMessage(any()) } throws RuntimeException("network error")
 
-        val result = useCase("conv1", "user1", "Hello")
+        val result = useCase(outgoing("Hello"))
 
         assertTrue(result.isFailure)
         assertEquals("network error", result.exceptionOrNull()?.message)

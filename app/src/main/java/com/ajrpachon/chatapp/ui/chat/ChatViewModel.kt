@@ -22,6 +22,7 @@ import com.ajrpachon.chatapp.domain.repository.PollRepository
 import com.ajrpachon.chatapp.domain.repository.WallpaperRepository
 import com.ajrpachon.chatapp.domain.model.CallType
 import com.ajrpachon.chatapp.domain.model.MessageBO
+import com.ajrpachon.chatapp.domain.model.OutgoingMessage
 import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
@@ -564,8 +565,11 @@ class ChatViewModel(
             updateState { it.copy(isSending = true, inputText = "", replyingTo = null) }
             draftSaveJob?.cancel()
             draftRepository.saveDraft(conversationId, "")
-            val result = sendMessageUseCase(conversationId, userId, text,
-                replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
+            val result = sendMessageUseCase(
+                OutgoingMessage(
+                    conversationId = conversationId, senderId = userId, content = text,
+                    replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
+                ),
             )
             result.onSuccess { msg ->
                 if (disappearingSecs > 0L) {

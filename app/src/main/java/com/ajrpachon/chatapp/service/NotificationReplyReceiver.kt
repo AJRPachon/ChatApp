@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.RemoteInput
+import com.ajrpachon.chatapp.domain.model.OutgoingMessage
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
 import com.ajrpachon.chatapp.utils.AppLogger
@@ -37,7 +38,7 @@ class NotificationReplyReceiver : BroadcastReceiver(), KoinComponent {
 
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO + CoroutineName("NotifReply"))
         scope.launch {
-            sendMessageUseCase(conversationId, senderId, replyText)
+            sendMessageUseCase(OutgoingMessage(conversationId = conversationId, senderId = senderId, content = replyText))
                 .onFailure { e -> AppLogger.e(TAG, "Inline reply failed: ${e.message}") }
         }
     }

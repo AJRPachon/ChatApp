@@ -2,6 +2,7 @@ package com.ajrpachon.chatapp.ui.broadcast
 
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.domain.model.BroadcastListBO
+import com.ajrpachon.chatapp.domain.model.OutgoingMessage
 import com.ajrpachon.chatapp.domain.repository.BroadcastListRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetOrCreateConversationUseCase
@@ -140,10 +141,12 @@ class BroadcastListViewModel(
                 catchResult {
                     val conversation = getOrCreateConversationUseCase(uid, member.id)
                     sendMessageUseCase(
-                        conversationId = conversation.id,
-                        senderId = uid,
-                        content = msg,
-                        otherUserId = member.id,
+                        OutgoingMessage(
+                            conversationId = conversation.id,
+                            senderId = uid,
+                            content = msg,
+                            otherUserId = member.id,
+                        ),
                     )
                 }.onFailure { e ->
                     failures++

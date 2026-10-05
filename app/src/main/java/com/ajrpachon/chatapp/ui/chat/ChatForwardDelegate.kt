@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.ui.chat
 
 import com.ajrpachon.chatapp.domain.model.MessageBO
+import com.ajrpachon.chatapp.domain.model.OutgoingMessage
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import com.ajrpachon.chatapp.utils.AppLogger
@@ -50,10 +51,12 @@ class ChatForwardDelegate(
         scope.launch {
             catchResult {
                 messageRepository.sendMessage(
-                    conversationId = targetConversationId, senderId = uid, content = message.content,
-                    imageUrl = message.imageUrl, audioUrl = message.audioUrl, audioDurationMs = message.audioDurationMs,
-                    audioAmplitudes = message.audioAmplitudes,
-                    gifUrl = message.gifUrl, stickerUrl = message.stickerUrl,
+                    OutgoingMessage(
+                        conversationId = targetConversationId, senderId = uid, content = message.content,
+                        imageUrl = message.imageUrl, audioUrl = message.audioUrl, audioDurationMs = message.audioDurationMs,
+                        audioAmplitudes = message.audioAmplitudes,
+                        gifUrl = message.gifUrl, stickerUrl = message.stickerUrl,
+                    ),
                 )
                 sendEffect(ChatEffect.ShowSnackbar("Mensaje reenviado"))
             }.onFailure { updateState { it.copy(error = "No se pudo reenviar") } }
@@ -89,10 +92,12 @@ class ChatForwardDelegate(
             for (message in toForward) {
                 catchResult {
                     messageRepository.sendMessage(
-                        conversationId = targetConversationId, senderId = uid, content = message.content,
-                        imageUrl = message.imageUrl, audioUrl = message.audioUrl, audioDurationMs = message.audioDurationMs,
-                        audioAmplitudes = message.audioAmplitudes,
-                        gifUrl = message.gifUrl, stickerUrl = message.stickerUrl,
+                        OutgoingMessage(
+                            conversationId = targetConversationId, senderId = uid, content = message.content,
+                            imageUrl = message.imageUrl, audioUrl = message.audioUrl, audioDurationMs = message.audioDurationMs,
+                            audioAmplitudes = message.audioAmplitudes,
+                            gifUrl = message.gifUrl, stickerUrl = message.stickerUrl,
+                        ),
                     )
                     forwarded++
                 }

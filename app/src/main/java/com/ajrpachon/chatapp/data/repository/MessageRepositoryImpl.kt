@@ -13,10 +13,10 @@ import com.ajrpachon.chatapp.data.local.entity.ReactionDBO
 import com.ajrpachon.chatapp.data.local.entity.UserDBO
 import com.ajrpachon.chatapp.data.mapper.toBO
 import com.ajrpachon.chatapp.data.mapper.toDBO
-import com.ajrpachon.chatapp.data.remote.dto.MessageDTO
+import com.ajrpachon.chatapp.data.mapper.toDTO
 import com.ajrpachon.chatapp.data.remote.source.MessageRemoteSource
 import com.ajrpachon.chatapp.domain.model.MessageBO
-import com.ajrpachon.chatapp.domain.model.StatusReplyContext
+import com.ajrpachon.chatapp.domain.model.OutgoingMessage
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import com.ajrpachon.chatapp.utils.AnalyticsEvents
@@ -83,85 +83,33 @@ class MessageRepositoryImpl(
         }.collect { send(it) }
     }
 
-    override suspend fun sendMessage(
-        conversationId: String,
-        senderId: String,
-        content: String,
-        imageUrl: String?,
-        audioUrl: String?,
-        audioDurationMs: Long?,
-        audioAmplitudes: String?,
-        replyToId: String?,
-        replyToContent: String?,
-        replyToSenderName: String?,
-        callType: String?,
-        callStatus: String?,
-        callDuration: Int?,
-        gifUrl: String?,
-        stickerUrl: String?,
-        fileUrl: String?,
-        fileName: String?,
-        fileSize: Long?,
-        fileMimeType: String?,
-        videoUrl: String?,
-        otherUserId: String?,
-        statusReply: StatusReplyContext?,
-    ): MessageBO {
+    override suspend fun sendMessage(message: OutgoingMessage): MessageBO {
         // Attempt E2EE for 1:1 text messages (skip for media/call messages and group chats)
+        val otherUserId = message.otherUserId
         val (finalContent, isEncrypted) = if (
-            otherUserId != null &&
-            content.isNotBlank() &&
-            imageUrl == null && audioUrl == null && callType == null &&
-            gifUrl == null && stickerUrl == null && fileUrl == null && videoUrl == null
+            otherUserId != null && message.content.isNotBlank() && !message.hasNonTextPayload
         ) {
-            e2eeCoder.tryEncrypt(senderId, otherUserId, content)
+            e2eeCoder.tryEncrypt(message.senderId, otherUserId, message.content)
         } else {
-            Pair(content, false)
+            Pair(message.content, false)
         }
 
-        val messageDto = MessageDTO(
+        val messageDto = message.toDTO(
             id = java.util.UUID.randomUUID().toString(),
-            conversationId = conversationId,
-            senderId = senderId,
-            content = finalContent,
-            isRead = false,
             createdAt = Instant.fromEpochMilliseconds(System.currentTimeMillis()).toString(),
-            imageUrl = imageUrl,
-            audioUrl = audioUrl,
-            audioDurationMs = audioDurationMs,
-            audioAmplitudes = audioAmplitudes,
-            replyToId = replyToId,
-            replyToContent = replyToContent,
-            replyToSenderName = replyToSenderName,
-            callType = callType,
-            callStatus = callStatus,
-            callDuration = callDuration,
-            gifUrl = gifUrl,
-            stickerUrl = stickerUrl,
-            fileUrl = fileUrl,
-            fileName = fileName,
-            fileSize = fileSize,
-            fileMimeType = fileMimeType,
-            videoUrl = videoUrl,
+            content = finalContent,
             isEncrypted = isEncrypted,
-            replyToStatusId = statusReply?.statusId,
-            replyToStatusOwnerId = statusReply?.statusOwnerId,
-            replyToStatusText = statusReply?.statusText,
-            replyToStatusImageUrl = statusReply?.statusImageUrl,
-            replyToStatusVideoUrl = statusReply?.statusVideoUrl,
-            replyToStatusBackgroundColor = statusReply?.statusBackgroundColor,
-            replyToStatusExpiresAt = statusReply?.statusExpiresAt?.let { Instant.fromEpochMilliseconds(it).toString() },
         )
-        AppLogger.d(TAG, "DIAG sendMessage BEFORE insert audioDurationMs=$audioDurationMs dto.audioDurationMs=${messageDto.audioDurationMs}")
+        AppLogger.d(TAG, "DIAG sendMessage BEFORE insert audioDurationMs=${message.audioDurationMs} dto.audioDurationMs=${messageDto.audioDurationMs}")
         remoteSource.sendMessage(messageDto)
         val messageDbo = messageDto.toDBO()
         AppLogger.d(TAG, "DIAG sendMessage AFTER dto.toDBO() dbo.audioDurationMs=${messageDbo.audioDurationMs} id=${messageDbo.id}")
         messageDao.upsert(messageDbo)
-        val sender = userDao.getById(senderId)
-        val senderName = sender?.displayName ?: senderId
+        val sender = userDao.getById(message.senderId)
+        val senderName = sender?.displayName ?: message.senderId
         // Return with plaintext for local display
-        return messageDbo.toBO(senderId, senderName, sender?.avatarUrl).let {
-            if (isEncrypted) it.copy(content = content, isEncrypted = true) else it
+        return messageDbo.toBO(message.senderId, senderName, sender?.avatarUrl).let {
+            if (isEncrypted) it.copy(content = message.content, isEncrypted = true) else it
         }
     }
 

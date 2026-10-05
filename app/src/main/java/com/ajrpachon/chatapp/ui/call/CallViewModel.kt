@@ -24,6 +24,7 @@ import io.livekit.android.room.track.Track
 import io.livekit.android.room.track.VideoTrack
 import io.livekit.android.room.track.screencapture.ScreenCaptureParams
 import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.domain.model.OutgoingMessage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
@@ -346,12 +347,14 @@ class CallViewModel(
         val userId = currentUserId ?: return@withLock
         val duration = if (status == "ended") state.value.durationSeconds else null
         sendMessageUseCase(
-            conversationId = conversationId,
-            senderId = userId,
-            content = "",
-            callType = callType,
-            callStatus = status,
-            callDuration = duration,
+            OutgoingMessage(
+                conversationId = conversationId,
+                senderId = userId,
+                content = "",
+                callType = callType,
+                callStatus = status,
+                callDuration = duration,
+            ),
         ).onFailure { e -> AppLogger.e(TAG, "sendCallSummaryMessage: FAILED", e) }
          .onSuccess { AppLogger.d(TAG, "sendCallSummaryMessage: OK status=$status") }
     }
