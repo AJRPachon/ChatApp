@@ -6,8 +6,10 @@ import android.os.ParcelFileDescriptor
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.usecase.GetCacheFilePathUseCase
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
+import com.ajrpachon.chatapp.ui.common.toUiText
 import com.ajrpachon.chatapp.utils.AppLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -36,7 +38,7 @@ class PdfViewerViewModel(
                 .onSuccess { pages -> updateState { PdfViewerState(pages = pages) } }
                 .onFailure { e ->
                     AppLogger.e("PdfViewerViewModel", "Failed to load PDF: ${e.message}")
-                    updateState { PdfViewerState(error = e.message ?: "Error loading PDF") }
+                    updateState { PdfViewerState(error = e.toUiText(R.string.pdf_error_loading)) }
                 }
         }
     }

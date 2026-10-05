@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.ui.broadcast
 
 import com.ajrpachon.chatapp.domain.model.UserBO
+import com.ajrpachon.chatapp.ui.common.UiText
 
 data class BroadcastListUiState(
     val lists: List<BroadcastListItem> = emptyList(),
@@ -15,7 +16,7 @@ data class BroadcastListUiState(
     val sendingListId: String? = null,
     val broadcastMessage: String = "",
     val isSending: Boolean = false,
-    val error: String? = null,
+    val error: UiText? = null,
 )
 
 data class BroadcastListItem(
@@ -42,5 +43,5 @@ sealed interface BroadcastListIntent {
 
 sealed interface BroadcastListEffect {
     data object GoBack : BroadcastListEffect
-    data class ShowToast(val message: String) : BroadcastListEffect
+    data class ShowToast(val message: UiText) : BroadcastListEffect
 }

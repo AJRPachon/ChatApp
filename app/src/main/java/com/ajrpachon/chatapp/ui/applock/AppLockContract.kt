@@ -1,7 +1,9 @@
 package com.ajrpachon.chatapp.ui.applock
 
+import com.ajrpachon.chatapp.ui.common.UiText
+
 data class AppLockState(
-    val errorMessage: String? = null,
+    val errorMessage: UiText? = null,
 )
 
 sealed interface AppLockIntent {

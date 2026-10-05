@@ -1,5 +1,7 @@
 package com.ajrpachon.chatapp.ui.backup
 
+import com.ajrpachon.chatapp.ui.common.UiText
+
 sealed interface BackupEffect
 
 sealed interface BackupIntent {
@@ -14,6 +16,6 @@ data class BackupState(
     val backupSizeMb: String? = null,
     val isBackingUp: Boolean = false,
     val isRestoring: Boolean = false,
-    val error: String? = null,
-    val successMessage: String? = null,
+    val error: UiText? = null,
+    val successMessage: UiText? = null,
 )

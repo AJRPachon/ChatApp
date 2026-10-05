@@ -34,6 +34,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import org.koin.androidx.compose.koinViewModel
@@ -109,7 +110,7 @@ fun AppLockScreen(onUnlocked: () -> Unit) {
 // Koin context, which isn't available in Android Studio's preview renderer.
 @Composable
 private fun AppLockContent(
-    errorMessage: String?,
+    errorMessage: UiText?,
     onUnlockClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -158,7 +159,7 @@ private fun AppLockContent(
         if (errorMessage != null) {
             Spacer(Modifier.height(16.dp))
             Text(
-                text = errorMessage,
+                text = errorMessage.asString(),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
                 textAlign = TextAlign.Center,
@@ -189,6 +190,6 @@ internal fun AppLockScreenErrorPreview() {
     // errorMessage comes from BiometricPrompt at runtime (a system-provided CharSequence, not
     // a string resource) — hardcoded here just to preview how that state looks.
     ChatAppTheme(darkTheme = false) {
-        AppLockContent(errorMessage = "No se pudo verificar la huella", onUnlockClick = {})
+        AppLockContent(errorMessage = UiText.Dynamic("No se pudo verificar la huella"), onUnlockClick = {})
     }
 }

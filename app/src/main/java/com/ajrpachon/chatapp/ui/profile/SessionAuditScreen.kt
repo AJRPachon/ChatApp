@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -56,6 +57,7 @@ fun SessionAuditScreen(
     val state by vm.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val sessionRevokedMessage = stringResource(R.string.session_audit_revoked_success)
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         vm.effect.collect { effect ->
@@ -64,7 +66,7 @@ fun SessionAuditScreen(
                     snackbarHostState.showSnackbar(sessionRevokedMessage)
                 }
                 is SessionAuditEffect.Error -> {
-                    snackbarHostState.showSnackbar(effect.message)
+                    snackbarHostState.showSnackbar(effect.message.asString(context))
                 }
             }
         }

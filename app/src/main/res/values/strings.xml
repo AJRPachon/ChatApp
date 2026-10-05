@@ -523,4 +523,21 @@
     <string name="media_gallery_no_images">No hay imágenes compartidas</string>
     <string name="media_gallery_no_videos">No hay vídeos compartidos</string>
     <string name="media_gallery_play_video_cd">Reproducir vídeo</string>
+
+    <string name="error_generic">Ha ocurrido un error</string>
+    <string name="applock_auth_failed">Autenticación fallida. Inténtalo de nuevo.</string>
+    <string name="backup_success">Copia realizada correctamente</string>
+    <string name="backup_restore_success">Mensajes restaurados correctamente</string>
+    <string name="backup_error_backup">Error al hacer la copia de seguridad</string>
+    <string name="backup_error_restore">Error al restaurar la copia de seguridad</string>
+    <string name="broadcast_error_name_and_members">Ingresa un nombre y selecciona al menos un miembro</string>
+    <string name="broadcast_error_write_message">Escribe un mensaje</string>
+    <string name="broadcast_error_no_members">Sin miembros</string>
+    <string name="broadcast_sent_summary_toast">Enviado a %1$d/%2$d contactos</string>
+    <string name="usagestats_error_load">Error al cargar estadísticas</string>
+    <string name="sessionaudit_error_revoke">Error al revocar sesión</string>
+    <string name="sessionaudit_error_revoke_others">Error al cerrar otras sesiones</string>
+    <string name="invitations_cancelled">Invitación cancelada</string>
+    <string name="invitations_accepted">Invitación aceptada</string>
+    <string name="invitations_rejected">Invitación rechazada</string>
 </resources>

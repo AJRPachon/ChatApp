@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.ui.pdf
 
 import com.ajrpachon.chatapp.domain.usecase.GetCacheFilePathUseCase
+import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import io.mockk.every
 import io.mockk.mockk
@@ -79,7 +80,7 @@ class PdfViewerViewModelTest {
             vm.onIntent(PdfViewerIntent.LoadPdf("https://example.com/a.pdf"))
             awaitState(vm) { !it.isLoading && it.error != null }
 
-            assertEquals("HTTP 404", vm.state.value.error)
+            assertEquals(UiText.Dynamic("HTTP 404"), vm.state.value.error)
             assertTrue(vm.state.value.pages.isEmpty())
         }
 
@@ -93,7 +94,7 @@ class PdfViewerViewModelTest {
         vm.loadPdf("https://example.com/a.pdf")
         awaitState(vm) { it.error != null }
 
-        assertEquals("no route to host", vm.state.value.error)
+        assertEquals(UiText.Dynamic("no route to host"), vm.state.value.error)
         assertFalse(vm.state.value.isLoading)
     }
 
@@ -106,7 +107,7 @@ class PdfViewerViewModelTest {
 
         respondWith(404)
         vm.loadPdf("https://example.com/a.pdf")
-        awaitState(vm) { it.error == "HTTP 404" }
+        awaitState(vm) { it.error == UiText.Dynamic("HTTP 404") }
 
         assertNotNull(vm.state.value.error)
         verify(atLeast = 2) { okHttpClient.newCall(any()) }

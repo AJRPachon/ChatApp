@@ -29,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -55,11 +56,12 @@ fun InvitationsScreen(
     val vm: InvitationsViewModel = koinViewModel()
     val state by vm.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         vm.effect.collect { effect ->
             when (effect) {
-                is InvitationsEffect.ShowMessage -> snackbar.showSnackbar(effect.text)
+                is InvitationsEffect.ShowMessage -> snackbar.showSnackbar(effect.text.asString(context))
             }
         }
     }

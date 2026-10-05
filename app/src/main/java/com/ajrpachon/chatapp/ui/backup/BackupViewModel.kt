@@ -1,8 +1,11 @@
 package com.ajrpachon.chatapp.ui.backup
 
 import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.repository.BackupRepository
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
+import com.ajrpachon.chatapp.ui.common.UiText
+import com.ajrpachon.chatapp.ui.common.toUiText
 import com.ajrpachon.chatapp.utils.AppLogger
 import kotlinx.coroutines.launch
 
@@ -52,7 +55,7 @@ class BackupViewModel(
                         isBackingUp = false,
                         lastBackupDate = info.lastBackupDate,
                         backupSizeMb = info.backupSizeMb,
-                        successMessage = "Copia realizada correctamente",
+                        successMessage = UiText.StringResource(R.string.backup_success),
                     )
                 }
             }.onFailure { e ->
@@ -60,7 +63,7 @@ class BackupViewModel(
                 updateState {
                     it.copy(
                         isBackingUp = false,
-                        error = e.message ?: "Error al hacer la copia de seguridad",
+                        error = e.toUiText(R.string.backup_error_backup),
                     )
                 }
             }
@@ -76,7 +79,7 @@ class BackupViewModel(
                 updateState {
                     it.copy(
                         isRestoring = false,
-                        successMessage = "Mensajes restaurados correctamente",
+                        successMessage = UiText.StringResource(R.string.backup_restore_success),
                     )
                 }
             }.onFailure { e ->
@@ -84,7 +87,7 @@ class BackupViewModel(
                 updateState {
                     it.copy(
                         isRestoring = false,
-                        error = e.message ?: "Error al restaurar la copia de seguridad",
+                        error = e.toUiText(R.string.backup_error_restore),
                     )
                 }
             }
