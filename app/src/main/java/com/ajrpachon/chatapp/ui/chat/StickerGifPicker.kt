@@ -191,7 +191,7 @@ private fun GifTab(onSelected: (String) -> Unit, vm: GifPickerViewModel = koinVi
         ChatAppSearchField(
             value = state.query,
             onValueChange = { vm.onIntent(GifPickerIntent.QueryChanged(it)) },
-            placeholder = "Buscar GIFs…",
+            placeholder = stringResource(R.string.gif_search_placeholder),
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
         )
         when {

@@ -61,6 +61,7 @@ import kotlinx.coroutines.flow.first
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.lifecycleScope
 import com.ajrpachon.chatapp.data.remote.source.AuthRemoteSource
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
@@ -379,24 +380,21 @@ class MainActivity : ComponentActivity() {
                 if (showRootWarning) {
                     AlertDialog(
                         onDismissRequest = { /* non-dismissable via back/outside tap */ },
-                        title = { Text("Rooted device detected") },
+                        title = { Text(stringResource(R.string.root_warning_title)) },
                         text = {
-                            Text(
-                                "Running on a rooted device may compromise the security of your messages. " +
-                                "Do you want to continue?"
-                            )
+                            Text(stringResource(R.string.root_warning_message))
                         },
                         confirmButton = {
                             TextButton(onClick = {
                                 saveRootWarningAccepted()
                                 showRootWarning = false
                             }) {
-                                Text("Continue")
+                                Text(stringResource(R.string.root_warning_continue))
                             }
                         },
                         dismissButton = {
                             TextButton(onClick = { finish() }) {
-                                Text("Exit")
+                                Text(stringResource(R.string.root_warning_exit))
                             }
                         },
                     )

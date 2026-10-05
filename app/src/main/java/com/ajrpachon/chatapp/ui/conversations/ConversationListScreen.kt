@@ -721,7 +721,7 @@ private fun ConversationItem(
                     Box(modifier = Modifier.weight(1f)) {
                         when {
                             !draft.isNullOrBlank() -> Text(
-                                text = "${ChatConstants.DRAFT_PREFIX}$draft",
+                                text = stringResource(R.string.conversations_draft_prefix, draft),
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                                 color = MaterialTheme.colorScheme.outline,

@@ -87,9 +87,11 @@ class ChatContactCardDelegate(
                     }
                     sendEffect(ChatEffect.ShowSnackbar(UiText.StringResource(R.string.chat_cannot_invite_contact)))
                 }
+                is SendInvitationResult.NotAuthenticated ->
+                    sendEffect(ChatEffect.ShowSnackbar(UiText.StringResource(R.string.error_not_signed_in)))
                 is SendInvitationResult.Failure -> {
                     AppLogger.e(TAG, "contactCardPrimaryAction failed: ${result.message}")
-                    sendEffect(ChatEffect.ShowSnackbar(UiText.Dynamic(result.message)))
+                    sendEffect(ChatEffect.ShowSnackbar(result.message?.let(UiText::Dynamic) ?: UiText.StringResource(R.string.error_generic)))
                 }
             }
         }

@@ -183,9 +183,11 @@ class NewChatViewModel(
                     }
                     sendEffect(NewChatEffect.ShowMessage(UiText.of(R.string.newchat_cannot_invite, otherUser.username)))
                 }
+                is SendInvitationResult.NotAuthenticated ->
+                    updateState { it.copy(error = UiText.StringResource(R.string.error_not_signed_in)) }
                 is SendInvitationResult.Failure -> {
                     AppLogger.e(TAG, "User action failed: ${result.message}")
-                    updateState { it.copy(error = UiText.Dynamic(result.message)) }
+                    updateState { it.copy(error = result.message?.let(UiText::Dynamic) ?: UiText.StringResource(R.string.error_generic)) }
                 }
             }
             updateState { it.copy(pendingUserIds = it.pendingUserIds - otherUser.id) }

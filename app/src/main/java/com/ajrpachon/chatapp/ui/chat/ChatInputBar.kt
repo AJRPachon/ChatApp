@@ -147,7 +147,7 @@ internal fun NormalInputBar(
             modifier = Modifier
                 .weight(1f)
                 .testTag("chat_input_field"),
-            placeholder = "Mensaje…",
+            placeholder = stringResource(R.string.chat_input_placeholder),
             singleLine = false,
             maxLines = 4,
             isError = inputText.length >= MessageLimits.MAX_CONTENT_LENGTH,

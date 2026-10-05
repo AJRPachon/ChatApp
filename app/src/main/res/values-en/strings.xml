@@ -642,4 +642,14 @@
     <string name="sticker_store_install">Install</string>
     <string name="offline_banner_text">No connection</string>
     <string name="splash_tagline">end-to-end encrypted</string>
+
+    <string name="error_not_signed_in">You are not signed in</string>
+    <string name="root_warning_title">Rooted device detected</string>
+    <string name="root_warning_message">Running on a rooted device may compromise the security of your messages. Do you want to continue?</string>
+    <string name="root_warning_continue">Continue</string>
+    <string name="root_warning_exit">Exit</string>
+    <string name="conversations_draft_prefix">Draft: %1$s</string>
+    <string name="chat_input_placeholder">Message…</string>
+    <string name="gif_search_placeholder">Search GIFs…</string>
+    <string name="notification_channel_incoming_calls">Incoming calls</string>
 </resources>

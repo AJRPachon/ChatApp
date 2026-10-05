@@ -642,4 +642,14 @@
     <string name="sticker_store_install">Instalar</string>
     <string name="offline_banner_text">Sin conexión</string>
     <string name="splash_tagline">cifrado extremo a extremo</string>
+
+    <string name="error_not_signed_in">No has iniciado sesión</string>
+    <string name="root_warning_title">Dispositivo con root detectado</string>
+    <string name="root_warning_message">Usar la app en un dispositivo con root puede comprometer la seguridad de tus mensajes. ¿Quieres continuar?</string>
+    <string name="root_warning_continue">Continuar</string>
+    <string name="root_warning_exit">Salir</string>
+    <string name="conversations_draft_prefix">Borrador: %1$s</string>
+    <string name="chat_input_placeholder">Mensaje…</string>
+    <string name="gif_search_placeholder">Buscar GIFs…</string>
+    <string name="notification_channel_incoming_calls">Llamadas entrantes</string>
 </resources>
