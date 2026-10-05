@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
@@ -41,6 +42,9 @@ import com.ajrpachon.chatapp.ui.components.ChatAppTopBar
 import com.ajrpachon.chatapp.ui.components.InvitationsSkeleton
 import com.github.skydoves.navgraph.annotations.NavDestination
 import com.ajrpachon.chatapp.InvitationsRoute
+import com.ajrpachon.chatapp.domain.model.UserBO
+import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
+import kotlinx.datetime.Instant
 import org.koin.androidx.compose.koinViewModel
 
 @NavDestination(route = InvitationsRoute::class)
@@ -60,6 +64,21 @@ fun InvitationsScreen(
         }
     }
 
+    InvitationsContent(
+        state = state,
+        snackbar = snackbar,
+        onIntent = vm::onIntent,
+        onBack = onBack,
+    )
+}
+
+@Composable
+internal fun InvitationsContent(
+    state: InvitationsState,
+    snackbar: SnackbarHostState,
+    onIntent: (InvitationsIntent) -> Unit,
+    onBack: () -> Unit,
+) {
     Scaffold(
         topBar = {
             ChatAppTopBar(title = stringResource(R.string.invitations_top_bar_title), onBack = onBack)
@@ -75,12 +94,12 @@ fun InvitationsScreen(
                 FilterChip(
                     text = stringResource(R.string.invitations_filter_received, state.invitations.size),
                     selected = state.selectedTab == InvitationsTab.RECEIVED,
-                    onClick = { vm.onIntent(InvitationsIntent.SelectTab(InvitationsTab.RECEIVED)) },
+                    onClick = { onIntent(InvitationsIntent.SelectTab(InvitationsTab.RECEIVED)) },
                 )
                 FilterChip(
                     text = stringResource(R.string.invitations_filter_sent),
                     selected = state.selectedTab == InvitationsTab.SENT,
-                    onClick = { vm.onIntent(InvitationsIntent.SelectTab(InvitationsTab.SENT)) },
+                    onClick = { onIntent(InvitationsIntent.SelectTab(InvitationsTab.SENT)) },
                 )
             }
 
@@ -88,16 +107,84 @@ fun InvitationsScreen(
                 InvitationsTab.RECEIVED -> ReceivedList(
                     isLoading = state.isLoading,
                     invitations = state.invitations,
-                    onAccept = { vm.onIntent(InvitationsIntent.Accept(it)) },
-                    onReject = { vm.onIntent(InvitationsIntent.Reject(it)) },
+                    onAccept = { onIntent(InvitationsIntent.Accept(it)) },
+                    onReject = { onIntent(InvitationsIntent.Reject(it)) },
                 )
                 InvitationsTab.SENT -> SentList(
                     isLoading = state.isSentLoading,
                     invitations = state.sentInvitations,
-                    onCancel = { vm.onIntent(InvitationsIntent.CancelSent(it)) },
+                    onCancel = { onIntent(InvitationsIntent.CancelSent(it)) },
                 )
             }
         }
+    }
+}
+
+private fun previewUser(id: String, name: String) = UserBO(
+    id = id,
+    email = "",
+    username = name.lowercase(),
+    displayName = name,
+    avatarUrl = null,
+    createdAt = Instant.fromEpochMilliseconds(0L),
+)
+
+private fun previewInvitation(id: String, from: String, to: String? = null, status: InvitationStatus = InvitationStatus.PENDING) =
+    InvitationBO(
+        id = id,
+        sender = previewUser("s$id", from),
+        receiverId = "me",
+        status = status,
+        createdAt = Instant.fromEpochMilliseconds(0L),
+        receiver = to?.let { previewUser("r$id", it) },
+    )
+
+@Preview(name = "Received", showBackground = true)
+@Composable
+internal fun InvitationsReceivedPreview() {
+    ChatAppTheme {
+        InvitationsContent(
+            state = InvitationsState(
+                invitations = listOf(previewInvitation("1", "Ana García"), previewInvitation("2", "Bruno López")),
+                isLoading = false,
+            ),
+            snackbar = remember { SnackbarHostState() },
+            onIntent = {},
+            onBack = {},
+        )
+    }
+}
+
+@Preview(name = "Sent", showBackground = true)
+@Composable
+internal fun InvitationsSentPreview() {
+    ChatAppTheme {
+        InvitationsContent(
+            state = InvitationsState(
+                isLoading = false,
+                selectedTab = InvitationsTab.SENT,
+                sentInvitations = listOf(
+                    previewInvitation("1", "Yo", to = "Carla Ruiz"),
+                    previewInvitation("2", "Yo", to = "Diego Pérez", status = InvitationStatus.ACCEPTED),
+                ),
+            ),
+            snackbar = remember { SnackbarHostState() },
+            onIntent = {},
+            onBack = {},
+        )
+    }
+}
+
+@Preview(name = "Empty", showBackground = true)
+@Composable
+internal fun InvitationsEmptyPreview() {
+    ChatAppTheme {
+        InvitationsContent(
+            state = InvitationsState(isLoading = false),
+            snackbar = remember { SnackbarHostState() },
+            onIntent = {},
+            onBack = {},
+        )
     }
 }
 

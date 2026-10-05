@@ -31,12 +31,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
 import com.ajrpachon.chatapp.ui.components.ChatAppSecondaryButton
 import com.ajrpachon.chatapp.ui.components.ChatAppTopBar
+import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -54,13 +56,28 @@ fun BackupScreen(
         }
     }
 
+    BackupContent(
+        state = state,
+        snackbarHostState = snackbarHostState,
+        onIntent = vm::onIntent,
+        onBack = onBack,
+    )
+}
+
+@Composable
+internal fun BackupContent(
+    state: BackupState,
+    snackbarHostState: SnackbarHostState,
+    onIntent: (BackupIntent) -> Unit,
+    onBack: () -> Unit,
+) {
     if (state.error != null) {
         AlertDialog(
-            onDismissRequest = { vm.onIntent(BackupIntent.DismissError) },
+            onDismissRequest = { onIntent(BackupIntent.DismissError) },
             title = { Text(stringResource(R.string.backup_error_title)) },
             text = { Text(state.error.orEmpty()) },
             confirmButton = {
-                TextButton(onClick = { vm.onIntent(BackupIntent.DismissError) }) {
+                TextButton(onClick = { onIntent(BackupIntent.DismissError) }) {
                     Text(stringResource(R.string.backup_accept))
                 }
             },
@@ -163,7 +180,7 @@ fun BackupScreen(
             } else {
                 ChatAppPrimaryButton(
                     text = stringResource(R.string.backup_make_backup_button),
-                    onClick = { vm.onIntent(BackupIntent.StartBackup) },
+                    onClick = { onIntent(BackupIntent.StartBackup) },
                     leadingIcon = Icons.Default.CloudUpload,
                     enabled = !state.isRestoring,
                     modifier = Modifier
@@ -187,7 +204,7 @@ fun BackupScreen(
             } else {
                 ChatAppSecondaryButton(
                     text = stringResource(R.string.backup_restore_button),
-                    onClick = { vm.onIntent(BackupIntent.StartRestore) },
+                    onClick = { onIntent(BackupIntent.StartRestore) },
                     leadingIcon = Icons.Default.CloudDownload,
                     enabled = !state.isBackingUp,
                     modifier = Modifier.fillMaxWidth(),
@@ -196,3 +213,38 @@ fun BackupScreen(
         }
     }
 }
+
+@Preview(name = "Never backed up", showBackground = true)
+@Composable
+internal fun BackupEmptyPreview() {
+    ChatAppTheme {
+        BackupContent(state = BackupState(), snackbarHostState = remember { SnackbarHostState() }, onIntent = {}, onBack = {})
+    }
+}
+
+@Preview(name = "With a backup", showBackground = true)
+@Composable
+internal fun BackupWithDataPreview() {
+    ChatAppTheme {
+        BackupContent(
+            state = BackupState(lastBackupDate = "03/10/2026 21:14", backupSizeMb = "12,4"),
+            snackbarHostState = remember { SnackbarHostState() },
+            onIntent = {},
+            onBack = {},
+        )
+    }
+}
+
+@Preview(name = "Backing up", showBackground = true)
+@Composable
+internal fun BackupInProgressPreview() {
+    ChatAppTheme {
+        BackupContent(
+            state = BackupState(lastBackupDate = "03/10/2026 21:14", backupSizeMb = "12,4", isBackingUp = true),
+            snackbarHostState = remember { SnackbarHostState() },
+            onIntent = {},
+            onBack = {},
+        )
+    }
+}
+
