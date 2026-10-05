@@ -63,6 +63,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -77,8 +78,10 @@ import com.ajrpachon.chatapp.domain.model.StatusBO
 import com.ajrpachon.chatapp.ui.common.ChatConstants
 import com.ajrpachon.chatapp.ui.common.formatStatusAge
 import com.ajrpachon.chatapp.ui.components.ChatAppAvatar
+import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.datetime.Instant
 import org.koin.androidx.compose.koinViewModel
 
 // ── Status bar (embedded in ConversationListScreen) ────────────────────────
@@ -107,6 +110,27 @@ fun StatusBar(
         }
     }
 
+    val onAddMedia = {
+        mediaLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
+    }
+
+    StatusBarContent(
+        state = state,
+        onIntent = vm::onIntent,
+        onAddMedia = onAddMedia,
+        onViewStatus = onViewStatus,
+        modifier = modifier,
+    )
+}
+
+@Composable
+fun StatusBarContent(
+    state: StatusState,
+    onIntent: (StatusIntent) -> Unit,
+    onAddMedia: () -> Unit,
+    onViewStatus: (StatusBO) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     // Own statuses are represented by the "My status" slot below, not as a
     // separate contact-like avatar mixed in with everyone else's.
     val myStatuses = state.statuses.filter { it.isFromMe }
@@ -132,27 +156,15 @@ fun StatusBar(
                 val myStatus = myStatuses.firstOrNull()
                 if (myStatus == null) {
                     AddStatusButton(
-                        onAddText = { vm.onIntent(StatusIntent.OpenCompose) },
-                        onAddMedia = {
-                            mediaLauncher.launch(
-                                PickVisualMediaRequest(
-                                    ActivityResultContracts.PickVisualMedia.ImageAndVideo
-                                )
-                            )
-                        },
+                        onAddText = { onIntent(StatusIntent.OpenCompose) },
+                        onAddMedia = onAddMedia,
                     )
                 } else {
                     MyStatusAvatar(
                         status = myStatus,
                         onView = { onViewStatus(myStatus) },
-                        onAddText = { vm.onIntent(StatusIntent.OpenCompose) },
-                        onAddMedia = {
-                            mediaLauncher.launch(
-                                PickVisualMediaRequest(
-                                    ActivityResultContracts.PickVisualMedia.ImageAndVideo
-                                )
-                            )
-                        },
+                        onAddText = { onIntent(StatusIntent.OpenCompose) },
+                        onAddMedia = onAddMedia,
                     )
                 }
             }
@@ -165,9 +177,77 @@ fun StatusBar(
     if (state.showComposeDialog) {
         ComposeStatusDialog(
             text = state.composeText,
-            onTextChange = { vm.onIntent(StatusIntent.TextChanged(it)) },
-            onPost = { vm.onIntent(StatusIntent.PostTextStatus) },
-            onDismiss = { vm.onIntent(StatusIntent.CloseCompose) },
+            onTextChange = { onIntent(StatusIntent.TextChanged(it)) },
+            onPost = { onIntent(StatusIntent.PostTextStatus) },
+            onDismiss = { onIntent(StatusIntent.CloseCompose) },
+        )
+    }
+}
+
+private fun previewStatus(id: String, userId: String, name: String, isFromMe: Boolean = false, text: String? = null) = StatusBO(
+    id = id,
+    userId = userId,
+    userName = name,
+    userAvatarUrl = null,
+    text = text,
+    imageUrl = null,
+    videoUrl = null,
+    backgroundColor = 0xFF1976D2,
+    createdAt = Instant.fromEpochMilliseconds(System.currentTimeMillis()),
+    expiresAt = Instant.fromEpochMilliseconds(System.currentTimeMillis() + 86_400_000L),
+    isFromMe = isFromMe,
+)
+
+@Preview(name = "No own status", showBackground = true)
+@Composable
+internal fun StatusBarEmptyPreview() {
+    ChatAppTheme {
+        StatusBarContent(state = StatusState(), onIntent = {}, onAddMedia = {}, onViewStatus = {})
+    }
+}
+
+@Preview(name = "With statuses", showBackground = true)
+@Composable
+internal fun StatusBarWithStatusesPreview() {
+    ChatAppTheme {
+        StatusBarContent(
+            state = StatusState(
+                statuses = listOf(
+                    previewStatus("1", "me", "Yo", isFromMe = true),
+                    previewStatus("2", "u2", "Ana García"),
+                    previewStatus("3", "u3", "Bruno López"),
+                ),
+            ),
+            onIntent = {},
+            onAddMedia = {},
+            onViewStatus = {},
+        )
+    }
+}
+
+@Preview(name = "Compose dialog", showBackground = true)
+@Composable
+internal fun StatusBarComposeDialogPreview() {
+    ChatAppTheme {
+        StatusBarContent(
+            state = StatusState(showComposeDialog = true, composeText = "Hola a todos"),
+            onIntent = {},
+            onAddMedia = {},
+            onViewStatus = {},
+        )
+    }
+}
+
+@Preview(name = "Story viewer", showBackground = true)
+@Composable
+internal fun StatusViewerPreview() {
+    ChatAppTheme {
+        StatusViewerScreen(
+            statuses = listOf(
+                previewStatus("2", "u2", "Ana García", text = "¡Buenos días!"),
+                previewStatus("3", "u2", "Ana García", text = "Otra historia"),
+            ),
+            onClose = {},
         )
     }
 }
