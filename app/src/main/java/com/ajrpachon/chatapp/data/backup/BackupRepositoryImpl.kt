@@ -3,14 +3,14 @@ package com.ajrpachon.chatapp.data.backup
 import android.accounts.AccountManager
 import android.content.Context
 import com.ajrpachon.chatapp.data.local.dao.MessageDao
-import com.ajrpachon.chatapp.data.local.entity.MessageDBO
+import com.ajrpachon.chatapp.data.mapper.toBackup
+import com.ajrpachon.chatapp.data.mapper.toDBO
 import com.ajrpachon.chatapp.domain.model.BackupInfoBO
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.BackupRepository
 import com.ajrpachon.chatapp.utils.AnalyticsEvents
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -29,100 +29,6 @@ private const val DRIVE_UPLOAD_URL =
 private const val DRIVE_FILES_URL = "https://www.googleapis.com/drive/v3/files"
 private const val BACKUP_FILE_NAME = "chatapp_backup.json"
 private const val DRIVE_SCOPE = "oauth2:https://www.googleapis.com/auth/drive.file"
-
-@Serializable
-private data class MessageBackup(
-    val id: String,
-    val conversationId: String,
-    val senderId: String,
-    val content: String,
-    val isRead: Boolean,
-    val createdAt: Long,
-    val imageUrl: String? = null,
-    val audioUrl: String? = null,
-    val replyToId: String? = null,
-    val replyToContent: String? = null,
-    val replyToSenderName: String? = null,
-    val callType: String? = null,
-    val callStatus: String? = null,
-    val callDuration: Int? = null,
-    val gifUrl: String? = null,
-    val stickerUrl: String? = null,
-    val isEncrypted: Boolean = false,
-    val isDeleted: Boolean = false,
-    val isEdited: Boolean = false,
-    val editedAt: Long? = null,
-    val expiresAt: Long? = null,
-    val fileUrl: String? = null,
-    val fileName: String? = null,
-    val fileSize: Long? = null,
-    val fileMimeType: String? = null,
-    val videoUrl: String? = null,
-    val isPinned: Boolean = false,
-    val isSaved: Boolean = false,
-)
-
-private fun MessageDBO.toBackup() = MessageBackup(
-    id = id,
-    conversationId = conversationId,
-    senderId = senderId,
-    content = content,
-    isRead = isRead,
-    createdAt = createdAt,
-    imageUrl = imageUrl,
-    audioUrl = audioUrl,
-    replyToId = replyToId,
-    replyToContent = replyToContent,
-    replyToSenderName = replyToSenderName,
-    callType = callType,
-    callStatus = callStatus,
-    callDuration = callDuration,
-    gifUrl = gifUrl,
-    stickerUrl = stickerUrl,
-    isEncrypted = isEncrypted,
-    isDeleted = isDeleted,
-    isEdited = isEdited,
-    editedAt = editedAt,
-    expiresAt = expiresAt,
-    fileUrl = fileUrl,
-    fileName = fileName,
-    fileSize = fileSize,
-    fileMimeType = fileMimeType,
-    videoUrl = videoUrl,
-    isPinned = isPinned,
-    isSaved = isSaved,
-)
-
-private fun MessageBackup.toDBO() = MessageDBO(
-    id = id,
-    conversationId = conversationId,
-    senderId = senderId,
-    content = content,
-    isRead = isRead,
-    createdAt = createdAt,
-    imageUrl = imageUrl,
-    audioUrl = audioUrl,
-    replyToId = replyToId,
-    replyToContent = replyToContent,
-    replyToSenderName = replyToSenderName,
-    callType = callType,
-    callStatus = callStatus,
-    callDuration = callDuration,
-    gifUrl = gifUrl,
-    stickerUrl = stickerUrl,
-    isEncrypted = isEncrypted,
-    isDeleted = isDeleted,
-    isEdited = isEdited,
-    editedAt = editedAt,
-    expiresAt = expiresAt,
-    fileUrl = fileUrl,
-    fileName = fileName,
-    fileSize = fileSize,
-    fileMimeType = fileMimeType,
-    videoUrl = videoUrl,
-    isPinned = isPinned,
-    isSaved = isSaved,
-)
 
 class BackupRepositoryImpl(
     private val context: Context,

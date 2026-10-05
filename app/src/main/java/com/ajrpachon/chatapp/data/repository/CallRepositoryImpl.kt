@@ -1,6 +1,6 @@
 package com.ajrpachon.chatapp.data.repository
 
-import com.ajrpachon.chatapp.data.remote.dto.toBO
+import com.ajrpachon.chatapp.data.mapper.toBO
 import com.ajrpachon.chatapp.data.remote.source.CallRemoteSource
 import com.ajrpachon.chatapp.domain.model.CallBO
 import com.ajrpachon.chatapp.domain.model.CallStatus

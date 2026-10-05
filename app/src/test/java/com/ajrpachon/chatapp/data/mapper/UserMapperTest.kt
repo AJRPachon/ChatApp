@@ -2,6 +2,8 @@ package com.ajrpachon.chatapp.data.mapper
 
 import com.ajrpachon.chatapp.data.local.entity.UserDBO
 import com.ajrpachon.chatapp.data.remote.dto.UserDTO
+import com.ajrpachon.chatapp.domain.model.UserBO
+import kotlinx.datetime.Instant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -157,6 +159,44 @@ class UserMapperTest {
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    // ── UserBO.toDBO ─────────────────────────────────────────────
+
+    @Test
+    fun `UserBO toDBO converts instants to epoch millis and sets the current-user flag`() {
+        val bo = UserBO(
+            id = "u1",
+            email = "a@b.c",
+            username = "ana",
+            displayName = "Ana",
+            avatarUrl = "https://cdn/a.png",
+            createdAt = Instant.fromEpochMilliseconds(1_000L),
+            lastSeen = Instant.fromEpochMilliseconds(2_000L),
+            showOnlineStatus = false,
+        )
+
+        val dbo = bo.toDBO(isCurrentUser = true)
+
+        assertEquals("u1", dbo.id)
+        assertEquals("a@b.c", dbo.email)
+        assertEquals("ana", dbo.username)
+        assertEquals("Ana", dbo.displayName)
+        assertEquals("https://cdn/a.png", dbo.avatarUrl)
+        assertEquals(1_000L, dbo.createdAt)
+        assertEquals(2_000L, dbo.lastSeen)
+        assertEquals(true, dbo.isCurrentUser)
+        assertEquals(false, dbo.showOnlineStatus)
+    }
+
+    @Test
+    fun `UserBO toDBO defaults to not being the current user and keeps a null lastSeen`() {
+        val bo = UserBO(id = "u1", email = "", username = "ana", displayName = "Ana", avatarUrl = null, createdAt = Instant.fromEpochMilliseconds(0L))
+
+        val dbo = bo.toDBO()
+
+        assertEquals(false, dbo.isCurrentUser)
+        assertNull(dbo.lastSeen)
+    }
 
     private fun fakeDto(
         id: String = "user1",
