@@ -6,7 +6,6 @@ import com.ajrpachon.chatapp.data.remote.dto.AuthSessionDTO
 import com.ajrpachon.chatapp.data.remote.dto.MfaAssuranceDTO
 import com.ajrpachon.chatapp.data.remote.dto.TotpEnrollmentDTO
 import com.ajrpachon.chatapp.domain.model.IntegrityResultBO
-import com.ajrpachon.chatapp.utils.IntegrityChecker
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.SignOutScope
 import io.github.jan.supabase.auth.auth

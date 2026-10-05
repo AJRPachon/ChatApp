@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.utils
+package com.ajrpachon.chatapp.data.remote.source
 
 import android.content.Context
 import com.ajrpachon.chatapp.domain.model.IntegrityResultBO
