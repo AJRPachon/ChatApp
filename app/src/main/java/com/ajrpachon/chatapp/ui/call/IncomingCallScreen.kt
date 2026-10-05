@@ -20,12 +20,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.CallBO
+import com.ajrpachon.chatapp.domain.model.CallStatus
 import com.ajrpachon.chatapp.domain.model.CallType
 import com.ajrpachon.chatapp.ui.theme.CallAcceptedGreen
 import com.ajrpachon.chatapp.ui.theme.CallBackground
+import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 
 @Composable
 fun IncomingCallScreen(
@@ -99,5 +102,32 @@ fun IncomingCallScreen(
                 }
             }
         }
+    }
+}
+
+private fun previewCall(type: CallType) = CallBO(
+    id = "call1",
+    conversationId = "c1",
+    callerId = "u1",
+    callerName = "Ana García",
+    calleeId = "me",
+    type = type,
+    status = CallStatus.RINGING,
+    roomName = "room1",
+)
+
+@Preview(name = "Voice call", showBackground = true)
+@Composable
+internal fun IncomingVoiceCallPreview() {
+    ChatAppTheme {
+        IncomingCallScreen(call = previewCall(CallType.AUDIO), onAccept = {}, onReject = {})
+    }
+}
+
+@Preview(name = "Video call", showBackground = true)
+@Composable
+internal fun IncomingVideoCallPreview() {
+    ChatAppTheme {
+        IncomingCallScreen(call = previewCall(CallType.VIDEO), onAccept = {}, onReject = {})
     }
 }

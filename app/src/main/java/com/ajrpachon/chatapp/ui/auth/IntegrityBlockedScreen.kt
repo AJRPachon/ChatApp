@@ -21,8 +21,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 
 /**
  * Non-dismissable blocking screen shown when Play Integrity check fails.
@@ -73,5 +75,13 @@ fun IntegrityBlockedScreen(onExit: () -> Unit) {
                 Text(stringResource(R.string.auth_integrity_exit))
             }
         }
+    }
+}
+
+@Preview(name = "Integrity blocked", showBackground = true)
+@Composable
+internal fun IntegrityBlockedPreview() {
+    ChatAppTheme {
+        IntegrityBlockedScreen(onExit = {})
     }
 }

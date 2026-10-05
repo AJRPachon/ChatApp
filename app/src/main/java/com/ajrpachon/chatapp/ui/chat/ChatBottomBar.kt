@@ -58,7 +58,7 @@ import com.ajrpachon.chatapp.ui.components.OfflineBanner
 @Composable
 internal fun ChatBottomBar(
     state: ChatState,
-    vm: ChatViewModel,
+    onIntent: (ChatIntent) -> Unit,
     containerColor: Color,
     onGallery: () -> Unit,
     onCamera: () -> Unit,
@@ -88,7 +88,7 @@ internal fun ChatBottomBar(
                                 Text(editingMessage.content.take(60), style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
                         }
-                        IconButton(onClick = { vm.onIntent(ChatIntent.CancelEdit) }) {
+                        IconButton(onClick = { onIntent(ChatIntent.CancelEdit) }) {
                             Icon(Icons.Default.Close, contentDescription = stringResource(R.string.chat_cancel_edit))
                         }
                     }
@@ -98,7 +98,7 @@ internal fun ChatBottomBar(
                 if (replyingTo != null) {
                     ReplyPreviewBar(
                         message = replyingTo,
-                        onCancel = { vm.onIntent(ChatIntent.CancelReply) },
+                        onCancel = { onIntent(ChatIntent.CancelReply) },
                     )
                     HorizontalDivider()
                 }
@@ -128,7 +128,7 @@ internal fun ChatBottomBar(
                 ) {
                     MentionSuggestionList(
                         suggestions = mentionSuggestions,
-                        onSelect = { vm.onIntent(ChatIntent.SelectMention(it)) },
+                        onSelect = { onIntent(ChatIntent.SelectMention(it)) },
                     )
                 }
                 val audioState = state.audioState
@@ -136,33 +136,33 @@ internal fun ChatBottomBar(
                     audioState.isRecording -> RecordingBar(
                         durationMs = audioState.recordingDurationMs,
                         amplitudeHistory = audioState.amplitudeHistory,
-                        onStop = { vm.onIntent(ChatIntent.StopRecording) },
+                        onStop = { onIntent(ChatIntent.StopRecording) },
                     )
                     audioState.pendingFilePath != null -> AudioPreviewBar(
                         filePath = audioState.pendingFilePath,
                         amplitudeHistory = audioState.amplitudeHistory,
                         isUploading = audioState.isUploading,
-                        onDiscard = { vm.onIntent(ChatIntent.DiscardAudio) },
-                        onSend = { vm.onIntent(ChatIntent.SendAudio) },
+                        onDiscard = { onIntent(ChatIntent.DiscardAudio) },
+                        onSend = { onIntent(ChatIntent.SendAudio) },
                     )
                     else -> NormalInputBar(
                         inputText = state.inputText,
                         isSending = state.isSending,
                         isUploadingImage = state.mediaUpload.isUploadingFile,
                         mediaUploadProgress = state.mediaUpload.progress,
-                        onTextChange = { vm.onIntent(ChatIntent.InputChanged(it)) },
-                        onSend = { vm.onIntent(ChatIntent.Send) },
+                        onTextChange = { onIntent(ChatIntent.InputChanged(it)) },
+                        onSend = { onIntent(ChatIntent.Send) },
                         onGallery = onGallery,
                         onCamera = onCamera,
                         onMic = onMic,
-                        onSticker = { vm.onIntent(ChatIntent.OpenStickerPicker) },
+                        onSticker = { onIntent(ChatIntent.OpenStickerPicker) },
                         onAttachFile = onAttachFile,
                         onAttachVideo = onAttachVideo,
                         onLocation = onLocation,
                         onContact = onContact,
-                        onSchedule = { vm.onIntent(ChatIntent.OpenScheduleDialog) },
-                        onAi = { vm.onIntent(ChatIntent.OpenAiSheet) },
-                        onCreatePoll = { vm.onIntent(ChatIntent.OpenCreatePollSheet) },
+                        onSchedule = { onIntent(ChatIntent.OpenScheduleDialog) },
+                        onAi = { onIntent(ChatIntent.OpenAiSheet) },
+                        onCreatePoll = { onIntent(ChatIntent.OpenCreatePollSheet) },
                     )
                 }
             }

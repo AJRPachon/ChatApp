@@ -66,7 +66,7 @@ private fun MessageBO.isGroupableImage(): Boolean = imageUrl != null && audioUrl
 @Composable
 internal fun ChatMessageList(
     state: ChatState,
-    vm: ChatViewModel,
+    onIntent: (ChatIntent) -> Unit,
     lazyPagingItems: LazyPagingItems<MessageBO>,
     listState: LazyListState,
     scope: CoroutineScope,
@@ -197,7 +197,7 @@ internal fun ChatMessageList(
                                     viewerInitialIndex.value = idx
                                     showViewer.value = true
                                 },
-                                onReply = { vm.onIntent(ChatIntent.SetReply(group.first())) },
+                                onReply = { onIntent(ChatIntent.SetReply(group.first())) },
                             )
                         } else {
                             MessageBubble(
@@ -208,37 +208,37 @@ internal fun ChatMessageList(
                                     viewerInitialIndex.value = 0
                                     showViewer.value = true
                                 },
-                                onReply = { vm.onIntent(ChatIntent.SetReply(message)) },
+                                onReply = { onIntent(ChatIntent.SetReply(message)) },
                                 isHighlighted = message.id == highlightedMessageId,
                                 onReplyClick = onScrollToMessage,
-                            onStatusQuoteClick = { vm.onIntent(ChatIntent.StatusQuoteClicked(message)) },
-                                onDelete = if (message.isFromMe) {{ vm.onIntent(ChatIntent.DeleteMessage(message.id)) }} else null,
-                                onEdit = if (message.isFromMe && message.content.isNotBlank()) {{ vm.onIntent(ChatIntent.StartEdit(message)) }} else null,
-                                onSelfDestruct = if (message.isFromMe) {{ vm.onIntent(ChatIntent.ShowExpiryDialog(message.id)) }} else null,
+                            onStatusQuoteClick = { onIntent(ChatIntent.StatusQuoteClicked(message)) },
+                                onDelete = if (message.isFromMe) {{ onIntent(ChatIntent.DeleteMessage(message.id)) }} else null,
+                                onEdit = if (message.isFromMe && message.content.isNotBlank()) {{ onIntent(ChatIntent.StartEdit(message)) }} else null,
+                                onSelfDestruct = if (message.isFromMe) {{ onIntent(ChatIntent.ShowExpiryDialog(message.id)) }} else null,
                                 isSelected = message.id in state.selectedMessageIds,
                                 isMultiSelectActive = state.isMultiSelectActive,
-                                onToggleSelect = { vm.onIntent(ChatIntent.ToggleMessageSelection(message.id)) },
-                                onForward = { vm.onIntent(ChatIntent.ShowForwardDialog(message)) },
+                                onToggleSelect = { onIntent(ChatIntent.ToggleMessageSelection(message.id)) },
+                                onForward = { onIntent(ChatIntent.ShowForwardDialog(message)) },
                                 outgoingBubbleColor = chatThemeColors.bubbleColor,
                                 onOpenPdf = onOpenPdf,
-                                onVote = { optionId -> vm.onIntent(ChatIntent.VotePoll(message.content.removePrefix("poll:"), optionId)) },
-                                onRetryMessage = { vm.onIntent(ChatIntent.RetryMessage(it)) },
-                                onCopy = { vm.onIntent(ChatIntent.CopyMessageContent(it)) },
+                                onVote = { optionId -> onIntent(ChatIntent.VotePoll(message.content.removePrefix("poll:"), optionId)) },
+                                onRetryMessage = { onIntent(ChatIntent.RetryMessage(it)) },
+                                onCopy = { onIntent(ChatIntent.CopyMessageContent(it)) },
                                 contactPhoneLookups = contactPhoneOf(message.content)?.let { phone ->
                                     state.contactCard.lookups[phone]?.let { mapOf(phone to it) }
                                 } ?: emptyMap(),
-                                onCheckContactRelationship = { vm.onIntent(ChatIntent.CheckContactRelationship(it)) },
-                                onContactCardPrimaryAction = { vm.onIntent(ChatIntent.ContactCardPrimaryAction(it)) },
+                                onCheckContactRelationship = { onIntent(ChatIntent.CheckContactRelationship(it)) },
+                                onContactCardPrimaryAction = { onIntent(ChatIntent.ContactCardPrimaryAction(it)) },
                                 pollUiStates = pollIdOf(message.content)?.let { id ->
                                     state.poll.uiStates[id]?.let { mapOf(id to it) }
                                 } ?: emptyMap(),
-                                onObservePoll = { pollId -> vm.onIntent(ChatIntent.ObservePoll(pollId)) },
+                                onObservePoll = { pollId -> onIntent(ChatIntent.ObservePoll(pollId)) },
                                 linkPreviews = state.linkPreviews,
-                                onDetectedUrl = { url -> vm.onIntent(ChatIntent.DetectedUrlChanged(url)) },
+                                onDetectedUrl = { url -> onIntent(ChatIntent.DetectedUrlChanged(url)) },
                                 translatedText = state.translation.translatedTexts[message.id],
                                 isTranslating = message.id in state.translation.translatingMessageIds,
-                                onTranslate = { vm.onIntent(ChatIntent.TranslateMessage(message.id, message.content)) },
-                                onDismissTranslation = { vm.onIntent(ChatIntent.DismissTranslation(message.id)) },
+                                onTranslate = { onIntent(ChatIntent.TranslateMessage(message.id, message.content)) },
+                                onDismissTranslation = { onIntent(ChatIntent.DismissTranslation(message.id)) },
                             )
                         }
                     } else {
@@ -250,41 +250,41 @@ internal fun ChatMessageList(
                                 viewerInitialIndex.value = 0
                                 showViewer.value = true
                             },
-                            onReply = { vm.onIntent(ChatIntent.SetReply(message)) },
+                            onReply = { onIntent(ChatIntent.SetReply(message)) },
                             isHighlighted = message.id == highlightedMessageId,
                             onReplyClick = onScrollToMessage,
-                            onStatusQuoteClick = { vm.onIntent(ChatIntent.StatusQuoteClicked(message)) },
-                            onDelete = if (message.isFromMe) {{ vm.onIntent(ChatIntent.DeleteMessage(message.id)) }} else null,
-                            onEdit = if (message.isFromMe && message.content.isNotBlank()) {{ vm.onIntent(ChatIntent.StartEdit(message)) }} else null,
-                            onSelfDestruct = if (message.isFromMe) {{ vm.onIntent(ChatIntent.ShowExpiryDialog(message.id)) }} else null,
-                            onForward = { vm.onIntent(ChatIntent.ShowForwardDialog(message)) },
+                            onStatusQuoteClick = { onIntent(ChatIntent.StatusQuoteClicked(message)) },
+                            onDelete = if (message.isFromMe) {{ onIntent(ChatIntent.DeleteMessage(message.id)) }} else null,
+                            onEdit = if (message.isFromMe && message.content.isNotBlank()) {{ onIntent(ChatIntent.StartEdit(message)) }} else null,
+                            onSelfDestruct = if (message.isFromMe) {{ onIntent(ChatIntent.ShowExpiryDialog(message.id)) }} else null,
+                            onForward = { onIntent(ChatIntent.ShowForwardDialog(message)) },
                             messageReactions = reactions[message.id] ?: emptyList(),
                             currentUserId = state.currentUserId,
-                            onToggleReaction = { emoji -> vm.onIntent(ChatIntent.ToggleReaction(message.id, emoji)) },
+                            onToggleReaction = { emoji -> onIntent(ChatIntent.ToggleReaction(message.id, emoji)) },
                             isSelected = message.id in state.selectedMessageIds,
                             isMultiSelectActive = state.isMultiSelectActive,
-                            onToggleSelect = { vm.onIntent(ChatIntent.ToggleMessageSelection(message.id)) },
+                            onToggleSelect = { onIntent(ChatIntent.ToggleMessageSelection(message.id)) },
                             outgoingBubbleColor = chatThemeColors.bubbleColor,
                             onOpenPdf = onOpenPdf,
-                            onVote = { optionId -> vm.onIntent(ChatIntent.VotePoll(message.content.removePrefix("poll:"), optionId)) },
+                            onVote = { optionId -> onIntent(ChatIntent.VotePoll(message.content.removePrefix("poll:"), optionId)) },
                             onShowReactionDetails = { reactionDetailMessageId.value = message.id },
-                            onRetryMessage = { vm.onIntent(ChatIntent.RetryMessage(it)) },
-                            onCopy = { vm.onIntent(ChatIntent.CopyMessageContent(it)) },
+                            onRetryMessage = { onIntent(ChatIntent.RetryMessage(it)) },
+                            onCopy = { onIntent(ChatIntent.CopyMessageContent(it)) },
                             contactPhoneLookups = contactPhoneOf(message.content)?.let { phone ->
                                 state.contactCard.lookups[phone]?.let { mapOf(phone to it) }
                             } ?: emptyMap(),
-                            onCheckContactRelationship = { vm.onIntent(ChatIntent.CheckContactRelationship(it)) },
-                            onContactCardPrimaryAction = { vm.onIntent(ChatIntent.ContactCardPrimaryAction(it)) },
+                            onCheckContactRelationship = { onIntent(ChatIntent.CheckContactRelationship(it)) },
+                            onContactCardPrimaryAction = { onIntent(ChatIntent.ContactCardPrimaryAction(it)) },
                             pollUiStates = pollIdOf(message.content)?.let { id ->
                                 state.poll.uiStates[id]?.let { mapOf(id to it) }
                             } ?: emptyMap(),
-                            onObservePoll = { pollId -> vm.onIntent(ChatIntent.ObservePoll(pollId)) },
+                            onObservePoll = { pollId -> onIntent(ChatIntent.ObservePoll(pollId)) },
                             linkPreviews = state.linkPreviews,
-                            onDetectedUrl = { url -> vm.onIntent(ChatIntent.DetectedUrlChanged(url)) },
+                            onDetectedUrl = { url -> onIntent(ChatIntent.DetectedUrlChanged(url)) },
                             translatedText = state.translation.translatedTexts[message.id],
                             isTranslating = message.id in state.translation.translatingMessageIds,
-                            onTranslate = { vm.onIntent(ChatIntent.TranslateMessage(message.id, message.content)) },
-                            onDismissTranslation = { vm.onIntent(ChatIntent.DismissTranslation(message.id)) },
+                            onTranslate = { onIntent(ChatIntent.TranslateMessage(message.id, message.content)) },
+                            onDismissTranslation = { onIntent(ChatIntent.DismissTranslation(message.id)) },
                         )
                     }
                 }
@@ -322,9 +322,9 @@ internal fun ChatMessageList(
                 results = state.search.results,
                 isSearching = state.search.isSearching,
                 topPadding = innerPadding.calculateTopPadding(),
-                onQueryChange = { vm.onIntent(ChatIntent.SearchQueryChanged(it)) },
-                onClose = { vm.onIntent(ChatIntent.CloseSearch) },
-                onJump = { vm.onIntent(ChatIntent.JumpToMessage(it)) },
+                onQueryChange = { onIntent(ChatIntent.SearchQueryChanged(it)) },
+                onClose = { onIntent(ChatIntent.CloseSearch) },
+                onJump = { onIntent(ChatIntent.JumpToMessage(it)) },
             )
         }
     }
