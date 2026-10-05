@@ -44,7 +44,6 @@ import androidx.navigation3.ui.NavDisplay
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import com.ajrpachon.chatapp.ui.auth.IntegrityBlockedScreen
 import com.ajrpachon.chatapp.domain.repository.AppLockRepository
-import com.ajrpachon.chatapp.utils.IntegrityChecker
 import com.ajrpachon.chatapp.domain.model.IntegrityResultBO
 import com.ajrpachon.chatapp.ui.call.IncomingCallIntent
 import com.ajrpachon.chatapp.domain.model.isGroupCall
@@ -59,14 +58,13 @@ import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.utils.SessionGuard
 import kotlinx.coroutines.flow.first
 
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.auth.handleDeeplinks
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.lifecycle.lifecycleScope
+import com.ajrpachon.chatapp.data.remote.source.AuthRemoteSource
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
+import com.ajrpachon.chatapp.domain.repository.AuthRepository
 import com.ajrpachon.chatapp.utils.AnalyticsEvents
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -132,7 +130,7 @@ class MainActivity : ComponentActivity() {
         }
         if (pendingConversationId.value != null) logNotificationOpened()
         val getCurrentUser: GetCurrentUserUseCase = get()
-        val supabase: SupabaseClient = get()
+        val authRepository: AuthRepository = get()
         setContent {
             val themeRepository: ThemeRepository = get()
             val themePreference by themeRepository.observe().collectAsState(initial = ThemePreference.SYSTEM)
@@ -149,7 +147,7 @@ class MainActivity : ComponentActivity() {
 
                 // ── 1. Play Integrity gate ──────────────────────────────────
                 val integrityResult by produceState<IntegrityResultBO?>(initialValue = null) {
-                    value = IntegrityChecker.check(this@MainActivity, supabase)
+                    value = authRepository.checkIntegrity()
                 }
 
                 val sessionGuard: SessionGuard = get()
@@ -160,7 +158,7 @@ class MainActivity : ComponentActivity() {
                         sessionGuard.isSessionExpired() -> {
                             // Sign out server-side and clear local guard before routing
                             lifecycleScope.launch(Dispatchers.IO) {
-                                runCatching { get<SupabaseClient>().auth.signOut() }
+                                runCatching { get<AuthRemoteSource>().signOut() }
                                 sessionGuard.clearSession()
                             }
                             AuthRoute
@@ -422,7 +420,7 @@ class MainActivity : ComponentActivity() {
         if (sessionGuard.isSessionExpired()) {
             // Mid-session expiry: sign out and signal the UI to navigate to AuthRoute
             lifecycleScope.launch(Dispatchers.IO) {
-                runCatching { get<SupabaseClient>().auth.signOut() }
+                runCatching { get<AuthRemoteSource>().signOut() }
                 sessionGuard.clearSession()
             }
             sessionExpired.value = true
@@ -447,7 +445,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         val uri = intent.data
         when {
-            uri != null && uri.isValidAuthCallback() -> get<SupabaseClient>().handleDeeplinks(intent)
+            uri != null && uri.isValidAuthCallback() -> get<AuthRemoteSource>().handleAuthDeepLink(intent)
             uri != null && uri.isChatDeepLink() -> {
                 val conversationId = uri.lastPathSegment?.takeIf { UUID_REGEX.matches(it) }
                 val name = uri.getQueryParameter("name")?.take(100)?.ifBlank { null }
