@@ -21,11 +21,18 @@ local.properties
 .kotlin/
 *.log
 
-# Claude Code
+# Claude Code (local config: agents, skills, rules, hooks, settings, worktrees)
 .claude/
 .agents/
 skills-lock.json
 CLAUDE.md
+
+# GitHub Copilot kit (local only; .github/workflows stays versioned)
+.github/copilot-instructions.md
+.github/agents/
+.github/instructions/
+.github/prompts/
+.github/skills/
 
 # Sensitive / Firebase
 google-services.json
@@ -38,8 +45,8 @@ supabase/.temp/
 shared/
 supabase/functions/.env
 
-# Maestro local env (QA credentials, never commit)
-.maestro/.env
+# Maestro E2E flows and local env (QA credentials) — kept local only
+.maestro/
 
 # Release signing (upload keystore, never commit)
 *.jks
