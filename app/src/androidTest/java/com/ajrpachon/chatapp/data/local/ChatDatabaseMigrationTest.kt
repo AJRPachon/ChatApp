@@ -32,6 +32,23 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class ChatDatabaseMigrationTest {
 
+    private companion object {
+        /** From this version on, every DB version has an exported schema in app/schemas/. */
+        const val FIRST_FULLY_EXPORTED_VERSION = 32
+
+        /**
+         * Steps whose result legitimately differs from the next exported schema, and the only thing
+         * in which they differ: `index_broadcast_list_members_listId`. The migrations create it
+         * from v29 (migration28To29), but the schemas exported for v32-v36 were generated before
+         * the entity declared that `@Index` (it appears in 37.json), so 26 -> 32 produces an index
+         * 32.json does not list, and 36 -> 37 does not produce the one 37.json lists. That is the
+         * same version-number reuse that `migrate38To39_selfHealsMissingBroadcastListMembersIndex`
+         * repairs on real installs. The end state is checked by the 1 -> 40 test below.
+         */
+        val KNOWN_INDEX_MISMATCH_STEPS = setOf(26 to 32, 36 to 37)
+        const val KNOWN_INDEX_MISMATCH_TABLE = "broadcast_list_members"
+    }
+
     // Each @Test needs its own on-disk file name: MigrationTestHelper's teardown does not
     // reliably wipe the underlying SQLite file between test methods that share one instrumented
     // process, so two tests pointed at the same file name can leak state across each other
@@ -59,6 +76,58 @@ class ChatDatabaseMigrationTest {
 
     @get:Rule
     val audioAmplitudesHelper = helperFor("chat-migration-test-39-40.db")
+
+    @Test
+    fun migrateBetweenEveryPairOfConsecutiveExportedSchemas() {
+        // The 1 -> 40 test below only says the chain as a whole works. This one replays it in the
+        // smallest steps the exported schemas allow (from each exported version to the next one),
+        // validating each step against that version's own schema, so a failure names the exact
+        // migration that broke instead of just "the chain".
+        //
+        // Not every version has a schema: 13, 14, 22-25 and 27-31 are missing. They cannot be
+        // regenerated from git: the feature branches were merged in two batches (e5d9e30 and
+        // d10e732, jumping 21 -> 26 -> 32) and the version numbers were reused across branches, so
+        // the entities at the commits that say "v13" or "v14" are not the ones the final chain
+        // calls v13 and v14 (isDeleted arrives at a different version). The migrations across a
+        // gap (12 -> 15, 21 -> 26, 26 -> 32) are still replayed together and validated against the
+        // exported schema at the far end.
+        val versions = exportedSchemaVersions()
+        assertEquals("the first exported schema", 1, versions.first())
+        assertEquals("the newest exported schema must be the current DB version", 40, versions.last())
+        val failures = versions.zipWithNext().mapNotNull { (from, to) ->
+            val dbName = "chat-migration-step-$from-$to.db"
+            try {
+                val old = helperFor(dbName).createDatabase(from)
+                old.close()
+                helperFor(dbName).runMigrationsAndValidate(to, allMigrations.toList()).close()
+                null
+            } catch (e: Throwable) {
+                val isKnownIndexMismatch = (from to to) in KNOWN_INDEX_MISMATCH_STEPS &&
+                    e.message.orEmpty().contains(KNOWN_INDEX_MISMATCH_TABLE)
+                if (isKnownIndexMismatch) null else "$from -> $to: ${e.message?.lineSequence()?.firstOrNull { it.isNotBlank() }}"
+            } finally {
+                InstrumentationRegistry.getInstrumentation().targetContext.deleteDatabase(dbName)
+            }
+        }
+        // Report every broken step at once, not just the first.
+        val report = failures.joinToString(separator = "\n", prefix = "migration steps that do not produce the next exported schema:\n")
+        assertTrue(report, failures.isEmpty())
+    }
+
+    @Test
+    fun everyVersionFromFirstFullyExportedToCurrentHasASchema() {
+        // From v32 on every bump has shipped with its schema. Guards that going forward: a new
+        // Migration(X, Y) without the schema export for Y leaves a gap here and fails the test.
+        val versions = exportedSchemaVersions().toSet()
+        val missing = (FIRST_FULLY_EXPORTED_VERSION..versions.max()).filterNot { it in versions }
+        assertTrue("missing exported schemas for versions $missing", missing.isEmpty())
+    }
+
+    private fun exportedSchemaVersions(): List<Int> =
+        InstrumentationRegistry.getInstrumentation().context.assets
+            .list(ChatDatabase::class.qualifiedName!!)!!
+            .mapNotNull { it.removeSuffix(".json").toIntOrNull() }
+            .sorted()
 
     @Test
     fun migrate1To40_realDataSurvivesTheFullChain() {
