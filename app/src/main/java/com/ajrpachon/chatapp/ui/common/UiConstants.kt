@@ -10,7 +10,6 @@ object CallPermissions {
 }
 
 object ChatConstants {
-    const val DRAFT_PREFIX = "Borrador: "
     const val MAX_UNREAD_DISPLAY = 99
     const val MAX_UNREAD_LABEL = "99+"
     const val SCHEDULED_MESSAGE_DELAY_MS = 1500L

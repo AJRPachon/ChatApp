@@ -3,9 +3,12 @@ package com.ajrpachon.chatapp.ui.chat
 import android.app.Application
 import android.media.MediaRecorder
 import android.os.Build
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
+import com.ajrpachon.chatapp.ui.common.UiText
+import com.ajrpachon.chatapp.ui.common.toUiText
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.catchResult
 import java.io.File
@@ -79,7 +82,7 @@ class ChatAudioRecordingDelegate(
         }.onFailure { e ->
             AppLogger.e(TAG, "Recording failed", e)
             catchResult { rec.release() }
-            updateState { it.copy(error = "No se pudo iniciar la grabacion") }
+            updateState { it.copy(error = UiText.StringResource(R.string.chat_error_start_recording)) }
         }
     }
 
@@ -121,7 +124,7 @@ class ChatAudioRecordingDelegate(
                 catchResult { File(filePath).delete() }
                 updateState { it.copy(audioState = AudioState()) }
             }.onFailure { e ->
-                updateState { it.copy(audioState = it.audioState.copy(isUploading = false), error = e.message ?: "Error al enviar el audio") }
+                updateState { it.copy(audioState = it.audioState.copy(isUploading = false), error = e.toUiText(R.string.chat_error_send_audio)) }
             }
         }
     }

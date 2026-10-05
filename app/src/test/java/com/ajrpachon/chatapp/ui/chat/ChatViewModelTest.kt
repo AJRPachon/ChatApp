@@ -45,6 +45,8 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.ui.common.UiText
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -345,7 +347,7 @@ class ChatViewModelTest {
         vm.onIntent(ChatIntent.Send)
         runCurrent()
 
-        assertEquals("Sin conexion. El mensaje se enviara cuando vuelva la red.", vm.state.value.error)
+        assertEquals(UiText.StringResource(R.string.chat_error_offline), vm.state.value.error)
     }
 
     @Test
@@ -358,7 +360,7 @@ class ChatViewModelTest {
         vm.onIntent(ChatIntent.InputChanged("msg"))
         vm.onIntent(ChatIntent.Send)
         runCurrent()
-        assertEquals("Sin conexion. El mensaje se enviara cuando vuelva la red.", vm.state.value.error)
+        assertEquals(UiText.StringResource(R.string.chat_error_offline), vm.state.value.error)
 
         vm.onIntent(ChatIntent.DismissError)
         assertNull(vm.state.value.error)

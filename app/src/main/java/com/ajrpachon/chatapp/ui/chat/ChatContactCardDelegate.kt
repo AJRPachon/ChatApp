@@ -1,9 +1,11 @@
 package com.ajrpachon.chatapp.ui.chat
 
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.UserRelationship
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationResult
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationUseCase
+import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.catchResult
 import kotlinx.coroutines.CoroutineScope
@@ -49,7 +51,7 @@ class ChatContactCardDelegate(
         val lookup = getState().contactCard.lookups[phone]
         val resolvedUser = lookup?.resolvedUser
         if (resolvedUser == null) {
-            val text = "¡Únete a ChatApp y hablamos! 💬"
+            val text = UiText.StringResource(R.string.chat_invite_share_text)
             scope.launch { sendEffect(ChatEffect.InviteContact(phone, text)) }
             return
         }
@@ -59,19 +61,19 @@ class ChatContactCardDelegate(
                     updateState {
                         it.copy(contactCard = it.contactCard.copy(lookups = it.contactCard.lookups + (phone to lookup.copy(relationship = UserRelationship.PENDING_SENT))))
                     }
-                    sendEffect(ChatEffect.ShowSnackbar("¡Invitación enviada!"))
+                    sendEffect(ChatEffect.ShowSnackbar(UiText.StringResource(R.string.chat_invitation_sent)))
                 }
                 is SendInvitationResult.AlreadySent -> {
                     updateState {
                         it.copy(contactCard = it.contactCard.copy(lookups = it.contactCard.lookups + (phone to lookup.copy(relationship = UserRelationship.PENDING_SENT))))
                     }
-                    sendEffect(ChatEffect.ShowSnackbar("Invitación enviada · Pendiente de respuesta"))
+                    sendEffect(ChatEffect.ShowSnackbar(UiText.StringResource(R.string.chat_invitation_pending)))
                 }
                 is SendInvitationResult.PendingReceived -> {
                     updateState {
                         it.copy(contactCard = it.contactCard.copy(lookups = it.contactCard.lookups + (phone to lookup.copy(relationship = UserRelationship.PENDING_RECEIVED))))
                     }
-                    sendEffect(ChatEffect.ShowSnackbar("Ya tienes una invitación pendiente de esta persona"))
+                    sendEffect(ChatEffect.ShowSnackbar(UiText.StringResource(R.string.chat_invitation_already_pending)))
                 }
                 is SendInvitationResult.NavigateToChat -> {
                     updateState {
@@ -83,11 +85,13 @@ class ChatContactCardDelegate(
                     updateState {
                         it.copy(contactCard = it.contactCard.copy(lookups = it.contactCard.lookups + (phone to lookup.copy(relationship = UserRelationship.BLOCKED))))
                     }
-                    sendEffect(ChatEffect.ShowSnackbar("No puedes enviar una invitación a este contacto"))
+                    sendEffect(ChatEffect.ShowSnackbar(UiText.StringResource(R.string.chat_cannot_invite_contact)))
                 }
+                is SendInvitationResult.NotAuthenticated ->
+                    sendEffect(ChatEffect.ShowSnackbar(UiText.StringResource(R.string.error_not_signed_in)))
                 is SendInvitationResult.Failure -> {
                     AppLogger.e(TAG, "contactCardPrimaryAction failed: ${result.message}")
-                    sendEffect(ChatEffect.ShowSnackbar(result.message))
+                    sendEffect(ChatEffect.ShowSnackbar(result.message?.let(UiText::Dynamic) ?: UiText.StringResource(R.string.error_generic)))
                 }
             }
         }

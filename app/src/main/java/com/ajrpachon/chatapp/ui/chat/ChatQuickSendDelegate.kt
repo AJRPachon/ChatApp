@@ -4,10 +4,13 @@ import android.annotation.SuppressLint
 import android.app.Application
 import android.location.LocationManager
 import android.net.Uri
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.LocationMessageFormat
 import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
 import com.ajrpachon.chatapp.domain.repository.ContactRepository
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
+import com.ajrpachon.chatapp.ui.common.UiText
+import com.ajrpachon.chatapp.ui.common.toUiText
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.catchResult
 import kotlinx.coroutines.CoroutineScope
@@ -45,7 +48,7 @@ class ChatQuickSendDelegate(
                     conversationId = conversationId, senderId = userId, content = "", gifUrl = url,
                     replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
                 ),
-            ).onFailure { e -> updateState { it.copy(error = e.message ?: "Error al enviar el GIF") } }
+            ).onFailure { e -> updateState { it.copy(error = e.toUiText(R.string.chat_error_send_gif)) } }
         }
     }
 
@@ -60,7 +63,7 @@ class ChatQuickSendDelegate(
                     conversationId = conversationId, senderId = userId, content = "", stickerUrl = emoji,
                     replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
                 ),
-            ).onFailure { e -> updateState { it.copy(error = e.message ?: "Error al enviar el sticker") } }
+            ).onFailure { e -> updateState { it.copy(error = e.toUiText(R.string.chat_error_send_sticker)) } }
         }
     }
 
@@ -76,7 +79,7 @@ class ChatQuickSendDelegate(
                     conversationId = conversationId, senderId = userId, content = content,
                     replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
                 ),
-            ).onFailure { e -> AppLogger.e(TAG, "sendContact failed", e); updateState { it.copy(error = e.message ?: "Error al enviar el contacto") } }
+            ).onFailure { e -> AppLogger.e(TAG, "sendContact failed", e); updateState { it.copy(error = e.toUiText(R.string.chat_error_send_contact)) } }
         }
     }
 
@@ -89,7 +92,7 @@ class ChatQuickSendDelegate(
                 }
             }.onFailure { e ->
                 AppLogger.e(TAG, "handleContactSelected failed", e)
-                updateState { it.copy(error = "No se pudo leer el contacto") }
+                updateState { it.copy(error = UiText.StringResource(R.string.chat_error_read_contact)) }
             }
         }
     }
@@ -105,7 +108,7 @@ class ChatQuickSendDelegate(
             val url = "https://maps.google.com/?q=${location.latitude},${location.longitude}"
             sendLocationMessage(url)
         } else {
-            scope.launch { sendEffect(ChatEffect.ShowSnackbar("No se pudo obtener la ubicacion")) }
+            scope.launch { sendEffect(ChatEffect.ShowSnackbar(UiText.StringResource(R.string.chat_error_location))) }
         }
     }
 
@@ -120,7 +123,7 @@ class ChatQuickSendDelegate(
                     conversationId = conversationId, senderId = userId, content = LocationMessageFormat.format(mapsUrl),
                     replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
                 ),
-            ).onFailure { e -> updateState { it.copy(error = e.message ?: "Error") } }
+            ).onFailure { e -> updateState { it.copy(error = e.toUiText()) } }
         }
     }
 }
