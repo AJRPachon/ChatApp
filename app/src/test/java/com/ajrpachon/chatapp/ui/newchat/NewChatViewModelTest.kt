@@ -9,7 +9,6 @@ import com.ajrpachon.chatapp.domain.usecase.GetDeviceContactsUseCase
 import com.ajrpachon.chatapp.domain.usecase.SearchUsersUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationResult
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationUseCase
-import android.app.Application
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import com.ajrpachon.chatapp.utils.ClipboardProtection
 import com.ajrpachon.chatapp.utils.ContactSyncManager
@@ -41,7 +40,6 @@ class NewChatViewModelTest {
     private val userRepository = mockk<UserRepository>(relaxed = true)
     private val contactSyncManager = mockk<ContactSyncManager>(relaxed = true)
     private val getDeviceContactsUseCase = mockk<GetDeviceContactsUseCase>(relaxed = true)
-    private val application = mockk<Application>(relaxed = true)
     private val clipboardProtection = mockk<ClipboardProtection>(relaxed = true)
 
     private val testUser = UserBO(
@@ -73,7 +71,6 @@ class NewChatViewModelTest {
     }
 
     private fun buildViewModel() = NewChatViewModel(
-        application = application,
         clipboardProtection = clipboardProtection,
         getCurrentUserUseCase = getCurrentUserUseCase,
         searchUsersUseCase = searchUsersUseCase,
@@ -103,6 +100,32 @@ class NewChatViewModelTest {
         advanceUntilIdle()
         // testUser (self) is filtered out; only otherUser appears
         assertEquals(listOf(otherUser), vm.state.value.appUsers)
+    }
+
+    @Test
+    fun `InviteContact hands the phone number and the invitation text to the screen`() = runTest(mainDispatcherRule.scheduler) {
+        val vm = buildViewModel()
+        advanceUntilIdle()
+
+        vm.onIntent(NewChatIntent.InviteContact(phoneNumber = "+34600111222", username = "ana"))
+
+        val effect = vm.effect.first()
+        assertTrue(effect is NewChatEffect.InviteContact)
+        effect as NewChatEffect.InviteContact
+        assertEquals("+34600111222", effect.phoneNumber)
+        assertTrue(effect.text.contains("@ana"))
+    }
+
+    @Test
+    fun `ShareInviteText emits the invitation text as a ShareText effect`() = runTest(mainDispatcherRule.scheduler) {
+        val vm = buildViewModel()
+        advanceUntilIdle()
+
+        vm.onIntent(NewChatIntent.ShareInviteText(username = "ana"))
+
+        val effect = vm.effect.first()
+        assertTrue(effect is NewChatEffect.ShareText)
+        assertTrue((effect as NewChatEffect.ShareText).text.contains("@ana"))
     }
 
     @Test
