@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.ui.components
+package com.ajrpachon.chatapp.ui.emoji
 
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.domain.repository.EmojiRepository

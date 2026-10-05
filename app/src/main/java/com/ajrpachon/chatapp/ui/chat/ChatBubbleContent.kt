@@ -69,7 +69,7 @@ import com.ajrpachon.chatapp.domain.model.LocationMessageFormat
 import com.ajrpachon.chatapp.domain.model.MediaUrlValidator
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.SendStatus
-import com.ajrpachon.chatapp.ui.components.EmojiPickerBottomSheet
+import com.ajrpachon.chatapp.ui.emoji.EmojiPickerBottomSheet
 import com.ajrpachon.chatapp.utils.LinkPreviewData
 
 /**
