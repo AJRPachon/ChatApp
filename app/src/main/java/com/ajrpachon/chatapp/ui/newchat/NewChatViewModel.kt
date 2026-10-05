@@ -1,9 +1,6 @@
 package com.ajrpachon.chatapp.ui.newchat
 import com.ajrpachon.chatapp.utils.catchResult
 
-import android.app.Application
-import android.content.Intent
-import android.net.Uri
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.model.UserRelationship
@@ -29,7 +26,6 @@ import kotlinx.coroutines.launch
 // LongParameterList: constructor injection via Koin, one parameter per distinct collaborator.
 @Suppress("LongParameterList")
 class NewChatViewModel(
-    private val application: Application,
     private val clipboardProtection: ClipboardProtection,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val searchUsersUseCase: SearchUsersUseCase,
@@ -92,14 +88,9 @@ class NewChatViewModel(
             }
             is NewChatIntent.InviteContact -> {
                 val text = "¡Únete a ChatApp! Búscame como @${intent.username} y hablamos 💬"
-                val smsIntent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:${intent.phoneNumber}"))
-                @Suppress("DEPRECATION")
-                val canSendSms = application.packageManager.resolveActivity(smsIntent, 0) != null
-                if (canSendSms) {
-                    sendEffect(NewChatEffect.InviteContact(intent.phoneNumber, text))
-                } else {
-                    sendEffect(NewChatEffect.ShareText(text))
-                }
+                // The screen decides how to deliver it: SMS if the device can send one, the
+                // share sheet otherwise. That needs the package manager, which a ViewModel must not hold.
+                sendEffect(NewChatEffect.InviteContact(intent.phoneNumber, text))
             }
         }
     }

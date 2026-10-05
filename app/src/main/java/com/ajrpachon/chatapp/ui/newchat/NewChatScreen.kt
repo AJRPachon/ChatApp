@@ -94,24 +94,31 @@ fun NewChatScreen(
     val qrNotRecognizedText = stringResource(R.string.newchat_qr_not_recognized)
     val scanQrPromptText = stringResource(R.string.newchat_scan_qr_prompt)
 
+    val shareText: (String) -> Unit = { text ->
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, text)
+        }
+        context.startActivity(Intent.createChooser(shareIntent, shareInvitationTitle))
+    }
+
     LaunchedEffect(Unit) {
         vm.effect.collect { effect ->
             when (effect) {
                 is NewChatEffect.NavigateToChat -> onOpenConversation(effect.conversationId, effect.otherUserName)
                 is NewChatEffect.NavigateToInvitations -> onOpenInvitations()
                 is NewChatEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.text)
-                is NewChatEffect.ShareText -> {
-                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, effect.text)
-                    }
-                    context.startActivity(Intent.createChooser(shareIntent, shareInvitationTitle))
-                }
+                is NewChatEffect.ShareText -> shareText(effect.text)
                 is NewChatEffect.InviteContact -> {
                     val smsIntent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:${effect.phoneNumber}")).apply {
                         putExtra("sms_body", effect.text)
                     }
-                    context.startActivity(smsIntent)
+                    // Fall back to the share sheet on devices with no SMS app
+                    if (smsIntent.resolveActivity(context.packageManager) != null) {
+                        context.startActivity(smsIntent)
+                    } else {
+                        shareText(effect.text)
+                    }
                 }
             }
         }
