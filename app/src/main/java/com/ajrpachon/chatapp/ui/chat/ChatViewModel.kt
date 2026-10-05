@@ -64,6 +64,8 @@ import java.util.concurrent.TimeUnit
 
 data class ChatArgs(val conversationId: String, val otherUserName: String)
 
+// LongParameterList: constructor injection of every collaborator Koin provides, one parameter per dependency.
+// TooManyFunctions: the handlers behind onIntent. Feature-specific logic already lives in the Chat*Delegate classes.
 @Suppress("LongParameterList", "TooManyFunctions")
 class ChatViewModel(
     args: ChatArgs,
@@ -372,6 +374,8 @@ class ChatViewModel(
         }
     }
 
+    // CyclomaticComplexMethod: pure dispatch, one `when` branch per ChatIntent delegating to a delegate or a private
+    // function. Complexity grows with the number of intents, not with logic. (Its LongMethod entry is in detekt-baseline.xml.)
     @Suppress("CyclomaticComplexMethod")
     fun onIntent(intent: ChatIntent) {
         when (intent) {

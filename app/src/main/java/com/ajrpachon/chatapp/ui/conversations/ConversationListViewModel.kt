@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 
+// LongParameterList: constructor injection via Koin, one parameter per distinct collaborator.
 @Suppress("LongParameterList")
 class ConversationListViewModel(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
