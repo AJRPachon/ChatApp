@@ -21,12 +21,19 @@ import kotlinx.coroutines.launch
 import java.security.MessageDigest
 import java.util.UUID
 
+/**
+ * The OAuth web client ID Google Sign-In needs. A wrapper around the `BuildConfig` string so Koin can
+ * inject it into [AuthViewModel] by type (a bare `String` would be ambiguous), which keeps
+ * `viewModelOf` usable.
+ */
+data class GoogleSignInConfig(val webClientId: String)
+
 class AuthViewModel(
     private val credentialManager: CredentialManager,
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
     private val setUsernameUseCase: SetUsernameUseCase,
-    private val googleWebClientId: String,
+    private val googleSignInConfig: GoogleSignInConfig,
     private val fcmTokenRepository: FcmTokenRepository,
     private val sessionGuard: SessionGuard,
 ) : BaseViewModel<AuthState, AuthEffect>(AuthState()) {
@@ -93,7 +100,7 @@ class AuthViewModel(
                     .addCredentialOption(
                         GetGoogleIdOption.Builder()
                             .setFilterByAuthorizedAccounts(false)
-                            .setServerClientId(googleWebClientId)
+                            .setServerClientId(googleSignInConfig.webClientId)
                             .setNonce(hashedNonce)
                             .build()
                     ).build()
@@ -103,7 +110,7 @@ class AuthViewModel(
                 catchResult {
                     val request = GetCredentialRequest.Builder()
                         .addCredentialOption(
-                            GetSignInWithGoogleOption.Builder(googleWebClientId)
+                            GetSignInWithGoogleOption.Builder(googleSignInConfig.webClientId)
                                 .setNonce(hashedNonce)
                                 .build()
                         ).build()
