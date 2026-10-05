@@ -29,6 +29,7 @@ import com.ajrpachon.chatapp.domain.repository.ThemeRepository
 import com.ajrpachon.chatapp.domain.repository.WallpaperRepository
 import com.ajrpachon.chatapp.ui.applock.AppLockViewModel
 import com.ajrpachon.chatapp.ui.auth.AuthViewModel
+import com.ajrpachon.chatapp.ui.auth.GoogleSignInConfig
 import com.ajrpachon.chatapp.ui.call.CallArgs
 import com.ajrpachon.chatapp.ui.call.CallViewModel
 import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
@@ -52,6 +53,7 @@ import com.ajrpachon.chatapp.ui.pdf.PdfViewerViewModel
 import com.ajrpachon.chatapp.ui.search.GlobalSearchViewModel
 import com.ajrpachon.chatapp.ui.status.StatusViewModel
 import com.ajrpachon.chatapp.service.PresenceManager
+import com.ajrpachon.chatapp.utils.AppDispatchers
 import com.ajrpachon.chatapp.utils.AudioTranscriber
 import com.ajrpachon.chatapp.utils.ClipboardProtection
 import com.ajrpachon.chatapp.utils.ContactSyncManager
@@ -69,7 +71,6 @@ import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.realtime.Realtime
 import io.github.jan.supabase.storage.Storage
 import io.ktor.client.engine.okhttp.OkHttp
-import kotlinx.coroutines.Dispatchers
 import android.app.NotificationManager
 import android.content.Context
 import androidx.credentials.CredentialManager
@@ -127,15 +128,17 @@ val networkModule = module {
 }
 
 val viewModelModule = module {
-    // BuildConfig values not injectable — kept as lambda
-    viewModel { AuthViewModel(get(), get(), get(), get(), BuildConfig.GOOGLE_WEB_CLIENT_ID, get(), get()) }
+    // Wrappers so viewModelOf can resolve them by type: a BuildConfig string and the coroutine dispatchers.
+    single { GoogleSignInConfig(BuildConfig.GOOGLE_WEB_CLIENT_ID) }
+    single { AppDispatchers() }
+
+    viewModelOf(::AuthViewModel)
 
     viewModelOf(::AppLockViewModel)
     viewModelOf(::ConversationListViewModel)
     viewModelOf(::InvitationsViewModel)
     viewModelOf(::NewChatViewModel)
-    // ProfileViewModel: defaultDispatcher has no Koin binding — kept as lambda
-    viewModel { ProfileViewModel(get(), get(), get(), get(), get(), get(), get(), Dispatchers.Default) }
+    viewModelOf(::ProfileViewModel)
     viewModelOf(::IncomingCallViewModel)
     viewModelOf(::CreateGroupViewModel)
     viewModelOf(::StickerPackViewModel)

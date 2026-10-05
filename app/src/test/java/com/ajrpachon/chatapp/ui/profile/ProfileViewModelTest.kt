@@ -10,6 +10,7 @@ import com.ajrpachon.chatapp.domain.repository.ThemeRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.util.MainDispatcherRule
+import com.ajrpachon.chatapp.utils.AppDispatchers
 import io.github.jan.supabase.exceptions.RestException
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -69,7 +70,7 @@ class ProfileViewModelTest {
         analyticsTracker = analyticsTracker,
         // Shares the rule's scheduler so the QR-bitmap withContext() hop in init{} is
         // driven by advanceUntilIdle() instead of leaking onto a real background thread.
-        defaultDispatcher = mainDispatcherRule.testDispatcher,
+        dispatchers = AppDispatchers(mainDispatcherRule.testDispatcher),
     )
 
     private fun restException(statusCode: Int, message: String? = null): RestException {

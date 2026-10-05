@@ -11,18 +11,19 @@ import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import com.ajrpachon.chatapp.utils.AnalyticsEvents
+import com.ajrpachon.chatapp.utils.AppDispatchers
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.UploadLimits.checkAvatarSize
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import qrcode.QRCode
 
+// LongParameterList: constructor injection via Koin, one parameter per distinct collaborator.
+@Suppress("LongParameterList")
 class ProfileViewModel(
     private val authRepository: AuthRepository,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
@@ -31,9 +32,7 @@ class ProfileViewModel(
     private val themeRepository: ThemeRepository,
     private val appLockRepository: AppLockRepository,
     private val analyticsTracker: AnalyticsTracker,
-    // Not Koin-injectable (no CoroutineDispatcher binding registered) — passed explicitly
-    // from AppModule's lambda so tests can supply a TestDispatcher instead of a real one.
-    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val dispatchers: AppDispatchers,
 ) : BaseViewModel<ProfileState, ProfileEffect>(ProfileState()) {
 
     init {
@@ -290,7 +289,7 @@ class ProfileViewModel(
     }
 
     private suspend fun generateQrBitmap(userId: String) {
-        val bitmap = withContext(defaultDispatcher) {
+        val bitmap = withContext(dispatchers.default) {
             runCatching {
                 val content = "chatapp://user/$userId"
                 val rendered = QRCode(content).render()

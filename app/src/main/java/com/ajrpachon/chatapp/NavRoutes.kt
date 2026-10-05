@@ -11,6 +11,7 @@ import com.ajrpachon.chatapp.domain.model.isGroupCall
 import com.ajrpachon.chatapp.ui.call.CallScreen
 import com.ajrpachon.chatapp.ui.chat.ChatMediaGalleryScreen
 import com.ajrpachon.chatapp.ui.chat.ChatScreen
+import com.ajrpachon.chatapp.ui.common.dropUnlessResumed
 import com.ajrpachon.chatapp.ui.conversations.ConversationListScreen
 import com.ajrpachon.chatapp.ui.group.CreateGroupScreen
 import com.ajrpachon.chatapp.ui.group.GroupInfoScreen
@@ -73,6 +74,13 @@ import kotlinx.serialization.Serializable
 
 /** NavEntry providers grouped by feature area. Each returns a [NavEntry] or null. */
 
+// Guarding with dropUnlessResumed: only callbacks triggered directly by a user tap are wrapped
+// (a double-tap during the transition would otherwise push the same route twice). Callbacks fired
+// from a ViewModel Effect (onStartCall, onNavigateToConversation, onGroupCreated, onCallEnded and the
+// NavigateToChat / NavigateToStatusViewer ones) are deliberately left unguarded: if the screen is paused
+// when the result of a network call arrives (app in the background, say), guarding would drop the
+// navigation for good. See ui/common/DropUnlessResumed.kt.
+
 fun mainNavEntry(
     key: NavKey,
     backStack: MutableList<NavKey>,
@@ -114,7 +122,7 @@ fun mainNavEntry(
             onGoToGlobalSearch = dropUnlessResumed {
                 backStack.add(GlobalSearchRoute)
             },
-            onOpenStatusViewer = { userId ->
+            onOpenStatusViewer = dropUnlessResumed { userId ->
                 backStack.add(StatusViewerRoute(userId))
             },
         )
@@ -154,10 +162,10 @@ fun chatNavEntry(
                     )
                 )
             },
-            onUserInfo = { userId ->
+            onUserInfo = dropUnlessResumed { userId ->
                 backStack.add(UserInfoRoute(userId))
             },
-            onOpenPdf = { url, filename ->
+            onOpenPdf = dropUnlessResumed { url, filename ->
                 backStack.add(PdfViewerRoute(url, filename))
             },
             onOpenMediaGallery = dropUnlessResumed {
@@ -316,7 +324,7 @@ fun miscNavEntry(
     is GlobalSearchRoute -> NavEntry(key) {
         GlobalSearchScreen(
             onBack = dropUnlessResumed { backStack.removeLastOrNull() },
-            onOpenConversation = { id, name, isGroup, messageId ->
+            onOpenConversation = dropUnlessResumed { id, name, isGroup, messageId ->
                 backStack.removeAll { it is GlobalSearchRoute }
                 backStack.add(ChatRoute(id, name, isGroup, highlightMessageId = messageId))
             },
