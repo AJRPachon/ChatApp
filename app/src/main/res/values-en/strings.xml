@@ -44,6 +44,8 @@
     <string name="chat_editing_message">Editing message</string>
     <string name="chat_cancel_edit">Cancel edit</string>
     <string name="chat_typing_single">%1$s is typing…</string>
+    <string name="chat_mention_click_label">Mention</string>
+    <string name="chat_mention_username">@%1$s</string>
     <string name="chat_typing_multiple">%1$s are typing…</string>
     <string name="chat_scroll_to_bottom">Scroll to bottom</string>
 

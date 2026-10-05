@@ -50,6 +50,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -506,6 +507,65 @@ class ChatViewModelTest {
         runCurrent()
 
         assertEquals(preview, vm.state.value.linkPreviews["https://example.com"])
+    }
+
+    // ── @mentions ─────────────────────────────────────────────────────────────
+
+    @Test
+    fun `typing an at-query in a group suggests matching members except the current user`() = chatViewModelTest {
+        val vm = buildViewModel()
+        runCurrent()
+        membersFlow.value = listOf(member("user1"), member("ana"), member("andres"), member("bea"))
+        runCurrent()
+
+        vm.onIntent(ChatIntent.InputChanged("hola @an"))
+        runCurrent()
+
+        assertEquals(listOf("ana", "andres"), vm.state.value.mentionSuggestions.map { it.username })
+    }
+
+    @Test
+    fun `bare at-sign suggests every other member`() = chatViewModelTest {
+        val vm = buildViewModel()
+        runCurrent()
+        membersFlow.value = listOf(member("user1"), member("ana"), member("bea"))
+        runCurrent()
+
+        vm.onIntent(ChatIntent.InputChanged("@"))
+        runCurrent()
+
+        assertEquals(listOf("ana", "bea"), vm.state.value.mentionSuggestions.map { it.username })
+    }
+
+    @Test
+    fun `SelectMention completes the at-query, persists the draft and clears suggestions`() = chatViewModelTest {
+        val vm = buildViewModel()
+        runCurrent()
+        membersFlow.value = listOf(member("user1"), member("ana"))
+        runCurrent()
+        vm.onIntent(ChatIntent.InputChanged("hola @an"))
+        runCurrent()
+
+        vm.onIntent(ChatIntent.SelectMention(member("ana")))
+        advanceTimeBy(600)
+        runCurrent()
+
+        assertEquals("hola @ana ", vm.state.value.inputText)
+        assertTrue(vm.state.value.mentionSuggestions.isEmpty())
+        coVerify { draftRepository.saveDraft("conv1", "hola @ana ") }
+    }
+
+    @Test
+    fun `no mention suggestions in one-to-one chats`() = chatViewModelTest {
+        coEvery { conversationRepository.getById(any()) } returns dmConvBO
+        every { conversationRepository.observeById(any()) } returns flowOf(dmConvBO)
+        val vm = buildViewModel("conv2")
+        runCurrent()
+
+        vm.onIntent(ChatIntent.InputChanged("@us"))
+        runCurrent()
+
+        assertTrue(vm.state.value.mentionSuggestions.isEmpty())
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

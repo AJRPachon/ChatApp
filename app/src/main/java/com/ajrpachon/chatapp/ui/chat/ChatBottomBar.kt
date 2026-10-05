@@ -35,7 +35,8 @@ import com.ajrpachon.chatapp.ui.components.OfflineBanner
 
 /**
  * [ChatScreen]'s `Scaffold.bottomBar`: the offline banner, editing/reply preview strips, the
- * typing indicator, and the recording/audio-preview/normal-input switch. Extracted per
+ * typing indicator, the group `@mention` suggestions, and the recording/audio-preview/normal-input
+ * switch. Extracted per
  * docs/chat-viewmodel-decomposition.md Phase 2.
  *
  * The attachment-picker callbacks ([onGallery]/[onCamera]/[onMic]/[onAttachFile]/
@@ -117,6 +118,17 @@ internal fun ChatBottomBar(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
+                    )
+                }
+                val mentionSuggestions = state.mentionSuggestions
+                AnimatedVisibility(
+                    visible = mentionSuggestions.isNotEmpty(),
+                    enter = fadeIn(),
+                    exit = fadeOut(),
+                ) {
+                    MentionSuggestionList(
+                        suggestions = mentionSuggestions,
+                        onSelect = { vm.onIntent(ChatIntent.SelectMention(it)) },
                     )
                 }
                 val audioState = state.audioState

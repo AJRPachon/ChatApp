@@ -56,6 +56,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -68,6 +71,25 @@ import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.SendStatus
 import com.ajrpachon.chatapp.ui.components.EmojiPickerBottomSheet
 import com.ajrpachon.chatapp.utils.LinkPreviewData
+
+/**
+ * [text] with every `@username` mention (see [ChatMentions.mentionRanges]) in semibold. Weight
+ * only, deliberately no color: a custom chat theme's bubble color is arbitrary (see
+ * ChatThemeColors.bubbleContentColor()), so a fixed accent like `colorScheme.primary` could end
+ * up unreadable on it, while the bubble's own content color is already guaranteed to contrast.
+ */
+@Composable
+private fun rememberMentionHighlighted(text: String): AnnotatedString = remember(text) {
+    val ranges = ChatMentions.mentionRanges(text)
+    if (ranges.isEmpty()) {
+        AnnotatedString(text)
+    } else {
+        buildAnnotatedString {
+            append(text)
+            ranges.forEach { addStyle(SpanStyle(fontWeight = FontWeight.SemiBold), it.first, it.last + 1) }
+        }
+    }
+}
 
 // ── Shared bubble content ────────────────────────────────────────────────────
 // Extracted per docs/chat-viewmodel-decomposition.md Phase 2 — part of the message-bubble
@@ -130,7 +152,7 @@ internal fun MessageFooterContent(
             ),
         ) {
             if (locationUrl == null) {
-                Text(text = message.content, style = MaterialTheme.typography.bodyMedium)
+                Text(text = rememberMentionHighlighted(message.content), style = MaterialTheme.typography.bodyMedium)
             }
             DropdownMenu(expanded = showMsgMenu, onDismissRequest = { showMsgMenu = false }) {
                 DropdownMenuItem(

@@ -19,8 +19,9 @@ private const val ONLINE_STATUS_REFRESH_INTERVAL_MS = 15_000L
 
 /**
  * Handles group-conversation presence: polling membership sync, observing the live member list
- * and each member's online status (for [ChatGroupPresenceUiState]'s `onlineMemberCount`/
- * `memberCount`), and reacting when the current user joins or leaves the group.
+ * (exposed as [ChatGroupPresenceUiState.members], the source for `@mention` autocomplete) and
+ * each member's online status (for `onlineMemberCount`/`memberCount`), and reacting when the
+ * current user joins or leaves the group.
  *
  * Row 9 of docs/chat-viewmodel-decomposition.md — deliberately last and separately designed
  * (unlike delegates 1-8c). Two things keep this from being a mechanical move:
@@ -76,7 +77,12 @@ class ChatGroupPresenceDelegate(
             catchResult {
                 getGroupMembersUseCase(conversationId).collect { members ->
                     val isMember = members.any { it.userId == uid }
-                    updateState { it.copy(isCurrentUserMember = isMember, groupPresence = it.groupPresence.copy(memberCount = members.size)) }
+                    updateState {
+                        it.copy(
+                            isCurrentUserMember = isMember,
+                            groupPresence = it.groupPresence.copy(memberCount = members.size, members = members),
+                        )
+                    }
                     memberObserveJob?.cancel()
                     memberObserveJob = launch {
                         memberOnlineStatuses.value = emptyMap()

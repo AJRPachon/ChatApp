@@ -375,21 +375,8 @@ class ChatViewModel(
     @Suppress("CyclomaticComplexMethod")
     fun onIntent(intent: ChatIntent) {
         when (intent) {
-            is ChatIntent.InputChanged -> {
-                updateState { it.copy(inputText = intent.text) }
-                draftSaveJob?.cancel()
-                draftSaveJob = viewModelScope.launch {
-                    delay(500)
-                    draftRepository.saveDraft(conversationId, intent.text)
-                }
-                if (intent.text.isNotEmpty()) {
-                    sendTypingPresence(true)
-                    typingResetJob?.cancel()
-                    typingResetJob = viewModelScope.launch { delay(3_000); sendTypingPresence(false) }
-                } else {
-                    typingResetJob?.cancel(); sendTypingPresence(false)
-                }
-            }
+            is ChatIntent.InputChanged -> onInputChanged(intent.text)
+            is ChatIntent.SelectMention -> onInputChanged(ChatMentions.insert(state.value.inputText, intent.member.username))
             is ChatIntent.Send -> if (state.value.editingMessage != null) confirmEdit() else sendMessage()
             is ChatIntent.SendImages -> mediaUploadDelegate.sendImages(intent.uris)
             is ChatIntent.SendFile -> mediaUploadDelegate.sendFile(intent.uri)
@@ -504,6 +491,28 @@ class ChatViewModel(
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
             .build()
         workManager.enqueueUniqueWork(MessageRetryWorker.WORK_NAME, ExistingWorkPolicy.KEEP, request)
+    }
+
+    /**
+     * Single path for every input-text change — typed (`InputChanged`) or produced by picking an
+     * `@mention` suggestion (`SelectMention`) — so both persist the draft and update typing
+     * presence the same way. Mention suggestions need no handling here: they're derived from
+     * `inputText` (see [ChatState.mentionSuggestions]).
+     */
+    private fun onInputChanged(text: String) {
+        updateState { it.copy(inputText = text) }
+        draftSaveJob?.cancel()
+        draftSaveJob = viewModelScope.launch {
+            delay(500)
+            draftRepository.saveDraft(conversationId, text)
+        }
+        if (text.isNotEmpty()) {
+            sendTypingPresence(true)
+            typingResetJob?.cancel()
+            typingResetJob = viewModelScope.launch { delay(3_000); sendTypingPresence(false) }
+        } else {
+            typingResetJob?.cancel(); sendTypingPresence(false)
+        }
     }
 
     private fun setExpiry(messageId: String, expiresAt: Long?) {
