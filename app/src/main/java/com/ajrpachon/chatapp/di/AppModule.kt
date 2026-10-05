@@ -76,6 +76,7 @@ import android.content.Context
 import androidx.credentials.CredentialManager
 import androidx.work.WorkManager
 import com.ajrpachon.chatapp.ui.auth.GoogleCredentialFetcher
+import com.ajrpachon.chatapp.ui.call.LiveKitRoomFactory
 import okhttp3.OkHttpClient
 import org.koin.android.ext.koin.androidApplication
 import org.koin.android.ext.koin.androidContext
@@ -133,6 +134,7 @@ val viewModelModule = module {
     single { GoogleSignInConfig(BuildConfig.GOOGLE_WEB_CLIENT_ID) }
     single { AppDispatchers() }
     factory { GoogleCredentialFetcher(get(), get()) }
+    factory { LiveKitRoomFactory(androidApplication()) }
 
     viewModelOf(::AuthViewModel)
 
@@ -197,7 +199,7 @@ val viewModelModule = module {
     viewModel { params ->
         CallViewModel(
             args = params.get<CallArgs>(),
-            application = androidApplication(),
+            roomFactory = get(),
             callRepository = get(),
             getCurrentUserUseCase = get(),
             sendMessageUseCase = get(),

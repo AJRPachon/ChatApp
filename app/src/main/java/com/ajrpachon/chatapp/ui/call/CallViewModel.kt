@@ -1,9 +1,6 @@
 package com.ajrpachon.chatapp.ui.call
 import com.ajrpachon.chatapp.utils.catchResult
 
-import android.app.Application
-import android.content.Intent
-import android.media.projection.MediaProjectionManager
 import com.ajrpachon.chatapp.domain.model.CallStatus
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.CallRepository
@@ -11,7 +8,6 @@ import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import com.ajrpachon.chatapp.utils.AppLogger
-import io.livekit.android.LiveKit
 import io.livekit.android.events.DisconnectReason
 import io.livekit.android.events.ParticipantEvent
 import io.livekit.android.events.RoomEvent
@@ -87,7 +83,7 @@ data class CallArgs(
 
 class CallViewModel(
     private val args: CallArgs,
-    private val application: Application,
+    private val roomFactory: LiveKitRoomFactory,
     private val callRepository: CallRepository,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val sendMessageUseCase: SendMessageUseCase,
@@ -100,9 +96,6 @@ class CallViewModel(
     private val callType get() = args.callType
     private val isOutgoing get() = args.isOutgoing
     private val isGroup get() = args.isGroup
-
-    val mediaProjectionManager: MediaProjectionManager =
-        application.getSystemService(MediaProjectionManager::class.java)
 
     private var room: Room? = null
     private var durationJob: Job? = null
@@ -179,7 +172,7 @@ class CallViewModel(
             AppLogger.d(TAG, "joinCall: userId=${user.id} roomName=$roomName livekitUrl=$livekitUrl")
             val token = callRepository.fetchLivekitToken(roomName, user.id)
 
-            val livekitRoom = LiveKit.create(application)
+            val livekitRoom = roomFactory.create()
             room = livekitRoom
             updateState { it.copy(room = livekitRoom) }
 
@@ -419,11 +412,11 @@ class CallViewModel(
         }
     }
 
-    fun startScreenShare(mediaProjectionData: Intent) {
+    fun startScreenShare(captureParams: ScreenCaptureParams) {
         viewModelScope.launch {
             AppLogger.d(TAG, "startScreenShare: enabling screen share")
             catchResult {
-                room?.localParticipant?.setScreenShareEnabled(true, ScreenCaptureParams(mediaProjectionData))
+                room?.localParticipant?.setScreenShareEnabled(true, captureParams)
             }.onSuccess {
                 AppLogger.d(TAG, "startScreenShare: OK")
                 updateState { it.copy(isScreenSharing = true) }

@@ -2,6 +2,7 @@ package com.ajrpachon.chatapp.ui.call
 
 import android.app.Activity
 import android.content.pm.PackageManager
+import android.media.projection.MediaProjectionManager
 import com.ajrpachon.chatapp.ui.common.CallPermissions
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -70,6 +71,7 @@ import com.github.skydoves.navgraph.annotations.NavDestination
 import io.livekit.android.renderer.TextureViewRenderer
 import io.livekit.android.room.Room
 import io.livekit.android.room.track.VideoTrack
+import io.livekit.android.room.track.screencapture.ScreenCaptureParams
 import kotlin.math.roundToInt
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -166,11 +168,12 @@ private fun CallScreenContent(
     val state by vm.state.collectAsStateWithLifecycle()
 
     // Screen share MediaProjection launcher
+    val mediaProjectionManager = remember { context.getSystemService(MediaProjectionManager::class.java) }
     val screenShareLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            result.data?.let { vm.startScreenShare(it) }
+            result.data?.let { vm.startScreenShare(ScreenCaptureParams(it)) }
         }
     }
 
@@ -219,7 +222,7 @@ private fun CallScreenContent(
         vm.effect.collect { effect ->
             when (effect) {
                 is CallEffect.RequestScreenShare -> {
-                    screenShareLauncher.launch(vm.mediaProjectionManager.createScreenCaptureIntent())
+                    screenShareLauncher.launch(mediaProjectionManager.createScreenCaptureIntent())
                 }
             }
         }
