@@ -2,8 +2,10 @@ package com.ajrpachon.chatapp.ui.chat
 
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.repository.DraftRepository
 import com.ajrpachon.chatapp.domain.repository.ScheduledMessageRepository
+import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.ui.common.formatScheduledMessageTime
 import com.ajrpachon.chatapp.utils.catchResult
 import com.ajrpachon.chatapp.worker.ScheduledMessageWorker
@@ -40,7 +42,7 @@ class ChatSchedulingDelegate(
         val text = getState().inputText.trim()
         val userId = getState().currentUserId
         if (userId == null || text.isBlank()) {
-            updateState { it.copy(scheduling = it.scheduling.copy(showDialog = false), error = "Escribe un mensaje antes de programarlo") }
+            updateState { it.copy(scheduling = it.scheduling.copy(showDialog = false), error = UiText.StringResource(R.string.chat_error_schedule_empty)) }
             return
         }
         updateState { it.copy(scheduling = it.scheduling.copy(showDialog = false, scheduledAtMs = scheduledAt), inputText = "") }
@@ -72,9 +74,9 @@ class ChatSchedulingDelegate(
                     // write-only into something the UI actually depends on.
                     val whenMs = getState().scheduling.scheduledAtMs ?: scheduledAt
                     val whenLabel = formatScheduledMessageTime(Instant.fromEpochMilliseconds(whenMs))
-                    sendEffect(ChatEffect.ShowSnackbar("Mensaje programado para $whenLabel"))
+                    sendEffect(ChatEffect.ShowSnackbar(UiText.of(R.string.chat_message_scheduled_for, whenLabel)))
                 }
-                .onFailure { updateState { it.copy(error = "No se pudo programar el mensaje", inputText = text) } }
+                .onFailure { updateState { it.copy(error = UiText.StringResource(R.string.chat_error_schedule), inputText = text) } }
         }
     }
 

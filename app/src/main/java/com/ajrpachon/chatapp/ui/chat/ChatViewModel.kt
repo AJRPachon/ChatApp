@@ -11,6 +11,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.ChatTheme
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.repository.AiAssistantRepository
@@ -40,6 +41,8 @@ import com.ajrpachon.chatapp.domain.usecase.ReadUriAsBytesUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
+import com.ajrpachon.chatapp.ui.common.UiText
+import com.ajrpachon.chatapp.ui.common.toUiText
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.AudioTranscriber
 import com.ajrpachon.chatapp.utils.ClipboardProtection
@@ -556,7 +559,7 @@ class ChatViewModel(
         if (ownerId == null || statusId == null) return
         viewModelScope.launch {
             if (message.isStatusReplyExpired()) {
-                sendEffect(ChatEffect.ShowSnackbar("Este estado ya no está disponible"))
+                sendEffect(ChatEffect.ShowSnackbar(UiText.StringResource(R.string.chat_status_unavailable)))
             } else {
                 sendEffect(ChatEffect.NavigateToStatusViewer(ownerId, statusId))
             }
@@ -606,7 +609,7 @@ class ChatViewModel(
                         .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
                         .build()
                 )
-                updateState { it.copy(error = "Sin conexion. El mensaje se enviara cuando vuelva la red.", inputText = text) }
+                updateState { it.copy(error = UiText.StringResource(R.string.chat_error_offline), inputText = text) }
             }
             updateState { it.copy(isSending = false) }
         }
@@ -628,7 +631,7 @@ class ChatViewModel(
                 val call = if (isGroup) callRepository.createGroupCall(conversationId, callType)
                            else callRepository.createCall(conversationId, state.value.otherUserId ?: return@catchResult, callType)
                 sendEffect(ChatEffect.NavigateToCall(call))
-            }.onFailure { e -> updateState { it.copy(error = e.message ?: "Error al iniciar la llamada") } }
+            }.onFailure { e -> updateState { it.copy(error = e.toUiText(R.string.chat_error_start_call)) } }
         }
     }
 
@@ -655,7 +658,7 @@ class ChatViewModel(
         viewModelScope.launch {
             updateState { it.copy(editingMessage = null, inputText = "") }
             messageRepository.editMessage(editingMsg.id, newContent)
-                .onFailure { e -> AppLogger.e(TAG, "Edit failed", e); updateState { it.copy(error = "No se pudo editar") } }
+                .onFailure { e -> AppLogger.e(TAG, "Edit failed", e); updateState { it.copy(error = UiText.StringResource(R.string.chat_error_edit)) } }
         }
     }
 
@@ -664,14 +667,14 @@ class ChatViewModel(
         viewModelScope.launch {
             leaveGroupUseCase(conversationId, userId)
                 .onSuccess { sendEffect(ChatEffect.NavigateBack) }
-                .onFailure { e -> updateState { it.copy(error = e.message ?: "Error al salir del grupo") } }
+                .onFailure { e -> updateState { it.copy(error = e.toUiText(R.string.chat_error_leave_group)) } }
         }
     }
 
     private fun deleteMessage(messageId: String) {
         viewModelScope.launch {
             messageRepository.deleteMessage(messageId)
-                .onFailure { e -> AppLogger.e(TAG, "deleteMessage failed", e); updateState { it.copy(error = "No se pudo eliminar") } }
+                .onFailure { e -> AppLogger.e(TAG, "deleteMessage failed", e); updateState { it.copy(error = UiText.StringResource(R.string.chat_error_delete)) } }
         }
     }
 
@@ -681,7 +684,7 @@ class ChatViewModel(
             updateState { it.copy(isExporting = true) }
             exportConversationUseCase(conversationId, uid)
                 .onSuccess { uriString -> sendEffect(ChatEffect.ShowShareSheet(Uri.parse(uriString))) }
-                .onFailure { sendEffect(ChatEffect.ShowSnackbar("No se pudo exportar")) }
+                .onFailure { sendEffect(ChatEffect.ShowSnackbar(UiText.StringResource(R.string.chat_error_export))) }
             updateState { it.copy(isExporting = false) }
         }
     }

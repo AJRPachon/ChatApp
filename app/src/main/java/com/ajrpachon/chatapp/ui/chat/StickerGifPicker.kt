@@ -73,12 +73,12 @@ fun StickerGifPicker(
             Tab(
                 selected = selectedTab == 0,
                 onClick = { selectedTab = 0 },
-                text = { Text("Stickers") },
+                text = { Text(stringResource(R.string.stickers_tab_stickers)) },
             )
             Tab(
                 selected = selectedTab == 1,
                 onClick = { selectedTab = 1 },
-                text = { Text("GIFs") },
+                text = { Text(stringResource(R.string.stickers_tab_gifs)) },
             )
         }
         when (selectedTab) {
@@ -203,19 +203,19 @@ private fun GifTab(onSelected: (String) -> Unit, vm: GifPickerViewModel = koinVi
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text("GIFs no disponibles", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.gif_unavailable), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(
                     "Configura tu propia clave API de Giphy para activar esta función.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Button(onClick = { vm.onIntent(GifPickerIntent.ShowKeyDialog) }) {
-                    Text("Configurar clave API")
+                    Text(stringResource(R.string.gif_configure_key))
                 }
             }
             state.errorState == GifPickerError.NETWORK_ERROR -> Box(
                 Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center
             ) {
-                Text("Error de red. Inténtalo de nuevo.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.gif_network_error), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             else -> {
             LazyVerticalGrid(
@@ -250,24 +250,24 @@ private fun GiphyApiKeyDialog(initialKey: String, onSave: (String) -> Unit, onDi
     var key by remember { mutableStateOf(initialKey) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Clave API de Giphy") },
+        title = { Text(stringResource(R.string.gif_api_key_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Obtén una clave gratuita en developers.giphy.com y pégala aquí.")
+                Text(stringResource(R.string.gif_api_key_help))
                 OutlinedTextField(
                     value = key,
                     onValueChange = { key = it },
-                    label = { Text("API Key") },
+                    label = { Text(stringResource(R.string.gif_api_key_label)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(key) }, enabled = key.isNotBlank()) { Text("Guardar") }
+            TextButton(onClick = { onSave(key) }, enabled = key.isNotBlank()) { Text(stringResource(R.string.gif_api_key_save)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.gif_api_key_cancel)) }
         },
     )
 }

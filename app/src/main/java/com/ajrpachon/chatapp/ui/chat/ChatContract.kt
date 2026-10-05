@@ -14,6 +14,7 @@ import com.ajrpachon.chatapp.domain.model.UserRelationship
 import com.ajrpachon.chatapp.domain.model.PollBO
 import com.ajrpachon.chatapp.domain.model.PollOptionBO
 import com.ajrpachon.chatapp.domain.model.PollVoteBO
+import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.utils.LinkPreviewData
 
 /**
@@ -121,7 +122,7 @@ data class ChatTranslationUiState(
     // messageId → transcribed text. No UI reads this yet, and the delegate that populates it
     // has a real bug (transcribes the live mic, not the message's audio) — see
     // docs/audio-transcription-todo.md before building UI on top of this field.
-    val transcriptions: Map<String, String> = emptyMap(),
+    val transcriptions: Map<String, UiText> = emptyMap(),
 )
 
 /**
@@ -245,7 +246,7 @@ data class ChatState(
     val mediaUpload: ChatMediaUploadUiState = ChatMediaUploadUiState(),
     val currentUserId: String? = null,
     val conversationTitle: String = "",
-    val error: String? = null,
+    val error: UiText? = null,
     val audioState: AudioState = AudioState(),
     val otherUserId: String? = null,
     val otherUserAvatarUrl: String? = null,
@@ -424,10 +425,10 @@ sealed interface ChatEffect {
     data object ScrollToBottom : ChatEffect
     data class NavigateToCall(val call: CallBO) : ChatEffect
     data object NavigateBack : ChatEffect
-    data class ShowSnackbar(val message: String) : ChatEffect
+    data class ShowSnackbar(val message: UiText) : ChatEffect
     data class ShowShareSheet(val uri: android.net.Uri) : ChatEffect
     data class NavigateToConversation(val conversationId: String, val otherUserName: String) : ChatEffect
-    data class InviteContact(val phoneNumber: String, val text: String) : ChatEffect
+    data class InviteContact(val phoneNumber: String, val text: UiText) : ChatEffect
     /** Quoted-status tap, still within its 24h window — open it in the story viewer. */
     data class NavigateToStatusViewer(val ownerId: String, val statusId: String) : ChatEffect
 }

@@ -148,7 +148,7 @@ fun ChatScreen(
                 // new message arrives in the list (avoids scrolling before Paging delivers it).
                 ChatEffect.ScrollToBottom -> pendingSendScroll.value = true
                 ChatEffect.NavigateBack -> onBack()
-                is ChatEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message)
+                is ChatEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message.asString(context))
                 is ChatEffect.ShowShareSheet -> {
                     val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                         type = "text/plain"
@@ -163,7 +163,7 @@ fun ChatScreen(
                     val smsIntent = android.content.Intent(
                         android.content.Intent.ACTION_SENDTO,
                         android.net.Uri.parse("smsto:${effect.phoneNumber}"),
-                    ).apply { putExtra("sms_body", effect.text) }
+                    ).apply { putExtra("sms_body", effect.text.asString(context)) }
                     context.startActivity(smsIntent)
                 }
             }
@@ -204,7 +204,7 @@ fun ChatScreen(
 
     LaunchedEffect(state.error) {
         state.error?.let {
-            snackbarHostState.showSnackbar(it)
+            snackbarHostState.showSnackbar(it.asString(context))
             vm.onIntent(ChatIntent.DismissError)
         }
     }

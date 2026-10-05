@@ -16,7 +16,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.ajrpachon.chatapp.R
 
 @Composable
 fun OfflineBanner(modifier: Modifier = Modifier) {
@@ -37,7 +39,7 @@ fun OfflineBanner(modifier: Modifier = Modifier) {
             )
             Spacer(Modifier.width(8.dp))
             Text(
-                text = "Sin conexión",
+                text = stringResource(R.string.offline_banner_text),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onErrorContainer,
             )
