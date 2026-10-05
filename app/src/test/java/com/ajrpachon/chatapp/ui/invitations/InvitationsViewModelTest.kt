@@ -8,6 +8,7 @@ import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetSentInvitationsUseCase
 import com.ajrpachon.chatapp.domain.usecase.ObserveInvitationsUseCase
 import com.ajrpachon.chatapp.domain.usecase.RespondInvitationUseCase
+import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.every
@@ -105,7 +106,7 @@ class InvitationsViewModelTest {
         advanceUntilIdle()
 
         assertNotNull(vm.state.value.error)
-        assertEquals("network error", vm.state.value.error)
+        assertEquals(UiText.Dynamic("network error"), vm.state.value.error)
     }
 
     @Test
@@ -132,7 +133,7 @@ class InvitationsViewModelTest {
         vm.onIntent(InvitationsIntent.Reject("inv1"))
         advanceUntilIdle()
 
-        assertEquals("reject failed", vm.state.value.error)
+        assertEquals(UiText.Dynamic("reject failed"), vm.state.value.error)
     }
 
     @Test
@@ -184,7 +185,7 @@ class InvitationsViewModelTest {
         vm.onIntent(InvitationsIntent.SelectTab(InvitationsTab.SENT))
         advanceUntilIdle()
 
-        assertEquals("fetch failed", vm.state.value.error)
+        assertEquals(UiText.Dynamic("fetch failed"), vm.state.value.error)
         assertEquals(false, vm.state.value.isSentLoading)
     }
 
@@ -212,7 +213,7 @@ class InvitationsViewModelTest {
         vm.onIntent(InvitationsIntent.CancelSent("sent1"))
         advanceUntilIdle()
 
-        assertEquals("cancel failed", vm.state.value.error)
+        assertEquals(UiText.Dynamic("cancel failed"), vm.state.value.error)
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

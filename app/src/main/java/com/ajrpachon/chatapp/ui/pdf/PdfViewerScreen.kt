@@ -40,6 +40,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import org.koin.androidx.compose.koinViewModel
 
@@ -131,7 +132,7 @@ internal fun PdfViewerContent(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = state.error ?: stringResource(R.string.pdf_error_loading),
+                        text = state.error?.asString() ?: stringResource(R.string.pdf_error_loading),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodyMedium,
                     )
@@ -183,7 +184,7 @@ internal fun PdfViewerLoadingPreview() {
 internal fun PdfViewerErrorPreview() {
     ChatAppTheme {
         PdfViewerContent(
-            state = PdfViewerState(error = "No se pudo abrir el PDF"),
+            state = PdfViewerState(error = UiText.Dynamic("No se pudo abrir el PDF")),
             filename = "factura-octubre.pdf",
             onShare = {},
             onBack = {},

@@ -4,6 +4,7 @@ import com.ajrpachon.chatapp.domain.model.SessionBO
 import com.ajrpachon.chatapp.domain.repository.AuthRepository
 import com.ajrpachon.chatapp.domain.repository.SessionInfo
 import com.ajrpachon.chatapp.domain.repository.SessionRepository
+import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -118,8 +119,8 @@ class SessionAuditViewModelTest {
             vm.onIntent(SessionAuditIntent.RevokeSession("oth"))
             advanceUntilIdle()
 
-            assertEquals("locked", vm.state.value.error)
-            assertEquals(SessionAuditEffect.Error("locked"), vm.effect.first())
+            assertEquals(UiText.Dynamic("locked"), vm.state.value.error)
+            assertEquals(SessionAuditEffect.Error(UiText.Dynamic("locked")), vm.effect.first())
         }
 
     @Test
@@ -144,8 +145,8 @@ class SessionAuditViewModelTest {
         vm.onIntent(SessionAuditIntent.RevokeAllOtherSessions)
         advanceUntilIdle()
 
-        assertEquals(SessionAuditEffect.Error("locked"), vm.effect.first())
-        assertEquals("locked", vm.state.value.error)
+        assertEquals(SessionAuditEffect.Error(UiText.Dynamic("locked")), vm.effect.first())
+        assertEquals(UiText.Dynamic("locked"), vm.state.value.error)
     }
 
     @Test

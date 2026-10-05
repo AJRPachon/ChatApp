@@ -5,6 +5,7 @@ import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.MessageStatsRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
+import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -127,7 +128,7 @@ class UsageStatsViewModelTest {
         advanceUntilIdle()
 
         assertFalse(vm.state.value.isLoading)
-        assertEquals("db closed", vm.state.value.error)
+        assertEquals(UiText.Dynamic("db closed"), vm.state.value.error)
     }
 
     @Test

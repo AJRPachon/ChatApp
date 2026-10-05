@@ -10,6 +10,7 @@ import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetOrCreateConversationUseCase
 import com.ajrpachon.chatapp.domain.usecase.SearchUsersUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
+import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -202,7 +203,7 @@ class BroadcastListViewModelTest {
             vm.onIntent(BroadcastListIntent.CreateList)
             advanceUntilIdle()
 
-            assertEquals("db full", vm.state.value.error)
+            assertEquals(UiText.Dynamic("db full"), vm.state.value.error)
             assertTrue(vm.state.value.showCreateDialog)
             assertFalse(vm.state.value.isCreating)
         }
@@ -221,7 +222,7 @@ class BroadcastListViewModelTest {
             coEvery { repository.delete("l2") } throws IllegalStateException("locked")
             vm.onIntent(BroadcastListIntent.DeleteList("l2"))
             advanceUntilIdle()
-            assertEquals("locked", vm.state.value.error)
+            assertEquals(UiText.Dynamic("locked"), vm.state.value.error)
         }
 
     @Test

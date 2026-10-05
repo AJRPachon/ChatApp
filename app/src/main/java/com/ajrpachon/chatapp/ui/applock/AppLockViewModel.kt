@@ -1,6 +1,8 @@
 package com.ajrpachon.chatapp.ui.applock
 
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
+import com.ajrpachon.chatapp.ui.common.UiText
 
 class AppLockViewModel : BaseViewModel<AppLockState, AppLockEffect>(AppLockState()) {
 
@@ -11,10 +13,10 @@ class AppLockViewModel : BaseViewModel<AppLockState, AppLockEffect>(AppLockState
                 sendEffect(AppLockEffect.Authenticated)
             }
             is AppLockIntent.AuthError -> {
-                updateState { it.copy(errorMessage = intent.message) }
+                updateState { it.copy(errorMessage = UiText.Dynamic(intent.message)) }
             }
             is AppLockIntent.AuthFailed -> {
-                updateState { it.copy(errorMessage = "Autenticación fallida. Inténtalo de nuevo.") }
+                updateState { it.copy(errorMessage = UiText.StringResource(R.string.applock_auth_failed)) }
             }
             is AppLockIntent.ClearError -> {
                 updateState { it.copy(errorMessage = null) }

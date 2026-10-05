@@ -2,6 +2,7 @@ package com.ajrpachon.chatapp.ui.backup
 
 import com.ajrpachon.chatapp.domain.model.BackupInfoBO
 import com.ajrpachon.chatapp.domain.repository.BackupRepository
+import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -88,7 +89,7 @@ class BackupViewModelTest {
         vm.onIntent(BackupIntent.StartBackup)
         advanceUntilIdle()
 
-        assertEquals("quota exceeded", vm.state.value.error)
+        assertEquals(UiText.Dynamic("quota exceeded"), vm.state.value.error)
         assertFalse(vm.state.value.isBackingUp)
         assertNull(vm.state.value.successMessage)
     }
@@ -115,7 +116,7 @@ class BackupViewModelTest {
         vm.onIntent(BackupIntent.StartRestore)
         advanceUntilIdle()
 
-        assertEquals("no backup found", vm.state.value.error)
+        assertEquals(UiText.Dynamic("no backup found"), vm.state.value.error)
         assertFalse(vm.state.value.isRestoring)
     }
 

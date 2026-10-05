@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.applock
 
+import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -26,7 +27,7 @@ class AppLockViewModelTest {
 
         vm.onIntent(AppLockIntent.AuthError("Demasiados intentos"))
 
-        assertEquals("Demasiados intentos", vm.state.value.errorMessage)
+        assertEquals(UiText.Dynamic("Demasiados intentos"), vm.state.value.errorMessage)
     }
 
     @Test

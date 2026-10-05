@@ -6,7 +6,10 @@ import com.ajrpachon.chatapp.domain.usecase.GetSentInvitationsUseCase
 import com.ajrpachon.chatapp.domain.usecase.ObserveInvitationsUseCase
 import com.ajrpachon.chatapp.domain.usecase.RespondInvitationUseCase
 import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
+import com.ajrpachon.chatapp.ui.common.UiText
+import com.ajrpachon.chatapp.ui.common.toUiText
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.catchResult
 import kotlinx.coroutines.flow.collectLatest
@@ -33,7 +36,7 @@ class InvitationsViewModel(
                     }
                 }.onFailure { e ->
                     AppLogger.e(TAG, "Observe invitations failed", e)
-                    updateState { it.copy(isLoading = false, error = e.message) }
+                    updateState { it.copy(isLoading = false, error = e.toUiText()) }
                 }
             }
         }
@@ -62,7 +65,7 @@ class InvitationsViewModel(
                 .onSuccess { sent -> updateState { it.copy(sentInvitations = sent, isSentLoading = false) } }
                 .onFailure { e ->
                     AppLogger.e(TAG, "Get sent invitations failed", e)
-                    updateState { it.copy(isSentLoading = false, error = e.message) }
+                    updateState { it.copy(isSentLoading = false, error = e.toUiText()) }
                 }
         }
     }
@@ -71,12 +74,12 @@ class InvitationsViewModel(
         viewModelScope.launch {
             cancelSentInvitationUseCase(id)
                 .onSuccess {
-                    sendEffect(InvitationsEffect.ShowMessage("Invitación cancelada"))
+                    sendEffect(InvitationsEffect.ShowMessage(UiText.StringResource(R.string.invitations_cancelled)))
                     loadSentInvitations()
                 }
                 .onFailure { e ->
                     AppLogger.e(TAG, "Cancel sent invitation failed", e)
-                    updateState { it.copy(error = e.message) }
+                    updateState { it.copy(error = e.toUiText()) }
                 }
         }
     }
@@ -94,12 +97,12 @@ class InvitationsViewModel(
                     // auto-navigation into the new chat. The conversation still gets created
                     // lazily the next time either side opens it (SendInvitationUseCase already
                     // handles UserRelationship.CONNECTED that way from New Chat).
-                    val message = if (accept) "Invitación aceptada" else "Invitación rechazada"
+                    val message = UiText.StringResource(if (accept) R.string.invitations_accepted else R.string.invitations_rejected)
                     sendEffect(InvitationsEffect.ShowMessage(message))
                 }
                 .onFailure { e ->
                     AppLogger.e(TAG, "Respond invitation failed", e)
-                    updateState { it.copy(error = e.message) }
+                    updateState { it.copy(error = e.toUiText()) }
                 }
         }
     }

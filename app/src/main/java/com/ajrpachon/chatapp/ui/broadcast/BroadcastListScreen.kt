@@ -70,7 +70,7 @@ fun BroadcastListScreen(
             when (effect) {
                 BroadcastListEffect.GoBack -> onBack()
                 is BroadcastListEffect.ShowToast ->
-                    Toast.makeText(context, effect.message, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, effect.message.asString(context), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -220,7 +220,7 @@ fun BroadcastListContent(
         AlertDialog(
             onDismissRequest = { onIntent(BroadcastListIntent.DismissError) },
             title = { Text(stringResource(R.string.broadcast_error_title)) },
-            text = { Text(error) },
+            text = { Text(error.asString()) },
             confirmButton = {
                 TextButton(onClick = { onIntent(BroadcastListIntent.DismissError) }) { Text(stringResource(R.string.broadcast_ok_button)) }
             },

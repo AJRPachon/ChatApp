@@ -523,4 +523,21 @@
     <string name="profile_delete_account_dialog_text">This action can\'t be undone. Your profile, username, photo and files (photos, audio, videos) will be deleted from our servers. Your messages in conversations and groups will be anonymized, but not deleted for other people. Your session will also be signed out on every device, and all data saved on this device will be erased. Do you want to continue?</string>
     <string name="profile_delete_account_confirm">Delete account</string>
     <string name="profile_deleting_account_content_description">Deleting account…</string>
+
+    <string name="error_generic">Something went wrong</string>
+    <string name="applock_auth_failed">Authentication failed. Try again.</string>
+    <string name="backup_success">Backup completed successfully</string>
+    <string name="backup_restore_success">Messages restored successfully</string>
+    <string name="backup_error_backup">Backup failed</string>
+    <string name="backup_error_restore">Restore failed</string>
+    <string name="broadcast_error_name_and_members">Enter a name and select at least one member</string>
+    <string name="broadcast_error_write_message">Write a message</string>
+    <string name="broadcast_error_no_members">No members</string>
+    <string name="broadcast_sent_summary_toast">Sent to %1$d/%2$d contacts</string>
+    <string name="usagestats_error_load">Could not load statistics</string>
+    <string name="sessionaudit_error_revoke">Could not revoke the session</string>
+    <string name="sessionaudit_error_revoke_others">Could not sign out the other sessions</string>
+    <string name="invitations_cancelled">Invitation cancelled</string>
+    <string name="invitations_accepted">Invitation accepted</string>
+    <string name="invitations_rejected">Invitation declined</string>
 </resources>
