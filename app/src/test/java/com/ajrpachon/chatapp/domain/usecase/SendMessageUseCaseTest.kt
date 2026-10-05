@@ -1,7 +1,7 @@
 package com.ajrpachon.chatapp.domain.usecase
 
 import com.ajrpachon.chatapp.domain.model.MessageBO
-import com.ajrpachon.chatapp.domain.model.OutgoingMessage
+import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import io.mockk.coEvery
@@ -23,8 +23,8 @@ class SendMessageUseCaseTest {
     private val useCase = SendMessageUseCase(messageRepository, analyticsTracker)
     private val fakeMessage = mockk<MessageBO>(relaxed = true)
 
-    private fun outgoing(content: String, build: OutgoingMessage.() -> OutgoingMessage = { this }) =
-        OutgoingMessage(conversationId = "conv1", senderId = "user1", content = content).build()
+    private fun outgoing(content: String, build: OutgoingMessageBO.() -> OutgoingMessageBO = { this }) =
+        OutgoingMessageBO(conversationId = "conv1", senderId = "user1", content = content).build()
 
     @Test
     fun `returns success when repository sends message`() = runTest {

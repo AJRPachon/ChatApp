@@ -10,7 +10,7 @@ import com.ajrpachon.chatapp.domain.repository.TotpEnrollment
 import com.ajrpachon.chatapp.utils.AnalyticsEvents
 import com.ajrpachon.chatapp.utils.E2EEKeyManager
 import com.ajrpachon.chatapp.utils.IntegrityChecker
-import com.ajrpachon.chatapp.utils.IntegrityResult
+import com.ajrpachon.chatapp.domain.model.IntegrityResultBO
 import com.ajrpachon.chatapp.utils.SessionGuard
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
@@ -111,7 +111,7 @@ class AuthRepositoryImpl(
         supabase.auth.clearSession()
     }
 
-    override suspend fun checkIntegrity(): IntegrityResult =
+    override suspend fun checkIntegrity(): IntegrityResultBO =
         IntegrityChecker.check(context, supabase)
 
     override suspend fun getMfaAssuranceLevel(): MfaAssuranceLevel? {

@@ -1,6 +1,6 @@
 package com.ajrpachon.chatapp.ui.chat
 
-import com.ajrpachon.chatapp.domain.model.GiphyGif
+import com.ajrpachon.chatapp.domain.model.GiphyGifBO
 
 enum class GifPickerError {
     API_KEY_INVALID,
@@ -9,7 +9,7 @@ enum class GifPickerError {
 
 data class GifPickerState(
     val query: String = "",
-    val gifs: List<GiphyGif> = emptyList(),
+    val gifs: List<GiphyGifBO> = emptyList(),
     val isLoading: Boolean = true,
     val errorState: GifPickerError? = null,
     val showKeyDialog: Boolean = false,

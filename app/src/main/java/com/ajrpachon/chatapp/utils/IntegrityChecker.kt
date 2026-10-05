@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.utils
 
 import android.content.Context
+import com.ajrpachon.chatapp.domain.model.IntegrityResultBO
 import com.google.android.play.core.integrity.IntegrityManagerFactory
 import com.google.android.play.core.integrity.IntegrityTokenRequest
 import io.github.jan.supabase.SupabaseClient
@@ -34,7 +35,7 @@ import java.util.Base64
  */
 object IntegrityChecker {
 
-    suspend fun check(context: Context, supabase: SupabaseClient): IntegrityResult {
+    suspend fun check(context: Context, supabase: SupabaseClient): IntegrityResultBO {
         return runCatching {
             val nonce = generateNonce()
             val manager = IntegrityManagerFactory.create(context)
@@ -56,9 +57,9 @@ object IntegrityChecker {
             val passed = json["passed"]?.jsonPrimitive?.content?.toBoolean() ?: false
             val reason = json["reason"]?.jsonPrimitive?.content
 
-            if (passed) IntegrityResult.Passed else IntegrityResult.Failed(reason ?: "unknown")
+            if (passed) IntegrityResultBO.Passed else IntegrityResultBO.Failed(reason ?: "unknown")
         }.getOrElse { e ->
-            IntegrityResult.Error(e.message ?: "integrity check failed")
+            IntegrityResultBO.Error(e.message ?: "integrity check failed")
         }
     }
 
@@ -66,10 +67,4 @@ object IntegrityChecker {
         val bytes = ByteArray(32).also { SecureRandom().nextBytes(it) }
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
     }
-}
-
-sealed interface IntegrityResult {
-    data object Passed : IntegrityResult
-    data class Failed(val reason: String) : IntegrityResult
-    data class Error(val message: String) : IntegrityResult
 }

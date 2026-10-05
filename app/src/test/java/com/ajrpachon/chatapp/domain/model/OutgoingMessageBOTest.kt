@@ -6,7 +6,7 @@ import org.junit.Test
 
 class OutgoingMessageTest {
 
-    private fun text() = OutgoingMessage(conversationId = "c", senderId = "u", content = "hi")
+    private fun text() = OutgoingMessageBO(conversationId = "c", senderId = "u", content = "hi")
 
     @Test
     fun `plain text and reply context carry no non-text payload`() {

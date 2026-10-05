@@ -4,7 +4,7 @@ import com.ajrpachon.chatapp.data.local.entity.MessageDBO
 import com.ajrpachon.chatapp.data.remote.dto.MessageDTO
 import com.ajrpachon.chatapp.domain.model.MediaUrlValidator
 import com.ajrpachon.chatapp.domain.model.MessageBO
-import com.ajrpachon.chatapp.domain.model.OutgoingMessage
+import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
 import com.ajrpachon.chatapp.domain.model.SendStatus
 import kotlinx.datetime.Instant
 
@@ -53,10 +53,10 @@ fun MessageDTO.toDBO() = MessageDBO(
 
 /**
  * Builds the row sent to Supabase for [this] outgoing message. [content] is passed separately
- * because it may be the E2EE ciphertext instead of [OutgoingMessage.content]; [id] and [createdAt]
+ * because it may be the E2EE ciphertext instead of [OutgoingMessageBO.content]; [id] and [createdAt]
  * are supplied by the caller so the mapping itself stays deterministic.
  */
-fun OutgoingMessage.toDTO(id: String, createdAt: String, content: String, isEncrypted: Boolean) = MessageDTO(
+fun OutgoingMessageBO.toDTO(id: String, createdAt: String, content: String, isEncrypted: Boolean) = MessageDTO(
     id = id,
     conversationId = conversationId,
     senderId = senderId,

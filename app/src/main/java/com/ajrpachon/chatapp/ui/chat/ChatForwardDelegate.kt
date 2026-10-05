@@ -1,7 +1,7 @@
 package com.ajrpachon.chatapp.ui.chat
 
 import com.ajrpachon.chatapp.domain.model.MessageBO
-import com.ajrpachon.chatapp.domain.model.OutgoingMessage
+import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import com.ajrpachon.chatapp.utils.AppLogger
@@ -51,7 +51,7 @@ class ChatForwardDelegate(
         scope.launch {
             catchResult {
                 messageRepository.sendMessage(
-                    OutgoingMessage(
+                    OutgoingMessageBO(
                         conversationId = targetConversationId, senderId = uid, content = message.content,
                         imageUrl = message.imageUrl, audioUrl = message.audioUrl, audioDurationMs = message.audioDurationMs,
                         audioAmplitudes = message.audioAmplitudes,
@@ -92,7 +92,7 @@ class ChatForwardDelegate(
             for (message in toForward) {
                 catchResult {
                     messageRepository.sendMessage(
-                        OutgoingMessage(
+                        OutgoingMessageBO(
                             conversationId = targetConversationId, senderId = uid, content = message.content,
                             imageUrl = message.imageUrl, audioUrl = message.audioUrl, audioDurationMs = message.audioDurationMs,
                             audioAmplitudes = message.audioAmplitudes,

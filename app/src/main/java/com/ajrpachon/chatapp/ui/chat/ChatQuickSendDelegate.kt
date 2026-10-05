@@ -5,7 +5,7 @@ import android.app.Application
 import android.location.LocationManager
 import android.net.Uri
 import com.ajrpachon.chatapp.domain.model.LocationMessageFormat
-import com.ajrpachon.chatapp.domain.model.OutgoingMessage
+import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
 import com.ajrpachon.chatapp.domain.repository.ContactRepository
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
 import com.ajrpachon.chatapp.utils.AppLogger
@@ -41,7 +41,7 @@ class ChatQuickSendDelegate(
             sendEffect(ChatEffect.ScrollToBottom)
             updateState { it.copy(showStickerPicker = false, replyingTo = null) }
             sendMessageUseCase(
-                OutgoingMessage(
+                OutgoingMessageBO(
                     conversationId = conversationId, senderId = userId, content = "", gifUrl = url,
                     replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
                 ),
@@ -56,7 +56,7 @@ class ChatQuickSendDelegate(
             sendEffect(ChatEffect.ScrollToBottom)
             updateState { it.copy(showStickerPicker = false, replyingTo = null) }
             sendMessageUseCase(
-                OutgoingMessage(
+                OutgoingMessageBO(
                     conversationId = conversationId, senderId = userId, content = "", stickerUrl = emoji,
                     replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
                 ),
@@ -72,7 +72,7 @@ class ChatQuickSendDelegate(
             sendEffect(ChatEffect.ScrollToBottom)
             updateState { it.copy(replyingTo = null) }
             sendMessageUseCase(
-                OutgoingMessage(
+                OutgoingMessageBO(
                     conversationId = conversationId, senderId = userId, content = content,
                     replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
                 ),
@@ -116,7 +116,7 @@ class ChatQuickSendDelegate(
             sendEffect(ChatEffect.ScrollToBottom)
             updateState { it.copy(replyingTo = null) }
             sendMessageUseCase(
-                OutgoingMessage(
+                OutgoingMessageBO(
                     conversationId = conversationId, senderId = userId, content = LocationMessageFormat.format(mapsUrl),
                     replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
                 ),

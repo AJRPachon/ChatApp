@@ -1,6 +1,6 @@
 package com.ajrpachon.chatapp.ui.chat
 
-import com.ajrpachon.chatapp.domain.model.OutgoingMessage
+import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
 import com.ajrpachon.chatapp.domain.repository.PollRepository
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
 import com.ajrpachon.chatapp.utils.AppLogger
@@ -80,7 +80,7 @@ class ChatPollDelegate(
                     options = options,
                     allowMultiple = allowMultiple,
                 )
-                sendMessageUseCase(OutgoingMessage(conversationId = conversationId, senderId = userId, content = "poll:$pollId"))
+                sendMessageUseCase(OutgoingMessageBO(conversationId = conversationId, senderId = userId, content = "poll:$pollId"))
             }.onFailure { e -> AppLogger.e(TAG, "createPoll failed", e); updateState { it.copy(error = "No se pudo crear la encuesta") } }
         }
     }

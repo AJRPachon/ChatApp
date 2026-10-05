@@ -102,18 +102,5 @@ class UserRepositoryImpl(
     }
 
     private fun String.normalizePhoneDigits(): String = filter { it.isDigit() }
-
-    private fun UserBO.toDBO(isCurrentUser: Boolean = false) =
-        com.ajrpachon.chatapp.data.local.entity.UserDBO(
-            id = id,
-            email = email,
-            username = username,
-            displayName = displayName,
-            avatarUrl = avatarUrl,
-            createdAt = createdAt.toEpochMilliseconds(),
-            isCurrentUser = isCurrentUser,
-            lastSeen = lastSeen?.toEpochMilliseconds(),
-            showOnlineStatus = showOnlineStatus,
-        )
 }
 

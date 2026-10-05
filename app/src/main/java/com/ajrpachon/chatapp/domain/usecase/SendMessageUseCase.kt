@@ -2,7 +2,7 @@ package com.ajrpachon.chatapp.domain.usecase
 
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.MessageLimits
-import com.ajrpachon.chatapp.domain.model.OutgoingMessage
+import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import com.ajrpachon.chatapp.utils.AnalyticsEvents
@@ -12,7 +12,7 @@ class SendMessageUseCase(
     private val messageRepository: MessageRepository,
     private val analyticsTracker: AnalyticsTracker,
 ) {
-    suspend operator fun invoke(message: OutgoingMessage): Result<MessageBO> = catchResult {
+    suspend operator fun invoke(message: OutgoingMessageBO): Result<MessageBO> = catchResult {
         require(message.content.isNotBlank() || message.hasNonTextPayload) { "Message cannot be blank" }
         require(message.content.length <= MessageLimits.MAX_CONTENT_LENGTH) {
             "Message exceeds ${MessageLimits.MAX_CONTENT_LENGTH} characters"
@@ -27,7 +27,7 @@ class SendMessageUseCase(
         sent
     }
 
-    private fun logMessageSentAnalytics(message: OutgoingMessage) {
+    private fun logMessageSentAnalytics(message: OutgoingMessageBO) {
         val messageType = when {
             message.imageUrl != null -> AnalyticsEvents.TYPE_IMAGE
             message.videoUrl != null -> AnalyticsEvents.TYPE_VIDEO

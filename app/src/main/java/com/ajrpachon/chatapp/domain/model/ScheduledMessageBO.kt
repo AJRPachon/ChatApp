@@ -1,6 +1,6 @@
 package com.ajrpachon.chatapp.domain.model
 
-data class ScheduledMessage(
+data class ScheduledMessageBO(
     val id: String,
     val conversationId: String,
     val senderId: String,

@@ -2,8 +2,8 @@ package com.ajrpachon.chatapp.data.mapper
 
 import com.ajrpachon.chatapp.data.local.entity.MessageDBO
 import com.ajrpachon.chatapp.data.remote.dto.MessageDTO
-import com.ajrpachon.chatapp.domain.model.OutgoingMessage
-import com.ajrpachon.chatapp.domain.model.StatusReplyContext
+import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
+import com.ajrpachon.chatapp.domain.model.StatusReplyContextBO
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -12,11 +12,11 @@ import org.junit.Test
 
 class MessageMapperTest {
 
-    // ── OutgoingMessage.toDTO ────────────────────────────────────
+    // ── OutgoingMessageBO.toDTO ────────────────────────────────────
 
     @Test
-    fun `OutgoingMessage toDTO carries identity, payload and reply fields`() {
-        val outgoing = OutgoingMessage(
+    fun `OutgoingMessageBO toDTO carries identity, payload and reply fields`() {
+        val outgoing = OutgoingMessageBO(
             conversationId = "conv1",
             senderId = "user1",
             content = "plain text",
@@ -47,8 +47,8 @@ class MessageMapperTest {
     }
 
     @Test
-    fun `OutgoingMessage toDTO uses the content it is given, not the plaintext, and flags encryption`() {
-        val outgoing = OutgoingMessage(conversationId = "c", senderId = "u", content = "secret")
+    fun `OutgoingMessageBO toDTO uses the content it is given, not the plaintext, and flags encryption`() {
+        val outgoing = OutgoingMessageBO(conversationId = "c", senderId = "u", content = "secret")
 
         val dto = outgoing.toDTO(id = "id1", createdAt = "2026-10-05T10:00:00Z", content = "ciphertext", isEncrypted = true)
 
@@ -57,12 +57,12 @@ class MessageMapperTest {
     }
 
     @Test
-    fun `OutgoingMessage toDTO snapshots the status being replied to`() {
-        val outgoing = OutgoingMessage(
+    fun `OutgoingMessageBO toDTO snapshots the status being replied to`() {
+        val outgoing = OutgoingMessageBO(
             conversationId = "c",
             senderId = "u",
             content = "nice!",
-            statusReply = StatusReplyContext(
+            statusReply = StatusReplyContextBO(
                 statusId = "s1",
                 statusOwnerId = "alice",
                 statusText = "hola",

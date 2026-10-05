@@ -1,6 +1,6 @@
 package com.ajrpachon.chatapp.domain.model
 
-data class GiphyGif(
+data class GiphyGifBO(
     val previewUrl: String,
     val fullUrl: String,
 )

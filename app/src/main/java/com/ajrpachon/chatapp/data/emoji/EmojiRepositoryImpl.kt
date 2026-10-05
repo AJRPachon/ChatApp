@@ -2,7 +2,7 @@ package com.ajrpachon.chatapp.data.emoji
 
 import android.content.Context
 import com.ajrpachon.chatapp.data.mapper.toDomain
-import com.ajrpachon.chatapp.domain.model.EmojiCategory
+import com.ajrpachon.chatapp.domain.model.EmojiCategoryBO
 import com.ajrpachon.chatapp.domain.repository.EmojiRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -17,9 +17,9 @@ class EmojiRepositoryImpl(private val context: Context) : EmojiRepository {
     private val prefs by lazy { context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE) }
     private val json = Json { ignoreUnknownKeys = true }
 
-    private var _categories: List<EmojiCategory>? = null
+    private var _categories: List<EmojiCategoryBO>? = null
 
-    override suspend fun getCategories(): List<EmojiCategory> = withContext(Dispatchers.IO) {
+    override suspend fun getCategories(): List<EmojiCategoryBO> = withContext(Dispatchers.IO) {
         _categories ?: loadCategories().also { _categories = it }
     }
 
@@ -34,7 +34,7 @@ class EmojiRepositoryImpl(private val context: Context) : EmojiRepository {
         prefs.edit().putString(KEY_RECENT, updated.joinToString(",")).apply()
     }
 
-    private fun loadCategories(): List<EmojiCategory> {
+    private fun loadCategories(): List<EmojiCategoryBO> {
         val raw = context.assets.open("emojis.json").bufferedReader().readText()
         val dtos: List<EmojiCategoryDTO> = json.decodeFromString(raw)
         return dtos.map { it.toDomain() }

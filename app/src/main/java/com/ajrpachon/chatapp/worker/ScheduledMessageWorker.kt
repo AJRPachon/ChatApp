@@ -3,7 +3,7 @@ package com.ajrpachon.chatapp.worker
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.ajrpachon.chatapp.domain.model.OutgoingMessage
+import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
 import com.ajrpachon.chatapp.domain.repository.ScheduledMessageRepository
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
 import com.ajrpachon.chatapp.utils.AppLogger
@@ -24,7 +24,7 @@ class ScheduledMessageWorker(
         AppLogger.d(TAG, "ScheduledMessageWorker: found ${pending.size} pending messages")
         for (msg in pending) {
             sendMessageUseCase(
-                OutgoingMessage(
+                OutgoingMessageBO(
                     conversationId = msg.conversationId,
                     senderId = msg.senderId,
                     content = msg.text,

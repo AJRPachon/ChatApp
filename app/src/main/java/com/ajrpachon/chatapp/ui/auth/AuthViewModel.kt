@@ -11,7 +11,7 @@ import com.ajrpachon.chatapp.domain.repository.FcmTokenRepository
 import com.ajrpachon.chatapp.domain.usecase.SetUsernameUseCase
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import com.ajrpachon.chatapp.utils.AppLogger
-import com.ajrpachon.chatapp.utils.IntegrityResult
+import com.ajrpachon.chatapp.domain.model.IntegrityResultBO
 import com.ajrpachon.chatapp.utils.SessionGuard
 import com.ajrpachon.chatapp.utils.catchResult
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
@@ -283,12 +283,12 @@ class AuthViewModel(
 
     private suspend fun runIntegrityCheck() {
         when (val result = authRepository.checkIntegrity()) {
-            is IntegrityResult.Passed -> AppLogger.d(TAG, "Integrity check passed")
-            is IntegrityResult.Failed -> {
+            is IntegrityResultBO.Passed -> AppLogger.d(TAG, "Integrity check passed")
+            is IntegrityResultBO.Failed -> {
                 AppLogger.w(TAG, "Integrity check failed: ${result.reason}")
                 sendEffect(AuthEffect.IntegrityFailed(result.reason))
             }
-            is IntegrityResult.Error -> {
+            is IntegrityResultBO.Error -> {
                 AppLogger.w(TAG, "Integrity check error (non-blocking): ${result.message}")
             }
         }
