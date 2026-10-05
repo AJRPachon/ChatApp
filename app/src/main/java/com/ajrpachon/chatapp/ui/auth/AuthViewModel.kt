@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.ui.auth
 
 import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.repository.AuthRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.repository.FcmTokenRepository
@@ -8,6 +9,8 @@ import com.ajrpachon.chatapp.domain.usecase.SetUsernameUseCase
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.domain.model.IntegrityResultBO
+import com.ajrpachon.chatapp.ui.common.UiText
+import com.ajrpachon.chatapp.ui.common.toUiText
 import com.ajrpachon.chatapp.utils.SessionGuard
 import com.ajrpachon.chatapp.utils.catchResult
 import kotlinx.coroutines.launch
@@ -102,7 +105,7 @@ class AuthViewModel(
                 finishSignIn()
             }.onFailure { e ->
                 AppLogger.e(TAG, "Google sign-in supabase failed", e)
-                updateState { it.copy(error = e.message ?: "Error con Google") }
+                updateState { it.copy(error = e.toUiText(R.string.auth_error_google)) }
             }
             updateState { it.copy(isLoading = false) }
         }
@@ -112,7 +115,7 @@ class AuthViewModel(
         pendingGoogleNonce = null
         AppLogger.e(TAG, "Google sign-in credential failed: $message")
         if (noCredential) sendEffect(AuthEffect.OpenAddGoogleAccount)
-        else updateState { it.copy(error = message ?: "Error con Google") }
+        else updateState { it.copy(error = message?.let(UiText::Dynamic) ?: UiText.StringResource(R.string.auth_error_google)) }
         updateState { it.copy(isLoading = false) }
     }
 
@@ -144,8 +147,8 @@ class AuthViewModel(
         val password = state.value.passwordInput
         val confirm = state.value.confirmPasswordInput
         val validationError = validateEmailPassword(email, password)
-            ?: if (password.length < 6) "La contrasena debe tener al menos 6 caracteres" else null
-            ?: if (password != confirm) "Las contrasenas no coinciden" else null
+            ?: if (password.length < MIN_PASSWORD_LENGTH) UiText.StringResource(R.string.auth_error_password_short) else null
+            ?: if (password != confirm) UiText.StringResource(R.string.auth_error_passwords_mismatch) else null
         if (validationError != null) { updateState { it.copy(error = validationError) }; return }
         viewModelScope.launch {
             updateState { it.copy(isLoading = true, error = null) }
@@ -159,7 +162,7 @@ class AuthViewModel(
             if (hasSession) {
                 catchResult { finishSignIn() }.onFailure { e ->
                     AppLogger.e(TAG, "Post sign-up finishSignIn failed", e)
-                    updateState { it.copy(error = e.message ?: "Error al completar el registro") }
+                    updateState { it.copy(error = e.toUiText(R.string.auth_error_complete_sign_up)) }
                 }
             } else {
                 updateState { it.copy(showEmailVerification = true) }
@@ -168,8 +171,8 @@ class AuthViewModel(
         }
     }
 
-    private fun validateEmailPassword(email: String, password: String): String? = when {
-        email.isBlank() || password.isBlank() -> "Introduce tu correo y contrasena"
+    private fun validateEmailPassword(email: String, password: String): UiText? = when {
+        email.isBlank() || password.isBlank() -> UiText.StringResource(R.string.auth_error_credentials_required)
         else -> null
     }
 
@@ -177,20 +180,20 @@ class AuthViewModel(
         isSupabaseErrorCode("invalid_credentials") ||
                 message?.contains("Invalid login", ignoreCase = true) == true
 
-    private fun Throwable.toSignInMessage(): String = when {
-        isInvalidCredentials() -> "Correo o contrasena incorrectos"
+    private fun Throwable.toSignInMessage(): UiText = when {
+        isInvalidCredentials() -> UiText.StringResource(R.string.auth_error_invalid_credentials)
         isSupabaseErrorCode("email_not_confirmed") ||
                 message?.contains("Email not confirmed", ignoreCase = true) == true ->
-            "Verifica tu correo antes de iniciar sesion"
-        else -> message ?: "Error al iniciar sesion"
+            UiText.StringResource(R.string.auth_error_email_not_confirmed)
+        else -> toUiText(R.string.auth_error_sign_in)
     }
 
-    private fun Throwable.toSignUpMessage(): String = when {
+    private fun Throwable.toSignUpMessage(): UiText = when {
         isSupabaseErrorCode("user_already_exists") ||
                 message?.contains("already registered", ignoreCase = true) == true ||
                 message?.contains("already been registered", ignoreCase = true) == true ->
-            "Este correo ya esta registrado. Inicia sesion en su lugar."
-        else -> message ?: "Error al registrarse"
+            UiText.StringResource(R.string.auth_error_email_registered)
+        else -> toUiText(R.string.auth_error_sign_up)
     }
 
     private fun Throwable.isSupabaseErrorCode(code: String): Boolean {
@@ -223,7 +226,7 @@ class AuthViewModel(
     private fun verifyMfaCode() {
         val factorId = state.value.mfaFactorId ?: return
         val code = state.value.mfaCodeInput.trim()
-        if (code.length != 6) { updateState { it.copy(mfaError = "Introduce los 6 digitos del codigo") }; return }
+        if (code.length != 6) { updateState { it.copy(mfaError = UiText.StringResource(R.string.auth_error_mfa_code_length)) }; return }
         viewModelScope.launch {
             updateState { it.copy(mfaIsLoading = true, mfaError = null) }
             catchResult {
@@ -233,7 +236,7 @@ class AuthViewModel(
                 finishSignIn()
             }.onFailure { e ->
                 AppLogger.e(TAG, "verifyMfaCode failed", e)
-                updateState { it.copy(mfaIsLoading = false, mfaError = "Codigo incorrecto. Intenta de nuevo.") }
+                updateState { it.copy(mfaIsLoading = false, mfaError = UiText.StringResource(R.string.auth_error_mfa_code)) }
             }
         }
     }
@@ -251,9 +254,9 @@ class AuthViewModel(
                         sessionGuard.recordActivity()
                         sendEffect(AuthEffect.NavigateToHome)
                     }
-                    .onFailure { e -> updateState { it.copy(usernameError = e.message) } }
+                    .onFailure { e -> updateState { it.copy(usernameError = e.toUiText()) } }
             }.onFailure { e ->
-                updateState { it.copy(usernameError = e.message ?: "Error inesperado") }
+                updateState { it.copy(usernameError = e.toUiText(R.string.auth_error_unexpected)) }
             }
             updateState { it.copy(isLoading = false) }
         }
@@ -282,5 +285,6 @@ class AuthViewModel(
 
     companion object {
         private const val TAG = "AuthViewModel"
+        private const val MIN_PASSWORD_LENGTH = 6
     }
 }

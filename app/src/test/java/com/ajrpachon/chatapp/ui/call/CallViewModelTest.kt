@@ -8,6 +8,7 @@ import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
+import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import io.livekit.android.events.EventListenable
 import io.livekit.android.events.ParticipantEvent
@@ -154,7 +155,7 @@ class CallViewModelTest {
             runCurrent()
 
             assertEquals(CallPhase.ERROR, vm.state.value.phase)
-            assertEquals("token denied", vm.state.value.error)
+            assertEquals(UiText.Dynamic("token denied"), vm.state.value.error)
         }
 
     @Test

@@ -425,7 +425,7 @@ private fun CallScreenBody(
                 )
 
                 CallPhase.ERROR -> Text(
-                    state.error ?: stringResource(R.string.call_generic_error),
+                    state.error?.asString() ?: stringResource(R.string.call_generic_error),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium,
                 )

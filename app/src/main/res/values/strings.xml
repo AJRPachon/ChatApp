@@ -571,4 +571,22 @@
     <string name="profile_error_2fa_disable">Error al desactivar la verificación en dos pasos</string>
     <string name="profile_error_save_name">Error al guardar el nombre</string>
     <string name="status_error_reply">No se pudo enviar la respuesta</string>
+
+    <string name="auth_error_google">Error con Google</string>
+    <string name="auth_error_password_short">La contraseña debe tener al menos 6 caracteres</string>
+    <string name="auth_error_passwords_mismatch">Las contraseñas no coinciden</string>
+    <string name="auth_error_credentials_required">Introduce tu correo y contraseña</string>
+    <string name="auth_error_invalid_credentials">Correo o contraseña incorrectos</string>
+    <string name="auth_error_email_not_confirmed">Verifica tu correo antes de iniciar sesión</string>
+    <string name="auth_error_sign_in">Error al iniciar sesión</string>
+    <string name="auth_error_email_registered">Este correo ya está registrado. Inicia sesión en su lugar.</string>
+    <string name="auth_error_sign_up">Error al registrarse</string>
+    <string name="auth_error_complete_sign_up">Error al completar el registro</string>
+    <string name="auth_error_mfa_code_length">Introduce los 6 dígitos del código</string>
+    <string name="auth_error_mfa_code">Código incorrecto. Inténtalo de nuevo.</string>
+    <string name="auth_error_unexpected">Error inesperado</string>
+    <string name="call_error_disconnected">%1$s: %2$s</string>
+    <string name="call_error_disconnected_unexpected">%1$s: desconexión inesperada</string>
+    <string name="call_error_connect">Error al conectar: %1$s</string>
+    <string name="call_error_connect_default">Error al conectar</string>
 </resources>

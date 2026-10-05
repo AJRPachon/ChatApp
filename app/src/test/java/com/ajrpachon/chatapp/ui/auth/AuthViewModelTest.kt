@@ -7,6 +7,7 @@ import com.ajrpachon.chatapp.domain.repository.FcmTokenRepository
 import com.ajrpachon.chatapp.domain.repository.SessionInfo
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.SetUsernameUseCase
+import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import com.ajrpachon.chatapp.utils.SessionGuard
 import io.mockk.coEvery
@@ -116,7 +117,7 @@ class AuthViewModelTest {
         vm.onIntent(AuthIntent.GoogleTokenReceived("id-token"))
         advanceUntilIdle()
 
-        assertEquals("bad nonce", vm.state.value.error)
+        assertEquals(UiText.Dynamic("bad nonce"), vm.state.value.error)
         assertFalse(vm.state.value.isLoading)
     }
 
@@ -141,7 +142,7 @@ class AuthViewModelTest {
 
         vm.onIntent(AuthIntent.GoogleSignInFailed(message = "sheet dismissed", noCredential = false))
 
-        assertEquals("sheet dismissed", vm.state.value.error)
+        assertEquals(UiText.Dynamic("sheet dismissed"), vm.state.value.error)
         assertFalse(vm.state.value.isLoading)
     }
 
