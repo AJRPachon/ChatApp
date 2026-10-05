@@ -87,7 +87,10 @@ import com.github.skydoves.navgraph.annotations.NavDestination
 import com.github.skydoves.navgraph.annotations.NavEdge
 import com.ajrpachon.chatapp.AuthRoute
 import com.ajrpachon.chatapp.ConversationListRoute
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 
 @NavEdge(to = ConversationListRoute::class, label = "Sign In")
 @NavDestination(route = AuthRoute::class)
@@ -97,6 +100,7 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
     val state by vm.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val googleCredentialFetcher: GoogleCredentialFetcher = koinInject()
     val integrityFailedMessage = stringResource(R.string.auth_integrity_failed_message)
     val checkEmailVerificationMessage = stringResource(R.string.auth_check_email_verification)
 
@@ -109,6 +113,19 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
                         putExtra(Settings.EXTRA_ACCOUNT_TYPES, arrayOf("com.google"))
                     }
                     context.startActivity(intent)
+                }
+                is AuthEffect.RequestGoogleCredential -> launch {
+                    try {
+                        when (val result = googleCredentialFetcher.fetch(context, effect.hashedNonce)) {
+                            is GoogleCredentialResult.Token -> vm.onIntent(AuthIntent.GoogleTokenReceived(result.idToken))
+                            is GoogleCredentialResult.NoCredential -> vm.onIntent(AuthIntent.GoogleSignInFailed(message = null, noCredential = true))
+                            is GoogleCredentialResult.Failed -> vm.onIntent(AuthIntent.GoogleSignInFailed(message = result.message, noCredential = false))
+                        }
+                    } catch (e: CancellationException) {
+                        // The screen left while the credential sheet was up: let the ViewModel stop its spinner.
+                        vm.onIntent(AuthIntent.GoogleSignInCancelled)
+                        throw e
+                    }
                 }
                 is AuthEffect.IntegrityFailed -> {
                     snackbar.showSnackbar(
@@ -177,7 +194,7 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
             else -> LoginContent(
                 state = state,
                 onIntent = { vm.onIntent(it) },
-                onGoogleSignIn = { vm.onIntent(AuthIntent.SignInWithGoogle(context)) },
+                onGoogleSignIn = { vm.onIntent(AuthIntent.SignInWithGoogle) },
                 contentPadding = innerPadding,
             )
         }

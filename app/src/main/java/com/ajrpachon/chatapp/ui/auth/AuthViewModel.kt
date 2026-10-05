@@ -1,9 +1,5 @@
 package com.ajrpachon.chatapp.ui.auth
 
-import android.content.Context
-import androidx.credentials.CredentialManager
-import androidx.credentials.GetCredentialRequest
-import androidx.credentials.exceptions.NoCredentialException
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.domain.repository.AuthRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
@@ -14,26 +10,14 @@ import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.domain.model.IntegrityResultBO
 import com.ajrpachon.chatapp.utils.SessionGuard
 import com.ajrpachon.chatapp.utils.catchResult
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
-import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import kotlinx.coroutines.launch
 import java.security.MessageDigest
 import java.util.UUID
 
-/**
- * The OAuth web client ID Google Sign-In needs. A wrapper around the `BuildConfig` string so Koin can
- * inject it into [AuthViewModel] by type (a bare `String` would be ambiguous), which keeps
- * `viewModelOf` usable.
- */
-data class GoogleSignInConfig(val webClientId: String)
-
 class AuthViewModel(
-    private val credentialManager: CredentialManager,
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
     private val setUsernameUseCase: SetUsernameUseCase,
-    private val googleSignInConfig: GoogleSignInConfig,
     private val fcmTokenRepository: FcmTokenRepository,
     private val sessionGuard: SessionGuard,
 ) : BaseViewModel<AuthState, AuthEffect>(AuthState()) {
@@ -70,7 +54,10 @@ class AuthViewModel(
 
     fun onIntent(intent: AuthIntent) {
         when (intent) {
-            is AuthIntent.SignInWithGoogle -> signInWithGoogle(intent.context)
+            is AuthIntent.SignInWithGoogle -> startGoogleSignIn()
+            is AuthIntent.GoogleTokenReceived -> completeGoogleSignIn(intent.idToken)
+            is AuthIntent.GoogleSignInFailed -> failGoogleSignIn(intent.message, intent.noCredential)
+            is AuthIntent.GoogleSignInCancelled -> cancelGoogleSignIn()
             is AuthIntent.SignInWithEmail -> signInWithEmail()
             is AuthIntent.SignUpWithEmail -> signUpWithEmail()
             is AuthIntent.ToggleMode -> updateState { it.copy(authMode = intent.mode, error = null, showRegisterSuggestion = false) }
@@ -88,51 +75,50 @@ class AuthViewModel(
         }
     }
 
-    private fun signInWithGoogle(context: Context) {
+    // The raw nonce of the Google sign-in in flight. Its SHA-256 goes to Credential Manager (via the
+    // screen) and the raw value goes to Supabase with the token, which lets it check they match.
+    private var pendingGoogleNonce: String? = null
+
+    private fun startGoogleSignIn() {
+        updateState { it.copy(isLoading = true, error = null) }
+        val rawNonce = UUID.randomUUID().toString()
+        pendingGoogleNonce = rawNonce
+        val hashedNonce = MessageDigest.getInstance("SHA-256")
+            .digest(rawNonce.toByteArray())
+            .joinToString("") { "%02x".format(it) }
+        sendEffect(AuthEffect.RequestGoogleCredential(hashedNonce))
+    }
+
+    private fun completeGoogleSignIn(idToken: String) {
+        val rawNonce = pendingGoogleNonce
+        pendingGoogleNonce = null
+        if (rawNonce == null) {
+            updateState { it.copy(isLoading = false) }
+            return
+        }
         viewModelScope.launch {
-            updateState { it.copy(isLoading = true, error = null) }
-            val rawNonce = UUID.randomUUID().toString()
-            val hashedNonce = MessageDigest.getInstance("SHA-256")
-                .digest(rawNonce.toByteArray())
-                .joinToString("") { "%02x".format(it) }
-            val oneTapResult = catchResult {
-                val request = GetCredentialRequest.Builder()
-                    .addCredentialOption(
-                        GetGoogleIdOption.Builder()
-                            .setFilterByAuthorizedAccounts(false)
-                            .setServerClientId(googleSignInConfig.webClientId)
-                            .setNonce(hashedNonce)
-                            .build()
-                    ).build()
-                credentialManager.getCredential(context, request)
-            }
-            val credentialResult = if (oneTapResult.isFailure && oneTapResult.exceptionOrNull() is NoCredentialException) {
-                catchResult {
-                    val request = GetCredentialRequest.Builder()
-                        .addCredentialOption(
-                            GetSignInWithGoogleOption.Builder(googleSignInConfig.webClientId)
-                                .setNonce(hashedNonce)
-                                .build()
-                        ).build()
-                    credentialManager.getCredential(context, request)
-                }
-            } else { oneTapResult }
-            credentialResult.onSuccess { result ->
-                catchResult {
-                    val googleCredential = GoogleIdTokenCredential.createFrom(result.credential.data)
-                    authRepository.signInWithGoogle(googleCredential.idToken, rawNonce)
-                    finishSignIn()
-                }.onFailure { e ->
-                    AppLogger.e(TAG, "Google sign-in supabase failed", e)
-                    updateState { it.copy(error = e.message ?: "Error con Google") }
-                }
+            catchResult {
+                authRepository.signInWithGoogle(idToken, rawNonce)
+                finishSignIn()
             }.onFailure { e ->
-                AppLogger.e(TAG, "Google sign-in credential failed", e)
-                if (e is NoCredentialException) sendEffect(AuthEffect.OpenAddGoogleAccount)
-                else updateState { it.copy(error = e.message ?: "Error con Google") }
+                AppLogger.e(TAG, "Google sign-in supabase failed", e)
+                updateState { it.copy(error = e.message ?: "Error con Google") }
             }
             updateState { it.copy(isLoading = false) }
         }
+    }
+
+    private fun failGoogleSignIn(message: String?, noCredential: Boolean) {
+        pendingGoogleNonce = null
+        AppLogger.e(TAG, "Google sign-in credential failed: $message")
+        if (noCredential) sendEffect(AuthEffect.OpenAddGoogleAccount)
+        else updateState { it.copy(error = message ?: "Error con Google") }
+        updateState { it.copy(isLoading = false) }
+    }
+
+    private fun cancelGoogleSignIn() {
+        pendingGoogleNonce = null
+        updateState { it.copy(isLoading = false) }
     }
 
     private fun signInWithEmail() {

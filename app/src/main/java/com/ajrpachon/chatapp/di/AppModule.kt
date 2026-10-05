@@ -75,6 +75,7 @@ import android.app.NotificationManager
 import android.content.Context
 import androidx.credentials.CredentialManager
 import androidx.work.WorkManager
+import com.ajrpachon.chatapp.ui.auth.GoogleCredentialFetcher
 import okhttp3.OkHttpClient
 import org.koin.android.ext.koin.androidApplication
 import org.koin.android.ext.koin.androidContext
@@ -131,6 +132,7 @@ val viewModelModule = module {
     // Wrappers so viewModelOf can resolve them by type: a BuildConfig string and the coroutine dispatchers.
     single { GoogleSignInConfig(BuildConfig.GOOGLE_WEB_CLIENT_ID) }
     single { AppDispatchers() }
+    factory { GoogleCredentialFetcher(get(), get()) }
 
     viewModelOf(::AuthViewModel)
 
