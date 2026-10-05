@@ -37,7 +37,7 @@ import com.ajrpachon.chatapp.ui.chat.gallery.ChatMediaGalleryViewModel
 import com.ajrpachon.chatapp.ui.chat.ChatViewModel
 import com.ajrpachon.chatapp.ui.chat.StickerPackViewModel
 import com.ajrpachon.chatapp.ui.chat.GifPickerViewModel
-import com.ajrpachon.chatapp.ui.components.EmojiPickerViewModel
+import com.ajrpachon.chatapp.ui.emoji.EmojiPickerViewModel
 import com.ajrpachon.chatapp.ui.conversations.ConversationListViewModel
 import com.ajrpachon.chatapp.ui.group.CreateGroupViewModel
 import com.ajrpachon.chatapp.ui.group.GroupInfoViewModel

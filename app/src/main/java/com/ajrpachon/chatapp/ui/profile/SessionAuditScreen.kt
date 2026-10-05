@@ -37,9 +37,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -68,6 +70,22 @@ fun SessionAuditScreen(
         }
     }
 
+    SessionAuditContent(
+        state = state,
+        snackbarHostState = snackbarHostState,
+        onIntent = vm::onIntent,
+        onBack = onBack,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun SessionAuditContent(
+    state: SessionAuditState,
+    snackbarHostState: SnackbarHostState,
+    onIntent: (SessionAuditIntent) -> Unit,
+    onBack: () -> Unit,
+) {
     val otherSessions = state.sessions.filter { !it.isCurrent }
 
     Scaffold(
@@ -83,7 +101,7 @@ fun SessionAuditScreen(
                 actions = {
                     if (otherSessions.isNotEmpty()) {
                         TextButton(
-                            onClick = { vm.onIntent(SessionAuditIntent.RevokeAllOtherSessions) },
+                            onClick = { onIntent(SessionAuditIntent.RevokeAllOtherSessions) },
                         ) {
                             Text(
                                 stringResource(R.string.session_audit_close_all_others),
@@ -143,12 +161,50 @@ fun SessionAuditScreen(
                     items(state.sessions, key = { it.id }) { session ->
                         SessionCard(
                             session = session,
-                            onRevoke = { vm.onIntent(SessionAuditIntent.RevokeSession(session.id)) },
+                            onRevoke = { onIntent(SessionAuditIntent.RevokeSession(session.id)) },
                         )
                     }
                 }
             }
         }
+    }
+}
+
+private const val PREVIEW_NOW = 1_760_000_000_000L
+
+private fun previewSession(id: String, device: String, current: Boolean) =
+    SessionInfo(id = id, deviceInfo = device, createdAt = PREVIEW_NOW - 86_400_000L, lastActiveAt = PREVIEW_NOW - 3_600_000L, isCurrent = current)
+
+@Preview(name = "Sessions", showBackground = true)
+@Composable
+internal fun SessionAuditPreview() {
+    ChatAppTheme {
+        SessionAuditContent(
+            state = SessionAuditState(
+                isLoading = false,
+                sessions = listOf(
+                    previewSession("1", "Pixel 9 Pro XL · Android 16", current = true),
+                    previewSession("2", "Pixel 7 · Android 15", current = false),
+                    previewSession("3", "Galaxy Tab S9 · Android 15", current = false),
+                ),
+            ),
+            snackbarHostState = remember { SnackbarHostState() },
+            onIntent = {},
+            onBack = {},
+        )
+    }
+}
+
+@Preview(name = "Loading", showBackground = true)
+@Composable
+internal fun SessionAuditLoadingPreview() {
+    ChatAppTheme {
+        SessionAuditContent(
+            state = SessionAuditState(isLoading = true),
+            snackbarHostState = remember { SnackbarHostState() },
+            onIntent = {},
+            onBack = {},
+        )
     }
 }
 
