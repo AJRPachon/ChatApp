@@ -5,7 +5,6 @@ import com.ajrpachon.chatapp.data.remote.dto.MessageDTO
 import com.ajrpachon.chatapp.data.remote.dto.UserDTO
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.auth.user.UserSession
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.realtime.PostgresAction
@@ -29,9 +28,23 @@ private val lenientJson = Json { ignoreUnknownKeys = true }
 @Serializable
 internal data class ParticipantUserIdDTO(@SerialName("user_id") val userId: String)
 
+// Every Realtime channel below gets a per-subscription suffix: the same user's conversation list can
+// be collected more than once concurrently (e.g. ConversationListViewModel's long-lived collection
+// plus ChatForwardDelegate.showForwardDialog's one-shot `.first()` call while the list screen is
+// still alive in the back stack). supabase-kt looks channels up by topic name, so two collectors
+// sharing a fixed topic get the SAME RealtimeChannel instance, and the second collector's
+// postgresChangeFlow() call then throws "You cannot call postgresChangeFlow after joining the
+// channel". That IllegalStateException was swallowed upstream before it reached the UI, so
+// e.g. showForwardDialog silently failed to ever show.
+private fun uniqueTopic(prefix: String, userId: String) = "$prefix:$userId-${System.nanoTime()}"
+
 class ConversationRemoteSource(private val supabase: SupabaseClient) {
 
-    fun ensureSession(): UserSession? = supabase.auth.currentSessionOrNull()
+    /**
+     * The signed-in user's id. Reading the stored session also makes sure the user JWT is loaded,
+     * which the Realtime subscriptions below need to be authenticated.
+     */
+    fun currentUserId(): String? = supabase.auth.currentSessionOrNull()?.user?.id
 
     suspend fun fetchParticipantsWithConversations(userId: String): List<ConversationParticipantWithConvDTO> =
         supabase.postgrest["conversation_participants"]
@@ -73,7 +86,7 @@ class ConversationRemoteSource(private val supabase: SupabaseClient) {
     }
 
     fun observeParticipantInserts(userId: String): Flow<JsonObject> = channelFlow {
-        val ch = supabase.channel("participants:$userId")
+        val ch = supabase.channel(uniqueTopic("participants", userId))
         val flow = ch.postgresChangeFlow<PostgresAction.Insert>(schema = "public") {
             table = "conversation_participants"
         }
@@ -90,7 +103,7 @@ class ConversationRemoteSource(private val supabase: SupabaseClient) {
     }
 
     fun observeNewMessageInserts(userId: String): Flow<MessageDTO> = channelFlow {
-        val ch = supabase.channel("messages:list:$userId")
+        val ch = supabase.channel(uniqueTopic("messages:list", userId))
         val flow = ch.postgresChangeFlow<PostgresAction.Insert>(schema = "public") {
             table = "messages"
         }
@@ -111,7 +124,7 @@ class ConversationRemoteSource(private val supabase: SupabaseClient) {
     }
 
     fun observeConversationUpdates(userId: String): Flow<JsonObject> = channelFlow {
-        val ch = supabase.channel("conversations:updates:$userId-${System.nanoTime()}")
+        val ch = supabase.channel(uniqueTopic("conversations:updates", userId))
         val flow = ch.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
             table = "conversations"
         }
@@ -128,7 +141,7 @@ class ConversationRemoteSource(private val supabase: SupabaseClient) {
     }
 
     fun observeProfileUpdates(userId: String): Flow<JsonObject> = channelFlow {
-        val ch = supabase.channel("profiles:updates:$userId-${System.nanoTime()}")
+        val ch = supabase.channel(uniqueTopic("profiles:updates", userId))
         val flow = ch.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
             table = "profiles"
         }
