@@ -7,6 +7,7 @@ import com.ajrpachon.chatapp.ui.common.formatLastSeen
 import com.ajrpachon.chatapp.domain.model.CallBO
 import com.ajrpachon.chatapp.domain.model.ScheduledMessage
 import com.ajrpachon.chatapp.domain.model.ConversationBO
+import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.model.UserRelationship
@@ -178,6 +179,8 @@ data class ChatForwardUiState(
 data class ChatGroupPresenceUiState(
     val onlineMemberCount: Int = 0,
     val memberCount: Int = 0,
+    // Live member list, the source for `@mention` autocomplete (see ChatState.mentionSuggestions).
+    val members: List<GroupMemberBO> = emptyList(),
 )
 
 /**
@@ -280,6 +283,14 @@ data class ChatState(
     val isMultiSelectActive: Boolean get() = selectedMessageIds.isNotEmpty()
     val latestPinnedMessage: MessageBO? get() = pinnedMessages.firstOrNull()
 
+    /**
+     * `@mention` autocomplete for group chats, derived from [inputText] rather than stored, so it
+     * clears itself wherever the input is reset (send, edit, cancel, schedule) without each of
+     * those paths having to remember to.
+     */
+    val mentionSuggestions: List<GroupMemberBO>
+        get() = if (isGroup) ChatMentions.suggestions(inputText, groupPresence.members, currentUserId) else emptyList()
+
     /** Formatted label for the disappearing-mode timer shown in the app bar. */
     val disappearingDurationLabel: String get() = formatDisappearingDuration(disappearing.seconds)
 
@@ -370,6 +381,7 @@ sealed interface ChatIntent {
     data object DismissDisappearingModeSheet : ChatIntent
     // seconds: 0 = off, positive = duration in seconds
     data class SetDisappearingMode(val conversationId: String, val seconds: Long) : ChatIntent
+    data class SelectMention(val member: GroupMemberBO) : ChatIntent
     data object ToggleIncognito : ChatIntent
     data object DismissIncognitoDialog : ChatIntent
     data object ConfirmIncognito : ChatIntent

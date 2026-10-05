@@ -44,6 +44,8 @@
     <string name="chat_editing_message">Editando mensaje</string>
     <string name="chat_cancel_edit">Cancelar edición</string>
     <string name="chat_typing_single">%1$s está escribiendo…</string>
+    <string name="chat_mention_click_label">Mencionar</string>
+    <string name="chat_mention_username">@%1$s</string>
     <string name="chat_typing_multiple">%1$s están escribiendo…</string>
     <string name="chat_scroll_to_bottom">Ir al final</string>
 
