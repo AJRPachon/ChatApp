@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.theme.Signal_OnSurface
@@ -125,4 +126,16 @@ private fun BlinkingCursor() {
             .height(30.dp)
             .background(Signal_Primary.copy(alpha = alpha)),
     )
+}
+
+@Preview(name = "Splash light", showBackground = true)
+@Composable
+internal fun AppSplashLightPreview() {
+    AppSplashScreen(darkTheme = false)
+}
+
+@Preview(name = "Splash dark", showBackground = true)
+@Composable
+internal fun AppSplashDarkPreview() {
+    AppSplashScreen(darkTheme = true)
 }
