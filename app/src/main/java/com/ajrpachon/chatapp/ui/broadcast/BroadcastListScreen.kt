@@ -48,12 +48,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.domain.model.UserBO
+import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
+import kotlinx.datetime.Instant
 import org.koin.androidx.compose.koinViewModel
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun BroadcastListScreen(
     onBack: () -> Unit,
@@ -72,23 +75,33 @@ fun BroadcastListScreen(
         }
     }
 
+    BroadcastListContent(state = state, onIntent = vm::onIntent, onBack = onBack)
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+fun BroadcastListContent(
+    state: BroadcastListUiState,
+    onIntent: (BroadcastListIntent) -> Unit,
+    onBack: () -> Unit,
+) {
     // ── Create dialog ────────────────────────────────────────────────────────
     if (state.showCreateDialog) {
         AlertDialog(
-            onDismissRequest = { vm.onIntent(BroadcastListIntent.DismissCreateDialog) },
+            onDismissRequest = { onIntent(BroadcastListIntent.DismissCreateDialog) },
             title = { Text(stringResource(R.string.broadcast_new_list_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = state.newListName,
-                        onValueChange = { vm.onIntent(BroadcastListIntent.NameChanged(it)) },
+                        onValueChange = { onIntent(BroadcastListIntent.NameChanged(it)) },
                         label = { Text(stringResource(R.string.broadcast_list_name_label)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
                     OutlinedTextField(
                         value = state.searchQuery,
-                        onValueChange = { vm.onIntent(BroadcastListIntent.SearchQueryChanged(it)) },
+                        onValueChange = { onIntent(BroadcastListIntent.SearchQueryChanged(it)) },
                         label = { Text(stringResource(R.string.broadcast_search_contacts_label)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
@@ -97,7 +110,7 @@ fun BroadcastListScreen(
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             state.selectedMembers.forEach { user ->
                                 AssistChip(
-                                    onClick = { vm.onIntent(BroadcastListIntent.ToggleMember(user)) },
+                                    onClick = { onIntent(BroadcastListIntent.ToggleMember(user)) },
                                     label = { Text(user.displayName) },
                                     leadingIcon = {
                                         Icon(
@@ -134,7 +147,7 @@ fun BroadcastListScreen(
                                         )
                                     }
                                 },
-                                modifier = Modifier.clickable { vm.onIntent(BroadcastListIntent.ToggleMember(user)) },
+                                modifier = Modifier.clickable { onIntent(BroadcastListIntent.ToggleMember(user)) },
                             )
                         }
                     }
@@ -142,7 +155,7 @@ fun BroadcastListScreen(
             },
             confirmButton = {
                 Button(
-                    onClick = { vm.onIntent(BroadcastListIntent.CreateList) },
+                    onClick = { onIntent(BroadcastListIntent.CreateList) },
                     enabled = !state.isCreating,
                 ) {
                     if (state.isCreating) CircularProgressIndicator(modifier = Modifier.size(16.dp))
@@ -150,7 +163,7 @@ fun BroadcastListScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { vm.onIntent(BroadcastListIntent.DismissCreateDialog) }) {
+                TextButton(onClick = { onIntent(BroadcastListIntent.DismissCreateDialog) }) {
                     Text(stringResource(R.string.broadcast_cancel_button))
                 }
             },
@@ -161,7 +174,7 @@ fun BroadcastListScreen(
     state.sendingListId?.let { listId ->
         val listItem = state.lists.find { it.id == listId }
         AlertDialog(
-            onDismissRequest = { vm.onIntent(BroadcastListIntent.DismissSendDialog) },
+            onDismissRequest = { onIntent(BroadcastListIntent.DismissSendDialog) },
             title = { Text(stringResource(R.string.broadcast_send_message_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -174,7 +187,7 @@ fun BroadcastListScreen(
                     }
                     OutlinedTextField(
                         value = state.broadcastMessage,
-                        onValueChange = { vm.onIntent(BroadcastListIntent.BroadcastMessageChanged(it)) },
+                        onValueChange = { onIntent(BroadcastListIntent.BroadcastMessageChanged(it)) },
                         label = { Text(stringResource(R.string.broadcast_message_label)) },
                         minLines = 3,
                         modifier = Modifier.fillMaxWidth(),
@@ -183,7 +196,7 @@ fun BroadcastListScreen(
             },
             confirmButton = {
                 Button(
-                    onClick = { vm.onIntent(BroadcastListIntent.SendBroadcast) },
+                    onClick = { onIntent(BroadcastListIntent.SendBroadcast) },
                     enabled = !state.isSending && state.broadcastMessage.isNotBlank(),
                 ) {
                     if (state.isSending) CircularProgressIndicator(modifier = Modifier.size(16.dp))
@@ -195,7 +208,7 @@ fun BroadcastListScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { vm.onIntent(BroadcastListIntent.DismissSendDialog) }) {
+                TextButton(onClick = { onIntent(BroadcastListIntent.DismissSendDialog) }) {
                     Text(stringResource(R.string.broadcast_cancel_button))
                 }
             },
@@ -205,11 +218,11 @@ fun BroadcastListScreen(
     // ── Error dialog ─────────────────────────────────────────────────────────
     state.error?.let { error ->
         AlertDialog(
-            onDismissRequest = { vm.onIntent(BroadcastListIntent.DismissError) },
+            onDismissRequest = { onIntent(BroadcastListIntent.DismissError) },
             title = { Text(stringResource(R.string.broadcast_error_title)) },
             text = { Text(error) },
             confirmButton = {
-                TextButton(onClick = { vm.onIntent(BroadcastListIntent.DismissError) }) { Text(stringResource(R.string.broadcast_ok_button)) }
+                TextButton(onClick = { onIntent(BroadcastListIntent.DismissError) }) { Text(stringResource(R.string.broadcast_ok_button)) }
             },
         )
     }
@@ -227,7 +240,7 @@ fun BroadcastListScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { vm.onIntent(BroadcastListIntent.OpenCreateDialog) }) {
+            FloatingActionButton(onClick = { onIntent(BroadcastListIntent.OpenCreateDialog) }) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(R.string.broadcast_new_list_content_description))
             }
         },
@@ -288,14 +301,14 @@ fun BroadcastListScreen(
                         },
                         trailingContent = {
                             Row {
-                                IconButton(onClick = { vm.onIntent(BroadcastListIntent.OpenSendDialog(item.id)) }) {
+                                IconButton(onClick = { onIntent(BroadcastListIntent.OpenSendDialog(item.id)) }) {
                                     Icon(
                                         Icons.Default.Send,
                                         contentDescription = stringResource(R.string.broadcast_send_content_description),
                                         tint = MaterialTheme.colorScheme.primary,
                                     )
                                 }
-                                IconButton(onClick = { vm.onIntent(BroadcastListIntent.DeleteList(item.id)) }) {
+                                IconButton(onClick = { onIntent(BroadcastListIntent.DeleteList(item.id)) }) {
                                     Icon(
                                         Icons.Default.Delete,
                                         contentDescription = stringResource(R.string.broadcast_delete_content_description),
@@ -310,3 +323,64 @@ fun BroadcastListScreen(
         }
     }
 }
+
+private fun previewUser(id: String, name: String) = UserBO(
+    id = id,
+    email = "",
+    username = name.lowercase().replace(" ", "_"),
+    displayName = name,
+    avatarUrl = null,
+    createdAt = Instant.fromEpochMilliseconds(0L),
+)
+
+private val previewLists = listOf(
+    BroadcastListItem(
+        id = "1",
+        name = "Familia",
+        createdAt = 0L,
+        members = listOf(previewUser("1", "Ana García"), previewUser("2", "Bruno López")),
+    ),
+    BroadcastListItem(id = "2", name = "Trabajo", createdAt = 0L, members = listOf(previewUser("3", "Carla Ruiz"))),
+)
+
+@Preview(name = "Lists", showBackground = true)
+@Composable
+internal fun BroadcastListPreview() {
+    ChatAppTheme {
+        BroadcastListContent(
+            state = BroadcastListUiState(lists = previewLists, isLoading = false),
+            onIntent = {},
+            onBack = {},
+        )
+    }
+}
+
+@Preview(name = "Empty", showBackground = true)
+@Composable
+internal fun BroadcastListEmptyPreview() {
+    ChatAppTheme {
+        BroadcastListContent(state = BroadcastListUiState(isLoading = false), onIntent = {}, onBack = {})
+    }
+}
+
+@Preview(name = "Create dialog", showBackground = true)
+@Composable
+internal fun BroadcastListCreateDialogPreview() {
+    val ana = previewUser("1", "Ana García")
+    ChatAppTheme {
+        BroadcastListContent(
+            state = BroadcastListUiState(
+                lists = previewLists,
+                isLoading = false,
+                showCreateDialog = true,
+                newListName = "Amigos",
+                searchResults = listOf(ana, previewUser("2", "Bruno López")),
+                selectedMembers = listOf(ana),
+                selectedMemberIds = setOf(ana.id),
+            ),
+            onIntent = {},
+            onBack = {},
+        )
+    }
+}
+

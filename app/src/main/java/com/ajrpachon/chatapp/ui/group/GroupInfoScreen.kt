@@ -69,6 +69,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
@@ -84,12 +85,13 @@ import com.github.skydoves.navgraph.annotations.NavDestination
 import com.github.skydoves.navgraph.annotations.NavEdge
 import com.ajrpachon.chatapp.GroupInfoRoute
 import com.ajrpachon.chatapp.UserInfoRoute
+import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
+import kotlinx.datetime.Instant
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 
 @NavEdge(to = UserInfoRoute::class, label = "Member Info")
 @NavDestination(route = GroupInfoRoute::class)
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupInfoScreen(
     conversationId: String,
@@ -150,18 +152,36 @@ fun GroupInfoScreen(
         }
     }
 
+    GroupInfoContent(
+        state = state,
+        snackbarHostState = snackbarHostState,
+        onIntent = vm::onIntent,
+        onPickAvatar = { avatarPickerLauncher.launch("image/*") },
+        onBack = onBack,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun GroupInfoContent(
+    state: GroupInfoState,
+    snackbarHostState: SnackbarHostState,
+    onIntent: (GroupInfoIntent) -> Unit,
+    onPickAvatar: () -> Unit,
+    onBack: () -> Unit,
+) {
     val sheetState = rememberModalBottomSheetState()
 
     if (state.showAddMemberSheet) {
         ModalBottomSheet(
-            onDismissRequest = { vm.onIntent(GroupInfoIntent.CloseAddMember) },
+            onDismissRequest = { onIntent(GroupInfoIntent.CloseAddMember) },
             sheetState = sheetState,
         ) {
             AddMemberSheet(
                 query = state.addMemberQuery,
                 results = state.addMemberResults,
-                onQueryChange = { vm.onIntent(GroupInfoIntent.AddMemberQueryChanged(it)) },
-                onAddUser = { vm.onIntent(GroupInfoIntent.AddMember(it)) },
+                onQueryChange = { onIntent(GroupInfoIntent.AddMemberQueryChanged(it)) },
+                onAddUser = { onIntent(GroupInfoIntent.AddMember(it)) },
                 modifier = Modifier.padding(bottom = 32.dp),
             )
         }
@@ -171,16 +191,16 @@ fun GroupInfoScreen(
     if (state.showHistoryDialog && pendingUser != null) {
         HistoryChoiceDialog(
             userName = pendingUser.displayName,
-            onSeeHistory = { vm.onIntent(GroupInfoIntent.ConfirmAddMember(canSeeHistory = true)) },
-            onBlankHistory = { vm.onIntent(GroupInfoIntent.ConfirmAddMember(canSeeHistory = false)) },
-            onDismiss = { vm.onIntent(GroupInfoIntent.DismissHistoryDialog) },
+            onSeeHistory = { onIntent(GroupInfoIntent.ConfirmAddMember(canSeeHistory = true)) },
+            onBlankHistory = { onIntent(GroupInfoIntent.ConfirmAddMember(canSeeHistory = false)) },
+            onDismiss = { onIntent(GroupInfoIntent.DismissHistoryDialog) },
         )
     }
 
     if (state.showInviteLinkSheet && state.inviteLink != null) {
         val clipboardManager = LocalClipboardManager.current
         ModalBottomSheet(
-            onDismissRequest = { vm.onIntent(GroupInfoIntent.DismissInviteLinkSheet) },
+            onDismissRequest = { onIntent(GroupInfoIntent.DismissInviteLinkSheet) },
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         ) {
             Column(
@@ -207,12 +227,12 @@ fun GroupInfoScreen(
                         onClick = {
                             val link = state.inviteLink ?: return@OutlinedButton
                             clipboardManager.setText(AnnotatedString(link))
-                            vm.onIntent(GroupInfoIntent.DismissInviteLinkSheet)
+                            onIntent(GroupInfoIntent.DismissInviteLinkSheet)
                         },
                         modifier = Modifier.weight(1f),
                     ) { Text(stringResource(R.string.group_copy)) }
                     Button(
-                        onClick = { vm.onIntent(GroupInfoIntent.ShareInviteLink) },
+                        onClick = { onIntent(GroupInfoIntent.ShareInviteLink) },
                         modifier = Modifier.weight(1f),
                     ) { Text(stringResource(R.string.group_share)) }
                 }
@@ -224,10 +244,10 @@ fun GroupInfoScreen(
         EditGroupDialog(
             name = state.groupName,
             description = state.groupDescription,
-            onNameChange = { vm.onIntent(GroupInfoIntent.NameChanged(it)) },
-            onDescChange = { vm.onIntent(GroupInfoIntent.DescriptionChanged(it)) },
-            onSave = { vm.onIntent(GroupInfoIntent.SaveGroupInfo) },
-            onDismiss = { vm.onIntent(GroupInfoIntent.CloseEditDialog) },
+            onNameChange = { onIntent(GroupInfoIntent.NameChanged(it)) },
+            onDescChange = { onIntent(GroupInfoIntent.DescriptionChanged(it)) },
+            onSave = { onIntent(GroupInfoIntent.SaveGroupInfo) },
+            onDismiss = { onIntent(GroupInfoIntent.CloseEditDialog) },
         )
     }
 
@@ -253,7 +273,7 @@ fun GroupInfoScreen(
                                     leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
                                     onClick = {
                                         menuExpanded = false
-                                        vm.onIntent(GroupInfoIntent.OpenEditDialog)
+                                        onIntent(GroupInfoIntent.OpenEditDialog)
                                     },
                                 )
                             }
@@ -268,7 +288,7 @@ fun GroupInfoScreen(
                                 },
                                 onClick = {
                                     menuExpanded = false
-                                    vm.onIntent(GroupInfoIntent.LeaveGroup)
+                                    onIntent(GroupInfoIntent.LeaveGroup)
                                 },
                             )
                         }
@@ -288,7 +308,7 @@ fun GroupInfoScreen(
                     avatarUrl = state.groupAvatarUrl,
                     isAdmin = state.isCurrentUserAdmin,
                     isSaving = state.isSaving,
-                    onPickAvatar = { avatarPickerLauncher.launch("image/*") },
+                    onPickAvatar = { onPickAvatar() },
                 )
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 Row(
@@ -304,7 +324,7 @@ fun GroupInfoScreen(
                         modifier = Modifier.weight(1f),
                     )
                     if (state.isCurrentUserAdmin) {
-                        IconButton(onClick = { vm.onIntent(GroupInfoIntent.OpenAddMember) }) {
+                        IconButton(onClick = { onIntent(GroupInfoIntent.OpenAddMember) }) {
                             Icon(Icons.Default.AddCircle, contentDescription = stringResource(R.string.group_add_member_content_description))
                         }
                     }
@@ -317,9 +337,9 @@ fun GroupInfoScreen(
                     isCurrentUser = member.userId == state.currentUserId,
                     isCurrentUserAdmin = state.isCurrentUserAdmin,
                     isLastAdmin = member.userId == state.lastAdminId,
-                    onRemove = { vm.onIntent(GroupInfoIntent.RemoveMember(member.userId)) },
-                    onPromote = { vm.onIntent(GroupInfoIntent.PromoteMember(member.userId)) },
-                    onDemote = { vm.onIntent(GroupInfoIntent.DemoteMember(member.userId)) },
+                    onRemove = { onIntent(GroupInfoIntent.RemoveMember(member.userId)) },
+                    onPromote = { onIntent(GroupInfoIntent.PromoteMember(member.userId)) },
+                    onDemote = { onIntent(GroupInfoIntent.DemoteMember(member.userId)) },
                 )
             }
 
@@ -330,11 +350,72 @@ fun GroupInfoScreen(
                         headlineContent = { Text(stringResource(R.string.group_invite_link_headline)) },
                         supportingContent = { Text(stringResource(R.string.group_invite_link_supporting)) },
                         leadingContent = { Icon(Icons.Default.Link, contentDescription = null) },
-                        modifier = Modifier.clickable { vm.onIntent(GroupInfoIntent.GenerateInviteLink) },
+                        modifier = Modifier.clickable { onIntent(GroupInfoIntent.GenerateInviteLink) },
                     )
                 }
             }
         }
+    }
+}
+
+private val previewJoinedAt = Instant.fromEpochMilliseconds(0L)
+
+private fun previewMember(id: String, name: String, role: GroupRole) = GroupMemberBO(
+    userId = id,
+    conversationId = "c1",
+    displayName = name,
+    username = name.lowercase().replace(" ", "_"),
+    avatarUrl = null,
+    role = role,
+    joinedAt = previewJoinedAt,
+)
+
+private val previewMembers = listOf(
+    previewMember("1", "Ana García", GroupRole.ADMIN),
+    previewMember("2", "Bruno López", GroupRole.MEMBER),
+    previewMember("3", "Carla Ruiz", GroupRole.MEMBER),
+)
+
+@Preview(name = "Admin", showBackground = true)
+@Composable
+internal fun GroupInfoAdminPreview() {
+    ChatAppTheme {
+        GroupInfoContent(
+            state = GroupInfoState(
+                members = previewMembers,
+                currentUserId = "1",
+                groupName = "Equipo Android",
+                groupDescription = "Todo sobre la app de chat",
+                currentUserRole = GroupRole.ADMIN,
+                isCurrentUserAdmin = true,
+                adminCount = 1,
+                lastAdminId = "1",
+            ),
+            snackbarHostState = remember { SnackbarHostState() },
+            onIntent = {},
+            onPickAvatar = {},
+            onBack = {},
+        )
+    }
+}
+
+@Preview(name = "Member", showBackground = true)
+@Composable
+internal fun GroupInfoMemberPreview() {
+    ChatAppTheme {
+        GroupInfoContent(
+            state = GroupInfoState(
+                members = previewMembers,
+                currentUserId = "2",
+                groupName = "Equipo Android",
+                adminCount = 1,
+                lastAdminId = "1",
+            ),
+            snackbarHostState = remember { SnackbarHostState() },
+            onIntent = {},
+            onPickAvatar = {},
+            onBack = {},
+        )
     }
 }
 

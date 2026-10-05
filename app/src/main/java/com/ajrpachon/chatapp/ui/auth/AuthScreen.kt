@@ -77,6 +77,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.common.AppSplashScreen
@@ -87,6 +88,7 @@ import com.github.skydoves.navgraph.annotations.NavDestination
 import com.github.skydoves.navgraph.annotations.NavEdge
 import com.ajrpachon.chatapp.AuthRoute
 import com.ajrpachon.chatapp.ConversationListRoute
+import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -151,6 +153,15 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
         }
     }
 
+    AuthContent(state = state, snackbarHostState = snackbar, onIntent = vm::onIntent)
+}
+
+@Composable
+fun AuthContent(
+    state: AuthState,
+    snackbarHostState: SnackbarHostState,
+    onIntent: (AuthIntent) -> Unit,
+) {
     // AuthViewModel's own init block (a second integrity check + session restore) keeps this
     // true for a beat after MainActivity's splash has already come down. Render the same
     // AppSplashScreen rather than a bare spinner: MainActivity's splash gate only waits on ITS
@@ -164,7 +175,7 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
         return
     }
 
-    Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { innerPadding ->
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { innerPadding ->
         when {
             state.needsMfaChallenge -> Box(
                 modifier = Modifier.fillMaxSize().padding(innerPadding),
@@ -174,8 +185,8 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
                     code = state.mfaCodeInput,
                     error = state.mfaError,
                     isLoading = state.mfaIsLoading,
-                    onCodeChange = { vm.onIntent(AuthIntent.MfaCodeChanged(it)) },
-                    onVerify = { vm.onIntent(AuthIntent.VerifyMfaCode) },
+                    onCodeChange = { onIntent(AuthIntent.MfaCodeChanged(it)) },
+                    onVerify = { onIntent(AuthIntent.VerifyMfaCode) },
                 )
             }
 
@@ -186,18 +197,66 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
                 UsernameSetupContent(
                     username = state.usernameInput,
                     error = state.usernameError,
-                    onUsernameChange = { vm.onIntent(AuthIntent.UsernameChanged(it)) },
-                    onConfirm = { vm.onIntent(AuthIntent.ConfirmUsername) },
+                    onUsernameChange = { onIntent(AuthIntent.UsernameChanged(it)) },
+                    onConfirm = { onIntent(AuthIntent.ConfirmUsername) },
                 )
             }
 
             else -> LoginContent(
                 state = state,
-                onIntent = { vm.onIntent(it) },
-                onGoogleSignIn = { vm.onIntent(AuthIntent.SignInWithGoogle) },
+                onIntent = onIntent,
+                onGoogleSignIn = { onIntent(AuthIntent.SignInWithGoogle) },
                 contentPadding = innerPadding,
             )
         }
+    }
+}
+
+@Preview(name = "Sign in", showBackground = true)
+@Composable
+internal fun AuthSignInPreview() {
+    ChatAppTheme {
+        AuthContent(
+            state = AuthState(isLoading = false),
+            snackbarHostState = remember { SnackbarHostState() },
+            onIntent = {},
+        )
+    }
+}
+
+@Preview(name = "Sign up", showBackground = true)
+@Composable
+internal fun AuthSignUpPreview() {
+    ChatAppTheme {
+        AuthContent(
+            state = AuthState(isLoading = false, authMode = AuthMode.SIGN_UP),
+            snackbarHostState = remember { SnackbarHostState() },
+            onIntent = {},
+        )
+    }
+}
+
+@Preview(name = "Username setup", showBackground = true)
+@Composable
+internal fun AuthUsernameSetupPreview() {
+    ChatAppTheme {
+        AuthContent(
+            state = AuthState(isLoading = false, needsUsername = true, usernameInput = "ana_g"),
+            snackbarHostState = remember { SnackbarHostState() },
+            onIntent = {},
+        )
+    }
+}
+
+@Preview(name = "MFA challenge", showBackground = true)
+@Composable
+internal fun AuthMfaChallengePreview() {
+    ChatAppTheme {
+        AuthContent(
+            state = AuthState(isLoading = false, needsMfaChallenge = true, mfaCodeInput = "123"),
+            snackbarHostState = remember { SnackbarHostState() },
+            onIntent = {},
+        )
     }
 }
 
