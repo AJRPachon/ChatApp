@@ -2,6 +2,7 @@ package com.ajrpachon.chatapp.ui.profile
 import com.ajrpachon.chatapp.utils.catchResult
 
 import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.AppLockRepository
 import com.ajrpachon.chatapp.domain.repository.AuthRepository
@@ -10,6 +11,8 @@ import com.ajrpachon.chatapp.domain.repository.ThemeRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
+import com.ajrpachon.chatapp.ui.common.UiText
+import com.ajrpachon.chatapp.ui.common.toUiText
 import com.ajrpachon.chatapp.utils.AnalyticsEvents
 import com.ajrpachon.chatapp.utils.AppDispatchers
 import com.ajrpachon.chatapp.utils.AppLogger
@@ -109,7 +112,7 @@ class ProfileViewModel(
                 updateState { it.copy(avatarUrl = url) }
             }.onFailure { e ->
                 AppLogger.e(TAG, "Avatar upload failed", e)
-                updateState { it.copy(error = e.message ?: "Error al subir la foto") }
+                updateState { it.copy(error = e.toUiText(R.string.profile_error_upload_photo)) }
             }
             updateState { it.copy(isUploadingAvatar = false) }
         }
@@ -165,15 +168,13 @@ class ProfileViewModel(
         }
     }
 
-    private fun Throwable.toDeleteAccountErrorMessage(): String {
+    private fun Throwable.toDeleteAccountErrorMessage(): UiText {
         val restException = this as? io.github.jan.supabase.exceptions.RestException
         return when (restException?.statusCode) {
-            HTTP_UNAUTHORIZED ->
-                "Tu sesion ya no es valida. Es posible que la cuenta ya se haya eliminado; " +
-                    "vuelve a iniciar sesion para comprobarlo."
-            HTTP_TOO_MANY_REQUESTS -> "Demasiados intentos. Espera un minuto y vuelve a intentarlo."
-            HTTP_SERVER_ERROR -> "No se pudo eliminar la cuenta en el servidor. Intentalo de nuevo mas tarde."
-            else -> message ?: "Error al eliminar la cuenta"
+            HTTP_UNAUTHORIZED -> UiText.StringResource(R.string.profile_error_session_invalid)
+            HTTP_TOO_MANY_REQUESTS -> UiText.StringResource(R.string.profile_error_too_many_attempts)
+            HTTP_SERVER_ERROR -> UiText.StringResource(R.string.profile_error_delete_server)
+            else -> toUiText(R.string.profile_error_delete_account)
         }
     }
 
@@ -203,7 +204,7 @@ class ProfileViewModel(
                 AppLogger.e(TAG, "enroll2FA failed", e)
                 updateState { it.copy(twoFactor = it.twoFactor.copy(
                     isLoading = false,
-                    enrollError = e.message ?: "Error al iniciar verificacion en dos pasos",
+                    enrollError = e.toUiText(R.string.profile_error_2fa_start),
                 )) }
             }
         }
@@ -228,7 +229,7 @@ class ProfileViewModel(
                 AppLogger.e(TAG, "verify2FACode failed", e)
                 updateState { it.copy(twoFactor = it.twoFactor.copy(
                     isLoading = false,
-                    verifyError = e.message ?: "Codigo incorrecto. Intenta de nuevo.",
+                    verifyError = e.toUiText(R.string.profile_error_2fa_code),
                 )) }
             }
         }
@@ -263,7 +264,7 @@ class ProfileViewModel(
                 AppLogger.e(TAG, "disable2FA failed", e)
                 updateState { it.copy(twoFactor = it.twoFactor.copy(
                     isLoading = false,
-                    enrollError = e.message ?: "Error al desactivar la verificacion en dos pasos",
+                    enrollError = e.toUiText(R.string.profile_error_2fa_disable),
                 )) }
             }
         }
@@ -282,7 +283,7 @@ class ProfileViewModel(
                     updateState { it.copy(
                         isSavingDisplayName = false,
                         editingDisplayName = it.displayName,
-                        error = e.message ?: "Error al guardar el nombre",
+                        error = e.toUiText(R.string.profile_error_save_name),
                     ) }
                 }
         }

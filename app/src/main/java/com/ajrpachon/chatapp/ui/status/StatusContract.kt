@@ -2,11 +2,12 @@ package com.ajrpachon.chatapp.ui.status
 
 import android.net.Uri
 import com.ajrpachon.chatapp.domain.model.StatusBO
+import com.ajrpachon.chatapp.ui.common.UiText
 
 data class StatusState(
     val statuses: List<StatusBO> = emptyList(),
     val isLoading: Boolean = false,
-    val error: String? = null,
+    val error: UiText? = null,
     val showComposeDialog: Boolean = false,
     val composeText: String = "",
     val selectedColor: Long = 0xFF1976D2,
@@ -17,7 +18,7 @@ data class StatusState(
 sealed interface StatusEffect {
     /** A reply was sent — navigate into the resulting 1:1 conversation, WhatsApp-style. */
     data class NavigateToChat(val conversationId: String, val otherUserName: String) : StatusEffect
-    data class ShowMessage(val text: String) : StatusEffect
+    data class ShowMessage(val text: UiText) : StatusEffect
 }
 
 sealed interface StatusIntent {

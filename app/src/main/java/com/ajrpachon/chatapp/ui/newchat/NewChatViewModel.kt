@@ -2,6 +2,7 @@ package com.ajrpachon.chatapp.ui.newchat
 import com.ajrpachon.chatapp.utils.catchResult
 
 import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.model.UserRelationship
 import com.ajrpachon.chatapp.domain.repository.UserRepository
@@ -18,6 +19,8 @@ import com.ajrpachon.chatapp.domain.usecase.SearchUsersUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationResult
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationUseCase
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
+import com.ajrpachon.chatapp.ui.common.UiText
+import com.ajrpachon.chatapp.ui.common.toUiText
 import com.ajrpachon.chatapp.utils.AppLogger
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -80,14 +83,14 @@ class NewChatViewModel(
             is NewChatIntent.DismissError -> updateState { it.copy(error = null) }
             is NewChatIntent.CopyInviteCode -> {
                 clipboardProtection.copyWithTimeout("invite_code", "@${intent.username}", viewModelScope)
-                viewModelScope.launch { sendEffect(NewChatEffect.ShowMessage("Código copiado")) }
+                viewModelScope.launch { sendEffect(NewChatEffect.ShowMessage(UiText.StringResource(R.string.newchat_code_copied))) }
             }
             is NewChatIntent.ShareInviteText -> {
-                val text = "¡Únete a ChatApp! Búscame como @${intent.username} y hablamos 💬"
+                val text = UiText.of(R.string.newchat_invite_share_text, intent.username)
                 sendEffect(NewChatEffect.ShareText(text))
             }
             is NewChatIntent.InviteContact -> {
-                val text = "¡Únete a ChatApp! Búscame como @${intent.username} y hablamos 💬"
+                val text = UiText.of(R.string.newchat_invite_share_text, intent.username)
                 // The screen decides how to deliver it: SMS if the device can send one, the
                 // share sheet otherwise. That needs the package manager, which a ViewModel must not hold.
                 sendEffect(NewChatEffect.InviteContact(intent.phoneNumber, text))
@@ -117,7 +120,7 @@ class NewChatViewModel(
             }
             .onFailure { e ->
                 AppLogger.e(TAG, "User search failed", e)
-                updateState { it.copy(error = e.message) }
+                updateState { it.copy(error = e.toUiText()) }
             }
         updateState { it.copy(isLoadingUsers = false) }
     }
@@ -143,7 +146,7 @@ class NewChatViewModel(
             return
         }
         if (currentRel == UserRelationship.PENDING_SENT) {
-            viewModelScope.launch { sendEffect(NewChatEffect.ShowMessage("Invitación enviada · Pendiente de respuesta de @${otherUser.username}")) }
+            viewModelScope.launch { sendEffect(NewChatEffect.ShowMessage(UiText.of(R.string.newchat_invitation_pending_for, otherUser.username))) }
             return
         }
 
@@ -154,13 +157,13 @@ class NewChatViewModel(
                     updateState {
                         it.copy(userRelationships = it.userRelationships + (otherUser.id to UserRelationship.PENDING_SENT))
                     }
-                    sendEffect(NewChatEffect.ShowMessage("¡Invitación enviada a @${otherUser.username}!"))
+                    sendEffect(NewChatEffect.ShowMessage(UiText.of(R.string.newchat_invitation_sent_to, otherUser.username)))
                 }
                 is SendInvitationResult.AlreadySent -> {
                     updateState {
                         it.copy(userRelationships = it.userRelationships + (otherUser.id to UserRelationship.PENDING_SENT))
                     }
-                    sendEffect(NewChatEffect.ShowMessage("Invitación enviada · Pendiente de respuesta de @${otherUser.username}"))
+                    sendEffect(NewChatEffect.ShowMessage(UiText.of(R.string.newchat_invitation_pending_for, otherUser.username)))
                 }
                 is SendInvitationResult.PendingReceived -> {
                     updateState {
@@ -178,11 +181,11 @@ class NewChatViewModel(
                     updateState {
                         it.copy(userRelationships = it.userRelationships + (otherUser.id to UserRelationship.BLOCKED))
                     }
-                    sendEffect(NewChatEffect.ShowMessage("No puedes enviar una invitación a @${otherUser.username}"))
+                    sendEffect(NewChatEffect.ShowMessage(UiText.of(R.string.newchat_cannot_invite, otherUser.username)))
                 }
                 is SendInvitationResult.Failure -> {
                     AppLogger.e(TAG, "User action failed: ${result.message}")
-                    updateState { it.copy(error = result.message) }
+                    updateState { it.copy(error = UiText.Dynamic(result.message)) }
                 }
             }
             updateState { it.copy(pendingUserIds = it.pendingUserIds - otherUser.id) }
@@ -197,11 +200,11 @@ class NewChatViewModel(
                     updateState {
                         it.copy(userRelationships = it.userRelationships + (otherUser.id to UserRelationship.BLOCKED))
                     }
-                    sendEffect(NewChatEffect.ShowMessage("@${otherUser.username} bloqueado"))
+                    sendEffect(NewChatEffect.ShowMessage(UiText.of(R.string.newchat_user_blocked, otherUser.username)))
                 }
                 .onFailure { e ->
                     AppLogger.e(TAG, "Block user failed", e)
-                    updateState { it.copy(error = e.message) }
+                    updateState { it.copy(error = e.toUiText()) }
                 }
             updateState { it.copy(pendingUserIds = it.pendingUserIds - otherUser.id) }
         }
@@ -215,11 +218,11 @@ class NewChatViewModel(
                     updateState {
                         it.copy(userRelationships = it.userRelationships + (otherUser.id to UserRelationship.NONE))
                     }
-                    sendEffect(NewChatEffect.ShowMessage("@${otherUser.username} desbloqueado"))
+                    sendEffect(NewChatEffect.ShowMessage(UiText.of(R.string.newchat_user_unblocked, otherUser.username)))
                 }
                 .onFailure { e ->
                     AppLogger.e(TAG, "Unblock user failed", e)
-                    updateState { it.copy(error = e.message) }
+                    updateState { it.copy(error = e.toUiText()) }
                 }
             updateState { it.copy(pendingUserIds = it.pendingUserIds - otherUser.id) }
         }
@@ -250,7 +253,7 @@ class NewChatViewModel(
     private fun handleQrScan(userId: String) {
         val selfId = state.value.currentUserId
         if (userId == selfId) {
-            viewModelScope.launch { sendEffect(NewChatEffect.ShowMessage("Este es tu propio código QR")) }
+            viewModelScope.launch { sendEffect(NewChatEffect.ShowMessage(UiText.StringResource(R.string.newchat_own_qr))) }
             return
         }
         viewModelScope.launch {
@@ -261,12 +264,12 @@ class NewChatViewModel(
                         updateState { it.copy(appUsers = listOf(user), query = "") }
                         loadRelationships(listOf(user))
                     } else {
-                        sendEffect(NewChatEffect.ShowMessage("Usuario no encontrado"))
+                        sendEffect(NewChatEffect.ShowMessage(UiText.StringResource(R.string.newchat_user_not_found)))
                     }
                 }
                 .onFailure { e ->
                     AppLogger.e(TAG, "QR scan lookup failed", e)
-                    sendEffect(NewChatEffect.ShowMessage("No se pudo encontrar el usuario"))
+                    sendEffect(NewChatEffect.ShowMessage(UiText.StringResource(R.string.newchat_user_lookup_failed)))
                 }
             updateState { it.copy(isLoadingUsers = false) }
         }

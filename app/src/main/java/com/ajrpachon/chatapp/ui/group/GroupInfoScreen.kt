@@ -117,7 +117,7 @@ fun GroupInfoScreen(
         vm.effect.collect { effect ->
             when (effect) {
                 GroupInfoEffect.NavigateBack -> onBack()
-                is GroupInfoEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message)
+                is GroupInfoEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message.asString(context))
                 is GroupInfoEffect.CopyToClipboard -> { /* handled inline via LocalClipboardManager */ }
                 is GroupInfoEffect.ShareInviteLink -> {
                     val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
@@ -137,7 +137,7 @@ fun GroupInfoScreen(
 
     LaunchedEffect(state.error) {
         state.error?.let {
-            snackbarHostState.showSnackbar(it)
+            snackbarHostState.showSnackbar(it.asString(context))
             vm.onIntent(GroupInfoIntent.DismissError)
         }
     }

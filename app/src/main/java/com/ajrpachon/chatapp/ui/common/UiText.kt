@@ -5,6 +5,8 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.utils.UploadKind
+import com.ajrpachon.chatapp.utils.UploadTooLargeException
 
 /**
  * A piece of user-visible text a ViewModel can hold without touching Android resources.
@@ -42,5 +44,16 @@ sealed interface UiText {
  * The text to show for a failure: the exception message when it has one, otherwise the string
  * resource [fallback].
  */
-fun Throwable.toUiText(@StringRes fallback: Int = R.string.error_generic): UiText =
-    message?.takeIf { it.isNotBlank() }?.let(UiText::Dynamic) ?: UiText.StringResource(fallback)
+fun Throwable.toUiText(@StringRes fallback: Int = R.string.error_generic): UiText = when {
+    this is UploadTooLargeException -> UiText.of(kind.messageRes(), limitMb)
+    else -> message?.takeIf { it.isNotBlank() }?.let(UiText::Dynamic) ?: UiText.StringResource(fallback)
+}
+
+@StringRes
+private fun UploadKind.messageRes(): Int = when (this) {
+    UploadKind.IMAGE -> R.string.upload_too_large_image
+    UploadKind.AUDIO -> R.string.upload_too_large_audio
+    UploadKind.AVATAR -> R.string.upload_too_large_avatar
+    UploadKind.FILE -> R.string.upload_too_large_file
+    UploadKind.VIDEO -> R.string.upload_too_large_video
+}

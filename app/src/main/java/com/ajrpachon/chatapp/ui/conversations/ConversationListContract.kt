@@ -3,6 +3,7 @@ package com.ajrpachon.chatapp.ui.conversations
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.NotificationSound
 import com.ajrpachon.chatapp.domain.model.ThemePreference
+import com.ajrpachon.chatapp.ui.common.UiText
 
 enum class ConversationFilter { ALL, UNREAD, GROUPS, DIRECT }
 
@@ -13,7 +14,7 @@ data class ConversationListState(
     val isLoading: Boolean = true,
     val currentUserId: String? = null,
     val pendingInvitationsCount: Int = 0,
-    val error: String? = null,
+    val error: UiText? = null,
     val sortByUnread: Boolean = false,
     val selectedFilter: ConversationFilter = ConversationFilter.ALL,
     val searchQuery: String = "",

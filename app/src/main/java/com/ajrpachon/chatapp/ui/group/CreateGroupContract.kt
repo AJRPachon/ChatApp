@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.ui.group
 
 import com.ajrpachon.chatapp.domain.model.UserBO
+import com.ajrpachon.chatapp.ui.common.UiText
 
 enum class CreateGroupStep { SELECT_MEMBERS, SET_INFO }
 
@@ -12,7 +13,7 @@ data class CreateGroupState(
     val groupName: String = "",
     val groupDescription: String = "",
     val isLoading: Boolean = false,
-    val error: String? = null,
+    val error: UiText? = null,
 )
 
 sealed interface CreateGroupIntent {

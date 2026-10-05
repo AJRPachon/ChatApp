@@ -168,7 +168,7 @@ fun ProfileScreen(
     }
 
     LaunchedEffect(state.error) {
-        state.error?.let { snackbarHostState.showSnackbar(it) }
+        state.error?.let { snackbarHostState.showSnackbar(it.asString(context)) }
     }
 
     val avatarLauncher = rememberLauncherForActivityResult(
@@ -320,7 +320,7 @@ fun ProfileContent(
                     onValueChange = { if (it.length <= 6) verifyCode = it },
                     label = stringResource(R.string.profile_totp_code_label),
                     isError = state.twoFactor.verifyError != null,
-                    supportingText = state.twoFactor.verifyError,
+                    supportingText = state.twoFactor.verifyError?.asString(),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.NumberPassword,
                         imeAction = ImeAction.Done,
@@ -333,7 +333,7 @@ fun ProfileContent(
                 val enrollError = state.twoFactor.enrollError
                 if (enrollError != null) {
                     Text(
-                        enrollError,
+                        enrollError.asString(),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                         textAlign = TextAlign.Center,

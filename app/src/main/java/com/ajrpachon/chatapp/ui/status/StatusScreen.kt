@@ -674,6 +674,7 @@ fun StatusViewerScreen(
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+    val context = LocalContext.current
 
     LaunchedEffect(state.statuses, userId) {
         vm.onIntent(StatusIntent.FilterUserStatuses(state.statuses, userId))
@@ -683,7 +684,7 @@ fun StatusViewerScreen(
         vm.effect.collect { effect ->
             when (effect) {
                 is StatusEffect.NavigateToChat -> onNavigateToChat(effect.conversationId, effect.otherUserName)
-                is StatusEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.text)
+                is StatusEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.text.asString(context))
             }
         }
     }
