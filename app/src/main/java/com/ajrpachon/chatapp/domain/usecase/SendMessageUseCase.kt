@@ -66,7 +66,6 @@ class SendMessageUseCase(
         message
     }
 
-    @Suppress("LongParameterList")
     private fun logMessageSentAnalytics(
         imageUrl: String?,
         videoUrl: String?,

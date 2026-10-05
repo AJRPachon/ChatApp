@@ -80,7 +80,6 @@ import com.ajrpachon.chatapp.utils.LinkPreviewData
  * plain-text bubble layout and the has-media bubble layout in [MessageBubble] so this fairly
  * involved block — dropdown menu, emoji picker, link detection — only exists once.
  */
-@Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList")
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 internal fun MessageFooterContent(

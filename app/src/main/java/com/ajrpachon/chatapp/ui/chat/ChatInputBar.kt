@@ -74,7 +74,6 @@ import kotlinx.coroutines.launch
 /** What the trailing slot of [NormalInputBar] currently shows — the mic↔send morph's states. */
 private enum class TrailingAction { UPLOAD_SPACER, UPLOADING, SEND, MIC }
 
-@Suppress("LongParameterList")
 @Composable
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 internal fun NormalInputBar(

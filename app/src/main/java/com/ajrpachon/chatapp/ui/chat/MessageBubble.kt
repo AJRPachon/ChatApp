@@ -176,7 +176,7 @@ internal fun ChatBubbleSlot(
 
 // ── MessageBubble ─────────────────────────────────────────────────────────────
 
-@Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList", "ReturnCount")
+@Suppress("ReturnCount")
 @OptIn(ExperimentalFoundationApi::class, androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 internal fun MessageBubble(
