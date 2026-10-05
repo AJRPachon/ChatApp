@@ -49,6 +49,7 @@ import androidx.compose.ui.window.DialogProperties
 import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.ConversationBO
+import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
 
 // ── Simple modal dialogs used from ChatScreen ───────────────────────────────
 // Extracted per docs/chat-viewmodel-decomposition.md Phase 2 — each takes only its own narrow
@@ -86,7 +87,7 @@ internal fun ExpiryDurationDialog(onDismiss: () -> Unit, onSelect: (Long?) -> Un
         },
         confirmButton = {},
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.chat_cancel)) }
+            ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = onDismiss)
         },
     )
 }
@@ -116,7 +117,7 @@ internal fun MuteDurationDialog(onDismiss: () -> Unit, onSelect: (Long) -> Unit)
         },
         confirmButton = {},
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.chat_cancel)) }
+            ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = onDismiss)
         },
     )
 }
@@ -192,7 +193,7 @@ internal fun ForwardConversationDialog(
         },
         confirmButton = {},
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.chat_cancel)) }
+            ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = onDismiss)
         },
     )
 }
@@ -217,12 +218,10 @@ internal fun ScheduleMessageDialog(
         DatePickerDialog(
             onDismissRequest = onDismiss,
             confirmButton = {
-                TextButton(onClick = { showTimePicker = true }) {
-                    Text(stringResource(R.string.chat_next))
-                }
+                ChatAppTextButton(text = stringResource(R.string.chat_next), onClick = { showTimePicker = true })
             },
             dismissButton = {
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.chat_cancel)) }
+                ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = onDismiss)
             },
         ) {
             DatePicker(state = datePickerState)
@@ -253,7 +252,7 @@ internal fun ScheduleMessageDialog(
                 }
             },
             dismissButton = {
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.chat_cancel)) }
+                ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = onDismiss)
             },
         )
     }

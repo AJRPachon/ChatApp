@@ -38,7 +38,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -53,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.UserBO
+import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import kotlinx.datetime.Instant
 import org.koin.androidx.compose.koinViewModel
@@ -163,9 +163,7 @@ fun BroadcastListContent(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { onIntent(BroadcastListIntent.DismissCreateDialog) }) {
-                    Text(stringResource(R.string.broadcast_cancel_button))
-                }
+                ChatAppTextButton(text = stringResource(R.string.broadcast_cancel_button), onClick = { onIntent(BroadcastListIntent.DismissCreateDialog) })
             },
         )
     }
@@ -208,9 +206,7 @@ fun BroadcastListContent(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { onIntent(BroadcastListIntent.DismissSendDialog) }) {
-                    Text(stringResource(R.string.broadcast_cancel_button))
-                }
+                ChatAppTextButton(text = stringResource(R.string.broadcast_cancel_button), onClick = { onIntent(BroadcastListIntent.DismissSendDialog) })
             },
         )
     }
@@ -222,7 +218,7 @@ fun BroadcastListContent(
             title = { Text(stringResource(R.string.broadcast_error_title)) },
             text = { Text(error.asString()) },
             confirmButton = {
-                TextButton(onClick = { onIntent(BroadcastListIntent.DismissError) }) { Text(stringResource(R.string.broadcast_ok_button)) }
+                ChatAppTextButton(text = stringResource(R.string.broadcast_ok_button), onClick = { onIntent(BroadcastListIntent.DismissError) })
             },
         )
     }

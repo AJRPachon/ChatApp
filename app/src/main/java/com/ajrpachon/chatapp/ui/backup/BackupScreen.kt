@@ -22,7 +22,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,6 +37,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
 import com.ajrpachon.chatapp.ui.components.ChatAppSecondaryButton
+import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
 import com.ajrpachon.chatapp.ui.components.ChatAppTopBar
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import org.koin.androidx.compose.koinViewModel
@@ -80,9 +80,7 @@ internal fun BackupContent(
             title = { Text(stringResource(R.string.backup_error_title)) },
             text = { Text(state.error?.asString().orEmpty()) },
             confirmButton = {
-                TextButton(onClick = { onIntent(BackupIntent.DismissError) }) {
-                    Text(stringResource(R.string.backup_accept))
-                }
+                ChatAppTextButton(text = stringResource(R.string.backup_accept), onClick = { onIntent(BackupIntent.DismissError) })
             },
         )
     }

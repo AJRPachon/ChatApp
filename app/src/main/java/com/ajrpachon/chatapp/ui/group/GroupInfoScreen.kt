@@ -33,7 +33,6 @@ import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.material.icons.filled.Link
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.OutlinedButton
@@ -85,6 +84,8 @@ import com.github.skydoves.navgraph.annotations.NavDestination
 import com.github.skydoves.navgraph.annotations.NavEdge
 import com.ajrpachon.chatapp.GroupInfoRoute
 import com.ajrpachon.chatapp.UserInfoRoute
+import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
+import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import kotlinx.datetime.Instant
 import org.koin.androidx.compose.koinViewModel
@@ -231,10 +232,11 @@ fun GroupInfoContent(
                         },
                         modifier = Modifier.weight(1f),
                     ) { Text(stringResource(R.string.group_copy)) }
-                    Button(
+                    ChatAppPrimaryButton(
+                        text = stringResource(R.string.group_share),
                         onClick = { onIntent(GroupInfoIntent.ShareInviteLink) },
                         modifier = Modifier.weight(1f),
-                    ) { Text(stringResource(R.string.group_share)) }
+                    )
                 }
             }
         }
@@ -618,14 +620,14 @@ private fun HistoryChoiceDialog(
             Text(stringResource(R.string.group_history_dialog_message, userName))
         },
         confirmButton = {
-            TextButton(onClick = onSeeHistory) { Text(stringResource(R.string.group_history_see)) }
+            ChatAppTextButton(text = stringResource(R.string.group_history_see), onClick = onSeeHistory)
         },
         dismissButton = {
             Column {
                 TextButton(onClick = onBlankHistory) {
                     Text(stringResource(R.string.group_history_blank), color = MaterialTheme.colorScheme.error)
                 }
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.group_history_cancel)) }
+                ChatAppTextButton(text = stringResource(R.string.group_history_cancel), onClick = onDismiss)
             }
         },
     )
@@ -660,12 +662,10 @@ private fun EditGroupDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onSave, enabled = name.isNotBlank()) {
-                Text(stringResource(R.string.group_save))
-            }
+            ChatAppTextButton(text = stringResource(R.string.group_save), onClick = onSave, enabled = name.isNotBlank())
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.group_cancel)) }
+            ChatAppTextButton(text = stringResource(R.string.group_cancel), onClick = onDismiss)
         },
     )
 }

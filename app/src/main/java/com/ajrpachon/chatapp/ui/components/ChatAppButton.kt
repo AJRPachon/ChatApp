@@ -2,7 +2,6 @@ package com.ajrpachon.chatapp.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -16,7 +15,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -150,32 +148,5 @@ fun ChatAppTextButton(
 ) {
     TextButton(onClick = onClick, modifier = modifier, enabled = enabled) {
         Text(text)
-    }
-}
-
-/**
- * Inline row of two equal-weight buttons: primary (accept) + destructive (reject).
- * Used in invitation / confirmation items.
- */
-@Composable
-fun ChatAppAcceptRejectRow(
-    onAccept: () -> Unit,
-    onReject: () -> Unit,
-    modifier: Modifier = Modifier,
-    acceptText: String = "Aceptar",
-    rejectText: String = "Rechazar",
-) {
-    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
-        ChatAppPrimaryButton(
-            text = acceptText,
-            onClick = onAccept,
-            modifier = Modifier.weight(1f),
-        )
-        Spacer(Modifier.width(8.dp))
-        ChatAppDestructiveButton(
-            text = rejectText,
-            onClick = onReject,
-            modifier = Modifier.weight(1f),
-        )
     }
 }
