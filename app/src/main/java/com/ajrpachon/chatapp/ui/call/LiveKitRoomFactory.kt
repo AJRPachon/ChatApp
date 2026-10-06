@@ -11,3 +11,9 @@ import io.livekit.android.room.Room
 class LiveKitRoomFactory(private val application: Application) {
     fun create(): Room = LiveKit.create(application)
 }
+
+/**
+ * The LiveKit server URL, wrapped so Koin can inject it by type: a bare `String` is ambiguous, which
+ * would force [CallViewModel] back to an explicit lambda instead of `viewModelOf`.
+ */
+data class LiveKitConfig(val url: String)

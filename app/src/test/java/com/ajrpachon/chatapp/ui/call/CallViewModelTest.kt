@@ -98,7 +98,7 @@ class CallViewModelTest {
         getCurrentUserUseCase = getCurrentUser,
         sendMessageUseCase = sendMessage,
         analyticsTracker = analytics,
-        livekitUrl = "wss://example.test",
+        livekitConfig = LiveKitConfig("wss://example.test"),
     )
 
     @Test
