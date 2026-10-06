@@ -15,7 +15,7 @@ import com.ajrpachon.chatapp.data.local.buildChatDatabase
 import com.ajrpachon.chatapp.data.repository.AiAssistantRepository as AiAssistantRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.FirebaseAnalyticsTracker
 import com.ajrpachon.chatapp.data.repository.FirebaseCrashReporter
-import com.ajrpachon.chatapp.data.session.AndroidSessionManager
+import com.ajrpachon.chatapp.data.remote.session.AndroidSessionManager
 import com.ajrpachon.chatapp.domain.repository.AiAssistantRepository
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.AppLockRepository
@@ -108,6 +108,8 @@ val workManagerModule = module {
     single { WorkManager.getInstance(androidContext()) }
 }
 
+// The only place outside data/remote that touches the Supabase SDK: building the client is DI
+// composition, not data access. Everything that uses it goes through a *RemoteSource.
 val networkModule = module {
     single {
         createSupabaseClient(
