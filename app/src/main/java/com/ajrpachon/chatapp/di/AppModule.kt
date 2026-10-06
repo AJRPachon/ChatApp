@@ -15,7 +15,6 @@ import com.ajrpachon.chatapp.data.local.buildChatDatabase
 import com.ajrpachon.chatapp.data.repository.AiAssistantRepository as AiAssistantRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.FirebaseAnalyticsTracker
 import com.ajrpachon.chatapp.data.repository.FirebaseCrashReporter
-import com.ajrpachon.chatapp.data.remote.session.AndroidSessionManager
 import com.ajrpachon.chatapp.domain.repository.AiAssistantRepository
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.AppLockRepository
@@ -64,17 +63,11 @@ import com.ajrpachon.chatapp.utils.SessionGuard
 import com.ajrpachon.chatapp.utils.TranslationManager
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.crashlytics.FirebaseCrashlytics
-import io.github.jan.supabase.auth.Auth
-import io.github.jan.supabase.createSupabaseClient
-import io.github.jan.supabase.functions.Functions
-import io.github.jan.supabase.postgrest.Postgrest
-import io.github.jan.supabase.realtime.Realtime
-import io.github.jan.supabase.storage.Storage
-import io.ktor.client.engine.okhttp.OkHttp
 import android.app.NotificationManager
 import android.content.Context
 import androidx.credentials.CredentialManager
 import androidx.work.WorkManager
+import com.ajrpachon.chatapp.data.remote.supabaseModule
 import com.ajrpachon.chatapp.ui.auth.GoogleCredentialFetcher
 import com.ajrpachon.chatapp.ui.call.LiveKitRoomFactory
 import okhttp3.OkHttpClient
@@ -108,26 +101,7 @@ val workManagerModule = module {
     single { WorkManager.getInstance(androidContext()) }
 }
 
-// The only place outside data/remote that touches the Supabase SDK: building the client is DI
-// composition, not data access. Everything that uses it goes through a *RemoteSource.
 val networkModule = module {
-    single {
-        createSupabaseClient(
-            supabaseUrl = BuildConfig.SUPABASE_URL,
-            supabaseKey = BuildConfig.SUPABASE_ANON_KEY,
-        ) {
-            httpEngine = OkHttp.create { preconfigured = OkHttpProvider.client }
-            install(Auth) {
-                sessionManager = AndroidSessionManager(androidContext())
-                scheme = "com.ajrpachon.chatapp"
-                host = "auth-callback"
-            }
-            install(Postgrest)
-            install(Realtime)
-            install(Storage)
-            install(Functions)
-        }
-    }
     single<OkHttpClient> { OkHttpProvider.client }
 }
 
@@ -247,6 +221,7 @@ val analyticsModule = module {
 
 val appModules = listOf(
     databaseModule,
+    supabaseModule,
     networkModule,
     remoteModule,
     repositoryModule,
