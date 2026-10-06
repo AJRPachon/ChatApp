@@ -544,6 +544,7 @@
     <string name="upload_too_large_image">La imagen supera el tamaño máximo permitido (%1$d MB)</string>
     <string name="upload_too_large_audio">El audio supera el tamaño máximo permitido (%1$d MB)</string>
     <string name="upload_too_large_avatar">La foto supera el tamaño máximo permitido (%1$d MB)</string>
+    <string name="error_encryption_unavailable">No se pudo cifrar el mensaje; no se ha enviado. Es posible que el otro usuario aún no haya activado el cifrado.</string>
     <string name="upload_too_large_file">El archivo supera el tamaño máximo permitido (%1$d MB)</string>
     <string name="upload_too_large_video">El video supera el tamaño máximo permitido (%1$d MB)</string>
     <string name="newchat_code_copied">Código copiado</string>

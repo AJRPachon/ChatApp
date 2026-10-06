@@ -5,6 +5,8 @@ import com.ajrpachon.chatapp.data.local.dao.ReactionDao
 import com.ajrpachon.chatapp.data.local.dao.UserDao
 import com.ajrpachon.chatapp.data.remote.dto.MessageDTO
 import com.ajrpachon.chatapp.data.remote.source.MessageRemoteSource
+import com.ajrpachon.chatapp.domain.model.EncryptionUnavailableException
+import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import com.ajrpachon.chatapp.utils.UploadLimits
@@ -46,6 +48,29 @@ class MessageRepositoryImplTest {
         repo.syncMessages("conv1", 0L)
 
         coVerify { messageDao.upsertAll(match { it.size == 2 && it.any { dbo -> dbo.id == "msg1" } }) }
+    }
+
+    // ── sendMessage — never sends 1:1 text in the clear ───────────────────────
+
+    @Test
+    fun `sendMessage does not send when the text cannot be encrypted`() = runTest {
+        coEvery { e2eeCoder.encrypt("me", "peer", "hola") } throws EncryptionUnavailableException()
+
+        val result = runCatching {
+            repo.sendMessage(OutgoingMessageBO(conversationId = "c1", senderId = "me", content = "hola", otherUserId = "peer"))
+        }
+
+        assertTrue(result.exceptionOrNull() is EncryptionUnavailableException)
+        coVerify(exactly = 0) { remoteSource.sendMessage(any()) }
+    }
+
+    @Test
+    fun `sendMessage sends the ciphertext and flags the message as encrypted`() = runTest {
+        coEvery { e2eeCoder.encrypt("me", "peer", "hola") } returns "cipher"
+
+        repo.sendMessage(OutgoingMessageBO(conversationId = "c1", senderId = "me", content = "hola", otherUserId = "peer"))
+
+        coVerify { remoteSource.sendMessage(match { it.content == "cipher" && it.isEncrypted }) }
     }
 
     // ── markAsRead — delegates to dao and remote ─────────────────────────────
