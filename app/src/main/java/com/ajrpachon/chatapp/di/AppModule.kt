@@ -29,7 +29,6 @@ import com.ajrpachon.chatapp.domain.repository.WallpaperRepository
 import com.ajrpachon.chatapp.ui.applock.AppLockViewModel
 import com.ajrpachon.chatapp.ui.auth.AuthViewModel
 import com.ajrpachon.chatapp.ui.auth.GoogleSignInConfig
-import com.ajrpachon.chatapp.ui.call.CallArgs
 import com.ajrpachon.chatapp.ui.call.CallViewModel
 import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
 import com.ajrpachon.chatapp.ui.chat.gallery.ChatMediaGalleryViewModel
@@ -69,6 +68,7 @@ import androidx.credentials.CredentialManager
 import androidx.work.WorkManager
 import com.ajrpachon.chatapp.data.remote.supabaseModule
 import com.ajrpachon.chatapp.ui.auth.GoogleCredentialFetcher
+import com.ajrpachon.chatapp.ui.call.LiveKitConfig
 import com.ajrpachon.chatapp.ui.call.LiveKitRoomFactory
 import okhttp3.OkHttpClient
 import org.koin.android.ext.koin.androidApplication
@@ -111,6 +111,7 @@ val viewModelModule = module {
     single { AppDispatchers() }
     factory { GoogleCredentialFetcher(get(), get()) }
     factory { LiveKitRoomFactory(androidApplication()) }
+    single { LiveKitConfig(BuildConfig.LIVEKIT_URL) }
 
     viewModelOf(::AuthViewModel)
 
@@ -171,18 +172,8 @@ val viewModelModule = module {
     viewModelOf(::ChatMediaGalleryViewModel)
     viewModelOf(::PdfViewerViewModel)
 
-    // CallViewModel: BuildConfig.LIVEKIT_URL + runtime CallArgs — kept as lambda
-    viewModel { params ->
-        CallViewModel(
-            args = params.get<CallArgs>(),
-            roomFactory = get(),
-            callRepository = get(),
-            getCurrentUserUseCase = get(),
-            sendMessageUseCase = get(),
-            analyticsTracker = get(),
-            livekitUrl = BuildConfig.LIVEKIT_URL,
-        )
-    }
+    // Runtime CallArgs arrive through parametersOf; the LiveKit URL through its wrapper.
+    viewModelOf(::CallViewModel)
 }
 
 val utilsModule = module {

@@ -93,7 +93,7 @@ class CallViewModel(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val sendMessageUseCase: SendMessageUseCase,
     private val analyticsTracker: AnalyticsTracker,
-    private val livekitUrl: String,
+    private val livekitConfig: LiveKitConfig,
 ) : BaseViewModel<CallState, CallEffect>(CallState()) {
     private val callId get() = args.callId
     private val conversationId get() = args.conversationId
@@ -174,7 +174,7 @@ class CallViewModel(
                 throw IllegalStateException("Timed out waiting for current user", e)
             }
             currentUserId = user.id
-            AppLogger.d(TAG, "joinCall: userId=${user.id} roomName=$roomName livekitUrl=$livekitUrl")
+            AppLogger.d(TAG, "joinCall: userId=${user.id} roomName=$roomName livekitUrl=${livekitConfig.url}")
             val token = callRepository.fetchLivekitToken(roomName, user.id)
 
             val livekitRoom = roomFactory.create()
@@ -196,7 +196,7 @@ class CallViewModel(
             }
 
             AppLogger.d(TAG, "joinCall: connecting to LiveKit room")
-            livekitRoom.connect(livekitUrl, token)
+            livekitRoom.connect(livekitConfig.url, token)
             AppLogger.d(TAG, "joinCall: connected, remoteParticipants=${livekitRoom.remoteParticipants.size}")
 
             // For incoming calls: accept immediately after connecting to LiveKit so the DB
