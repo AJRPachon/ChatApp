@@ -5,8 +5,8 @@ import com.ajrpachon.chatapp.domain.model.MessageLimits
 import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
-import com.ajrpachon.chatapp.utils.AnalyticsEvents
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.repository.AnalyticsEvents
+import com.ajrpachon.chatapp.domain.util.catchResult
 
 class SendMessageUseCase(
     private val messageRepository: MessageRepository,

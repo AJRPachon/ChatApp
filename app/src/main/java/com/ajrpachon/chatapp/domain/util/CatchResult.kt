@@ -1,4 +1,4 @@
-package com.ajrpachon.chatapp.utils
+package com.ajrpachon.chatapp.domain.util
 
 import kotlinx.coroutines.CancellationException
 

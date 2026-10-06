@@ -4,7 +4,7 @@ import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.utils.AudioTranscriber
 import com.ajrpachon.chatapp.utils.TranslationManager
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 

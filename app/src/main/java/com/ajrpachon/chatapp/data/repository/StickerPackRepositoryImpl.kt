@@ -6,7 +6,7 @@ import com.ajrpachon.chatapp.domain.model.StickerBO
 import com.ajrpachon.chatapp.domain.model.StickerPackBO
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.StickerPackRepository
-import com.ajrpachon.chatapp.utils.AnalyticsEvents
+import com.ajrpachon.chatapp.domain.repository.AnalyticsEvents
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 

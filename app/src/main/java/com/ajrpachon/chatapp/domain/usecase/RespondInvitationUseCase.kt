@@ -2,7 +2,7 @@ package com.ajrpachon.chatapp.domain.usecase
 
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.InvitationRepository
-import com.ajrpachon.chatapp.utils.AnalyticsEvents
+import com.ajrpachon.chatapp.domain.repository.AnalyticsEvents
 
 class RespondInvitationUseCase(
     private val invitationRepository: InvitationRepository,

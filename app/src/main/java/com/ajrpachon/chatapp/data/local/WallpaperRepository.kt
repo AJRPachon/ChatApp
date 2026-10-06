@@ -8,7 +8,7 @@ import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 // This class shares its simple name with the domain interface it implements — aliased to avoid
 // a same-name clash (there is no "...Impl" suffix on this one, unlike its sibling repositories).
 import com.ajrpachon.chatapp.domain.repository.WallpaperRepository as WallpaperRepositoryContract
-import com.ajrpachon.chatapp.utils.AnalyticsEvents
+import com.ajrpachon.chatapp.domain.repository.AnalyticsEvents
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 

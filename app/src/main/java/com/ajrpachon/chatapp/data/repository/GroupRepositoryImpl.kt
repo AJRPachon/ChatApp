@@ -1,5 +1,5 @@
 package com.ajrpachon.chatapp.data.repository
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.data.local.dao.ConversationDao
 import com.ajrpachon.chatapp.data.local.dao.GroupMemberDao

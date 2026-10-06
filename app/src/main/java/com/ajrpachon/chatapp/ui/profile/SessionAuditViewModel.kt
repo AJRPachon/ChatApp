@@ -6,7 +6,7 @@ import com.ajrpachon.chatapp.domain.model.SessionBO
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 import com.ajrpachon.chatapp.domain.repository.SessionRepository
 import com.ajrpachon.chatapp.ui.common.toUiText
 

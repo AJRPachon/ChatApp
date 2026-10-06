@@ -1,7 +1,7 @@
 package com.ajrpachon.chatapp.ui.call
 
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
-import com.ajrpachon.chatapp.utils.AnalyticsEvents
+import com.ajrpachon.chatapp.domain.repository.AnalyticsEvents
 
 /**
  * Tracks `call_started`/`call_ended` analytics for one [CallViewModel] instance, exactly once

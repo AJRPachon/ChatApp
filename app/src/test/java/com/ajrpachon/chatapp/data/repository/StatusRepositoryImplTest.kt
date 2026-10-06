@@ -7,7 +7,7 @@ import com.ajrpachon.chatapp.data.local.entity.UserDBO
 import com.ajrpachon.chatapp.data.remote.dto.StatusDTO
 import com.ajrpachon.chatapp.data.remote.source.StatusRemoteSource
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
-import com.ajrpachon.chatapp.utils.AnalyticsEvents
+import com.ajrpachon.chatapp.domain.repository.AnalyticsEvents
 import io.mockk.Ordering
 import io.mockk.coEvery
 import io.mockk.coVerify

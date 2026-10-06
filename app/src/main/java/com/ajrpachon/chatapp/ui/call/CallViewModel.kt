@@ -1,5 +1,5 @@
 package com.ajrpachon.chatapp.ui.call
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 
 import com.ajrpachon.chatapp.domain.model.CallStatus
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker

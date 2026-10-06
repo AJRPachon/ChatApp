@@ -1,5 +1,5 @@
 package com.ajrpachon.chatapp.ui.newchat
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.R
