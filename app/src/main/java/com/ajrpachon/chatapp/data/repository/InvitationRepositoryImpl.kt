@@ -5,6 +5,7 @@ import com.ajrpachon.chatapp.data.local.dao.InvitationDao
 import com.ajrpachon.chatapp.data.local.dao.UserDao
 import com.ajrpachon.chatapp.data.mapper.toDBO
 import com.ajrpachon.chatapp.data.mapper.toBO
+import com.ajrpachon.chatapp.data.remote.dto.InvitationDTO
 import com.ajrpachon.chatapp.data.remote.source.InvitationRemoteSource
 import com.ajrpachon.chatapp.domain.model.InvitationBO
 import com.ajrpachon.chatapp.domain.model.UserRelationship
@@ -78,18 +79,22 @@ class InvitationRepositoryImpl(
 
     override suspend fun getRelationship(currentUserId: String, otherUserId: String): UserRelationship {
         val blocked = catchResult { remoteSource.isBlocked(currentUserId, otherUserId) }.getOrDefault(false)
-        if (blocked) return UserRelationship.BLOCKED
+        return if (blocked) {
+            UserRelationship.BLOCKED
+        } else {
+            relationshipFrom(
+                currentUserId,
+                catchResult { remoteSource.getRelationshipInvitations(currentUserId, otherUserId) }
+                    .getOrDefault(emptyList()),
+            )
+        }
+    }
 
-        val invitations = catchResult {
-            remoteSource.getRelationshipInvitations(currentUserId, otherUserId)
-        }.getOrDefault(emptyList())
-
-        if (invitations.any { it.status == "accepted" }) return UserRelationship.CONNECTED
-        val sentPending = invitations.firstOrNull { it.senderId == currentUserId && it.status == "pending" }
-        if (sentPending != null) return UserRelationship.PENDING_SENT
-        val receivedPending = invitations.firstOrNull { it.receiverId == currentUserId && it.status == "pending" }
-        if (receivedPending != null) return UserRelationship.PENDING_RECEIVED
-        return UserRelationship.NONE
+    private fun relationshipFrom(currentUserId: String, invitations: List<InvitationDTO>): UserRelationship = when {
+        invitations.any { it.status == "accepted" } -> UserRelationship.CONNECTED
+        invitations.any { it.senderId == currentUserId && it.status == "pending" } -> UserRelationship.PENDING_SENT
+        invitations.any { it.receiverId == currentUserId && it.status == "pending" } -> UserRelationship.PENDING_RECEIVED
+        else -> UserRelationship.NONE
     }
 
     override suspend fun blockUser(blockerId: String, blockedId: String): Result<Unit> =

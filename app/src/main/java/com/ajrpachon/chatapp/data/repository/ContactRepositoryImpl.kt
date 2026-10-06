@@ -27,9 +27,9 @@ class ContactRepositoryImpl(
             val nameIdx = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
             val numIdx = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
             while (it.moveToNext()) {
-                val name = it.getString(nameIdx) ?: continue
-                val number = it.getString(numIdx) ?: continue
-                contacts.add(ContactBO(name, number.trim()))
+                val name = it.getString(nameIdx)
+                val number = it.getString(numIdx)
+                if (name != null && number != null) contacts.add(ContactBO(name, number.trim()))
             }
         }
         return contacts.distinctBy { it.phoneNumber }

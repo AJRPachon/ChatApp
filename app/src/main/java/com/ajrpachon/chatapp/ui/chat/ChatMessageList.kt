@@ -179,16 +179,7 @@ internal fun ChatMessageList(
                         // Collect consecutive images from the same sender starting at this index.
                         // Accessing lazyPagingItems[j] triggers loading of the next page if j is
                         // near the page boundary — ensuring the group is always complete.
-                        val group = mutableListOf(message)
-                        var j = index + 1
-                        while (j < lazyPagingItems.itemCount) {
-                            val next = lazyPagingItems[j] ?: break
-                            if (next.id in state.mediaUpload.suppressedImageMessageIds) break
-                            if (next.isGroupableImage() && next.senderId == message.senderId) {
-                                group.add(next)
-                                j++
-                            } else break
-                        }
+                        val group = collectImageGroup(message, index, lazyPagingItems, state.mediaUpload.suppressedImageMessageIds)
                         if (group.size > 2) {
                             ImageGroupBubble(
                                 messages = group,
@@ -222,7 +213,6 @@ internal fun ChatMessageList(
                                 outgoingBubbleColor = chatThemeColors.bubbleColor,
                                 onOpenPdf = onOpenPdf,
                                 onVote = { optionId -> onIntent(ChatIntent.VotePoll(message.content.removePrefix("poll:"), optionId)) },
-                                onRetryMessage = { onIntent(ChatIntent.RetryMessage(it)) },
                                 onCopy = { onIntent(ChatIntent.CopyMessageContent(it)) },
                                 contactPhoneLookups = contactPhoneOf(message.content)?.let { phone ->
                                     state.contactCard.lookups[phone]?.let { mapOf(phone to it) }
@@ -268,7 +258,6 @@ internal fun ChatMessageList(
                             onOpenPdf = onOpenPdf,
                             onVote = { optionId -> onIntent(ChatIntent.VotePoll(message.content.removePrefix("poll:"), optionId)) },
                             onShowReactionDetails = { reactionDetailMessageId.value = message.id },
-                            onRetryMessage = { onIntent(ChatIntent.RetryMessage(it)) },
                             onCopy = { onIntent(ChatIntent.CopyMessageContent(it)) },
                             contactPhoneLookups = contactPhoneOf(message.content)?.let { phone ->
                                 state.contactCard.lookups[phone]?.let { mapOf(phone to it) }
@@ -329,3 +318,28 @@ internal fun ChatMessageList(
         }
     }
 }
+
+/**
+ * The run of groupable images from the same sender that starts at [startIndex], read straight from
+ * the paging snapshot so the group is complete even when the run crosses a page boundary. It stops at
+ * the first message that is not loaded yet, is part of an in-flight upload batch, or breaks the run.
+ */
+private fun collectImageGroup(
+    first: MessageBO,
+    startIndex: Int,
+    items: LazyPagingItems<MessageBO>,
+    suppressedIds: Set<String>,
+): List<MessageBO> {
+    val group = mutableListOf(first)
+    var j = startIndex + 1
+    while (j < items.itemCount) {
+        val next = items[j]
+        if (next == null || !next.continuesGroupOf(first, suppressedIds)) break
+        group.add(next)
+        j++
+    }
+    return group
+}
+
+private fun MessageBO.continuesGroupOf(first: MessageBO, suppressedIds: Set<String>): Boolean =
+    id !in suppressedIds && isGroupableImage() && senderId == first.senderId
