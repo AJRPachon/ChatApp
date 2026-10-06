@@ -41,10 +41,13 @@ import com.ajrpachon.chatapp.data.repository.ReactionRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.ScheduledMessageRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.TypingRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.BroadcastListRepositoryImpl
+import com.ajrpachon.chatapp.data.repository.FcmTokenSource
+import com.ajrpachon.chatapp.data.repository.FirebaseFcmTokenSource
 import com.ajrpachon.chatapp.data.repository.SessionRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.StatusRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.StickerPackRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.UserRepositoryImpl
+import com.ajrpachon.chatapp.data.session.AndroidSecureStorage
 import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.domain.repository.ContactRepository
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
@@ -137,8 +140,22 @@ val repositoryModule = module {
         )
     }
     single<BackupRepository> { BackupRepositoryImpl(androidContext(), get(), get()) }
-    single<FcmTokenRepository> { FcmTokenRepositoryImpl(get(), androidContext()) }
-    single<GiphyRepository> { GiphyRepositoryImpl(get(), androidContext()) }
+    single<FcmTokenSource> { FirebaseFcmTokenSource() }
+    single<FcmTokenRepository> {
+        val context = androidContext()
+        FcmTokenRepositoryImpl(
+            remoteSource = get(),
+            tokenSource = get(),
+            storageProvider = { AndroidSecureStorage(context, FcmTokenRepositoryImpl.PREFS_NAME) },
+        )
+    }
+    single<GiphyRepository> {
+        val context = androidContext().applicationContext
+        GiphyRepositoryImpl(
+            remoteSource = get(),
+            storageProvider = { AndroidSecureStorage(context, GiphyRepositoryImpl.PREFS_NAME) },
+        )
+    }
 }
 
 val useCaseModule = module {
