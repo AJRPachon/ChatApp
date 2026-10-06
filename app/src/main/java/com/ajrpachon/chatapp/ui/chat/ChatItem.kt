@@ -12,28 +12,24 @@ internal sealed class ChatItem {
     }
 }
 
+private fun MessageBO.isImageOnly() = imageUrl != null && audioUrl == null
+
+/** Index just past the run of image-only messages from the same sender that starts at [start]. */
+private fun List<MessageBO>.imageRunEnd(start: Int): Int {
+    val senderId = this[start].senderId
+    var end = start + 1
+    while (end < size && this[end].isImageOnly() && this[end].senderId == senderId) end++
+    return end
+}
+
 internal fun List<MessageBO>.toChatItems(): List<ChatItem> {
     val result = mutableListOf<ChatItem>()
     var i = 0
     while (i < size) {
-        val message = this[i]
-        if (message.imageUrl != null && message.audioUrl == null) {
-            val group = mutableListOf(message)
-            var j = i + 1
-            while (j < size && this[j].imageUrl != null && this[j].audioUrl == null && this[j].senderId == message.senderId) {
-                group.add(this[j])
-                j++
-            }
-            if (group.size > 2) {
-                result.add(ChatItem.Group(group))
-            } else {
-                group.forEach { result.add(ChatItem.Single(it)) }
-            }
-            i = j
-        } else {
-            result.add(ChatItem.Single(message))
-            i++
-        }
+        val end = if (this[i].isImageOnly()) imageRunEnd(i) else i + 1
+        val run = subList(i, end)
+        if (run.size > 2) result.add(ChatItem.Group(run.toList())) else run.mapTo(result) { ChatItem.Single(it) }
+        i = end
     }
     return result
 }

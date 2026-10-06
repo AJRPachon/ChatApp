@@ -397,7 +397,6 @@ internal fun CreatePollSheetContent(
 @Composable
 internal fun ReactionDetailsSheet(
     reactions: List<com.ajrpachon.chatapp.domain.model.ReactionBO>,
-    onDismiss: () -> Unit,
 ) {
     val grouped = reactions.groupBy { it.emoji }
     Column(

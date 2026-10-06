@@ -297,10 +297,7 @@ internal fun ChatDialogHost(
                 onDismissRequest = { reactionDetailMessageId.value = null },
                 sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             ) {
-                ReactionDetailsSheet(
-                    reactions = msgReactions,
-                    onDismiss = { reactionDetailMessageId.value = null },
-                )
+                ReactionDetailsSheet(reactions = msgReactions)
             }
         }
     }

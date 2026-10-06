@@ -203,7 +203,6 @@ internal fun MessageBubble(
     onOpenPdf: (url: String, filename: String) -> Unit = { _, _ -> },
     onVote: ((optionId: String) -> Unit)? = null,
     onShowReactionDetails: () -> Unit = {},
-    onRetryMessage: (String) -> Unit = {},
     onCopy: (String) -> Unit = {},
     contactPhoneLookups: Map<String, ContactPhoneLookup> = emptyMap(),
     onCheckContactRelationship: (String) -> Unit = {},

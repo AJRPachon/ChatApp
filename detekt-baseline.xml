@@ -2,7 +2,6 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>ComplexCondition:ChatItem.kt$j &lt; size &amp;&amp; this[j].imageUrl != null &amp;&amp; this[j].audioUrl == null &amp;&amp; this[j].senderId == message.senderId</ID>
     <ID>CyclomaticComplexMethod:ConversationListViewModel.kt$ConversationListViewModel$fun onIntent(intent: ConversationListIntent)</ID>
     <ID>CyclomaticComplexMethod:GroupInfoViewModel.kt$GroupInfoViewModel$fun onIntent(intent: GroupInfoIntent)</ID>
     <ID>CyclomaticComplexMethod:MainActivity.kt$MainActivity$override fun onCreate(savedInstanceState: Bundle?)</ID>
@@ -10,16 +9,8 @@
     <ID>LongMethod:ConversationListViewModel.kt$ConversationListViewModel$fun onIntent(intent: ConversationListIntent)</ID>
     <ID>LongMethod:MainActivity.kt$MainActivity$override fun onCreate(savedInstanceState: Bundle?)</ID>
     <ID>LongParameterList:GroupInfoViewModel.kt$GroupInfoViewModel$( private val conversationId: String, private val userRepository: UserRepository, private val getGroupMembersUseCase: GetGroupMembersUseCase, private val updateGroupUseCase: UpdateGroupUseCase, private val leaveGroupUseCase: LeaveGroupUseCase, private val searchUsersUseCase: SearchUsersUseCase, private val groupRepository: GroupRepository, private val conversationRepository: ConversationRepository, )</ID>
-    <ID>LoopWithTooManyJumpStatements:ChatMessageList.kt$while</ID>
-    <ID>LoopWithTooManyJumpStatements:ContactRepositoryImpl.kt$ContactRepositoryImpl$while</ID>
-    <ID>LoopWithTooManyJumpStatements:ExportConversationUseCase.kt$ExportConversationUseCase$for</ID>
-    <ID>NestedBlockDepth:ChatItem.kt$internal fun List&lt;MessageBO&gt;.toChatItems(): List&lt;ChatItem&gt;</ID>
-    <ID>ReturnCount:BroadcastListViewModel.kt$BroadcastListViewModel$private fun sendBroadcast()</ID>
-    <ID>ReturnCount:InvitationRepositoryImpl.kt$InvitationRepositoryImpl$override suspend fun getRelationship(currentUserId: String, otherUserId: String): UserRelationship</ID>
     <ID>TooManyFunctions:AuthRepository.kt$AuthRepository</ID>
     <ID>TooManyFunctions:MessageRepositoryImpl.kt$MessageRepositoryImpl : MessageRepository</ID>
     <ID>TooManyFunctions:UserRepository.kt$UserRepository</ID>
-    <ID>UnusedParameter:ChatBottomSheets.kt$onDismiss: () -&gt; Unit</ID>
-    <ID>UnusedParameter:MessageBubble.kt$onRetryMessage: (String) -&gt; Unit = {}</ID>
   </CurrentIssues>
 </SmellBaseline>

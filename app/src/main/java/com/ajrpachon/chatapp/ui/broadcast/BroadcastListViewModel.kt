@@ -123,20 +123,34 @@ class BroadcastListViewModel(
         }
     }
 
-    private fun sendBroadcast() {
+    private class BroadcastRequest(val userId: String, val list: BroadcastListItem, val message: String)
+
+    /** The send request, or null (with the error already in the state) when it cannot be sent. */
+    private fun validBroadcastRequest(): BroadcastRequest? {
         val cur = state.value
-        val listId = cur.sendingListId ?: return
+        val listId = cur.sendingListId ?: return null
         val msg = cur.broadcastMessage.trim()
-        if (msg.isBlank()) {
-            updateState { it.copy(error = UiText.StringResource(R.string.broadcast_error_write_message)) }
-            return
+        val uid = currentUserId
+        val list = cur.lists.find { it.id == listId }
+        return when {
+            msg.isBlank() -> {
+                updateState { it.copy(error = UiText.StringResource(R.string.broadcast_error_write_message)) }
+                null
+            }
+            uid == null || list == null -> null
+            list.members.isEmpty() -> {
+                updateState { it.copy(error = UiText.StringResource(R.string.broadcast_error_no_members)) }
+                null
+            }
+            else -> BroadcastRequest(uid, list, msg)
         }
-        val uid = currentUserId ?: return
-        val li = cur.lists.find { it.id == listId } ?: return
-        if (li.members.isEmpty()) {
-            updateState { it.copy(error = UiText.StringResource(R.string.broadcast_error_no_members)) }
-            return
-        }
+    }
+
+    private fun sendBroadcast() {
+        val request = validBroadcastRequest() ?: return
+        val uid = request.userId
+        val li = request.list
+        val msg = request.message
         viewModelScope.launch {
             updateState { it.copy(isSending = true) }
             var failures = 0
