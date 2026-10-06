@@ -58,7 +58,6 @@ import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -102,6 +101,7 @@ import com.ajrpachon.chatapp.GlobalSearchRoute
 import com.ajrpachon.chatapp.InvitationsRoute
 import com.ajrpachon.chatapp.NewChatRoute
 import com.ajrpachon.chatapp.ProfileRoute
+import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import kotlinx.datetime.Instant
 import org.koin.androidx.compose.koinViewModel
@@ -209,9 +209,7 @@ fun ConversationListContent(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { onIntent(ConversationListIntent.DismissSoundPicker) }) {
-                    Text(stringResource(R.string.conversations_cancel))
-                }
+                ChatAppTextButton(text = stringResource(R.string.conversations_cancel), onClick = { onIntent(ConversationListIntent.DismissSoundPicker) })
             },
         )
     }

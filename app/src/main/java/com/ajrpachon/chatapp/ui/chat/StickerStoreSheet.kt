@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -33,6 +32,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
 import org.koin.androidx.compose.koinViewModel
 
 // ── Sticker Store bottom sheet ────────────────────────────────────────────────
@@ -131,8 +131,6 @@ private fun StickerPackStoreRow(
 
         Spacer(Modifier.width(8.dp))
 
-        Button(onClick = onInstall) {
-            Text(stringResource(R.string.sticker_store_install))
-        }
+        ChatAppPrimaryButton(text = stringResource(R.string.sticker_store_install), onClick = onInstall)
     }
 }

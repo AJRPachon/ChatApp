@@ -77,6 +77,7 @@ import com.ajrpachon.chatapp.domain.model.StatusBO
 import com.ajrpachon.chatapp.ui.common.ChatConstants
 import com.ajrpachon.chatapp.ui.common.formatStatusAge
 import com.ajrpachon.chatapp.ui.components.ChatAppAvatar
+import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
 import com.ajrpachon.chatapp.ui.theme.ChatAppShapeExtras
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import kotlinx.coroutines.delay
@@ -433,7 +434,7 @@ private fun ComposeStatusDialog(
             ) { Text(stringResource(R.string.status_publish)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.status_cancel)) }
+            ChatAppTextButton(text = stringResource(R.string.status_cancel), onClick = onDismiss)
         },
     )
 }

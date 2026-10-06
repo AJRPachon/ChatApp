@@ -40,6 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.ReactionBO
+import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
 
 /**
  * Every dialog/bottom-sheet that [ChatScreen] shows conditionally on a `state.showX` (or local
@@ -78,7 +79,7 @@ internal fun ChatDialogHost(
                 }) { Text(stringResource(R.string.chat_delete), color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteSelectionConfirm.value = false }) { Text(stringResource(R.string.chat_cancel)) }
+                ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = { showDeleteSelectionConfirm.value = false })
             },
         )
     }
@@ -121,14 +122,10 @@ internal fun ChatDialogHost(
                 Text(stringResource(R.string.chat_incognito_mode_description))
             },
             confirmButton = {
-                TextButton(onClick = { onIntent(ChatIntent.ConfirmIncognito) }) {
-                    Text(stringResource(R.string.chat_incognito_confirm_activate))
-                }
+                ChatAppTextButton(text = stringResource(R.string.chat_incognito_confirm_activate), onClick = { onIntent(ChatIntent.ConfirmIncognito) })
             },
             dismissButton = {
-                TextButton(onClick = { onIntent(ChatIntent.DismissIncognitoDialog) }) {
-                    Text(stringResource(R.string.chat_cancel))
-                }
+                ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = { onIntent(ChatIntent.DismissIncognitoDialog) })
             },
         )
     }

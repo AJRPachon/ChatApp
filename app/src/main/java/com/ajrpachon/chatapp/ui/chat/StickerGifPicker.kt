@@ -15,13 +15,11 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -45,6 +43,8 @@ import androidx.compose.ui.unit.sp
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.components.ChatAppSearchField
 import coil3.compose.AsyncImage
+import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
+import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
 import org.koin.androidx.compose.koinViewModel
 
 // ── Main picker ───────────────────────────────────────────────────────────────
@@ -207,9 +207,10 @@ private fun GifTab(onSelected: (String) -> Unit, vm: GifPickerViewModel = koinVi
                     "Configura tu propia clave API de Giphy para activar esta función.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Button(onClick = { vm.onIntent(GifPickerIntent.ShowKeyDialog) }) {
-                    Text(stringResource(R.string.gif_configure_key))
-                }
+                ChatAppPrimaryButton(
+                    text = stringResource(R.string.gif_configure_key),
+                    onClick = { vm.onIntent(GifPickerIntent.ShowKeyDialog) },
+                )
             }
             state.errorState == GifPickerError.NETWORK_ERROR -> Box(
                 Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center
@@ -263,10 +264,10 @@ private fun GiphyApiKeyDialog(initialKey: String, onSave: (String) -> Unit, onDi
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(key) }, enabled = key.isNotBlank()) { Text(stringResource(R.string.gif_api_key_save)) }
+            ChatAppTextButton(text = stringResource(R.string.gif_api_key_save), onClick = { onSave(key) }, enabled = key.isNotBlank())
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.gif_api_key_cancel)) }
+            ChatAppTextButton(text = stringResource(R.string.gif_api_key_cancel), onClick = onDismiss)
         },
     )
 }
