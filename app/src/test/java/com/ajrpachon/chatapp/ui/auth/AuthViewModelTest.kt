@@ -1,5 +1,8 @@
 package com.ajrpachon.chatapp.ui.auth
 
+import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.domain.model.AuthErrorKind
+import com.ajrpachon.chatapp.domain.model.AuthException
 import com.ajrpachon.chatapp.domain.model.IntegrityResultBO
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.repository.AuthRepository
@@ -158,5 +161,67 @@ class AuthViewModelTest {
 
         assertFalse(vm.state.value.isLoading)
         coVerify(exactly = 0) { authRepository.signInWithGoogle(any(), any()) }
+    }
+
+    // ── email sign-in and sign-up errors ───────────────────────────────────────
+
+    private fun AuthViewModel.signInWithEmail(email: String = "a@b.c", password: String = "secret1") {
+        onIntent(AuthIntent.EmailChanged(email))
+        onIntent(AuthIntent.PasswordChanged(password))
+        onIntent(AuthIntent.SignInWithEmail)
+    }
+
+    @Test
+    fun `wrong credentials show their message and suggest registering`() = runTest(mainDispatcherRule.scheduler) {
+        coEvery { authRepository.signInWithEmail(any(), any()) } throws AuthException(AuthErrorKind.INVALID_CREDENTIALS)
+        val vm = buildViewModel()
+        advanceUntilIdle()
+
+        vm.signInWithEmail()
+        advanceUntilIdle()
+
+        assertEquals(UiText.StringResource(R.string.auth_error_invalid_credentials), vm.state.value.error)
+        assertTrue(vm.state.value.showRegisterSuggestion)
+    }
+
+    @Test
+    fun `an unconfirmed e-mail asks to verify it, without suggesting registering`() = runTest(mainDispatcherRule.scheduler) {
+        coEvery { authRepository.signInWithEmail(any(), any()) } throws AuthException(AuthErrorKind.EMAIL_NOT_CONFIRMED)
+        val vm = buildViewModel()
+        advanceUntilIdle()
+
+        vm.signInWithEmail()
+        advanceUntilIdle()
+
+        assertEquals(UiText.StringResource(R.string.auth_error_email_not_confirmed), vm.state.value.error)
+        assertFalse(vm.state.value.showRegisterSuggestion)
+    }
+
+    @Test
+    fun `any other sign-in failure shows its own message`() = runTest(mainDispatcherRule.scheduler) {
+        coEvery { authRepository.signInWithEmail(any(), any()) } throws IllegalStateException("network down")
+        val vm = buildViewModel()
+        advanceUntilIdle()
+
+        vm.signInWithEmail()
+        advanceUntilIdle()
+
+        assertEquals(UiText.Dynamic("network down"), vm.state.value.error)
+    }
+
+    @Test
+    fun `signing up with a registered e-mail says so`() = runTest(mainDispatcherRule.scheduler) {
+        coEvery { authRepository.signUpWithEmail(any(), any()) } throws AuthException(AuthErrorKind.EMAIL_ALREADY_REGISTERED)
+        val vm = buildViewModel()
+        advanceUntilIdle()
+        vm.onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_UP))
+        vm.onIntent(AuthIntent.EmailChanged("a@b.c"))
+        vm.onIntent(AuthIntent.PasswordChanged("secret1"))
+        vm.onIntent(AuthIntent.ConfirmPasswordChanged("secret1"))
+
+        vm.onIntent(AuthIntent.SignUpWithEmail)
+        advanceUntilIdle()
+
+        assertEquals(UiText.StringResource(R.string.auth_error_email_registered), vm.state.value.error)
     }
 }

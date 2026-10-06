@@ -18,8 +18,9 @@ interface AuthRepository {
     /**
      * Permanently deletes the current user's account via the `delete-account` Edge Function.
      * On success, also wipes local session/DB/keystore state (device left as if freshly installed
-     * for this user). Throws on failure (e.g. [io.github.jan.supabase.exceptions.RestException]
-     * with statusCode 401/429/500) — callers should inspect the exception to show a specific message.
+     * for this user). Throws on failure: an [com.ajrpachon.chatapp.domain.model.AuthException]
+     * with kind SESSION_EXPIRED, TOO_MANY_REQUESTS or SERVER_ERROR when the backend said so, anything
+     * else unchanged — callers read the kind to show a specific message.
      */
     suspend fun deleteAccount()
     suspend fun checkIntegrity(): IntegrityResultBO
