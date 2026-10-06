@@ -14,7 +14,7 @@ import com.ajrpachon.chatapp.ui.common.toUiText
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.UploadLimits.checkImageSize
 import com.ajrpachon.chatapp.utils.UploadLimits.checkVideoSize
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 

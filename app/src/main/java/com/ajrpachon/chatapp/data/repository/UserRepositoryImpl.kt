@@ -1,5 +1,5 @@
 package com.ajrpachon.chatapp.data.repository
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 
 import com.ajrpachon.chatapp.data.local.dao.UserDao
 import com.ajrpachon.chatapp.data.mapper.toDBO
@@ -72,7 +72,7 @@ class UserRepositoryImpl(
 
     override suspend fun searchUsersByEmails(emails: List<String>): List<UserBO> =
         remoteSource.searchByEmails(emails).map { dto ->
-            dto.toBO().also { bo -> com.ajrpachon.chatapp.utils.catchResult { userDao.upsert(bo.toDBO()) } }
+            dto.toBO().also { bo -> com.ajrpachon.chatapp.domain.util.catchResult { userDao.upsert(bo.toDBO()) } }
         }
 
     override suspend fun clearCurrentUser() {

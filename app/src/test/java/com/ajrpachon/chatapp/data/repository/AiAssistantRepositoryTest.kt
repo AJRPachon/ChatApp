@@ -3,7 +3,7 @@ package com.ajrpachon.chatapp.data.repository
 import com.ajrpachon.chatapp.data.remote.dto.AiRequestDTO
 import com.ajrpachon.chatapp.data.remote.source.AiAssistantRemoteSource
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
-import com.ajrpachon.chatapp.utils.AnalyticsEvents
+import com.ajrpachon.chatapp.domain.repository.AnalyticsEvents
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk

@@ -7,7 +7,7 @@ import com.ajrpachon.chatapp.domain.repository.DraftRepository
 import com.ajrpachon.chatapp.domain.repository.ScheduledMessageRepository
 import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.ui.common.formatScheduledMessageTime
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 import com.ajrpachon.chatapp.worker.ScheduledMessageWorker
 import java.util.UUID
 import java.util.concurrent.TimeUnit

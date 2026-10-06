@@ -1,6 +1,6 @@
 package com.ajrpachon.chatapp.domain.model
 
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 
 object MediaUrlValidator {
     private val ALLOWED_HOSTS = setOf(

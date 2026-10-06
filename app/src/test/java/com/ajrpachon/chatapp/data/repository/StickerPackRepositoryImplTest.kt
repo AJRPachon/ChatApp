@@ -6,7 +6,7 @@ import com.ajrpachon.chatapp.data.local.entity.StickerPackDBO
 import com.ajrpachon.chatapp.domain.model.StickerBO
 import com.ajrpachon.chatapp.domain.model.StickerPackBO
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
-import com.ajrpachon.chatapp.utils.AnalyticsEvents
+import com.ajrpachon.chatapp.domain.repository.AnalyticsEvents
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk

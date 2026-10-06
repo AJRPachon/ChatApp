@@ -1,5 +1,5 @@
 package com.ajrpachon.chatapp.ui.profile
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.R
@@ -13,7 +13,7 @@ import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.ui.common.toUiText
-import com.ajrpachon.chatapp.utils.AnalyticsEvents
+import com.ajrpachon.chatapp.domain.repository.AnalyticsEvents
 import com.ajrpachon.chatapp.utils.AppDispatchers
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.UploadLimits.checkAvatarSize

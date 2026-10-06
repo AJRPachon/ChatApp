@@ -6,7 +6,7 @@ import com.ajrpachon.chatapp.data.local.entity.BroadcastListMemberDBO
 import com.ajrpachon.chatapp.data.mapper.toBO
 import com.ajrpachon.chatapp.domain.model.BroadcastListBO
 import com.ajrpachon.chatapp.domain.repository.BroadcastListRepository
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 

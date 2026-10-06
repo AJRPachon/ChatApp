@@ -4,7 +4,7 @@ import com.ajrpachon.chatapp.data.local.entity.GroupMemberDBO
 import com.ajrpachon.chatapp.data.remote.dto.GroupMemberDTO
 import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.GroupRole
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 import kotlinx.datetime.Instant
 
 fun GroupMemberDTO.toDBO() = GroupMemberDBO(

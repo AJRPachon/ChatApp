@@ -10,7 +10,7 @@ import com.ajrpachon.chatapp.domain.repository.CrashReporter
 import com.ajrpachon.chatapp.domain.repository.MfaAssuranceLevel
 import com.ajrpachon.chatapp.domain.repository.SessionInfo
 import com.ajrpachon.chatapp.domain.repository.TotpEnrollment
-import com.ajrpachon.chatapp.utils.AnalyticsEvents
+import com.ajrpachon.chatapp.domain.repository.AnalyticsEvents
 import com.ajrpachon.chatapp.utils.E2EEKeyManager
 import com.ajrpachon.chatapp.utils.SessionGuard
 import kotlinx.coroutines.Dispatchers

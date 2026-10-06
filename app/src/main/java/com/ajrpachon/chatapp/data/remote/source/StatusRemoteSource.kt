@@ -1,7 +1,7 @@
 package com.ajrpachon.chatapp.data.remote.source
 
 import com.ajrpachon.chatapp.data.remote.dto.StatusDTO
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest

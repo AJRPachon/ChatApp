@@ -12,7 +12,7 @@ import com.ajrpachon.chatapp.domain.model.IntegrityResultBO
 import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.ui.common.toUiText
 import com.ajrpachon.chatapp.utils.SessionGuard
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 import kotlinx.coroutines.launch
 import java.security.MessageDigest
 import java.util.UUID
