@@ -87,6 +87,7 @@ import com.github.skydoves.navgraph.annotations.NavDestination
 import com.github.skydoves.navgraph.annotations.NavEdge
 import com.ajrpachon.chatapp.AuthRoute
 import com.ajrpachon.chatapp.ProfileRoute
+import com.ajrpachon.chatapp.ui.theme.ChatAppTextSizes
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import org.koin.androidx.compose.koinViewModel
 
@@ -875,7 +876,7 @@ private fun CategoryLabel(text: String) {
         // fallback renders SemiBold/Bold/ExtraBold all but identically at this size. Bumping
         // size + letter-spacing on top of ExtraBold is what actually reads as "stands out more".
         style = MaterialTheme.typography.labelMedium.copy(
-            fontSize = 13.sp,
+            fontSize = ChatAppTextSizes.SectionLabel,
             letterSpacing = 1.2.sp,
         ),
         fontWeight = FontWeight.ExtraBold,

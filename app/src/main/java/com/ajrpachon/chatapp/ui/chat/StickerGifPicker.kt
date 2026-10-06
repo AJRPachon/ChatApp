@@ -39,12 +39,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.sp
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.components.ChatAppSearchField
 import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
 import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
+import com.ajrpachon.chatapp.ui.theme.ChatAppTextSizes
 import org.koin.androidx.compose.koinViewModel
 
 // ── Main picker ───────────────────────────────────────────────────────────────
@@ -133,7 +133,7 @@ private fun StickerTab(
             Tab(
                 selected = false,
                 onClick = onOpenStore,
-                text = { Text("+", fontSize = 20.sp) },
+                text = { Text("+", fontSize = ChatAppTextSizes.TabAction) },
             )
         }
 

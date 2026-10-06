@@ -35,7 +35,6 @@ import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material3.Card
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -51,7 +50,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -84,6 +82,7 @@ import com.github.skydoves.navgraph.annotations.NavDestination
 import com.github.skydoves.navgraph.annotations.NavEdge
 import com.ajrpachon.chatapp.GroupInfoRoute
 import com.ajrpachon.chatapp.UserInfoRoute
+import com.ajrpachon.chatapp.ui.components.ChatAppOutlinedButton
 import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
 import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
@@ -224,14 +223,16 @@ fun GroupInfoContent(
                 }
                 Spacer(Modifier.height(16.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(
+                    ChatAppOutlinedButton(
+                        text = stringResource(R.string.group_copy),
                         onClick = {
-                            val link = state.inviteLink ?: return@OutlinedButton
-                            clipboardManager.setText(AnnotatedString(link))
-                            onIntent(GroupInfoIntent.DismissInviteLinkSheet)
+                            state.inviteLink?.let { link ->
+                                clipboardManager.setText(AnnotatedString(link))
+                                onIntent(GroupInfoIntent.DismissInviteLinkSheet)
+                            }
                         },
                         modifier = Modifier.weight(1f),
-                    ) { Text(stringResource(R.string.group_copy)) }
+                    )
                     ChatAppPrimaryButton(
                         text = stringResource(R.string.group_share),
                         onClick = { onIntent(GroupInfoIntent.ShareInviteLink) },
@@ -624,9 +625,11 @@ private fun HistoryChoiceDialog(
         },
         dismissButton = {
             Column {
-                TextButton(onClick = onBlankHistory) {
-                    Text(stringResource(R.string.group_history_blank), color = MaterialTheme.colorScheme.error)
-                }
+                ChatAppTextButton(
+                    text = stringResource(R.string.group_history_blank),
+                    onClick = onBlankHistory,
+                    color = MaterialTheme.colorScheme.error,
+                )
                 ChatAppTextButton(text = stringResource(R.string.group_history_cancel), onClick = onDismiss)
             }
         },

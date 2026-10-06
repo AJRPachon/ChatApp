@@ -26,7 +26,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,6 +41,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
@@ -102,15 +102,12 @@ internal fun SessionAuditContent(
                 },
                 actions = {
                     if (otherSessions.isNotEmpty()) {
-                        TextButton(
+                        ChatAppTextButton(
+                            text = stringResource(R.string.session_audit_close_all_others),
                             onClick = { onIntent(SessionAuditIntent.RevokeAllOtherSessions) },
-                        ) {
-                            Text(
-                                stringResource(R.string.session_audit_close_all_others),
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.labelLarge,
-                            )
-                        }
+                            color = MaterialTheme.colorScheme.error,
+                            textStyle = MaterialTheme.typography.labelLarge,
+                        )
                     }
                 },
             )

@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.GppBad
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 
 /**
@@ -70,15 +70,14 @@ fun IntegrityBlockedContent(onExit: () -> Unit) {
                 textAlign = TextAlign.Center,
             )
             Spacer(modifier = Modifier.height(36.dp))
-            Button(
+            ChatAppPrimaryButton(
+                text = stringResource(R.string.auth_integrity_exit),
                 onClick = onExit,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.error,
                     contentColor = MaterialTheme.colorScheme.onError,
                 ),
-            ) {
-                Text(stringResource(R.string.auth_integrity_exit))
-            }
+            )
         }
     }
 }

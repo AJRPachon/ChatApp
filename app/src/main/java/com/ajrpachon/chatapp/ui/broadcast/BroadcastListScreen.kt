@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -27,7 +26,6 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -52,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.UserBO
+import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
 import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import kotlinx.datetime.Instant
@@ -154,13 +153,11 @@ fun BroadcastListContent(
                 }
             },
             confirmButton = {
-                Button(
+                ChatAppPrimaryButton(
+                    text = stringResource(R.string.broadcast_create_button),
                     onClick = { onIntent(BroadcastListIntent.CreateList) },
-                    enabled = !state.isCreating,
-                ) {
-                    if (state.isCreating) CircularProgressIndicator(modifier = Modifier.size(16.dp))
-                    else Text(stringResource(R.string.broadcast_create_button))
-                }
+                    isLoading = state.isCreating,
+                )
             },
             dismissButton = {
                 ChatAppTextButton(text = stringResource(R.string.broadcast_cancel_button), onClick = { onIntent(BroadcastListIntent.DismissCreateDialog) })
@@ -193,17 +190,13 @@ fun BroadcastListContent(
                 }
             },
             confirmButton = {
-                Button(
+                ChatAppPrimaryButton(
+                    text = stringResource(R.string.broadcast_send_button),
                     onClick = { onIntent(BroadcastListIntent.SendBroadcast) },
-                    enabled = !state.isSending && state.broadcastMessage.isNotBlank(),
-                ) {
-                    if (state.isSending) CircularProgressIndicator(modifier = Modifier.size(16.dp))
-                    else {
-                        Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text(stringResource(R.string.broadcast_send_button))
-                    }
-                }
+                    enabled = state.broadcastMessage.isNotBlank(),
+                    isLoading = state.isSending,
+                    leadingIcon = Icons.Default.Send,
+                )
             },
             dismissButton = {
                 ChatAppTextButton(text = stringResource(R.string.broadcast_cancel_button), onClick = { onIntent(BroadcastListIntent.DismissSendDialog) })

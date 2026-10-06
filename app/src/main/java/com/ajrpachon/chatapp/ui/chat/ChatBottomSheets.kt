@@ -38,7 +38,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -55,6 +54,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.ChatTheme
+import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
 
 // ── Modal bottom sheets used from ChatScreen ────────────────────────────────
 // Extracted per docs/chat-viewmodel-decomposition.md Phase 2 — each takes only its own narrow
@@ -367,11 +367,11 @@ internal fun CreatePollSheetContent(
         }
 
         if (options.size < 10) {
-            TextButton(onClick = { options = options + "" }) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(4.dp))
-                Text(stringResource(R.string.chat_add_option))
-            }
+            ChatAppTextButton(
+                text = stringResource(R.string.chat_add_option),
+                onClick = { options = options + "" },
+                leadingIcon = Icons.Default.Add,
+            )
         }
 
         Row(

@@ -23,7 +23,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -73,10 +72,14 @@ internal fun ChatDialogHost(
             title = { Text(stringResource(R.string.chat_delete_messages_title)) },
             text = { Text(pluralStringResource(R.plurals.chat_delete_messages_confirm, count, count)) },
             confirmButton = {
-                TextButton(onClick = {
-                    showDeleteSelectionConfirm.value = false
-                    onIntent(ChatIntent.DeleteSelectedMessages)
-                }) { Text(stringResource(R.string.chat_delete), color = MaterialTheme.colorScheme.error) }
+                ChatAppTextButton(
+                    text = stringResource(R.string.chat_delete),
+                    onClick = {
+                        showDeleteSelectionConfirm.value = false
+                        onIntent(ChatIntent.DeleteSelectedMessages)
+                    },
+                    color = MaterialTheme.colorScheme.error,
+                )
             },
             dismissButton = {
                 ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = { showDeleteSelectionConfirm.value = false })

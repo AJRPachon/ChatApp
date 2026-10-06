@@ -39,7 +39,6 @@ import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -427,11 +426,12 @@ private fun ComposeStatusDialog(
             )
         },
         confirmButton = {
-            TextButton(
+            ChatAppTextButton(
+                text = stringResource(R.string.status_publish),
                 onClick = onPost,
                 enabled = text.isNotBlank(),
                 modifier = Modifier.testTag("status_publish_button"),
-            ) { Text(stringResource(R.string.status_publish)) }
+            )
         },
         dismissButton = {
             ChatAppTextButton(text = stringResource(R.string.status_cancel), onClick = onDismiss)
