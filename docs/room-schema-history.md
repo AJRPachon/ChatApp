@@ -1,43 +1,19 @@
-# Room: exported schemas and the gaps in them
+# Room: historia del esquema
 
-`app/schemas/com.ajrpachon.chatapp.data.local.ChatDatabase/` holds one JSON per DB version, written by
-Room's KSP processor on every build. Today it has versions **1-12, 15-21, 26 and 32-40**. The missing
-ones are **13, 14, 22-25 and 27-31**, and they cannot be recovered.
+## Reinicio en la versión 1 (2026-10-06)
 
-## Why they are missing
+La base de datos se reinició en `version = 1` antes de publicar la app. Hasta entonces el esquema había llegado a la versión 40 durante el desarrollo, con 39 migraciones, pero ninguna versión se distribuyó: no hay usuarios con datos que migrar. Además, 11 de esos 40 schemas exportados (13, 14, 22 a 25 y 27 a 31) no se podían recuperar, porque nunca existieron en ningún commit (las ramas de funcionalidades se fusionaron en lotes) o pertenecían a otra numeración. Una cadena de migraciones que no se puede verificar entera no protegía a nadie, así que se descartó entera en lugar de inventar los schemas que faltaban.
 
-- The June 2026 feature branches were merged in two batches (`e5d9e30`, `d10e732`), jumping the DB
-  from 21 to 26 and then to 32. No commit ever held the intermediate states 22-25 and 27-31.
-- Version numbers were reused across branches before being linearised. The entities at the commits
-  that say "v13" and "v14" are not the ones the final migration chain calls v13 and v14: `isDeleted`
-  is added by `migration12To13` in the chain, but at those commits it arrives at a later number.
-  Regenerating 13.json and 14.json from those commits (building Room's KSP step against each commit's
-  `data/local` sources reproduces committed schemas byte for byte, ignoring line endings) gives
-  genuine schemas that the chain's `12 -> 13` and `14 -> 15` steps do not produce. They were not added.
-- 16.json and 26.json were regenerated that way and do match the chain, so they were added.
+Se conserva el historial en Git: el último commit con la cadena completa es el anterior al PR "reset the Room schema to version 1".
 
-## What guards this now
+## Cómo se trabaja desde ahora
 
-`ChatDatabaseMigrationTest` (androidTest, run with `connectedDebugAndroidTest`):
+- `app/schemas/com.ajrpachon.chatapp.data.local.ChatDatabase/1.json` es el esquema de partida; lo escribe el procesador KSP de Room en cada compilación.
+- **Hasta la primera versión publicada** se puede seguir tocando el esquema de la versión 1 (si no hay instalaciones que conservar, se desinstala la app de los dispositivos de prueba).
+- **Desde la primera versión publicada**, cada cambio en una entidad exige: subir `version` en `ChatDatabase.kt`, registrar `Migration(X, Y)` con `addMigrations(...)` en `buildChatDatabase` (`DatabaseBuilder.kt`) y exportar `Y.json`, además de un test con `MigrationTestHelper` (`connectedDebugAndroidTest`). La skill `/room-migration` describe el flujo.
+- No se usa `fallbackToDestructiveMigration`: borraría los datos de los usuarios en silencio.
 
-- `migrateBetweenEveryPairOfConsecutiveExportedSchemas` replays the chain from each exported version
-  to the next and validates against that version's schema. Steps across a gap (12 -> 15, 21 -> 26,
-  26 -> 32) are replayed together.
-- `everyVersionFromFirstFullyExportedToCurrentHasASchema` fails if a new `Migration(X, Y)` ships
-  without its schema export from v32 on.
-- `migrate1To40_realDataSurvivesTheFullChain` checks the end state and that real data survives.
+## Qué lo vigila
 
-Two steps, 26 -> 32 and 36 -> 37, differ from the next schema only in
-`index_broadcast_list_members_listId` (the migrations create it from v29, but the schemas for
-v32-v36 were exported before the entity declared that index). The test allows exactly those two steps
-to differ in exactly that table; `migration38To39` repairs it on real installs.
-
-## Running it
-
-```bash
-./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.ajrpachon.chatapp.data.local.ChatDatabaseMigrationTest
-```
-
-If you delete a schema JSON, also delete `app/build/generated/assets/copyRoomSchemasToAndroidTestAssetsDebugAndroidTest`
-and `app/build/intermediates/assets/debugAndroidTest`: the copy task does not remove files that
-disappeared from the source folder.
+- `ChatDatabaseSchemaTest` (JVM, Robolectric): las tablas de la base real coinciden exactamente con las entidades del `1.json` exportado. Si se cambia una entidad sin exportar el esquema, falla.
+- `StickerSeedTest`: una base nueva trae los cuatro packs de stickers del sistema (`seedStickerPacks`, llamado desde el callback `onCreate` de `buildChatDatabase`).
