@@ -63,6 +63,11 @@ import com.ajrpachon.chatapp.ui.theme.Signal_SurfaceDark
  */
 @Composable
 fun AppSplashScreen(darkTheme: Boolean, modifier: Modifier = Modifier) {
+    AppSplashContent(darkTheme = darkTheme, modifier = modifier)
+}
+
+@Composable
+fun AppSplashContent(darkTheme: Boolean, modifier: Modifier = Modifier) {
     val background = if (darkTheme) Signal_SurfaceDark else Signal_Surface
     val onBackground = if (darkTheme) Signal_OnSurfaceDark else Signal_OnSurface
     val muted = if (darkTheme) Signal_OnSurfaceVariantDark else Signal_OnSurfaceVariant
@@ -132,11 +137,11 @@ private fun BlinkingCursor() {
 @Preview(name = "Splash light", showBackground = true)
 @Composable
 internal fun AppSplashLightPreview() {
-    AppSplashScreen(darkTheme = false)
+    AppSplashContent(darkTheme = false)
 }
 
 @Preview(name = "Splash dark", showBackground = true)
 @Composable
 internal fun AppSplashDarkPreview() {
-    AppSplashScreen(darkTheme = true)
+    AppSplashContent(darkTheme = true)
 }
