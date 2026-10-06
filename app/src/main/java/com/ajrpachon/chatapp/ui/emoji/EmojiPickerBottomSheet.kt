@@ -27,9 +27,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.domain.model.EmojiCategoryBO
+import com.ajrpachon.chatapp.ui.theme.ChatAppTextSizes
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -84,7 +84,7 @@ internal fun EmojiPickerContent(
                         text = {
                             Text(
                                 text = cat.icon,
-                                fontSize = 18.sp,
+                                fontSize = ChatAppTextSizes.EmojiCategory,
                             )
                         },
                     )
@@ -117,7 +117,7 @@ internal fun EmojiPickerContent(
                                     onIntent(EmojiPickerIntent.EmojiClicked(emoji))
                                 },
                         ) {
-                            Text(text = emoji, fontSize = 24.sp)
+                            Text(text = emoji, fontSize = ChatAppTextSizes.EmojiCell)
                         }
                     }
                 }

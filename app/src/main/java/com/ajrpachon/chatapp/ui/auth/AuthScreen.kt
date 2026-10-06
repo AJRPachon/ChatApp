@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -37,14 +36,12 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import android.content.Intent
 import android.provider.Settings
 import androidx.compose.foundation.shape.CircleShape
@@ -89,6 +86,8 @@ import com.github.skydoves.navgraph.annotations.NavEdge
 import com.ajrpachon.chatapp.AuthRoute
 import com.ajrpachon.chatapp.ConversationListRoute
 import com.ajrpachon.chatapp.ui.common.UiText
+import com.ajrpachon.chatapp.ui.components.ChatAppOutlinedButton
+import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -387,20 +386,18 @@ private fun LoginContent(
                         // doesn't tint, so the vector's own per-path fillColors (ic_google.xml)
                         // survive — same shape/padding as ChatAppOutlinedButton otherwise, for
                         // visual consistency with the rest of the screen.
-                        OutlinedButton(
+                        ChatAppOutlinedButton(
+                            text = stringResource(R.string.auth_continue_with_google),
                             onClick = onGoogleSignIn,
                             modifier = Modifier.fillMaxWidth(),
-                            shape = MaterialTheme.shapes.small,
-                            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp),
-                        ) {
-                            Image(
-                                imageVector = ImageVector.vectorResource(R.drawable.ic_google),
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.auth_continue_with_google))
-                        }
+                            leadingContent = {
+                                Image(
+                                    imageVector = ImageVector.vectorResource(R.drawable.ic_google),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            },
+                        )
 
                         Spacer(Modifier.height(20.dp))
 
@@ -477,27 +474,24 @@ private fun AuthSwitchModeLink(
     val isSignUp = state.authMode == AuthMode.SIGN_UP
     if (!isSignUp) {
         if (state.showRegisterSuggestion) {
-            TextButton(
+            ChatAppTextButton(
+                text = stringResource(R.string.auth_no_account_register_here),
                 onClick = { onIntent(AuthIntent.SwitchToRegister) },
                 modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.auth_no_account_register_here))
-            }
+            )
         } else {
-            TextButton(
+            ChatAppTextButton(
+                text = stringResource(R.string.auth_no_account_register),
                 onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_UP)) },
                 modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.auth_no_account_register))
-            }
+            )
         }
     } else {
-        TextButton(
+        ChatAppTextButton(
+            text = stringResource(R.string.auth_have_account_sign_in),
             onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_IN)) },
             modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(R.string.auth_have_account_sign_in))
-        }
+        )
     }
 }
 

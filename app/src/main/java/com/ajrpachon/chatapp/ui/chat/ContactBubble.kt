@@ -18,7 +18,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -30,6 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.UserRelationship
+import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
 
 // ── Contact-card bubble ──────────────────────────────────────────────────────
 // Extracted per docs/chat-viewmodel-decomposition.md Phase 2 — part of the message-bubble
@@ -102,19 +102,16 @@ internal fun ContactBubble(
                 UserRelationship.PENDING_SENT -> stringResource(R.string.chat_contact_invitation_sent)
                 else -> stringResource(R.string.chat_contact_send_invitation)
             }
-            TextButton(
+            ChatAppTextButton(
+                text = primaryLabel,
                 onClick = { onPrimaryAction(phone) },
                 enabled = relationship != UserRelationship.PENDING_SENT,
                 modifier = Modifier.weight(1f),
-            ) {
-                Text(
-                    primaryLabel,
-                    style = MaterialTheme.typography.labelMedium,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-            TextButton(
+                textStyle = MaterialTheme.typography.labelMedium,
+                textAlign = TextAlign.Center,
+            )
+            ChatAppTextButton(
+                text = stringResource(R.string.chat_contact_add_to_contacts),
                 onClick = {
                     val insertIntent = android.content.Intent(android.content.Intent.ACTION_INSERT).apply {
                         type = android.provider.ContactsContract.Contacts.CONTENT_TYPE
@@ -124,14 +121,9 @@ internal fun ContactBubble(
                     context.startActivity(insertIntent)
                 },
                 modifier = Modifier.weight(1f),
-            ) {
-                Text(
-                    stringResource(R.string.chat_contact_add_to_contacts),
-                    style = MaterialTheme.typography.labelMedium,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
+                textStyle = MaterialTheme.typography.labelMedium,
+                textAlign = TextAlign.Center,
+            )
         }
     }
     }

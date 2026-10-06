@@ -26,7 +26,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerDefaults
 import androidx.compose.material3.rememberDatePickerState
@@ -42,6 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -76,12 +76,12 @@ internal fun ExpiryDurationDialog(onDismiss: () -> Unit, onSelect: (Long?) -> Un
                 )
                 androidx.compose.foundation.layout.Spacer(androidx.compose.ui.Modifier.height(8.dp))
                 options.forEach { (label, value) ->
-                    TextButton(
+                    ChatAppTextButton(
+                        text = label,
                         onClick = { onSelect(value) },
                         modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
-                    ) {
-                        Text(label, modifier = androidx.compose.ui.Modifier.fillMaxWidth())
-                    }
+                        textAlign = TextAlign.Start,
+                    )
                 }
             }
         },
@@ -106,12 +106,12 @@ internal fun MuteDurationDialog(onDismiss: () -> Unit, onSelect: (Long) -> Unit)
         text = {
             androidx.compose.foundation.layout.Column {
                 options.forEach { (label, value) ->
-                    TextButton(
+                    ChatAppTextButton(
+                        text = label,
                         onClick = { onSelect(value) },
                         modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
-                    ) {
-                        Text(label, modifier = androidx.compose.ui.Modifier.fillMaxWidth())
-                    }
+                        textAlign = TextAlign.Start,
+                    )
                 }
             }
         },
@@ -237,7 +237,7 @@ internal fun ScheduleMessageDialog(
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
+                ChatAppTextButton(text = stringResource(R.string.chat_schedule_action), onClick = {
                     val selectedDateMs = datePickerState.selectedDateMillis ?: System.currentTimeMillis()
                     val cal = java.util.Calendar.getInstance().apply {
                         timeInMillis = selectedDateMs
@@ -247,9 +247,7 @@ internal fun ScheduleMessageDialog(
                         set(java.util.Calendar.MILLISECOND, 0)
                     }
                     onConfirm(cal.timeInMillis)
-                }) {
-                    Text(stringResource(R.string.chat_schedule_action))
-                }
+                })
             },
             dismissButton = {
                 ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = onDismiss)

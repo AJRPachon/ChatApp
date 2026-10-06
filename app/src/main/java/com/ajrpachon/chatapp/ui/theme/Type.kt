@@ -3,6 +3,7 @@ package com.ajrpachon.chatapp.ui.theme
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 
 private val base = Typography()
 
@@ -22,3 +23,24 @@ val ChatAppTypography = base.copy(
     labelMedium = base.labelMedium.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.SemiBold),
     labelSmall = base.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.SemiBold),
 )
+
+/**
+ * Text sizes for content that is not a Material text style: emoji and sticker glyphs and one
+ * emphasised section label. Kept here so a screen never spells a size itself.
+ */
+object ChatAppTextSizes {
+    /** An emoji drawn as a category icon in the emoji picker tabs. */
+    val EmojiCategory = 18.sp
+
+    /** An emoji in the picker grid. */
+    val EmojiCell = 24.sp
+
+    /** The "+" glyph on the sticker store tab. */
+    val TabAction = 20.sp
+
+    /** An emoji sticker shown as a message. */
+    val StickerMessage = 64.sp
+
+    /** Section label that has to stand out in the profile screen. */
+    val SectionLabel = 13.sp
+}
