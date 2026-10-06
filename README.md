@@ -167,8 +167,8 @@ com.ajrpachon.chatapp/
 │   │   │                             stickers, recibos de lectura, carpetas, difusión,
 │   │   │                             eventos de chat, sesiones y mensajes programados
 │   │   ├── dao/                      15 DAOs de acceso a la BD
-│   │   ├── ChatDatabase.kt           Base de datos Room (versión 40, cifrada con SQLCipher)
-│   │   ├── DatabaseBuilder.kt        Migraciones v1 → v40 (39 migraciones explícitas)
+│   │   ├── ChatDatabase.kt           Base de datos Room (versión 1, cifrada con SQLCipher)
+│   │   ├── DatabaseBuilder.kt        Construcción de la base (SQLCipher) y carga inicial de stickers
 │   │   └── DatabaseKeyProvider.kt    Clave AES-256 en Android KeyStore
 │   ├── remote/
 │   │   ├── dto/                      Data Transfer Objects de Supabase
@@ -268,7 +268,7 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | ![Compose](https://img.shields.io/badge/-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white) **Jetpack Compose BOM** | 2026.08.00 | UI declarativa |
 | ![M3](https://img.shields.io/badge/-Material%203-757575?logo=materialdesign&logoColor=white) **Material 3** | (BOM) | Sistema de diseño |
 | **Navigation 3** | 1.1.7 | Navegación entre pantallas |
-| ![Room](https://img.shields.io/badge/-Room-FF6F00?logo=android&logoColor=white) **Room** | 2.8.4 | Base de datos local (v40, 21 entidades, 15 DAOs) |
+| ![Room](https://img.shields.io/badge/-Room-FF6F00?logo=android&logoColor=white) **Room** | 2.8.4 | Base de datos local (v1, 21 entidades, 15 DAOs) |
 | **SQLCipher** | 4.18.0 | Cifrado AES-256 de la base de datos Room |
 | ![Koin](https://img.shields.io/badge/-Koin-F97316?logoColor=white) **Koin** | 4.2.2 | Inyección de dependencias |
 | **Kotlin Coroutines + Flow** | 1.11.0 | Concurrencia y streams asíncronos |
