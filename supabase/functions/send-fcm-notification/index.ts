@@ -105,14 +105,41 @@ async function sendFcm(
   return false;
 }
 
+// ── Request checks ─────────────────────────────────────────────────────────
+
+// Compares in constant time so the check does not leak how many leading characters matched.
+function secretMatches(received: string | null, expected: string): boolean {
+  const a = new TextEncoder().encode(received ?? "");
+  const b = new TextEncoder().encode(expected);
+  let diff = a.length ^ b.length;
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    diff |= (a[i] ?? 0) ^ (b[i] ?? 0);
+  }
+  return diff === 0;
+}
+
+const isNonEmptyString = (v: unknown): v is string => typeof v === "string" && v.length > 0;
+
 // ── Handler ────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
+  // Fail closed: with no secret configured the function refuses every call rather than trusting all.
+  if (!WEBHOOK_SECRET) {
+    console.error("FCM_WEBHOOK_SECRET is not set; refusing the request");
+    return new Response("Server misconfigured", { status: 500 });
+  }
+  if (!secretMatches(req.headers.get("x-webhook-secret"), WEBHOOK_SECRET)) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
   try {
     const payload = await req.json();
-    console.log("Payload received:", JSON.stringify(payload).slice(0, 200));
-    const record = payload.record ?? payload;
+    // Never log the payload: it carries the message content.
+    const record = payload?.record ?? payload;
 
+    if (!isNonEmptyString(record?.conversation_id) || !isNonEmptyString(record?.sender_id)) {
+      return new Response("Invalid record", { status: 400 });
+    }
     const conversationId: string = record.conversation_id;
     const senderId: string = record.sender_id;
     const content: string = record.content ?? "";
@@ -167,7 +194,6 @@ Deno.serve(async (req) => {
     }
 
     const recipientIds = participants.map((p: { user_id: string }) => p.user_id);
-    console.log("Recipients:", recipientIds);
 
     const { data: tokenRows } = await supabase
       .from("fcm_tokens")
