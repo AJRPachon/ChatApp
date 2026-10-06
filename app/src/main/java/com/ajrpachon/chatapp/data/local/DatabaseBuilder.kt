@@ -8,25 +8,25 @@ import androidx.sqlite.execSQL
 import kotlinx.coroutines.Dispatchers
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 
-private val MIGRATION_1_2 = object : Migration(1, 2) {
+private val migration1To2 = object : Migration(1, 2) {
     override fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE messages ADD COLUMN imageUrl TEXT")
     }
 }
 
-private val MIGRATION_2_3 = object : Migration(2, 3) {
+private val migration2To3 = object : Migration(2, 3) {
     override fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE conversations ADD COLUMN otherUserId TEXT")
     }
 }
 
-private val MIGRATION_3_4 = object : Migration(3, 4) {
+private val migration3To4 = object : Migration(3, 4) {
     override fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE messages ADD COLUMN audioUrl TEXT")
     }
 }
 
-private val MIGRATION_4_5 = object : Migration(4, 5) {
+private val migration4To5 = object : Migration(4, 5) {
     override fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE messages ADD COLUMN replyToId TEXT")
         connection.execSQL("ALTER TABLE messages ADD COLUMN replyToContent TEXT")
@@ -34,7 +34,7 @@ private val MIGRATION_4_5 = object : Migration(4, 5) {
     }
 }
 
-private val MIGRATION_5_6 = object : Migration(5, 6) {
+private val migration5To6 = object : Migration(5, 6) {
     override fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE messages ADD COLUMN callType TEXT")
         connection.execSQL("ALTER TABLE messages ADD COLUMN callStatus TEXT")
@@ -42,14 +42,14 @@ private val MIGRATION_5_6 = object : Migration(5, 6) {
     }
 }
 
-private val MIGRATION_6_7 = object : Migration(6, 7) {
+private val migration6To7 = object : Migration(6, 7) {
     override fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE messages ADD COLUMN gifUrl TEXT")
         connection.execSQL("ALTER TABLE messages ADD COLUMN stickerUrl TEXT")
     }
 }
 
-private val MIGRATION_7_8 = object : Migration(7, 8) {
+private val migration7To8 = object : Migration(7, 8) {
     override fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE conversations ADD COLUMN description TEXT")
         connection.execSQL("ALTER TABLE conversations ADD COLUMN groupAvatarUrl TEXT")
@@ -68,19 +68,19 @@ private val MIGRATION_7_8 = object : Migration(7, 8) {
     }
 }
 
-private val MIGRATION_8_9 = object : Migration(8, 9) {
+private val migration8To9 = object : Migration(8, 9) {
     override fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE conversations ADD COLUMN isMuted INTEGER NOT NULL DEFAULT 0")
     }
 }
 
-private val MIGRATION_9_10 = object : Migration(9, 10) {
+private val migration9To10 = object : Migration(9, 10) {
     override fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE conversations ADD COLUMN historyVisibleFrom INTEGER NOT NULL DEFAULT 0")
     }
 }
 
-private val MIGRATION_10_11 = object : Migration(10, 11) {
+private val migration10To11 = object : Migration(10, 11) {
     override fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE messages ADD COLUMN isEncrypted INTEGER NOT NULL DEFAULT 0")
     }
@@ -472,9 +472,9 @@ private val migration29To30 = object : Migration(29, 30) {
  * declared after migration33To34..migration36To37).
  */
 internal val allMigrations = arrayOf(
-    MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
-    MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
-    MIGRATION_9_10, MIGRATION_10_11, migration11To12,
+    migration1To2, migration2To3, migration3To4, migration4To5,
+    migration5To6, migration6To7, migration7To8, migration8To9,
+    migration9To10, migration10To11, migration11To12,
     migration12To13, migration13To14, migration14To15, migration15To16, migration16To17,
     migration17To18, migration18To19, migration19To20, migration20To21, migration21To22, migration22To23, migration23To24, migration24To25, migration25To26, migration26To27, migration27To28, migration28To29, migration29To30, migration30To31, migration31To32, migration32To33, migration33To34, migration34To35, migration35To36, migration36To37, migration37To38, migration38To39, migration39To40,
 )

@@ -60,29 +60,29 @@ import com.github.skydoves.navgraph.annotations.NavPreview
 
 // ── Shared preview theme ──────────────────────────────────────────────────────
 
-private val PreviewPrimary = Color(0xFF6B71B8)
-private val PreviewSurface = Color(0xFFFBF8FF)
-private val PreviewOnSurface = Color(0xFF1B1B1F)
-private val PreviewSurfaceVariant = Color(0xFFE4E1EC)
-private val PreviewContainer = Color(0xFFEFECF5)
+private val previewPrimary = Color(0xFF6B71B8)
+private val previewSurface = Color(0xFFFBF8FF)
+private val previewOnSurface = Color(0xFF1B1B1F)
+private val previewSurfaceVariant = Color(0xFFE4E1EC)
+private val previewContainer = Color(0xFFEFECF5)
 
-private val NavPreviewColors = lightColorScheme(
-    primary = PreviewPrimary,
-    surface = PreviewSurface,
-    onSurface = PreviewOnSurface,
-    surfaceVariant = PreviewSurfaceVariant,
-    surfaceContainer = PreviewContainer,
+private val navPreviewColors = lightColorScheme(
+    primary = previewPrimary,
+    surface = previewSurface,
+    onSurface = previewOnSurface,
+    surfaceVariant = previewSurfaceVariant,
+    surfaceContainer = previewContainer,
 )
 
 @Composable
 private fun NavPreviewTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = NavPreviewColors, content = content)
+    MaterialTheme(colorScheme = navPreviewColors, content = content)
 }
 
 // ── Shared stub composables ───────────────────────────────────────────────────
 
 @Composable
-private fun StubAvatar(initials: String, color: Color = PreviewPrimary, size: Int = 40) {
+private fun StubAvatar(initials: String, color: Color = previewPrimary, size: Int = 40) {
     Box(
         modifier = Modifier
             .size(size.dp)
@@ -120,7 +120,7 @@ private fun StubConversationRow(name: String, preview: String, time: String, unr
                     modifier = Modifier
                         .size(18.dp)
                         .clip(CircleShape)
-                        .background(PreviewPrimary),
+                        .background(previewPrimary),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text("$unread", color = Color.White, style = MaterialTheme.typography.labelSmall)
@@ -139,12 +139,12 @@ private fun StubMessageBubble(text: String, isOwn: Boolean) {
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(16.dp))
-                .background(if (isOwn) PreviewPrimary else PreviewSurfaceVariant)
+                .background(if (isOwn) previewPrimary else previewSurfaceVariant)
                 .padding(horizontal = 12.dp, vertical = 8.dp),
         ) {
             Text(
                 text = text,
-                color = if (isOwn) Color.White else PreviewOnSurface,
+                color = if (isOwn) Color.White else previewOnSurface,
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
@@ -161,19 +161,19 @@ internal fun AuthScreenPreview() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Brush.verticalGradient(listOf(Color(0xFFDFE0FF), PreviewSurface)))
+                .background(Brush.verticalGradient(listOf(Color(0xFFDFE0FF), previewSurface)))
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
             Box(
-                modifier = Modifier.size(72.dp).clip(CircleShape).background(PreviewPrimary),
+                modifier = Modifier.size(72.dp).clip(CircleShape).background(previewPrimary),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(Icons.Default.Phone, contentDescription = null, tint = Color.White, modifier = Modifier.size(36.dp))
             }
             Spacer(Modifier.height(24.dp))
-            Text("ChatApp", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = PreviewPrimary)
+            Text("ChatApp", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = previewPrimary)
             Spacer(Modifier.height(8.dp))
             Text("Sign in to continue", style = MaterialTheme.typography.bodyLarge, color = Color(0xFF787680))
             Spacer(Modifier.height(32.dp))
@@ -200,7 +200,7 @@ internal fun ConversationListScreenPreview() {
             topBar = {
                 TopAppBar(
                     title = { Text("Chats", fontWeight = FontWeight.Bold) },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = PreviewSurface),
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = previewSurface),
                 )
             },
             floatingActionButton = {
@@ -246,12 +246,12 @@ internal fun ChatScreenPreview() {
                         Icon(Icons.Default.Phone, contentDescription = null, modifier = Modifier.padding(8.dp))
                         Icon(Icons.Default.Videocam, contentDescription = null, modifier = Modifier.padding(8.dp))
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = PreviewSurface),
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = previewSurface),
                 )
             },
             bottomBar = {
                 Row(
-                    modifier = Modifier.fillMaxWidth().background(PreviewSurface).padding(8.dp),
+                    modifier = Modifier.fillMaxWidth().background(previewSurface).padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     OutlinedTextField(
@@ -262,7 +262,7 @@ internal fun ChatScreenPreview() {
                     )
                     Spacer(Modifier.width(8.dp))
                     Box(
-                        modifier = Modifier.size(44.dp).clip(CircleShape).background(PreviewPrimary),
+                        modifier = Modifier.size(44.dp).clip(CircleShape).background(previewPrimary),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, tint = Color.White)
@@ -294,7 +294,7 @@ internal fun InvitationsScreenPreview() {
             topBar = {
                 TopAppBar(
                     title = { Text("Invitations", fontWeight = FontWeight.Bold) },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = PreviewSurface),
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = previewSurface),
                 )
             },
         ) { padding ->
@@ -330,7 +330,7 @@ internal fun NewChatScreenPreview() {
             topBar = {
                 TopAppBar(
                     title = { Text("New Chat", fontWeight = FontWeight.Bold) },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = PreviewSurface),
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = previewSurface),
                 )
             },
         ) { padding ->
@@ -374,7 +374,7 @@ internal fun ProfileScreenPreview() {
             topBar = {
                 TopAppBar(
                     title = { Text("Profile", fontWeight = FontWeight.Bold) },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = PreviewSurface),
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = previewSurface),
                 )
             },
         ) { padding ->
@@ -391,7 +391,7 @@ internal fun ProfileScreenPreview() {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    color = PreviewContainer,
+                    color = previewContainer,
                 ) {
                     Column(Modifier.padding(16.dp)) {
                         Text("Display Name", style = MaterialTheme.typography.labelMedium, color = Color(0xFF787680))
@@ -458,7 +458,7 @@ internal fun CreateGroupScreenPreview() {
             topBar = {
                 TopAppBar(
                     title = { Text("New Group", fontWeight = FontWeight.Bold) },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = PreviewSurface),
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = previewSurface),
                 )
             },
         ) { padding ->
@@ -467,10 +467,10 @@ internal fun CreateGroupScreenPreview() {
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Box(
-                    modifier = Modifier.size(80.dp).clip(CircleShape).background(PreviewContainer),
+                    modifier = Modifier.size(80.dp).clip(CircleShape).background(previewContainer),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Icons.Default.Group, contentDescription = null, tint = PreviewPrimary, modifier = Modifier.size(40.dp))
+                    Icon(Icons.Default.Group, contentDescription = null, tint = previewPrimary, modifier = Modifier.size(40.dp))
                 }
                 Spacer(Modifier.height(24.dp))
                 OutlinedTextField(value = "Team Alpha", onValueChange = {}, label = { Text("Group Name") }, modifier = Modifier.fillMaxWidth())
@@ -510,7 +510,7 @@ internal fun GroupInfoScreenPreview() {
             topBar = {
                 TopAppBar(
                     title = { Text("Group Info", fontWeight = FontWeight.Bold) },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = PreviewSurface),
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = previewSurface),
                 )
             },
         ) { padding ->
@@ -540,7 +540,7 @@ internal fun GroupInfoScreenPreview() {
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
                             Text("Member ${i + 1}", fontWeight = FontWeight.SemiBold)
-                            if (i == 0) Text("Admin", style = MaterialTheme.typography.labelSmall, color = PreviewPrimary)
+                            if (i == 0) Text("Admin", style = MaterialTheme.typography.labelSmall, color = previewPrimary)
                         }
                         Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFF787680))
                     }
@@ -562,7 +562,7 @@ internal fun UserInfoScreenPreview() {
             topBar = {
                 TopAppBar(
                     title = { Text("User Info", fontWeight = FontWeight.Bold) },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = PreviewSurface),
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = previewSurface),
                 )
             },
         ) { padding ->
