@@ -1,6 +1,7 @@
-package com.ajrpachon.chatapp.data.session
+package com.ajrpachon.chatapp.data.remote.session
 
 import android.content.Context
+import com.ajrpachon.chatapp.data.session.AndroidSecureStorage
 import com.ajrpachon.chatapp.utils.AppLogger
 import io.github.jan.supabase.auth.SessionManager
 import io.github.jan.supabase.auth.user.UserSession

@@ -123,24 +123,28 @@ class ConversationRepositoryImpl(
         }
 
         conversationDao.observeActive().map { dbos ->
-            dbos.mapNotNull { dbo -> dbo.toBO(userId) }
+            dbos.mapNotNull { dbo -> assembleConversation(dbo, userId) }
         }.collect { send(it) }
     }
 
     override suspend fun getLocalConversations(userId: String): List<ConversationBO> =
-        conversationDao.observeActive().first().mapNotNull { dbo -> dbo.toBO(userId) }
+        conversationDao.observeActive().first().mapNotNull { dbo -> assembleConversation(dbo, userId) }
 
     override fun observeArchivedConversations(userId: String): Flow<List<ConversationBO>> =
-        conversationDao.observeArchived().map { dbos -> dbos.mapNotNull { dbo -> dbo.toBO(userId) } }
+        conversationDao.observeArchived().map { dbos -> dbos.mapNotNull { dbo -> assembleConversation(dbo, userId) } }
 
-    private suspend fun ConversationDBO.toBO(userId: String): ConversationBO? {
-        val lastMsg = messageDao.getLastMessage(id)?.let { msgDbo ->
+    /**
+     * Builds a [ConversationBO] from a stored row. Not a pure mapper: it also reads the last
+     * message, the trailing image count and the other participant from the local database.
+     */
+    private suspend fun assembleConversation(dbo: ConversationDBO, userId: String): ConversationBO? {
+        val lastMsg = messageDao.getLastMessage(dbo.id)?.let { msgDbo ->
             val sender = userDao.getById(msgDbo.senderId)?.toBO()
             msgDbo.toBO(userId, sender?.displayName ?: msgDbo.senderId)
         }
-        val trailingImages = messageDao.getTrailingImageCount(id)
-        val otherUser = otherUserId?.let { userDao.getById(it) }
-        return toBO(lastMsg, trailingImages, otherUser?.avatarUrl)
+        val trailingImages = messageDao.getTrailingImageCount(dbo.id)
+        val otherUser = dbo.otherUserId?.let { userDao.getById(it) }
+        return dbo.toBO(lastMsg, trailingImages, otherUser?.avatarUrl)
     }
 
     override suspend fun getOrCreateDirectConversation(
@@ -263,12 +267,12 @@ class ConversationRepositoryImpl(
     override suspend fun getById(conversationId: String): ConversationBO? {
         val dbo = conversationDao.getById(conversationId) ?: return null
         val userId = remoteSource.currentUserId() ?: return null
-        return dbo.toBO(userId)
+        return assembleConversation(dbo, userId)
     }
 
     override fun observeById(conversationId: String): Flow<ConversationBO?> {
         val userId = remoteSource.currentUserId() ?: return flowOf(null)
-        return conversationDao.observeById(conversationId).map { it?.toBO(userId) }
+        return conversationDao.observeById(conversationId).map { it?.let { dbo -> assembleConversation(dbo, userId) } }
     }
 
     override suspend fun resetUnreadCount(conversationId: String) {
