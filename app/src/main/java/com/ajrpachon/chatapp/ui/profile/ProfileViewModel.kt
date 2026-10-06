@@ -3,6 +3,8 @@ import com.ajrpachon.chatapp.domain.util.catchResult
 
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.domain.model.AuthErrorKind
+import com.ajrpachon.chatapp.domain.model.AuthException
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.AppLockRepository
 import com.ajrpachon.chatapp.domain.repository.AuthRepository
@@ -169,11 +171,10 @@ class ProfileViewModel(
     }
 
     private fun Throwable.toDeleteAccountErrorMessage(): UiText {
-        val restException = this as? io.github.jan.supabase.exceptions.RestException
-        return when (restException?.statusCode) {
-            HTTP_UNAUTHORIZED -> UiText.StringResource(R.string.profile_error_session_invalid)
-            HTTP_TOO_MANY_REQUESTS -> UiText.StringResource(R.string.profile_error_too_many_attempts)
-            HTTP_SERVER_ERROR -> UiText.StringResource(R.string.profile_error_delete_server)
+        return when ((this as? AuthException)?.kind) {
+            AuthErrorKind.SESSION_EXPIRED -> UiText.StringResource(R.string.profile_error_session_invalid)
+            AuthErrorKind.TOO_MANY_REQUESTS -> UiText.StringResource(R.string.profile_error_too_many_attempts)
+            AuthErrorKind.SERVER_ERROR -> UiText.StringResource(R.string.profile_error_delete_server)
             else -> toUiText(R.string.profile_error_delete_account)
         }
     }
@@ -302,8 +303,5 @@ class ProfileViewModel(
 
     companion object {
         private const val TAG = "ProfileViewModel"
-        private const val HTTP_UNAUTHORIZED = 401
-        private const val HTTP_TOO_MANY_REQUESTS = 429
-        private const val HTTP_SERVER_ERROR = 500
     }
 }

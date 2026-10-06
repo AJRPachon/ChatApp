@@ -31,7 +31,7 @@ class AuthRemoteSource(private val supabase: SupabaseClient) {
         return AuthSessionDTO(userId = userId, email = session.user?.email)
     }
 
-    suspend fun signInWithEmail(email: String, password: String) {
+    suspend fun signInWithEmail(email: String, password: String) = mappingAuthErrors {
         supabase.auth.signInWith(Email) {
             this.email = email
             this.password = password
@@ -39,12 +39,12 @@ class AuthRemoteSource(private val supabase: SupabaseClient) {
     }
 
     /** Returns true when the sign-up already produced a session (no e-mail confirmation pending). */
-    suspend fun signUpWithEmail(email: String, password: String): Boolean {
+    suspend fun signUpWithEmail(email: String, password: String): Boolean = mappingAuthErrors {
         supabase.auth.signUpWith(Email) {
             this.email = email
             this.password = password
         }
-        return supabase.auth.currentSessionOrNull() != null
+        supabase.auth.currentSessionOrNull() != null
     }
 
     suspend fun signInWithGoogle(idToken: String, rawNonce: String) {
@@ -64,8 +64,9 @@ class AuthRemoteSource(private val supabase: SupabaseClient) {
      * POST with no body: the Edge Function resolves the user from the Authorization JWT. Throws a
      * RestException (401/429/500) on failure.
      */
-    suspend fun deleteAccount() {
+    suspend fun deleteAccount() = mappingAuthErrors {
         supabase.functions.invoke("delete-account")
+        Unit
     }
 
     suspend fun clearLocalSession() {

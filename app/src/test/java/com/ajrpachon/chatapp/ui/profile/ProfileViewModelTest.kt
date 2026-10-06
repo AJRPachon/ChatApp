@@ -1,6 +1,8 @@
 package com.ajrpachon.chatapp.ui.profile
 
 import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.domain.model.AuthErrorKind
+import com.ajrpachon.chatapp.domain.model.AuthException
 import com.ajrpachon.chatapp.domain.model.ThemePreference
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.repository.AppLockRepository
@@ -13,7 +15,6 @@ import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import com.ajrpachon.chatapp.utils.AppDispatchers
-import io.github.jan.supabase.exceptions.RestException
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -75,12 +76,7 @@ class ProfileViewModelTest {
         dispatchers = AppDispatchers(mainDispatcherRule.testDispatcher),
     )
 
-    private fun restException(statusCode: Int, message: String? = null): RestException {
-        val exception = mockk<RestException>()
-        every { exception.statusCode } returns statusCode
-        every { exception.message } returns message
-        return exception
-    }
+    private fun authFailure(kind: AuthErrorKind) = AuthException(kind, IllegalStateException("backend said no"))
 
     @Test
     fun `requestDeleteAccount sends ShowDeleteAccountConfirm effect`() = runTest(mainDispatcherRule.scheduler) {
@@ -139,7 +135,7 @@ class ProfileViewModelTest {
 
     @Test
     fun `deleteAccount with 401 shows invalid session message`() = runTest(mainDispatcherRule.scheduler) {
-        coEvery { authRepository.deleteAccount() } throws restException(401)
+        coEvery { authRepository.deleteAccount() } throws authFailure(AuthErrorKind.SESSION_EXPIRED)
         val vm = buildViewModel()
         advanceUntilIdle()
 
@@ -152,7 +148,7 @@ class ProfileViewModelTest {
 
     @Test
     fun `deleteAccount with 429 shows rate limit message`() = runTest(mainDispatcherRule.scheduler) {
-        coEvery { authRepository.deleteAccount() } throws restException(429)
+        coEvery { authRepository.deleteAccount() } throws authFailure(AuthErrorKind.TOO_MANY_REQUESTS)
         val vm = buildViewModel()
         advanceUntilIdle()
 
@@ -165,7 +161,7 @@ class ProfileViewModelTest {
 
     @Test
     fun `deleteAccount with 500 shows generic server error message`() = runTest(mainDispatcherRule.scheduler) {
-        coEvery { authRepository.deleteAccount() } throws restException(500)
+        coEvery { authRepository.deleteAccount() } throws authFailure(AuthErrorKind.SERVER_ERROR)
         val vm = buildViewModel()
         advanceUntilIdle()
 

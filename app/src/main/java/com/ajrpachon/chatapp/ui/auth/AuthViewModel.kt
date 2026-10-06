@@ -2,6 +2,8 @@ package com.ajrpachon.chatapp.ui.auth
 
 import androidx.lifecycle.viewModelScope
 import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.domain.model.AuthErrorKind
+import com.ajrpachon.chatapp.domain.model.AuthException
 import com.ajrpachon.chatapp.domain.repository.AuthRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.repository.FcmTokenRepository
@@ -176,29 +178,19 @@ class AuthViewModel(
         else -> null
     }
 
-    private fun Throwable.isInvalidCredentials(): Boolean =
-        isSupabaseErrorCode("invalid_credentials") ||
-                message?.contains("Invalid login", ignoreCase = true) == true
+    private fun Throwable.authKind(): AuthErrorKind? = (this as? AuthException)?.kind
 
-    private fun Throwable.toSignInMessage(): UiText = when {
-        isInvalidCredentials() -> UiText.StringResource(R.string.auth_error_invalid_credentials)
-        isSupabaseErrorCode("email_not_confirmed") ||
-                message?.contains("Email not confirmed", ignoreCase = true) == true ->
-            UiText.StringResource(R.string.auth_error_email_not_confirmed)
+    private fun Throwable.isInvalidCredentials(): Boolean = authKind() == AuthErrorKind.INVALID_CREDENTIALS
+
+    private fun Throwable.toSignInMessage(): UiText = when (authKind()) {
+        AuthErrorKind.INVALID_CREDENTIALS -> UiText.StringResource(R.string.auth_error_invalid_credentials)
+        AuthErrorKind.EMAIL_NOT_CONFIRMED -> UiText.StringResource(R.string.auth_error_email_not_confirmed)
         else -> toUiText(R.string.auth_error_sign_in)
     }
 
-    private fun Throwable.toSignUpMessage(): UiText = when {
-        isSupabaseErrorCode("user_already_exists") ||
-                message?.contains("already registered", ignoreCase = true) == true ||
-                message?.contains("already been registered", ignoreCase = true) == true ->
-            UiText.StringResource(R.string.auth_error_email_registered)
+    private fun Throwable.toSignUpMessage(): UiText = when (authKind()) {
+        AuthErrorKind.EMAIL_ALREADY_REGISTERED -> UiText.StringResource(R.string.auth_error_email_registered)
         else -> toUiText(R.string.auth_error_sign_up)
-    }
-
-    private fun Throwable.isSupabaseErrorCode(code: String): Boolean {
-        val restEx = this as? io.github.jan.supabase.exceptions.RestException ?: return false
-        return restEx.error.equals(code, ignoreCase = true)
     }
 
     private suspend fun finishSignIn() {
