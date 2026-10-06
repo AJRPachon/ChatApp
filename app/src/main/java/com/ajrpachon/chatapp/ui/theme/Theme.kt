@@ -14,7 +14,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-private val LightColorScheme = lightColorScheme(
+private val lightScheme = lightColorScheme(
     primary = Signal_Primary,
     onPrimary = Signal_OnPrimary,
     primaryContainer = Signal_PrimaryContainer,
@@ -49,7 +49,7 @@ private val LightColorScheme = lightColorScheme(
     inversePrimary = Signal_InversePrimary,
 )
 
-private val DarkColorScheme = darkColorScheme(
+private val darkScheme = darkColorScheme(
     primary = Signal_PrimaryDark,
     onPrimary = Signal_OnPrimaryDark,
     primaryContainer = Signal_PrimaryContainerDark,
@@ -96,8 +96,8 @@ fun ChatAppTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+        darkTheme -> darkScheme
+        else -> lightScheme
     }
 
     // enableEdgeToEdge() only styles the system bar icons from the *system* light/dark

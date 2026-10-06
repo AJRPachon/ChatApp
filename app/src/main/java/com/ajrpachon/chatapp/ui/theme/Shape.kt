@@ -9,6 +9,7 @@ import androidx.compose.ui.unit.dp
  * elsewhere in Material You. Components read this via [androidx.compose.material3.MaterialTheme.shapes]
  * — change a value here and every button, field, bubble and FAB that references it follows.
  */
+@Suppress("TopLevelPropertyNaming") // PascalCase like every Compose theme object (Typography, Shapes)
 val ChatAppShapes = Shapes(
     extraSmall = RoundedCornerShape(4.dp),
     small = RoundedCornerShape(8.dp),

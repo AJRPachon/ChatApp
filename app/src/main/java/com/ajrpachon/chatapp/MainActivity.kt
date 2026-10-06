@@ -120,7 +120,7 @@ class MainActivity : ComponentActivity() {
         // Handle cold-start deep link (chatapp://chat/{id}) or FCM intent extras
         val coldUri = intent.data
         if (coldUri != null && coldUri.scheme == "chatapp" && coldUri.host == "chat") {
-            pendingConversationId.value = coldUri.lastPathSegment?.takeIf { UUID_REGEX.matches(it) }
+            pendingConversationId.value = coldUri.lastPathSegment?.takeIf { uuidRegex.matches(it) }
             pendingOtherUserName.value = coldUri.getQueryParameter("name")?.take(100)?.ifBlank { null }
         } else {
             pendingConversationId.value = intent.validatedConversationId()
@@ -430,7 +430,7 @@ class MainActivity : ComponentActivity() {
         when {
             uri != null && uri.isValidAuthCallback() -> get<AuthRemoteSource>().handleAuthDeepLink(intent)
             uri != null && uri.isChatDeepLink() -> {
-                val conversationId = uri.lastPathSegment?.takeIf { UUID_REGEX.matches(it) }
+                val conversationId = uri.lastPathSegment?.takeIf { uuidRegex.matches(it) }
                 val name = uri.getQueryParameter("name")?.take(100)?.ifBlank { null }
                 conversationId?.let {
                     pendingConversationId.value = it
@@ -487,13 +487,13 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private val UUID_REGEX = Regex(
+private val uuidRegex = Regex(
     "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
     RegexOption.IGNORE_CASE,
 )
 
 private fun Intent.validatedConversationId(): String? =
-    getStringExtra("conversation_id")?.takeIf { UUID_REGEX.matches(it) }
+    getStringExtra("conversation_id")?.takeIf { uuidRegex.matches(it) }
 
 private fun Intent.validatedUserName(): String? =
     getStringExtra("other_user_name")?.take(100)?.ifBlank { null }

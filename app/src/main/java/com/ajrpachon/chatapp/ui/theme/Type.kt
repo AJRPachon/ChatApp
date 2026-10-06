@@ -15,6 +15,7 @@ private val base = Typography()
  * Built as a `copy()` of the M3 default so every other slot (sizes, line heights, letter
  * spacing) keeps its platform-correct value — only `fontFamily`/`fontWeight` are overridden.
  */
+@Suppress("TopLevelPropertyNaming") // PascalCase like every Compose theme object (Typography, Shapes)
 val ChatAppTypography = base.copy(
     headlineLarge = base.headlineLarge.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold),
     headlineMedium = base.headlineMedium.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold),
