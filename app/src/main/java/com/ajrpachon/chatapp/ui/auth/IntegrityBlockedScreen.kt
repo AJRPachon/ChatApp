@@ -32,6 +32,11 @@ import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
  */
 @Composable
 fun IntegrityBlockedScreen(onExit: () -> Unit) {
+    IntegrityBlockedContent(onExit = onExit)
+}
+
+@Composable
+fun IntegrityBlockedContent(onExit: () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.errorContainer,
@@ -82,6 +87,6 @@ fun IntegrityBlockedScreen(onExit: () -> Unit) {
 @Composable
 internal fun IntegrityBlockedPreview() {
     ChatAppTheme {
-        IntegrityBlockedScreen(onExit = {})
+        IntegrityBlockedContent(onExit = {})
     }
 }

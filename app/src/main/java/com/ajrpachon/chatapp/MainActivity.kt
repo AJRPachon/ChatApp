@@ -45,10 +45,8 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import com.ajrpachon.chatapp.ui.auth.IntegrityBlockedScreen
 import com.ajrpachon.chatapp.domain.repository.AppLockRepository
 import com.ajrpachon.chatapp.domain.model.IntegrityResultBO
-import com.ajrpachon.chatapp.ui.call.IncomingCallIntent
 import com.ajrpachon.chatapp.domain.model.isGroupCall
 import com.ajrpachon.chatapp.ui.call.IncomingCallScreen
-import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
 import com.ajrpachon.chatapp.ui.common.AppSplashScreen
 import com.ajrpachon.chatapp.ui.common.MotionConstants.NAV_TRANSITION_MS
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
@@ -70,7 +68,6 @@ import com.ajrpachon.chatapp.domain.repository.AnalyticsEvents
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.get
-import org.koin.androidx.compose.koinViewModel
 
 // ── Activity ───────────────────────────────────────────────────────────────
 
@@ -239,13 +236,6 @@ class MainActivity : ComponentActivity() {
                     backStack.add(ChatRoute(id, name))
                 }
 
-                val incomingCallVm: IncomingCallViewModel = koinViewModel()
-                val incomingCallState by incomingCallVm.state.collectAsState()
-
-                SideEffect {
-                    AppLogger.d("MainActivity", "RECOMPOSE vmHash=${System.identityHashCode(incomingCallVm)} incomingCall=${incomingCallState.incomingCall?.id ?: "null"}")
-                }
-
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -355,26 +345,21 @@ class MainActivity : ComponentActivity() {
                     entryProvider = { key -> appNavEntryProvider(key, backStack) },
                 )
 
-                incomingCallState.incomingCall?.let { call ->
-                    IncomingCallScreen(
-                        call = call,
-                        onAccept = {
-                            incomingCallVm.onIntent(IncomingCallIntent.Accept(call.id))
-                            backStack.add(
-                                CallRoute(
-                                    callId = call.id,
-                                    conversationId = call.conversationId,
-                                    roomName = call.roomName,
-                                    callType = call.type.wireValue,
-                                    otherUserName = call.callerName,
-                                    isOutgoing = false,
-                                    isGroup = call.isGroupCall(),
-                                )
+                IncomingCallScreen(
+                    onAccepted = { call ->
+                        backStack.add(
+                            CallRoute(
+                                callId = call.id,
+                                conversationId = call.conversationId,
+                                roomName = call.roomName,
+                                callType = call.type.wireValue,
+                                otherUserName = call.callerName,
+                                isOutgoing = false,
+                                isGroup = call.isGroupCall(),
                             )
-                        },
-                        onReject = { incomingCallVm.onIntent(IncomingCallIntent.Reject(call.id)) },
-                    )
-                }
+                        )
+                    },
+                )
 
                 // Root warning dialog — shown only once on first launch if root is detected
                 if (showRootWarning) {
