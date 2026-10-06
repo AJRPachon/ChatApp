@@ -76,10 +76,9 @@ import kotlinx.serialization.Serializable
 
 // Guarding with dropUnlessResumed: only callbacks triggered directly by a user tap are wrapped
 // (a double-tap during the transition would otherwise push the same route twice). Callbacks fired
-// from a ViewModel Effect (onStartCall, onNavigateToConversation, onGroupCreated, onCallEnded and the
-// NavigateToChat / NavigateToStatusViewer ones) are deliberately left unguarded: if the screen is paused
-// when the result of a network call arrives (app in the background, say), guarding would drop the
-// navigation for good. See ui/common/DropUnlessResumed.kt.
+// from a ViewModel Effect are deliberately left unguarded, and each one is marked "Effect-driven"
+// where it is wired: if the screen is paused when the result of a network call arrives (app in the
+// background, say), guarding would drop the navigation for good. See ui/common/DropUnlessResumed.kt.
 
 fun mainNavEntry(
     key: NavKey,
@@ -104,6 +103,7 @@ fun mainNavEntry(
 
     is ConversationListRoute -> NavEntry(key) {
         ConversationListScreen(
+            // Effect-driven (ConversationListEffect.NavigateToChat): deliberately not wrapped in dropUnlessResumed.
             onOpenConversation = { id, name, isGroup ->
                 backStack.add(ChatRoute(id, name, isGroup))
             },
@@ -141,6 +141,7 @@ fun chatNavEntry(
             otherUserName = key.otherUserName,
             highlightMessageId = key.highlightMessageId,
             onBack = dropUnlessResumed { backStack.removeLastOrNull() },
+            // Effect-driven (ChatEffect.NavigateToCall): deliberately not wrapped in dropUnlessResumed.
             onStartCall = { call ->
                 backStack.add(
                     CallRoute(
@@ -176,9 +177,11 @@ fun chatNavEntry(
                     )
                 )
             },
+            // Effect-driven (ChatEffect.NavigateToConversation): deliberately not wrapped in dropUnlessResumed.
             onNavigateToConversation = { id, name ->
                 backStack.add(ChatRoute(id, name))
             },
+            // Effect-driven (ChatEffect.NavigateToStatusViewer): deliberately not wrapped in dropUnlessResumed.
             onOpenStatusViewer = { ownerId, statusId ->
                 backStack.add(StatusViewerRoute(ownerId, statusId))
             },
@@ -194,6 +197,7 @@ fun chatNavEntry(
     is NewChatRoute -> NavEntry(key) {
         NewChatScreen(
             onBack = dropUnlessResumed { backStack.removeLastOrNull() },
+            // Effect-driven (NewChatEffect.NavigateToChat): deliberately not wrapped in dropUnlessResumed.
             onOpenConversation = { id, name ->
                 backStack.removeLastOrNull()
                 backStack.add(ChatRoute(id, name))
@@ -221,6 +225,7 @@ fun callNavEntry(
             otherUserName = key.otherUserName,
             isOutgoing = key.isOutgoing,
             isGroup = key.isGroup,
+            // Effect-driven (the call ending (CallPhase.ENDED), not a tap): deliberately not wrapped in dropUnlessResumed.
             onCallEnded = { backStack.removeLastOrNull() },
         )
     }
@@ -235,6 +240,7 @@ fun groupNavEntry(
     is CreateGroupRoute -> NavEntry(key) {
         CreateGroupScreen(
             onBack = dropUnlessResumed { backStack.removeLastOrNull() },
+            // Effect-driven (CreateGroupEffect.NavigateToChat): deliberately not wrapped in dropUnlessResumed.
             onGroupCreated = { id, name ->
                 backStack.removeLastOrNull()
                 backStack.add(ChatRoute(id, name, isGroup = true))
@@ -262,6 +268,7 @@ fun profileNavEntry(
     is ProfileRoute -> NavEntry(key) {
         ProfileScreen(
             onBack = dropUnlessResumed { backStack.removeLastOrNull() },
+            // Effect-driven (ProfileEffect.NavigateToAuth): deliberately not wrapped in dropUnlessResumed.
             onSignOut = {
                 backStack.clear()
                 backStack.add(AuthRoute)
@@ -344,6 +351,7 @@ fun miscNavEntry(
             userId = key.userId,
             initialStatusId = key.initialStatusId,
             onClose = dropUnlessResumed { backStack.removeLastOrNull() },
+            // Effect-driven (StatusEffect.NavigateToChat): deliberately not wrapped in dropUnlessResumed.
             onNavigateToChat = { id, name ->
                 backStack.removeAll { it is StatusViewerRoute }
                 backStack.add(ChatRoute(id, name))
