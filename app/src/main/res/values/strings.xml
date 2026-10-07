@@ -275,7 +275,15 @@
     <string name="backup_size_label">Tamaño</string>
     <string name="backup_size_mb">%1$s MB</string>
     <string name="backup_no_backups">Sin copias de seguridad en Google Drive</string>
-    <string name="backup_disclaimer">Los mensajes se guardan como un archivo JSON en tu Google Drive personal. Solo tú puedes acceder a este archivo.</string>
+    <string name="backup_disclaimer">Los mensajes se guardan cifrados en tu Google Drive personal. Necesitas la contraseña de la copia para restaurarlos: si la olvidas, no se pueden recuperar.</string>
+    <string name="backup_passphrase_title_backup">Contraseña de la copia</string>
+    <string name="backup_passphrase_title_restore">Contraseña para restaurar</string>
+    <string name="backup_passphrase_hint_backup">Elige una contraseña de al menos %1$d caracteres. Sin ella no se puede restaurar la copia, y no se puede recuperar.</string>
+    <string name="backup_passphrase_hint_restore">Introduce la contraseña que usaste al hacer la copia.</string>
+    <string name="backup_passphrase_label">Contraseña</string>
+    <string name="backup_passphrase_repeat_label">Repite la contraseña</string>
+    <string name="backup_cancel">Cancelar</string>
+    <string name="backup_error_wrong_passphrase">La contraseña no es correcta o la copia está dañada</string>
     <string name="backup_creating_backup">Creando copia de seguridad…</string>
     <string name="backup_make_backup_button">Hacer copia</string>
     <string name="backup_restoring_messages">Restaurando mensajes…</string>
