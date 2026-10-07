@@ -74,7 +74,6 @@ import kotlinx.coroutines.launch
 /** What the trailing slot of [NormalInputBar] currently shows — the mic↔send morph's states. */
 private enum class TrailingAction { UPLOAD_SPACER, UPLOADING, SEND, MIC }
 
-@Suppress("LongParameterList")
 @Composable
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 internal fun NormalInputBar(
@@ -105,7 +104,12 @@ internal fun NormalInputBar(
         val remaining = mediaUploadProgress.totalCount - mediaUploadProgress.completedCount
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
             Text(
-                text = "Subiendo $remaining de ${mediaUploadProgress.totalCount} · ${formatFileSize(mediaUploadProgress.totalBytes)}",
+                text = stringResource(
+                    R.string.chat_uploading_progress,
+                    remaining,
+                    mediaUploadProgress.totalCount,
+                    formatFileSize(mediaUploadProgress.totalBytes),
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -143,7 +147,7 @@ internal fun NormalInputBar(
             modifier = Modifier
                 .weight(1f)
                 .testTag("chat_input_field"),
-            placeholder = "Mensaje…",
+            placeholder = stringResource(R.string.chat_input_placeholder),
             singleLine = false,
             maxLines = 4,
             isError = inputText.length >= MessageLimits.MAX_CONTENT_LENGTH,
@@ -320,7 +324,7 @@ internal fun AttachmentBottomSheet(
             .padding(top = 8.dp, bottom = 32.dp),
     ) {
         Text(
-            text = "Adjuntar",
+            text = stringResource(R.string.chat_attach_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),

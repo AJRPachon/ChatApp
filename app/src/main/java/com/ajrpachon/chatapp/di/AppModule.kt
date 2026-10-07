@@ -15,7 +15,6 @@ import com.ajrpachon.chatapp.data.local.buildChatDatabase
 import com.ajrpachon.chatapp.data.repository.AiAssistantRepository as AiAssistantRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.FirebaseAnalyticsTracker
 import com.ajrpachon.chatapp.data.repository.FirebaseCrashReporter
-import com.ajrpachon.chatapp.data.session.AndroidSessionManager
 import com.ajrpachon.chatapp.domain.repository.AiAssistantRepository
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.AppLockRepository
@@ -29,14 +28,14 @@ import com.ajrpachon.chatapp.domain.repository.ThemeRepository
 import com.ajrpachon.chatapp.domain.repository.WallpaperRepository
 import com.ajrpachon.chatapp.ui.applock.AppLockViewModel
 import com.ajrpachon.chatapp.ui.auth.AuthViewModel
-import com.ajrpachon.chatapp.ui.call.CallArgs
+import com.ajrpachon.chatapp.ui.auth.GoogleSignInConfig
 import com.ajrpachon.chatapp.ui.call.CallViewModel
 import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
 import com.ajrpachon.chatapp.ui.chat.gallery.ChatMediaGalleryViewModel
 import com.ajrpachon.chatapp.ui.chat.ChatViewModel
 import com.ajrpachon.chatapp.ui.chat.StickerPackViewModel
 import com.ajrpachon.chatapp.ui.chat.GifPickerViewModel
-import com.ajrpachon.chatapp.ui.components.EmojiPickerViewModel
+import com.ajrpachon.chatapp.ui.emoji.EmojiPickerViewModel
 import com.ajrpachon.chatapp.ui.conversations.ConversationListViewModel
 import com.ajrpachon.chatapp.ui.group.CreateGroupViewModel
 import com.ajrpachon.chatapp.ui.group.GroupInfoViewModel
@@ -52,6 +51,7 @@ import com.ajrpachon.chatapp.ui.pdf.PdfViewerViewModel
 import com.ajrpachon.chatapp.ui.search.GlobalSearchViewModel
 import com.ajrpachon.chatapp.ui.status.StatusViewModel
 import com.ajrpachon.chatapp.service.PresenceManager
+import com.ajrpachon.chatapp.utils.AppDispatchers
 import com.ajrpachon.chatapp.utils.AudioTranscriber
 import com.ajrpachon.chatapp.utils.ClipboardProtection
 import com.ajrpachon.chatapp.utils.ContactSyncManager
@@ -62,18 +62,14 @@ import com.ajrpachon.chatapp.utils.SessionGuard
 import com.ajrpachon.chatapp.utils.TranslationManager
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.crashlytics.FirebaseCrashlytics
-import io.github.jan.supabase.auth.Auth
-import io.github.jan.supabase.createSupabaseClient
-import io.github.jan.supabase.functions.Functions
-import io.github.jan.supabase.postgrest.Postgrest
-import io.github.jan.supabase.realtime.Realtime
-import io.github.jan.supabase.storage.Storage
-import io.ktor.client.engine.okhttp.OkHttp
-import kotlinx.coroutines.Dispatchers
 import android.app.NotificationManager
 import android.content.Context
 import androidx.credentials.CredentialManager
 import androidx.work.WorkManager
+import com.ajrpachon.chatapp.data.remote.supabaseModule
+import com.ajrpachon.chatapp.ui.auth.GoogleCredentialFetcher
+import com.ajrpachon.chatapp.ui.call.LiveKitConfig
+import com.ajrpachon.chatapp.ui.call.LiveKitRoomFactory
 import okhttp3.OkHttpClient
 import org.koin.android.ext.koin.androidApplication
 import org.koin.android.ext.koin.androidContext
@@ -106,36 +102,26 @@ val workManagerModule = module {
 }
 
 val networkModule = module {
-    single {
-        createSupabaseClient(
-            supabaseUrl = BuildConfig.SUPABASE_URL,
-            supabaseKey = BuildConfig.SUPABASE_ANON_KEY,
-        ) {
-            httpEngine = OkHttp.create { preconfigured = OkHttpProvider.client }
-            install(Auth) {
-                sessionManager = AndroidSessionManager(androidContext())
-                scheme = "com.ajrpachon.chatapp"
-                host = "auth-callback"
-            }
-            install(Postgrest)
-            install(Realtime)
-            install(Storage)
-            install(Functions)
-        }
-    }
     single<OkHttpClient> { OkHttpProvider.client }
 }
 
+// Registers all 23 ViewModels: 22 through viewModelOf and ChatViewModel (over the 22-parameter limit)
+// through the explicit lambda below. Checked by name against the classes in ui/ on 2026-10-07.
 val viewModelModule = module {
-    // BuildConfig values not injectable — kept as lambda
-    viewModel { AuthViewModel(get(), get(), get(), get(), BuildConfig.GOOGLE_WEB_CLIENT_ID, get(), get()) }
+    // Wrappers so viewModelOf can resolve them by type: a BuildConfig string and the coroutine dispatchers.
+    single { GoogleSignInConfig(BuildConfig.GOOGLE_WEB_CLIENT_ID) }
+    single { AppDispatchers() }
+    factory { GoogleCredentialFetcher(get(), get()) }
+    factory { LiveKitRoomFactory(androidApplication()) }
+    single { LiveKitConfig(BuildConfig.LIVEKIT_URL) }
+
+    viewModelOf(::AuthViewModel)
 
     viewModelOf(::AppLockViewModel)
     viewModelOf(::ConversationListViewModel)
     viewModelOf(::InvitationsViewModel)
     viewModelOf(::NewChatViewModel)
-    // ProfileViewModel: defaultDispatcher has no Koin binding — kept as lambda
-    viewModel { ProfileViewModel(get(), get(), get(), get(), get(), get(), get(), Dispatchers.Default) }
+    viewModelOf(::ProfileViewModel)
     viewModelOf(::IncomingCallViewModel)
     viewModelOf(::CreateGroupViewModel)
     viewModelOf(::StickerPackViewModel)
@@ -188,18 +174,8 @@ val viewModelModule = module {
     viewModelOf(::ChatMediaGalleryViewModel)
     viewModelOf(::PdfViewerViewModel)
 
-    // CallViewModel: BuildConfig.LIVEKIT_URL + runtime CallArgs — kept as lambda
-    viewModel { params ->
-        CallViewModel(
-            args = params.get<CallArgs>(),
-            application = androidApplication(),
-            callRepository = get(),
-            getCurrentUserUseCase = get(),
-            sendMessageUseCase = get(),
-            analyticsTracker = get(),
-            livekitUrl = BuildConfig.LIVEKIT_URL,
-        )
-    }
+    // Runtime CallArgs arrive through parametersOf; the LiveKit URL through its wrapper.
+    viewModelOf(::CallViewModel)
 }
 
 val utilsModule = module {
@@ -238,6 +214,7 @@ val analyticsModule = module {
 
 val appModules = listOf(
     databaseModule,
+    supabaseModule,
     networkModule,
     remoteModule,
     repositoryModule,

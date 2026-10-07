@@ -48,6 +48,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -56,6 +57,7 @@ import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.UserInfoRoute
 import com.ajrpachon.chatapp.ui.components.ChatAppTopBar
+import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import com.github.skydoves.navgraph.annotations.NavDestination
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -69,6 +71,14 @@ fun UserInfoScreen(
     val vm: UserInfoViewModel = koinViewModel(key = userId, parameters = { parametersOf(userId) })
     val state by vm.state.collectAsStateWithLifecycle()
 
+    UserInfoContent(state = state, onBack = onBack)
+}
+
+@Composable
+internal fun UserInfoContent(
+    state: UserInfoState,
+    onBack: () -> Unit,
+) {
     Scaffold(
         topBar = {
             ChatAppTopBar(title = state.displayName.ifBlank { stringResource(R.string.userinfo_default_title) }, onBack = onBack)
@@ -153,6 +163,25 @@ fun UserInfoScreen(
                 1 -> MediaGalleryTab(mediaUrls = state.mediaUrls)
             }
         }
+    }
+}
+
+@Preview(name = "Profile", showBackground = true)
+@Composable
+internal fun UserInfoPreview() {
+    ChatAppTheme {
+        UserInfoContent(
+            state = UserInfoState(displayName = "Ana García", username = "ana_g", isLoading = false),
+            onBack = {},
+        )
+    }
+}
+
+@Preview(name = "Loading", showBackground = true)
+@Composable
+internal fun UserInfoLoadingPreview() {
+    ChatAppTheme {
+        UserInfoContent(state = UserInfoState(isLoading = true), onBack = {})
     }
 }
 

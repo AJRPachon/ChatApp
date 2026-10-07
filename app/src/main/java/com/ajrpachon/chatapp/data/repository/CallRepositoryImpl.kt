@@ -1,6 +1,6 @@
 package com.ajrpachon.chatapp.data.repository
 
-import com.ajrpachon.chatapp.data.remote.dto.toBO
+import com.ajrpachon.chatapp.data.mapper.toBO
 import com.ajrpachon.chatapp.data.remote.source.CallRemoteSource
 import com.ajrpachon.chatapp.domain.model.CallBO
 import com.ajrpachon.chatapp.domain.model.CallStatus
@@ -8,7 +8,7 @@ import com.ajrpachon.chatapp.domain.model.CallType
 import com.ajrpachon.chatapp.domain.model.GROUP_CALL_ROOM_PREFIX
 import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.utils.AppLogger
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 

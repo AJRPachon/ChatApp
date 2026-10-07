@@ -7,7 +7,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.ajrpachon.chatapp.domain.model.NotificationSound
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.NotificationSoundRepository
-import com.ajrpachon.chatapp.utils.AnalyticsEvents
+import com.ajrpachon.chatapp.domain.repository.AnalyticsEvents
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map

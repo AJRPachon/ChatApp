@@ -38,13 +38,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.ui.chat.gallery.ChatMediaGalleryState
 import com.ajrpachon.chatapp.ui.chat.gallery.ChatMediaGalleryViewModel
+import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -62,8 +65,18 @@ fun ChatMediaGalleryScreen(
         parameters = { parametersOf(conversationId) },
     )
     val galleryState by vm.state.collectAsStateWithLifecycle()
-    val images = galleryState.images
-    val videos = galleryState.videos
+    ChatMediaGalleryContent(state = galleryState, conversationName = conversationName, onBack = onBack)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun ChatMediaGalleryContent(
+    state: ChatMediaGalleryState,
+    conversationName: String,
+    onBack: () -> Unit,
+) {
+    val images = state.images
+    val videos = state.videos
 
     var selectedTab by remember { mutableIntStateOf(0) }
     var fullScreenImageUrl by remember { mutableStateOf<String?>(null) }
@@ -108,6 +121,29 @@ fun ChatMediaGalleryScreen(
         GalleryFullScreenViewer(
             url = url,
             onDismiss = { fullScreenImageUrl = null },
+        )
+    }
+}
+
+@Preview(name = "Empty", showBackground = true)
+@Composable
+internal fun ChatMediaGalleryEmptyPreview() {
+    ChatAppTheme {
+        ChatMediaGalleryContent(state = ChatMediaGalleryState(), conversationName = "Familia", onBack = {})
+    }
+}
+
+@Preview(name = "With media", showBackground = true)
+@Composable
+internal fun ChatMediaGalleryPreview() {
+    ChatAppTheme {
+        ChatMediaGalleryContent(
+            state = ChatMediaGalleryState(
+                images = List(6) { "https://example.com/photo-$it.jpg" },
+                videos = List(2) { "https://example.com/video-$it.mp4" },
+            ),
+            conversationName = "Familia",
+            onBack = {},
         )
     }
 }

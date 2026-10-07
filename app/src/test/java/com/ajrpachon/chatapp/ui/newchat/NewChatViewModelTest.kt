@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.newchat
 
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.model.UserRelationship
 import com.ajrpachon.chatapp.domain.repository.UserRepository
@@ -9,7 +10,7 @@ import com.ajrpachon.chatapp.domain.usecase.GetDeviceContactsUseCase
 import com.ajrpachon.chatapp.domain.usecase.SearchUsersUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationResult
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationUseCase
-import android.app.Application
+import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import com.ajrpachon.chatapp.utils.ClipboardProtection
 import com.ajrpachon.chatapp.utils.ContactSyncManager
@@ -41,7 +42,6 @@ class NewChatViewModelTest {
     private val userRepository = mockk<UserRepository>(relaxed = true)
     private val contactSyncManager = mockk<ContactSyncManager>(relaxed = true)
     private val getDeviceContactsUseCase = mockk<GetDeviceContactsUseCase>(relaxed = true)
-    private val application = mockk<Application>(relaxed = true)
     private val clipboardProtection = mockk<ClipboardProtection>(relaxed = true)
 
     private val testUser = UserBO(
@@ -73,7 +73,6 @@ class NewChatViewModelTest {
     }
 
     private fun buildViewModel() = NewChatViewModel(
-        application = application,
         clipboardProtection = clipboardProtection,
         getCurrentUserUseCase = getCurrentUserUseCase,
         searchUsersUseCase = searchUsersUseCase,
@@ -106,6 +105,32 @@ class NewChatViewModelTest {
     }
 
     @Test
+    fun `InviteContact hands the phone number and the invitation text to the screen`() = runTest(mainDispatcherRule.scheduler) {
+        val vm = buildViewModel()
+        advanceUntilIdle()
+
+        vm.onIntent(NewChatIntent.InviteContact(phoneNumber = "+34600111222", username = "ana"))
+
+        val effect = vm.effect.first()
+        assertTrue(effect is NewChatEffect.InviteContact)
+        effect as NewChatEffect.InviteContact
+        assertEquals("+34600111222", effect.phoneNumber)
+        assertEquals(UiText.of(R.string.newchat_invite_share_text, "ana"), effect.text)
+    }
+
+    @Test
+    fun `ShareInviteText emits the invitation text as a ShareText effect`() = runTest(mainDispatcherRule.scheduler) {
+        val vm = buildViewModel()
+        advanceUntilIdle()
+
+        vm.onIntent(NewChatIntent.ShareInviteText(username = "ana"))
+
+        val effect = vm.effect.first()
+        assertTrue(effect is NewChatEffect.ShareText)
+        assertEquals(UiText.of(R.string.newchat_invite_share_text, "ana"), (effect as NewChatEffect.ShareText).text)
+    }
+
+    @Test
     fun `QR scan of own userId shows ShowMessage effect`() = runTest(mainDispatcherRule.scheduler) {
         val vm = buildViewModel()
         advanceUntilIdle()
@@ -113,7 +138,7 @@ class NewChatViewModelTest {
         advanceUntilIdle()
         val effect = vm.effect.first()
         assertTrue(effect is NewChatEffect.ShowMessage)
-        assertTrue((effect as NewChatEffect.ShowMessage).text.contains("propio"))
+        assertEquals(UiText.StringResource(R.string.newchat_own_qr), (effect as NewChatEffect.ShowMessage).text)
     }
 
     @Test
@@ -189,7 +214,7 @@ class NewChatViewModelTest {
         vm.onIntent(NewChatIntent.QueryChanged("fail"))
         advanceUntilIdle()
         assertNotNull(vm.state.value.error)
-        assertEquals("network error", vm.state.value.error)
+        assertEquals(UiText.Dynamic("network error"), vm.state.value.error)
     }
 
     @Test

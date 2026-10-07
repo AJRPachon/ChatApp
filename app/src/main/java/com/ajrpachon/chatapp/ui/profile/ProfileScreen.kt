@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -72,6 +71,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -87,11 +87,12 @@ import com.github.skydoves.navgraph.annotations.NavDestination
 import com.github.skydoves.navgraph.annotations.NavEdge
 import com.ajrpachon.chatapp.AuthRoute
 import com.ajrpachon.chatapp.ProfileRoute
+import com.ajrpachon.chatapp.ui.theme.ChatAppTextSizes
+import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import org.koin.androidx.compose.koinViewModel
 
 @NavEdge(to = AuthRoute::class, label = "Sign Out")
 @NavDestination(route = ProfileRoute::class)
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     onBack: () -> Unit,
@@ -105,151 +106,9 @@ fun ProfileScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var showSignOutAllDialog by remember { mutableStateOf(false) }
     var showDeleteAccountDialog by remember { mutableStateOf(false) }
-    var showQrSheet by remember { mutableStateOf(false) }
     // Hoisted out of the LaunchedEffect below — stringResource() is @Composable and can't
     // be called from inside a suspend collector block.
     val appLockCredentialMissingMessage = stringResource(R.string.profile_app_lock_no_credential_error)
-    val qrSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val enrollSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-    // ── QR Bottom Sheet ────────────────────────────────────────────────────
-    if (showQrSheet && state.userId.isNotBlank()) {
-        val qrBitmap: Bitmap? = state.qrBitmap
-
-        ModalBottomSheet(
-            onDismissRequest = { showQrSheet = false },
-            sheetState = qrSheetState,
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .padding(bottom = 40.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Text(
-                    stringResource(R.string.profile_my_qr_code_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    stringResource(R.string.profile_my_qr_code_description),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.outline,
-                )
-                if (qrBitmap != null) {
-                    Image(
-                        bitmap = qrBitmap.asImageBitmap(),
-                        contentDescription = stringResource(R.string.profile_qr_code_content_description),
-                        modifier = Modifier.size(220.dp),
-                    )
-                }
-                Text(
-                    text = state.userId,
-                    style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace),
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-        }
-    }
-
-    // ── 2FA Enroll Bottom Sheet ────────────────────────────────────────────
-    if (state.twoFactor.showEnrollSheet) {
-        val keyboard = LocalSoftwareKeyboardController.current
-        var verifyCode by remember { mutableStateOf("") }
-        ModalBottomSheet(
-            onDismissRequest = { vm.onIntent(ProfileIntent.Dismiss2FASheet) },
-            sheetState = enrollSheetState,
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .padding(bottom = 40.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Text(
-                    stringResource(R.string.profile_2fa_setup_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center,
-                )
-                Icon(
-                    Icons.Default.Security,
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-                val secret = state.twoFactor.secret
-                if (secret != null) {
-                    Text(
-                        stringResource(R.string.profile_2fa_setup_instructions),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                    )
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(
-                            text = secret,
-                            style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace),
-                            color = MaterialTheme.colorScheme.primary,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(16.dp),
-                        )
-                    }
-                }
-                Text(
-                    stringResource(R.string.profile_2fa_confirm_instructions),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
-                ChatAppTextField(
-                    value = verifyCode,
-                    onValueChange = { if (it.length <= 6) verifyCode = it },
-                    label = stringResource(R.string.profile_totp_code_label),
-                    isError = state.twoFactor.verifyError != null,
-                    supportingText = state.twoFactor.verifyError,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.NumberPassword,
-                        imeAction = ImeAction.Done,
-                    ),
-                    keyboardActions = KeyboardActions(onDone = {
-                        keyboard?.hide()
-                        vm.onIntent(ProfileIntent.Verify2FACode(verifyCode))
-                    }),
-                )
-                val enrollError = state.twoFactor.enrollError
-                if (enrollError != null) {
-                    Text(
-                        enrollError,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                        textAlign = TextAlign.Center,
-                    )
-                }
-                if (state.twoFactor.isLoading) {
-                    CircularProgressIndicator()
-                } else {
-                    ChatAppPrimaryButton(
-                        text = stringResource(R.string.profile_verify_and_activate),
-                        onClick = {
-                            keyboard?.hide()
-                            vm.onIntent(ProfileIntent.Verify2FACode(verifyCode))
-                        },
-                        enabled = verifyCode.length == 6,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-        }
-    }
 
     LaunchedEffect(Unit) {
         vm.effect.collect { effect ->
@@ -309,7 +168,7 @@ fun ProfileScreen(
     }
 
     LaunchedEffect(state.error) {
-        state.error?.let { snackbarHostState.showSnackbar(it) }
+        state.error?.let { snackbarHostState.showSnackbar(it.asString(context)) }
     }
 
     val avatarLauncher = rememberLauncherForActivityResult(
@@ -322,6 +181,180 @@ fun ProfileScreen(
         }
     }
 
+    val onAvatarClick = {
+        avatarLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+    }
+
+    ProfileContent(
+        state = state,
+        snackbarHostState = snackbarHostState,
+        onIntent = vm::onIntent,
+        onAvatarClick = onAvatarClick,
+        onBack = onBack,
+        onBackup = onBackup,
+        onSessionAudit = onSessionAudit,
+        onSignOutClick = vm::signOut,
+        onSignOutAllClick = vm::requestSignOutAll,
+        onDeleteAccountClick = vm::requestDeleteAccount,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProfileContent(
+    state: ProfileState,
+    snackbarHostState: SnackbarHostState,
+    onIntent: (ProfileIntent) -> Unit,
+    onAvatarClick: () -> Unit,
+    onBack: () -> Unit,
+    onBackup: () -> Unit,
+    onSessionAudit: () -> Unit,
+    onSignOutClick: () -> Unit,
+    onSignOutAllClick: () -> Unit,
+    onDeleteAccountClick: () -> Unit,
+) {
+    var showQrSheet by remember { mutableStateOf(false) }
+    val qrSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val enrollSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    // ── QR Bottom Sheet ────────────────────────────────────────────────────
+    if (showQrSheet && state.userId.isNotBlank()) {
+        val qrBitmap: Bitmap? = state.qrBitmap
+
+        ModalBottomSheet(
+            onDismissRequest = { showQrSheet = false },
+            sheetState = qrSheetState,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 40.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(
+                    stringResource(R.string.profile_my_qr_code_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    stringResource(R.string.profile_my_qr_code_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.outline,
+                )
+                if (qrBitmap != null) {
+                    Image(
+                        bitmap = qrBitmap.asImageBitmap(),
+                        contentDescription = stringResource(R.string.profile_qr_code_content_description),
+                        modifier = Modifier.size(220.dp),
+                    )
+                }
+                Text(
+                    text = state.userId,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace),
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+    }
+
+    // ── 2FA Enroll Bottom Sheet ────────────────────────────────────────────
+    if (state.twoFactor.showEnrollSheet) {
+        val keyboard = LocalSoftwareKeyboardController.current
+        var verifyCode by remember { mutableStateOf("") }
+        ModalBottomSheet(
+            onDismissRequest = { onIntent(ProfileIntent.Dismiss2FASheet) },
+            sheetState = enrollSheetState,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 40.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    stringResource(R.string.profile_2fa_setup_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                )
+                Icon(
+                    Icons.Default.Security,
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                val secret = state.twoFactor.secret
+                if (secret != null) {
+                    Text(
+                        stringResource(R.string.profile_2fa_setup_instructions),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                    Surface(
+                        shape = MaterialTheme.shapes.small,
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            text = secret,
+                            style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace),
+                            color = MaterialTheme.colorScheme.primary,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(16.dp),
+                        )
+                    }
+                }
+                Text(
+                    stringResource(R.string.profile_2fa_confirm_instructions),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+                ChatAppTextField(
+                    value = verifyCode,
+                    onValueChange = { if (it.length <= 6) verifyCode = it },
+                    label = stringResource(R.string.profile_totp_code_label),
+                    isError = state.twoFactor.verifyError != null,
+                    supportingText = state.twoFactor.verifyError?.asString(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.NumberPassword,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(onDone = {
+                        keyboard?.hide()
+                        onIntent(ProfileIntent.Verify2FACode(verifyCode))
+                    }),
+                )
+                val enrollError = state.twoFactor.enrollError
+                if (enrollError != null) {
+                    Text(
+                        enrollError.asString(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+                if (state.twoFactor.isLoading) {
+                    CircularProgressIndicator()
+                } else {
+                    ChatAppPrimaryButton(
+                        text = stringResource(R.string.profile_verify_and_activate),
+                        onClick = {
+                            keyboard?.hide()
+                            onIntent(ProfileIntent.Verify2FACode(verifyCode))
+                        },
+                        enabled = verifyCode.length == 6,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        }
+    }
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -361,9 +394,7 @@ fun ProfileScreen(
                         // matches Signal_PrimaryContainer/Signal_OnPrimaryContainer exactly.
                         .background(MaterialTheme.colorScheme.primaryContainer)
                         .clickable(enabled = !state.isUploadingAvatar) {
-                            avatarLauncher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                            )
+                            onAvatarClick()
                         },
                     contentAlignment = Alignment.Center,
                 ) {
@@ -424,7 +455,7 @@ fun ProfileScreen(
             val keyboard = LocalSoftwareKeyboardController.current
             ChatAppTextField(
                 value = state.editingDisplayName,
-                onValueChange = { vm.onIntent(ProfileIntent.EditDisplayName(it)) },
+                onValueChange = { onIntent(ProfileIntent.EditDisplayName(it)) },
                 label = stringResource(R.string.profile_display_name_label),
                 enabled = !state.isSavingDisplayName,
                 keyboardOptions = KeyboardOptions(
@@ -433,7 +464,7 @@ fun ProfileScreen(
                 ),
                 keyboardActions = KeyboardActions(onDone = {
                     keyboard?.hide()
-                    vm.onIntent(ProfileIntent.SaveDisplayName)
+                    onIntent(ProfileIntent.SaveDisplayName)
                 }),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -478,7 +509,7 @@ fun ProfileScreen(
                     }
                     Switch(
                         checked = state.showOnlineStatus,
-                        onCheckedChange = { vm.onIntent(ProfileIntent.ToggleOnlineStatus(it)) },
+                        onCheckedChange = { onIntent(ProfileIntent.ToggleOnlineStatus(it)) },
                         modifier = Modifier.testTag("profile_online_status_switch"),
                     )
                 }
@@ -494,7 +525,7 @@ fun ProfileScreen(
             ) {
                 ThemeSelector(
                     selected = state.themePreference,
-                    onSelect = { vm.onIntent(ProfileIntent.SetTheme(it)) },
+                    onSelect = { onIntent(ProfileIntent.SetTheme(it)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
@@ -538,7 +569,7 @@ fun ProfileScreen(
                         }
                         Switch(
                             checked = state.isAppLockEnabled,
-                            onCheckedChange = { vm.onIntent(ProfileIntent.ToggleAppLock) },
+                            onCheckedChange = { onIntent(ProfileIntent.ToggleAppLock) },
                             modifier = Modifier.testTag("profile_app_lock_switch"),
                         )
                     }
@@ -592,12 +623,12 @@ fun ProfileScreen(
                         } else if (state.twoFactor.isEnrolled) {
                             ChatAppDestructiveButton(
                                 text = stringResource(R.string.profile_2fa_deactivate),
-                                onClick = { vm.onIntent(ProfileIntent.Disable2FA) },
+                                onClick = { onIntent(ProfileIntent.Disable2FA) },
                             )
                         } else {
                             ChatAppSecondaryButton(
                                 text = stringResource(R.string.profile_2fa_activate),
-                                onClick = { vm.onIntent(ProfileIntent.Enroll2FA) },
+                                onClick = { onIntent(ProfileIntent.Enroll2FA) },
                                 leadingIcon = Icons.Default.Shield,
                             )
                         }
@@ -685,7 +716,7 @@ fun ProfileScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { vm.signOut() }
+                            .clickable { onSignOutClick() }
                             .padding(16.dp)
                             .testTag("profile_sign_out_button"),
                         verticalAlignment = Alignment.CenterVertically,
@@ -703,7 +734,7 @@ fun ProfileScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { vm.requestSignOutAll() }
+                            .clickable { onSignOutAllClick() }
                             .padding(16.dp)
                             .testTag("profile_sign_out_all_button"),
                         verticalAlignment = Alignment.CenterVertically,
@@ -735,7 +766,7 @@ fun ProfileScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { vm.requestDeleteAccount() }
+                                .clickable { onDeleteAccountClick() }
                                 .padding(16.dp)
                                 .testTag("profile_delete_account_button"),
                             verticalAlignment = Alignment.CenterVertically,
@@ -752,6 +783,63 @@ fun ProfileScreen(
                 }
             }
         }
+    }
+}
+
+@Preview(name = "Default", showBackground = true)
+@Composable
+internal fun ProfileDefaultPreview() {
+    ChatAppTheme {
+        ProfileContent(
+            state = ProfileState(userId = "u1", displayName = "Ana García", editingDisplayName = "Ana García", username = "ana_g"),
+            snackbarHostState = remember { SnackbarHostState() },
+            onIntent = {},
+            onAvatarClick = {},
+            onBack = {},
+            onBackup = {},
+            onSessionAudit = {},
+            onSignOutClick = {},
+            onSignOutAllClick = {},
+            onDeleteAccountClick = {},
+        )
+    }
+}
+
+@Preview(name = "2FA and app lock on", showBackground = true)
+@Composable
+internal fun ProfileSecurityOnPreview() {
+    ChatAppTheme {
+        ProfileContent(
+            state = ProfileState(userId = "u1", editingDisplayName = "Ana García", username = "ana_g", isAppLockEnabled = true, twoFactor = TwoFactorState(isEnrolled = true)),
+            snackbarHostState = remember { SnackbarHostState() },
+            onIntent = {},
+            onAvatarClick = {},
+            onBack = {},
+            onBackup = {},
+            onSessionAudit = {},
+            onSignOutClick = {},
+            onSignOutAllClick = {},
+            onDeleteAccountClick = {},
+        )
+    }
+}
+
+@Preview(name = "Deleting account", showBackground = true)
+@Composable
+internal fun ProfileDeletingPreview() {
+    ChatAppTheme {
+        ProfileContent(
+            state = ProfileState(userId = "u1", editingDisplayName = "Ana García", username = "ana_g", isDeletingAccount = true),
+            snackbarHostState = remember { SnackbarHostState() },
+            onIntent = {},
+            onAvatarClick = {},
+            onBack = {},
+            onBackup = {},
+            onSessionAudit = {},
+            onSignOutClick = {},
+            onSignOutAllClick = {},
+            onDeleteAccountClick = {},
+        )
     }
 }
 
@@ -788,7 +876,7 @@ private fun CategoryLabel(text: String) {
         // fallback renders SemiBold/Bold/ExtraBold all but identically at this size. Bumping
         // size + letter-spacing on top of ExtraBold is what actually reads as "stands out more".
         style = MaterialTheme.typography.labelMedium.copy(
-            fontSize = 13.sp,
+            fontSize = ChatAppTextSizes.SectionLabel,
             letterSpacing = 1.2.sp,
         ),
         fontWeight = FontWeight.ExtraBold,
@@ -809,7 +897,7 @@ private fun IconChip(icon: androidx.compose.ui.graphics.vector.ImageVector, dang
     Box(
         modifier = Modifier
             .size(32.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(MaterialTheme.shapes.small)
             .background(
                 if (danger) MaterialTheme.colorScheme.errorContainer
                 else MaterialTheme.colorScheme.background,
@@ -847,7 +935,7 @@ private fun ThemeSelector(
                     .weight(1f)
                     .clickable { onSelect(pref) }
                     .testTag("profile_theme_${pref.name.lowercase()}_option"),
-                shape = RoundedCornerShape(8.dp),
+                shape = MaterialTheme.shapes.small,
                 color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
                         else MaterialTheme.colorScheme.surfaceVariant,
                 contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer

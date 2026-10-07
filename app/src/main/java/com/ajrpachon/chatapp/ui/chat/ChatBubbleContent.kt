@@ -19,7 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Forward
 import androidx.compose.material.icons.filled.ContentCopy
@@ -56,6 +56,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -66,8 +69,29 @@ import com.ajrpachon.chatapp.domain.model.LocationMessageFormat
 import com.ajrpachon.chatapp.domain.model.MediaUrlValidator
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.SendStatus
-import com.ajrpachon.chatapp.ui.components.EmojiPickerBottomSheet
+import com.ajrpachon.chatapp.ui.emoji.EmojiPickerBottomSheet
+import com.ajrpachon.chatapp.ui.theme.ChatAppShapeExtras
+import com.ajrpachon.chatapp.ui.theme.ReadReceiptBlue
 import com.ajrpachon.chatapp.utils.LinkPreviewData
+
+/**
+ * [text] with every `@username` mention (see [ChatMentions.mentionRanges]) in semibold. Weight
+ * only, deliberately no color: a custom chat theme's bubble color is arbitrary (see
+ * ChatThemeColors.bubbleContentColor()), so a fixed accent like `colorScheme.primary` could end
+ * up unreadable on it, while the bubble's own content color is already guaranteed to contrast.
+ */
+@Composable
+private fun rememberMentionHighlighted(text: String): AnnotatedString = remember(text) {
+    val ranges = ChatMentions.mentionRanges(text)
+    if (ranges.isEmpty()) {
+        AnnotatedString(text)
+    } else {
+        buildAnnotatedString {
+            append(text)
+            ranges.forEach { addStyle(SpanStyle(fontWeight = FontWeight.SemiBold), it.first, it.last + 1) }
+        }
+    }
+}
 
 // ── Shared bubble content ────────────────────────────────────────────────────
 // Extracted per docs/chat-viewmodel-decomposition.md Phase 2 — part of the message-bubble
@@ -80,7 +104,6 @@ import com.ajrpachon.chatapp.utils.LinkPreviewData
  * plain-text bubble layout and the has-media bubble layout in [MessageBubble] so this fairly
  * involved block — dropdown menu, emoji picker, link detection — only exists once.
  */
-@Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList")
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 internal fun MessageFooterContent(
@@ -130,7 +153,7 @@ internal fun MessageFooterContent(
             ),
         ) {
             if (locationUrl == null) {
-                Text(text = message.content, style = MaterialTheme.typography.bodyMedium)
+                Text(text = rememberMentionHighlighted(message.content), style = MaterialTheme.typography.bodyMedium)
             }
             DropdownMenu(expanded = showMsgMenu, onDismissRequest = { showMsgMenu = false }) {
                 DropdownMenuItem(
@@ -317,7 +340,7 @@ internal fun LocationMessageCard(mapsUrl: String, onLongPress: () -> Unit = {}) 
         }
     }
     Surface(
-        shape = RoundedCornerShape(8.dp),
+        shape = MaterialTheme.shapes.small,
         color = MaterialTheme.colorScheme.surfaceVariant,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
         // combinedClickable, not a plain clickable — see GenericFileBubble's onLongPress doc for
@@ -381,7 +404,7 @@ internal fun ReadReceiptIcon(isRead: Boolean, unreadTint: Color? = null) {
         contentDescription = if (isRead) stringResource(R.string.chat_read) else stringResource(R.string.chat_sent),
         modifier = Modifier.size(14.dp),
         tint = if (isRead)
-            Color(0xFF4FC3F7)
+            ReadReceiptBlue
         else
             unreadTint ?: MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
     )
@@ -434,7 +457,7 @@ internal fun MediaMetaOverlay(
 ) {
     Surface(
         color = Color.Black.copy(alpha = 0.45f),
-        shape = RoundedCornerShape(50),
+        shape = CircleShape,
         modifier = modifier.padding(6.dp),
     ) {
         Row(
@@ -498,7 +521,7 @@ internal fun ReplyQuote(
     Row(
         modifier = Modifier
             .widthIn(min = 120.dp)
-            .clip(RoundedCornerShape(6.dp))
+            .clip(ChatAppShapeExtras.Thumbnail)
             .background(bg)
             .height(IntrinsicSize.Min)
             .clickable { onClick() },
@@ -559,7 +582,7 @@ internal fun StatusReplyQuote(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .widthIn(min = 120.dp)
-            .clip(RoundedCornerShape(6.dp))
+            .clip(ChatAppShapeExtras.Thumbnail)
             .background(bg)
             .clickable { onClick() }
             .padding(6.dp),
@@ -568,7 +591,7 @@ internal fun StatusReplyQuote(
             Box(
                 modifier = Modifier
                     .size(32.dp)
-                    .clip(RoundedCornerShape(4.dp))
+                    .clip(MaterialTheme.shapes.extraSmall)
                     .background(
                         message.replyToStatusBackgroundColor?.let { Color(it) }
                             ?: MaterialTheme.colorScheme.surfaceVariant
@@ -625,7 +648,7 @@ internal fun StatusReplyQuote(
 internal fun LinkPreviewCard(data: LinkPreviewData) {
     val context = LocalContext.current
     Surface(
-        shape = RoundedCornerShape(8.dp),
+        shape = MaterialTheme.shapes.small,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = Modifier
             .fillMaxWidth()
@@ -645,7 +668,7 @@ internal fun LinkPreviewCard(data: LinkPreviewData) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(120.dp)
-                        .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)),
+                        .clip(ChatAppShapeExtras.PanelTop),
                 )
             }
             Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {

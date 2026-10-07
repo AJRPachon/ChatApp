@@ -2,11 +2,85 @@ package com.ajrpachon.chatapp.data.mapper
 
 import com.ajrpachon.chatapp.data.local.entity.MessageDBO
 import com.ajrpachon.chatapp.data.remote.dto.MessageDTO
+import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
+import com.ajrpachon.chatapp.domain.model.StatusReplyContextBO
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MessageMapperTest {
+
+    // ── OutgoingMessageBO.toDTO ────────────────────────────────────
+
+    @Test
+    fun `OutgoingMessageBO toDTO carries identity, payload and reply fields`() {
+        val outgoing = OutgoingMessageBO(
+            conversationId = "conv1",
+            senderId = "user1",
+            content = "plain text",
+            fileUrl = FILE_URL,
+            fileName = "doc.pdf",
+            fileSize = 10L,
+            fileMimeType = "application/pdf",
+            replyToId = "m0",
+            replyToContent = "quoted",
+            replyToSenderName = "Ana",
+        )
+
+        val dto = outgoing.toDTO(id = "id1", createdAt = "2026-10-05T10:00:00Z", content = "plain text", isEncrypted = false)
+
+        assertEquals("id1", dto.id)
+        assertEquals("conv1", dto.conversationId)
+        assertEquals("user1", dto.senderId)
+        assertEquals("2026-10-05T10:00:00Z", dto.createdAt)
+        assertFalse(dto.isRead)
+        assertEquals(FILE_URL, dto.fileUrl)
+        assertEquals("doc.pdf", dto.fileName)
+        assertEquals(10L, dto.fileSize)
+        assertEquals("m0", dto.replyToId)
+        assertEquals("quoted", dto.replyToContent)
+        assertEquals("Ana", dto.replyToSenderName)
+        assertNull(dto.imageUrl)
+        assertNull(dto.replyToStatusId)
+    }
+
+    @Test
+    fun `OutgoingMessageBO toDTO uses the content it is given, not the plaintext, and flags encryption`() {
+        val outgoing = OutgoingMessageBO(conversationId = "c", senderId = "u", content = "secret")
+
+        val dto = outgoing.toDTO(id = "id1", createdAt = "2026-10-05T10:00:00Z", content = "ciphertext", isEncrypted = true)
+
+        assertEquals("ciphertext", dto.content)
+        assertTrue(dto.isEncrypted)
+    }
+
+    @Test
+    fun `OutgoingMessageBO toDTO snapshots the status being replied to`() {
+        val outgoing = OutgoingMessageBO(
+            conversationId = "c",
+            senderId = "u",
+            content = "nice!",
+            statusReply = StatusReplyContextBO(
+                statusId = "s1",
+                statusOwnerId = "alice",
+                statusText = "hola",
+                statusImageUrl = null,
+                statusVideoUrl = null,
+                statusBackgroundColor = 0xFF112233L,
+                statusExpiresAt = 1_700_000_000_000L,
+            ),
+        )
+
+        val dto = outgoing.toDTO(id = "id1", createdAt = "2026-10-05T10:00:00Z", content = "nice!", isEncrypted = false)
+
+        assertEquals("s1", dto.replyToStatusId)
+        assertEquals("alice", dto.replyToStatusOwnerId)
+        assertEquals("hola", dto.replyToStatusText)
+        assertEquals(0xFF112233L, dto.replyToStatusBackgroundColor)
+        assertEquals("2023-11-14T22:13:20Z", dto.replyToStatusExpiresAt)
+    }
 
     // ── toDBO — file fields ───────────────────────────────────────────────────
 

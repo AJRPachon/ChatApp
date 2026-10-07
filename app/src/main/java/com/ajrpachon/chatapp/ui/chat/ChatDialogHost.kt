@@ -23,7 +23,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -40,6 +39,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.ReactionBO
+import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
 
 /**
  * Every dialog/bottom-sheet that [ChatScreen] shows conditionally on a `state.showX` (or local
@@ -56,7 +56,7 @@ import com.ajrpachon.chatapp.domain.model.ReactionBO
 @Composable
 internal fun ChatDialogHost(
     state: ChatState,
-    vm: ChatViewModel,
+    onIntent: (ChatIntent) -> Unit,
     conversationId: String,
     reactions: Map<String, List<ReactionBO>>,
     showDeleteSelectionConfirm: MutableState<Boolean>,
@@ -72,13 +72,17 @@ internal fun ChatDialogHost(
             title = { Text(stringResource(R.string.chat_delete_messages_title)) },
             text = { Text(pluralStringResource(R.plurals.chat_delete_messages_confirm, count, count)) },
             confirmButton = {
-                TextButton(onClick = {
-                    showDeleteSelectionConfirm.value = false
-                    vm.onIntent(ChatIntent.DeleteSelectedMessages)
-                }) { Text(stringResource(R.string.chat_delete), color = MaterialTheme.colorScheme.error) }
+                ChatAppTextButton(
+                    text = stringResource(R.string.chat_delete),
+                    onClick = {
+                        showDeleteSelectionConfirm.value = false
+                        onIntent(ChatIntent.DeleteSelectedMessages)
+                    },
+                    color = MaterialTheme.colorScheme.error,
+                )
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteSelectionConfirm.value = false }) { Text(stringResource(R.string.chat_cancel)) }
+                ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = { showDeleteSelectionConfirm.value = false })
             },
         )
     }
@@ -93,21 +97,21 @@ internal fun ChatDialogHost(
 
     state.expiryDialogMessageId?.let { msgId ->
         ExpiryDurationDialog(
-            onDismiss = { vm.onIntent(ChatIntent.DismissExpiryDialog) },
-            onSelect = { vm.onIntent(ChatIntent.SetExpiry(msgId, it)) },
+            onDismiss = { onIntent(ChatIntent.DismissExpiryDialog) },
+            onSelect = { onIntent(ChatIntent.SetExpiry(msgId, it)) },
         )
     }
 
     if (state.forward.showDialog) {
         ForwardConversationDialog(
             conversations = state.forward.conversations,
-            onDismiss = { vm.onIntent(ChatIntent.DismissForwardDialog) },
+            onDismiss = { onIntent(ChatIntent.DismissForwardDialog) },
             onSelect = { targetConversationId ->
                 val forwardingMsg = state.forward.message
                 if (forwardingMsg != null) {
-                    vm.onIntent(ChatIntent.ForwardMessage(forwardingMsg.id, targetConversationId))
+                    onIntent(ChatIntent.ForwardMessage(forwardingMsg.id, targetConversationId))
                 } else {
-                    vm.onIntent(ChatIntent.ForwardSelectedMessages(targetConversationId))
+                    onIntent(ChatIntent.ForwardSelectedMessages(targetConversationId))
                 }
             },
         )
@@ -115,20 +119,16 @@ internal fun ChatDialogHost(
 
     if (state.incognito.showInfoDialog) {
         AlertDialog(
-            onDismissRequest = { vm.onIntent(ChatIntent.DismissIncognitoDialog) },
+            onDismissRequest = { onIntent(ChatIntent.DismissIncognitoDialog) },
             title = { Text(stringResource(R.string.chat_incognito_mode)) },
             text = {
                 Text(stringResource(R.string.chat_incognito_mode_description))
             },
             confirmButton = {
-                TextButton(onClick = { vm.onIntent(ChatIntent.ConfirmIncognito) }) {
-                    Text(stringResource(R.string.chat_incognito_confirm_activate))
-                }
+                ChatAppTextButton(text = stringResource(R.string.chat_incognito_confirm_activate), onClick = { onIntent(ChatIntent.ConfirmIncognito) })
             },
             dismissButton = {
-                TextButton(onClick = { vm.onIntent(ChatIntent.DismissIncognitoDialog) }) {
-                    Text(stringResource(R.string.chat_cancel))
-                }
+                ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = { onIntent(ChatIntent.DismissIncognitoDialog) })
             },
         )
     }
@@ -138,17 +138,17 @@ internal fun ChatDialogHost(
     if (state.forward.showSelectionDialog) {
         ForwardConversationDialog(
             conversations = state.forward.conversations,
-            onDismiss = { vm.onIntent(ChatIntent.DismissForwardSelectionDialog) },
+            onDismiss = { onIntent(ChatIntent.DismissForwardSelectionDialog) },
             onSelect = { targetConversationId ->
-                vm.onIntent(ChatIntent.ForwardSelectedMessages(targetConversationId))
+                onIntent(ChatIntent.ForwardSelectedMessages(targetConversationId))
             },
         )
     }
 
     if (state.mute.showDialog) {
         MuteDurationDialog(
-            onDismiss = { vm.onIntent(ChatIntent.DismissMuteDialog) },
-            onSelect = { vm.onIntent(ChatIntent.MuteFor(it)) },
+            onDismiss = { onIntent(ChatIntent.DismissMuteDialog) },
+            onSelect = { onIntent(ChatIntent.MuteFor(it)) },
         )
     }
 
@@ -156,13 +156,13 @@ internal fun ChatDialogHost(
 
     if (state.showStickerPicker) {
         StickerGifPicker(
-            onStickerSelected = { vm.onIntent(ChatIntent.SendSticker(it)) },
-            onGifSelected = { vm.onIntent(ChatIntent.SendGif(it)) },
+            onStickerSelected = { onIntent(ChatIntent.SendSticker(it)) },
+            onGifSelected = { onIntent(ChatIntent.SendGif(it)) },
             onOpenStore = {
-                vm.onIntent(ChatIntent.CloseStickerPicker)
+                onIntent(ChatIntent.CloseStickerPicker)
                 showStickerStore = true
             },
-            onDismiss = { vm.onIntent(ChatIntent.CloseStickerPicker) },
+            onDismiss = { onIntent(ChatIntent.CloseStickerPicker) },
         )
     }
 
@@ -175,30 +175,30 @@ internal fun ChatDialogHost(
     if (state.theme.showPicker) {
         ChatThemePickerSheet(
             currentTheme = chatTheme,
-            onSelect = { vm.onIntent(ChatIntent.SetChatTheme(it)) },
-            onDismiss = { vm.onIntent(ChatIntent.DismissThemePicker) },
+            onSelect = { onIntent(ChatIntent.SetChatTheme(it)) },
+            onDismiss = { onIntent(ChatIntent.DismissThemePicker) },
         )
     }
 
     if (state.disappearing.showSheet) {
         DisappearingModeSheet(
             currentSeconds = state.disappearing.seconds,
-            onDismiss = { vm.onIntent(ChatIntent.DismissDisappearingModeSheet) },
-            onSelect = { seconds -> vm.onIntent(ChatIntent.SetDisappearingMode(conversationId, seconds)) },
+            onDismiss = { onIntent(ChatIntent.DismissDisappearingModeSheet) },
+            onSelect = { seconds -> onIntent(ChatIntent.SetDisappearingMode(conversationId, seconds)) },
         )
     }
 
     if (state.scheduling.showDialog) {
         ScheduleMessageDialog(
-            onDismiss = { vm.onIntent(ChatIntent.DismissScheduleDialog) },
-            onConfirm = { scheduledAtMs -> vm.onIntent(ChatIntent.ScheduleMessage(scheduledAtMs)) },
+            onDismiss = { onIntent(ChatIntent.DismissScheduleDialog) },
+            onConfirm = { scheduledAtMs -> onIntent(ChatIntent.ScheduleMessage(scheduledAtMs)) },
         )
     }
 
     if (state.scheduling.showSheet) {
         val scheduledSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(
-            onDismissRequest = { vm.onIntent(ChatIntent.DismissScheduledSheet) },
+            onDismissRequest = { onIntent(ChatIntent.DismissScheduledSheet) },
             sheetState = scheduledSheetState,
         ) {
             Text(
@@ -252,7 +252,7 @@ internal fun ChatDialogHost(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
-                            IconButton(onClick = { vm.onIntent(ChatIntent.CancelScheduledMessage(msg.id)) }) {
+                            IconButton(onClick = { onIntent(ChatIntent.CancelScheduledMessage(msg.id)) }) {
                                 Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.chat_cancel_scheduled_message))
                             }
                         }
@@ -269,22 +269,22 @@ internal fun ChatDialogHost(
         AiAssistantSheet(
             aiSuggestion = state.ai.suggestion,
             isAiLoading = state.ai.isLoading,
-            onDismiss = { vm.onIntent(ChatIntent.DismissAiSheet) },
-            onSuggestReply = { vm.onIntent(ChatIntent.AiSuggestReply) },
-            onFreeform = { prompt -> vm.onIntent(ChatIntent.AiFreeform(prompt)) },
-            onInsert = { vm.onIntent(ChatIntent.InsertAiSuggestion) },
+            onDismiss = { onIntent(ChatIntent.DismissAiSheet) },
+            onSuggestReply = { onIntent(ChatIntent.AiSuggestReply) },
+            onFreeform = { prompt -> onIntent(ChatIntent.AiFreeform(prompt)) },
+            onInsert = { onIntent(ChatIntent.InsertAiSuggestion) },
         )
     }
 
     if (state.poll.showCreateSheet) {
         ModalBottomSheet(
-            onDismissRequest = { vm.onIntent(ChatIntent.DismissCreatePollSheet) },
+            onDismissRequest = { onIntent(ChatIntent.DismissCreatePollSheet) },
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         ) {
             CreatePollSheetContent(
-                onDismiss = { vm.onIntent(ChatIntent.DismissCreatePollSheet) },
+                onDismiss = { onIntent(ChatIntent.DismissCreatePollSheet) },
                 onCreate = { question, options, allowMultiple ->
-                    vm.onIntent(ChatIntent.CreatePoll(question, options, allowMultiple))
+                    onIntent(ChatIntent.CreatePoll(question, options, allowMultiple))
                 },
             )
         }
@@ -297,10 +297,7 @@ internal fun ChatDialogHost(
                 onDismissRequest = { reactionDetailMessageId.value = null },
                 sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             ) {
-                ReactionDetailsSheet(
-                    reactions = msgReactions,
-                    onDismiss = { reactionDetailMessageId.value = null },
-                )
+                ReactionDetailsSheet(reactions = msgReactions)
             }
         }
     }
@@ -309,10 +306,10 @@ internal fun ChatDialogHost(
         WallpaperPickerSheet(
             currentColor = state.wallpaper.color,
             onSelect = { colorValue: Long? ->
-                vm.onIntent(ChatIntent.SetWallpaperColor(colorValue))
-                vm.onIntent(ChatIntent.DismissWallpaperPicker)
+                onIntent(ChatIntent.SetWallpaperColor(colorValue))
+                onIntent(ChatIntent.DismissWallpaperPicker)
             },
-            onDismiss = { vm.onIntent(ChatIntent.DismissWallpaperPicker) },
+            onDismiss = { onIntent(ChatIntent.DismissWallpaperPicker) },
         )
     }
 }

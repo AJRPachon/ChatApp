@@ -1,13 +1,14 @@
 package com.ajrpachon.chatapp.ui.invitations
 
 import com.ajrpachon.chatapp.domain.model.InvitationBO
+import com.ajrpachon.chatapp.ui.common.UiText
 
 enum class InvitationsTab { RECEIVED, SENT }
 
 data class InvitationsState(
     val invitations: List<InvitationBO> = emptyList(),
     val isLoading: Boolean = true,
-    val error: String? = null,
+    val error: UiText? = null,
     val selectedTab: InvitationsTab = InvitationsTab.RECEIVED,
     val sentInvitations: List<InvitationBO> = emptyList(),
     val isSentLoading: Boolean = false,
@@ -22,5 +23,5 @@ sealed interface InvitationsIntent {
 }
 
 sealed interface InvitationsEffect {
-    data class ShowMessage(val text: String) : InvitationsEffect
+    data class ShowMessage(val text: UiText) : InvitationsEffect
 }

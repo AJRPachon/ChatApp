@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Group
@@ -27,7 +26,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerDefaults
 import androidx.compose.material3.rememberDatePickerState
@@ -43,6 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -50,6 +49,7 @@ import androidx.compose.ui.window.DialogProperties
 import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.ConversationBO
+import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
 
 // ── Simple modal dialogs used from ChatScreen ───────────────────────────────
 // Extracted per docs/chat-viewmodel-decomposition.md Phase 2 — each takes only its own narrow
@@ -76,18 +76,18 @@ internal fun ExpiryDurationDialog(onDismiss: () -> Unit, onSelect: (Long?) -> Un
                 )
                 androidx.compose.foundation.layout.Spacer(androidx.compose.ui.Modifier.height(8.dp))
                 options.forEach { (label, value) ->
-                    TextButton(
+                    ChatAppTextButton(
+                        text = label,
                         onClick = { onSelect(value) },
                         modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
-                    ) {
-                        Text(label, modifier = androidx.compose.ui.Modifier.fillMaxWidth())
-                    }
+                        textAlign = TextAlign.Start,
+                    )
                 }
             }
         },
         confirmButton = {},
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.chat_cancel)) }
+            ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = onDismiss)
         },
     )
 }
@@ -106,18 +106,18 @@ internal fun MuteDurationDialog(onDismiss: () -> Unit, onSelect: (Long) -> Unit)
         text = {
             androidx.compose.foundation.layout.Column {
                 options.forEach { (label, value) ->
-                    TextButton(
+                    ChatAppTextButton(
+                        text = label,
                         onClick = { onSelect(value) },
                         modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
-                    ) {
-                        Text(label, modifier = androidx.compose.ui.Modifier.fillMaxWidth())
-                    }
+                        textAlign = TextAlign.Start,
+                    )
                 }
             }
         },
         confirmButton = {},
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.chat_cancel)) }
+            ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = onDismiss)
         },
     )
 }
@@ -193,7 +193,7 @@ internal fun ForwardConversationDialog(
         },
         confirmButton = {},
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.chat_cancel)) }
+            ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = onDismiss)
         },
     )
 }
@@ -218,12 +218,10 @@ internal fun ScheduleMessageDialog(
         DatePickerDialog(
             onDismissRequest = onDismiss,
             confirmButton = {
-                TextButton(onClick = { showTimePicker = true }) {
-                    Text(stringResource(R.string.chat_next))
-                }
+                ChatAppTextButton(text = stringResource(R.string.chat_next), onClick = { showTimePicker = true })
             },
             dismissButton = {
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.chat_cancel)) }
+                ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = onDismiss)
             },
         ) {
             DatePicker(state = datePickerState)
@@ -239,7 +237,7 @@ internal fun ScheduleMessageDialog(
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
+                ChatAppTextButton(text = stringResource(R.string.chat_schedule_action), onClick = {
                     val selectedDateMs = datePickerState.selectedDateMillis ?: System.currentTimeMillis()
                     val cal = java.util.Calendar.getInstance().apply {
                         timeInMillis = selectedDateMs
@@ -249,12 +247,10 @@ internal fun ScheduleMessageDialog(
                         set(java.util.Calendar.MILLISECOND, 0)
                     }
                     onConfirm(cal.timeInMillis)
-                }) {
-                    Text(stringResource(R.string.chat_schedule_action))
-                }
+                })
             },
             dismissButton = {
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.chat_cancel)) }
+                ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = onDismiss)
             },
         )
     }
@@ -314,7 +310,7 @@ internal fun ImageViewerDialog(
                     .align(Alignment.TopEnd)
                     .statusBarsPadding()
                     .padding(top = 4.dp, end = 8.dp)
-                    .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(50)),
+                    .background(Color.Black.copy(alpha = 0.4f), CircleShape),
             ) {
                 Icon(Icons.Default.Close, contentDescription = stringResource(R.string.chat_close), tint = Color.White)
             }

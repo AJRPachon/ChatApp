@@ -1,12 +1,12 @@
 package com.ajrpachon.chatapp.ui.chat
 
+import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.utils.AudioTranscriber
 import com.ajrpachon.chatapp.utils.TranslationManager
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-
-private const val NO_TRANSCRIPTION_AVAILABLE = "Transcripcion no disponible"
 
 /**
  * Handles per-message translation and audio transcription — second slice of the decomposition
@@ -41,7 +41,7 @@ class ChatTranslationDelegate(
                     updateState {
                         it.copy(
                             translation = it.translation.copy(translatingMessageIds = it.translation.translatingMessageIds - messageId),
-                            error = "No se pudo traducir",
+                            error = UiText.StringResource(R.string.chat_error_translate),
                         )
                     }
                 }
@@ -56,7 +56,8 @@ class ChatTranslationDelegate(
     // OpenAI's Whisper transcription endpoint).
     fun transcribeAudio(messageId: String) {
         scope.launch {
-            val result = catchResult { audioTranscriber.transcribeFromMic() }.getOrDefault(NO_TRANSCRIPTION_AVAILABLE)
+            val transcript = catchResult { audioTranscriber.transcribeFromMic() }.getOrNull()
+            val result = transcript?.let(UiText::Dynamic) ?: UiText.StringResource(R.string.chat_transcription_unavailable)
             updateState { s -> s.copy(translation = s.translation.copy(transcriptions = s.translation.transcriptions + (messageId to result))) }
         }
     }

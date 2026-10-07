@@ -1,5 +1,7 @@
 package com.ajrpachon.chatapp.ui.usagestats
 
+import com.ajrpachon.chatapp.ui.common.UiText
+
 data class UsageStatsState(
     val isLoading: Boolean = true,
     val totalMessagesSent: Int = 0,
@@ -11,7 +13,7 @@ data class UsageStatsState(
     val totalVideos: Int = 0,
     val mostActiveConvName: String = "",
     val messagesPerDay: List<Pair<String, Int>> = emptyList(),
-    val error: String? = null,
+    val error: UiText? = null,
 )
 
 sealed interface UsageStatsIntent {

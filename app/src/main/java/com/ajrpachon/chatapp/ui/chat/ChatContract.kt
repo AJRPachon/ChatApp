@@ -5,14 +5,16 @@ import com.ajrpachon.chatapp.domain.model.ChatTheme
 import com.ajrpachon.chatapp.ui.common.formatDisappearingDuration
 import com.ajrpachon.chatapp.ui.common.formatLastSeen
 import com.ajrpachon.chatapp.domain.model.CallBO
-import com.ajrpachon.chatapp.domain.model.ScheduledMessage
+import com.ajrpachon.chatapp.domain.model.ScheduledMessageBO
 import com.ajrpachon.chatapp.domain.model.ConversationBO
+import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.model.UserRelationship
 import com.ajrpachon.chatapp.domain.model.PollBO
 import com.ajrpachon.chatapp.domain.model.PollOptionBO
 import com.ajrpachon.chatapp.domain.model.PollVoteBO
+import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.utils.LinkPreviewData
 
 /**
@@ -120,7 +122,7 @@ data class ChatTranslationUiState(
     // messageId → transcribed text. No UI reads this yet, and the delegate that populates it
     // has a real bug (transcribes the live mic, not the message's audio) — see
     // docs/audio-transcription-todo.md before building UI on top of this field.
-    val transcriptions: Map<String, String> = emptyMap(),
+    val transcriptions: Map<String, UiText> = emptyMap(),
 )
 
 /**
@@ -147,7 +149,7 @@ data class ChatSchedulingUiState(
     val scheduledAtMs: Long? = null,
     val messageCount: Int = 0,
     val showSheet: Boolean = false,
-    val messages: List<ScheduledMessage> = emptyList(),
+    val messages: List<ScheduledMessageBO> = emptyList(),
 )
 
 /**
@@ -178,6 +180,8 @@ data class ChatForwardUiState(
 data class ChatGroupPresenceUiState(
     val onlineMemberCount: Int = 0,
     val memberCount: Int = 0,
+    // Live member list, the source for `@mention` autocomplete (see ChatState.mentionSuggestions).
+    val members: List<GroupMemberBO> = emptyList(),
 )
 
 /**
@@ -242,7 +246,7 @@ data class ChatState(
     val mediaUpload: ChatMediaUploadUiState = ChatMediaUploadUiState(),
     val currentUserId: String? = null,
     val conversationTitle: String = "",
-    val error: String? = null,
+    val error: UiText? = null,
     val audioState: AudioState = AudioState(),
     val otherUserId: String? = null,
     val otherUserAvatarUrl: String? = null,
@@ -279,6 +283,14 @@ data class ChatState(
 ) {
     val isMultiSelectActive: Boolean get() = selectedMessageIds.isNotEmpty()
     val latestPinnedMessage: MessageBO? get() = pinnedMessages.firstOrNull()
+
+    /**
+     * `@mention` autocomplete for group chats, derived from [inputText] rather than stored, so it
+     * clears itself wherever the input is reset (send, edit, cancel, schedule) without each of
+     * those paths having to remember to.
+     */
+    val mentionSuggestions: List<GroupMemberBO>
+        get() = if (isGroup) ChatMentions.suggestions(inputText, groupPresence.members, currentUserId) else emptyList()
 
     /** Formatted label for the disappearing-mode timer shown in the app bar. */
     val disappearingDurationLabel: String get() = formatDisappearingDuration(disappearing.seconds)
@@ -370,6 +382,7 @@ sealed interface ChatIntent {
     data object DismissDisappearingModeSheet : ChatIntent
     // seconds: 0 = off, positive = duration in seconds
     data class SetDisappearingMode(val conversationId: String, val seconds: Long) : ChatIntent
+    data class SelectMention(val member: GroupMemberBO) : ChatIntent
     data object ToggleIncognito : ChatIntent
     data object DismissIncognitoDialog : ChatIntent
     data object ConfirmIncognito : ChatIntent
@@ -412,10 +425,10 @@ sealed interface ChatEffect {
     data object ScrollToBottom : ChatEffect
     data class NavigateToCall(val call: CallBO) : ChatEffect
     data object NavigateBack : ChatEffect
-    data class ShowSnackbar(val message: String) : ChatEffect
+    data class ShowSnackbar(val message: UiText) : ChatEffect
     data class ShowShareSheet(val uri: android.net.Uri) : ChatEffect
     data class NavigateToConversation(val conversationId: String, val otherUserName: String) : ChatEffect
-    data class InviteContact(val phoneNumber: String, val text: String) : ChatEffect
+    data class InviteContact(val phoneNumber: String, val text: UiText) : ChatEffect
     /** Quoted-status tap, still within its 24h window — open it in the story viewer. */
     data class NavigateToStatusViewer(val ownerId: String, val statusId: String) : ChatEffect
 }

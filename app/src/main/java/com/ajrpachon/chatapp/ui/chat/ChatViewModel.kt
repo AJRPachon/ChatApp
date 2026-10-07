@@ -11,6 +11,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.ChatTheme
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.repository.AiAssistantRepository
@@ -22,6 +23,7 @@ import com.ajrpachon.chatapp.domain.repository.PollRepository
 import com.ajrpachon.chatapp.domain.repository.WallpaperRepository
 import com.ajrpachon.chatapp.domain.model.CallType
 import com.ajrpachon.chatapp.domain.model.MessageBO
+import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
 import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
@@ -39,13 +41,15 @@ import com.ajrpachon.chatapp.domain.usecase.ReadUriAsBytesUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendInvitationUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
+import com.ajrpachon.chatapp.ui.common.UiText
+import com.ajrpachon.chatapp.ui.common.toUiText
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.AudioTranscriber
 import com.ajrpachon.chatapp.utils.ClipboardProtection
 import com.ajrpachon.chatapp.utils.LinkPreviewFetcher
 import com.ajrpachon.chatapp.utils.NetworkMonitor
 import com.ajrpachon.chatapp.utils.TranslationManager
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 import com.ajrpachon.chatapp.worker.MessageRetryWorker
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -64,6 +68,8 @@ import java.util.concurrent.TimeUnit
 
 data class ChatArgs(val conversationId: String, val otherUserName: String)
 
+// LongParameterList: constructor injection of every collaborator Koin provides, one parameter per dependency.
+// TooManyFunctions: the handlers behind onIntent. Feature-specific logic already lives in the Chat*Delegate classes.
 @Suppress("LongParameterList", "TooManyFunctions")
 class ChatViewModel(
     args: ChatArgs,
@@ -372,24 +378,13 @@ class ChatViewModel(
         }
     }
 
+    // CyclomaticComplexMethod: pure dispatch, one `when` branch per ChatIntent delegating to a delegate or a private
+    // function. Complexity grows with the number of intents, not with logic. (Its LongMethod entry is in detekt-baseline.xml.)
     @Suppress("CyclomaticComplexMethod")
     fun onIntent(intent: ChatIntent) {
         when (intent) {
-            is ChatIntent.InputChanged -> {
-                updateState { it.copy(inputText = intent.text) }
-                draftSaveJob?.cancel()
-                draftSaveJob = viewModelScope.launch {
-                    delay(500)
-                    draftRepository.saveDraft(conversationId, intent.text)
-                }
-                if (intent.text.isNotEmpty()) {
-                    sendTypingPresence(true)
-                    typingResetJob?.cancel()
-                    typingResetJob = viewModelScope.launch { delay(3_000); sendTypingPresence(false) }
-                } else {
-                    typingResetJob?.cancel(); sendTypingPresence(false)
-                }
-            }
+            is ChatIntent.InputChanged -> onInputChanged(intent.text)
+            is ChatIntent.SelectMention -> onInputChanged(ChatMentions.insert(state.value.inputText, intent.member.username))
             is ChatIntent.Send -> if (state.value.editingMessage != null) confirmEdit() else sendMessage()
             is ChatIntent.SendImages -> mediaUploadDelegate.sendImages(intent.uris)
             is ChatIntent.SendFile -> mediaUploadDelegate.sendFile(intent.uri)
@@ -506,6 +501,28 @@ class ChatViewModel(
         workManager.enqueueUniqueWork(MessageRetryWorker.WORK_NAME, ExistingWorkPolicy.KEEP, request)
     }
 
+    /**
+     * Single path for every input-text change — typed (`InputChanged`) or produced by picking an
+     * `@mention` suggestion (`SelectMention`) — so both persist the draft and update typing
+     * presence the same way. Mention suggestions need no handling here: they're derived from
+     * `inputText` (see [ChatState.mentionSuggestions]).
+     */
+    private fun onInputChanged(text: String) {
+        updateState { it.copy(inputText = text) }
+        draftSaveJob?.cancel()
+        draftSaveJob = viewModelScope.launch {
+            delay(500)
+            draftRepository.saveDraft(conversationId, text)
+        }
+        if (text.isNotEmpty()) {
+            sendTypingPresence(true)
+            typingResetJob?.cancel()
+            typingResetJob = viewModelScope.launch { delay(3_000); sendTypingPresence(false) }
+        } else {
+            typingResetJob?.cancel(); sendTypingPresence(false)
+        }
+    }
+
     private fun setExpiry(messageId: String, expiresAt: Long?) {
         updateState { it.copy(expiryDialogMessageId = null) }
         viewModelScope.launch {
@@ -542,7 +559,7 @@ class ChatViewModel(
         if (ownerId == null || statusId == null) return
         viewModelScope.launch {
             if (message.isStatusReplyExpired()) {
-                sendEffect(ChatEffect.ShowSnackbar("Este estado ya no está disponible"))
+                sendEffect(ChatEffect.ShowSnackbar(UiText.StringResource(R.string.chat_status_unavailable)))
             } else {
                 sendEffect(ChatEffect.NavigateToStatusViewer(ownerId, statusId))
             }
@@ -560,8 +577,11 @@ class ChatViewModel(
             updateState { it.copy(isSending = true, inputText = "", replyingTo = null) }
             draftSaveJob?.cancel()
             draftRepository.saveDraft(conversationId, "")
-            val result = sendMessageUseCase(conversationId, userId, text,
-                replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
+            val result = sendMessageUseCase(
+                OutgoingMessageBO(
+                    conversationId = conversationId, senderId = userId, content = text,
+                    replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
+                ),
             )
             result.onSuccess { msg ->
                 if (disappearingSecs > 0L) {
@@ -589,7 +609,7 @@ class ChatViewModel(
                         .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
                         .build()
                 )
-                updateState { it.copy(error = "Sin conexion. El mensaje se enviara cuando vuelva la red.", inputText = text) }
+                updateState { it.copy(error = UiText.StringResource(R.string.chat_error_offline), inputText = text) }
             }
             updateState { it.copy(isSending = false) }
         }
@@ -611,7 +631,7 @@ class ChatViewModel(
                 val call = if (isGroup) callRepository.createGroupCall(conversationId, callType)
                            else callRepository.createCall(conversationId, state.value.otherUserId ?: return@catchResult, callType)
                 sendEffect(ChatEffect.NavigateToCall(call))
-            }.onFailure { e -> updateState { it.copy(error = e.message ?: "Error al iniciar la llamada") } }
+            }.onFailure { e -> updateState { it.copy(error = e.toUiText(R.string.chat_error_start_call)) } }
         }
     }
 
@@ -638,7 +658,7 @@ class ChatViewModel(
         viewModelScope.launch {
             updateState { it.copy(editingMessage = null, inputText = "") }
             messageRepository.editMessage(editingMsg.id, newContent)
-                .onFailure { e -> AppLogger.e(TAG, "Edit failed", e); updateState { it.copy(error = "No se pudo editar") } }
+                .onFailure { e -> AppLogger.e(TAG, "Edit failed", e); updateState { it.copy(error = UiText.StringResource(R.string.chat_error_edit)) } }
         }
     }
 
@@ -647,14 +667,14 @@ class ChatViewModel(
         viewModelScope.launch {
             leaveGroupUseCase(conversationId, userId)
                 .onSuccess { sendEffect(ChatEffect.NavigateBack) }
-                .onFailure { e -> updateState { it.copy(error = e.message ?: "Error al salir del grupo") } }
+                .onFailure { e -> updateState { it.copy(error = e.toUiText(R.string.chat_error_leave_group)) } }
         }
     }
 
     private fun deleteMessage(messageId: String) {
         viewModelScope.launch {
             messageRepository.deleteMessage(messageId)
-                .onFailure { e -> AppLogger.e(TAG, "deleteMessage failed", e); updateState { it.copy(error = "No se pudo eliminar") } }
+                .onFailure { e -> AppLogger.e(TAG, "deleteMessage failed", e); updateState { it.copy(error = UiText.StringResource(R.string.chat_error_delete)) } }
         }
     }
 
@@ -664,7 +684,7 @@ class ChatViewModel(
             updateState { it.copy(isExporting = true) }
             exportConversationUseCase(conversationId, uid)
                 .onSuccess { uriString -> sendEffect(ChatEffect.ShowShareSheet(Uri.parse(uriString))) }
-                .onFailure { sendEffect(ChatEffect.ShowSnackbar("No se pudo exportar")) }
+                .onFailure { sendEffect(ChatEffect.ShowSnackbar(UiText.StringResource(R.string.chat_error_export))) }
             updateState { it.copy(isExporting = false) }
         }
     }

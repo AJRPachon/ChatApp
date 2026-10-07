@@ -1,9 +1,12 @@
 package com.ajrpachon.chatapp.ui.chat
 
+import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
 import com.ajrpachon.chatapp.domain.repository.PollRepository
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
+import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.utils.AppLogger
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -79,8 +82,8 @@ class ChatPollDelegate(
                     options = options,
                     allowMultiple = allowMultiple,
                 )
-                sendMessageUseCase(conversationId, userId, "poll:$pollId")
-            }.onFailure { e -> AppLogger.e(TAG, "createPoll failed", e); updateState { it.copy(error = "No se pudo crear la encuesta") } }
+                sendMessageUseCase(OutgoingMessageBO(conversationId = conversationId, senderId = userId, content = "poll:$pollId"))
+            }.onFailure { e -> AppLogger.e(TAG, "createPoll failed", e); updateState { it.copy(error = UiText.StringResource(R.string.chat_error_poll_create)) } }
         }
     }
 
@@ -88,7 +91,7 @@ class ChatPollDelegate(
         val userId = currentUserId() ?: return
         scope.launch {
             catchResult { pollRepository.vote(pollId, userId, optionId) }
-                .onFailure { e -> AppLogger.e(TAG, "votePoll failed", e); updateState { it.copy(error = "No se pudo registrar el voto") } }
+                .onFailure { e -> AppLogger.e(TAG, "votePoll failed", e); updateState { it.copy(error = UiText.StringResource(R.string.chat_error_poll_vote)) } }
         }
     }
 }

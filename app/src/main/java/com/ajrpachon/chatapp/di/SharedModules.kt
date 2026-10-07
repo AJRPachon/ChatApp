@@ -1,6 +1,8 @@
 package com.ajrpachon.chatapp.di
 
 import com.ajrpachon.chatapp.data.backup.BackupRepositoryImpl
+import com.ajrpachon.chatapp.data.remote.source.AiAssistantRemoteSource
+import com.ajrpachon.chatapp.data.remote.source.AuthRemoteSource
 import com.ajrpachon.chatapp.data.repository.AudioRecorderRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.AuthRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.ConversationFileExporterImpl
@@ -24,6 +26,7 @@ import com.ajrpachon.chatapp.data.remote.source.InvitationRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.MessageRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.ReactionRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.StatusRemoteSource
+import com.ajrpachon.chatapp.data.remote.source.TypingRemoteSource
 import com.ajrpachon.chatapp.data.remote.source.UserRemoteSource
 import com.ajrpachon.chatapp.data.repository.CallRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.ContactRepositoryImpl
@@ -38,10 +41,13 @@ import com.ajrpachon.chatapp.data.repository.ReactionRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.ScheduledMessageRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.TypingRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.BroadcastListRepositoryImpl
+import com.ajrpachon.chatapp.data.repository.FcmTokenSource
+import com.ajrpachon.chatapp.data.repository.FirebaseFcmTokenSource
 import com.ajrpachon.chatapp.data.repository.SessionRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.StatusRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.StickerPackRepositoryImpl
 import com.ajrpachon.chatapp.data.repository.UserRepositoryImpl
+import com.ajrpachon.chatapp.data.session.AndroidSecureStorage
 import com.ajrpachon.chatapp.domain.repository.CallRepository
 import com.ajrpachon.chatapp.domain.repository.ContactRepository
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
@@ -90,10 +96,13 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
 val remoteModule = module {
+    singleOf(::AuthRemoteSource)
     singleOf(::CallRemoteSource)
     singleOf(::ConversationRemoteSource)
     singleOf(::UserRemoteSource)
     singleOf(::MessageRemoteSource)
+    singleOf(::TypingRemoteSource)
+    singleOf(::AiAssistantRemoteSource)
     singleOf(::InvitationRemoteSource)
     singleOf(::GroupRemoteSource)
     singleOf(::FcmTokenRemoteSource)
@@ -130,9 +139,23 @@ val repositoryModule = module {
             fileProviderAuthority = "${androidContext().packageName}.fileprovider",
         )
     }
-    single<BackupRepository> { BackupRepositoryImpl(androidContext(), get(), get()) }
-    single<FcmTokenRepository> { FcmTokenRepositoryImpl(get(), androidContext()) }
-    single<GiphyRepository> { GiphyRepositoryImpl(get(), androidContext()) }
+    single<BackupRepository> { BackupRepositoryImpl(androidContext(), get(), get(), get()) }
+    single<FcmTokenSource> { FirebaseFcmTokenSource() }
+    single<FcmTokenRepository> {
+        val context = androidContext()
+        FcmTokenRepositoryImpl(
+            remoteSource = get(),
+            tokenSource = get(),
+            storageProvider = { AndroidSecureStorage(context, FcmTokenRepositoryImpl.PREFS_NAME) },
+        )
+    }
+    single<GiphyRepository> {
+        val context = androidContext().applicationContext
+        GiphyRepositoryImpl(
+            remoteSource = get(),
+            storageProvider = { AndroidSecureStorage(context, GiphyRepositoryImpl.PREFS_NAME) },
+        )
+    }
 }
 
 val useCaseModule = module {

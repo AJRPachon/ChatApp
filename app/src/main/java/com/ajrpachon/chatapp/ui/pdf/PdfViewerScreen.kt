@@ -31,13 +31,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.ui.common.UiText
+import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,6 +73,22 @@ fun PdfViewerScreen(
         }
     }
 
+    PdfViewerContent(
+        state = state,
+        filename = filename,
+        onShare = { vm.onIntent(PdfViewerIntent.SharePdf(url)) },
+        onBack = onBack,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun PdfViewerContent(
+    state: PdfViewerState,
+    filename: String,
+    onShare: () -> Unit,
+    onBack: () -> Unit,
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -85,7 +105,7 @@ fun PdfViewerScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { vm.onIntent(PdfViewerIntent.SharePdf(url)) }) {
+                    IconButton(onClick = { onShare() }) {
                         Icon(Icons.Default.Share, contentDescription = stringResource(R.string.pdf_share_cd))
                     }
                 },
@@ -112,7 +132,7 @@ fun PdfViewerScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = state.error ?: stringResource(R.string.pdf_error_loading),
+                        text = state.error?.asString() ?: stringResource(R.string.pdf_error_loading),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodyMedium,
                     )
@@ -135,6 +155,40 @@ fun PdfViewerScreen(
                 }
             }
         }
+    }
+}
+
+@Preview(name = "Pages", showBackground = true)
+@Composable
+internal fun PdfViewerPagesPreview() {
+    ChatAppTheme {
+        PdfViewerContent(
+            state = PdfViewerState(pages = listOf(ImageBitmap(300, 420), ImageBitmap(300, 420))),
+            filename = "factura-octubre.pdf",
+            onShare = {},
+            onBack = {},
+        )
+    }
+}
+
+@Preview(name = "Loading", showBackground = true)
+@Composable
+internal fun PdfViewerLoadingPreview() {
+    ChatAppTheme {
+        PdfViewerContent(state = PdfViewerState(isLoading = true), filename = "factura-octubre.pdf", onShare = {}, onBack = {})
+    }
+}
+
+@Preview(name = "Error", showBackground = true)
+@Composable
+internal fun PdfViewerErrorPreview() {
+    ChatAppTheme {
+        PdfViewerContent(
+            state = PdfViewerState(error = UiText.Dynamic("No se pudo abrir el PDF")),
+            filename = "factura-octubre.pdf",
+            onShare = {},
+            onBack = {},
+        )
     }
 }
 

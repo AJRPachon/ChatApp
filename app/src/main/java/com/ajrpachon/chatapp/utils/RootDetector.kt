@@ -2,6 +2,7 @@ package com.ajrpachon.chatapp.utils
 
 import android.content.pm.PackageManager
 import android.os.Build
+import com.ajrpachon.chatapp.domain.util.catchResult
 import java.io.File
 
 object RootDetector {

@@ -3,14 +3,14 @@ package com.ajrpachon.chatapp.data.backup
 import android.accounts.AccountManager
 import android.content.Context
 import com.ajrpachon.chatapp.data.local.dao.MessageDao
-import com.ajrpachon.chatapp.data.local.entity.MessageDBO
-import com.ajrpachon.chatapp.domain.model.BackupInfo
+import com.ajrpachon.chatapp.data.mapper.toBackup
+import com.ajrpachon.chatapp.data.mapper.toDBO
+import com.ajrpachon.chatapp.domain.model.BackupInfoBO
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.BackupRepository
-import com.ajrpachon.chatapp.utils.AnalyticsEvents
+import com.ajrpachon.chatapp.domain.repository.AnalyticsEvents
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -27,109 +27,18 @@ import java.util.concurrent.TimeUnit
 private const val DRIVE_UPLOAD_URL =
     "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart"
 private const val DRIVE_FILES_URL = "https://www.googleapis.com/drive/v3/files"
-private const val BACKUP_FILE_NAME = "chatapp_backup.json"
+private const val BACKUP_FILE_NAME = "chatapp_backup.enc"
+// Plaintext file written by earlier builds; deleted on the next backup.
+private const val LEGACY_BACKUP_FILE_NAME = "chatapp_backup.json"
 private const val DRIVE_SCOPE = "oauth2:https://www.googleapis.com/auth/drive.file"
-
-@Serializable
-private data class MessageBackup(
-    val id: String,
-    val conversationId: String,
-    val senderId: String,
-    val content: String,
-    val isRead: Boolean,
-    val createdAt: Long,
-    val imageUrl: String? = null,
-    val audioUrl: String? = null,
-    val replyToId: String? = null,
-    val replyToContent: String? = null,
-    val replyToSenderName: String? = null,
-    val callType: String? = null,
-    val callStatus: String? = null,
-    val callDuration: Int? = null,
-    val gifUrl: String? = null,
-    val stickerUrl: String? = null,
-    val isEncrypted: Boolean = false,
-    val isDeleted: Boolean = false,
-    val isEdited: Boolean = false,
-    val editedAt: Long? = null,
-    val expiresAt: Long? = null,
-    val fileUrl: String? = null,
-    val fileName: String? = null,
-    val fileSize: Long? = null,
-    val fileMimeType: String? = null,
-    val videoUrl: String? = null,
-    val isPinned: Boolean = false,
-    val isSaved: Boolean = false,
-)
-
-private fun MessageDBO.toBackup() = MessageBackup(
-    id = id,
-    conversationId = conversationId,
-    senderId = senderId,
-    content = content,
-    isRead = isRead,
-    createdAt = createdAt,
-    imageUrl = imageUrl,
-    audioUrl = audioUrl,
-    replyToId = replyToId,
-    replyToContent = replyToContent,
-    replyToSenderName = replyToSenderName,
-    callType = callType,
-    callStatus = callStatus,
-    callDuration = callDuration,
-    gifUrl = gifUrl,
-    stickerUrl = stickerUrl,
-    isEncrypted = isEncrypted,
-    isDeleted = isDeleted,
-    isEdited = isEdited,
-    editedAt = editedAt,
-    expiresAt = expiresAt,
-    fileUrl = fileUrl,
-    fileName = fileName,
-    fileSize = fileSize,
-    fileMimeType = fileMimeType,
-    videoUrl = videoUrl,
-    isPinned = isPinned,
-    isSaved = isSaved,
-)
-
-private fun MessageBackup.toDBO() = MessageDBO(
-    id = id,
-    conversationId = conversationId,
-    senderId = senderId,
-    content = content,
-    isRead = isRead,
-    createdAt = createdAt,
-    imageUrl = imageUrl,
-    audioUrl = audioUrl,
-    replyToId = replyToId,
-    replyToContent = replyToContent,
-    replyToSenderName = replyToSenderName,
-    callType = callType,
-    callStatus = callStatus,
-    callDuration = callDuration,
-    gifUrl = gifUrl,
-    stickerUrl = stickerUrl,
-    isEncrypted = isEncrypted,
-    isDeleted = isDeleted,
-    isEdited = isEdited,
-    editedAt = editedAt,
-    expiresAt = expiresAt,
-    fileUrl = fileUrl,
-    fileName = fileName,
-    fileSize = fileSize,
-    fileMimeType = fileMimeType,
-    videoUrl = videoUrl,
-    isPinned = isPinned,
-    isSaved = isSaved,
-)
 
 class BackupRepositoryImpl(
     private val context: Context,
     private val messageDao: MessageDao,
     private val analyticsTracker: AnalyticsTracker,
+    okHttpClient: OkHttpClient,
 ) : BackupRepository {
-    private val httpClient = OkHttpClient.Builder()
+    private val httpClient = okHttpClient.newBuilder()
         .connectTimeout(60, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
         .writeTimeout(60, TimeUnit.SECONDS)
@@ -146,10 +55,10 @@ class BackupRepositoryImpl(
             ?: error("Failed to get Google access token")
     }
 
-    private suspend fun findExistingBackupFileId(token: String): String? =
+    private suspend fun findExistingBackupFileId(token: String, name: String = BACKUP_FILE_NAME): String? =
         withContext(Dispatchers.IO) {
             val encodedQuery = java.net.URLEncoder.encode(
-                "name='$BACKUP_FILE_NAME' and trashed=false", "UTF-8"
+                "name='$name' and trashed=false", "UTF-8"
             )
             val url = "$DRIVE_FILES_URL?q=$encodedQuery" +
                 "&fields=files(id)&orderBy=modifiedTime+desc"
@@ -166,18 +75,19 @@ class BackupRepositoryImpl(
             }
         }
 
-    override suspend fun backup(): BackupInfo = withContext(Dispatchers.IO) {
+    override suspend fun backup(passphrase: String): BackupInfoBO = withContext(Dispatchers.IO) {
         val token = getAccessToken()
 
         val messages = messageDao.getAllMessages()
         val backups = messages.map { it.toBackup() }
-        val jsonBytes = json.encodeToString(backups).toByteArray(Charsets.UTF_8)
+        val plainBytes = json.encodeToString(backups).toByteArray(Charsets.UTF_8)
+        val jsonBytes = BackupCrypto.encrypt(plainBytes, passphrase.toCharArray())
 
         val existingId = findExistingBackupFileId(token)
 
-        val metadata = """{"name":"$BACKUP_FILE_NAME","mimeType":"application/json"}"""
+        val metadata = """{"name":"$BACKUP_FILE_NAME","mimeType":"application/octet-stream"}"""
         val metaPart = metadata.toRequestBody("application/json; charset=UTF-8".toMediaType())
-        val dataPart = jsonBytes.toRequestBody("application/json".toMediaType())
+        val dataPart = jsonBytes.toRequestBody("application/octet-stream".toMediaType())
         val multipart = MultipartBody.Builder()
             .setType("multipart/related".toMediaType())
             .addPart(metaPart)
@@ -207,16 +117,18 @@ class BackupRepositoryImpl(
             }
         }
 
+        deleteLegacyPlaintextBackup(token)
+
         val sizeMb = "%.2f".format(jsonBytes.size.toDouble() / 1_048_576)
         analyticsTracker.logEvent(AnalyticsEvents.BACKUP_CREATED)
-        BackupInfo(
+        BackupInfoBO(
             lastBackupDate = dateFormat.format(Date()),
             backupSizeMb = sizeMb,
             fileId = existingId ?: "",
         )
     }
 
-    override suspend fun restore() = withContext(Dispatchers.IO) {
+    override suspend fun restore(passphrase: String) = withContext(Dispatchers.IO) {
         val token = getAccessToken()
 
         val encodedQuery = java.net.URLEncoder.encode(
@@ -245,17 +157,29 @@ class BackupRepositoryImpl(
             .get()
             .build()
 
-        val jsonText = httpClient.newCall(downloadRequest).execute().use { resp ->
+        val encrypted = httpClient.newCall(downloadRequest).execute().use { resp ->
             if (!resp.isSuccessful) error("Drive download failed: ${resp.code}")
-            resp.body?.string() ?: error("Empty backup file")
+            resp.body?.bytes() ?: error("Empty backup file")
         }
+        val jsonText = BackupCrypto.decrypt(encrypted, passphrase.toCharArray()).toString(Charsets.UTF_8)
 
         val messages = json.decodeFromString<List<MessageBackup>>(jsonText)
         messageDao.upsertAll(messages.map { it.toDBO() })
         analyticsTracker.logEvent(AnalyticsEvents.BACKUP_RESTORED)
     }
 
-    override suspend fun getLatestBackupInfo(): BackupInfo? = withContext(Dispatchers.IO) {
+    /** Removes the unencrypted JSON that earlier builds uploaded, now that an encrypted copy exists. */
+    private suspend fun deleteLegacyPlaintextBackup(token: String) {
+        val legacyId = findExistingBackupFileId(token, LEGACY_BACKUP_FILE_NAME) ?: return
+        val request = Request.Builder()
+            .url("$DRIVE_FILES_URL/$legacyId")
+            .addHeader("Authorization", "Bearer $token")
+            .delete()
+            .build()
+        httpClient.newCall(request).execute().close()
+    }
+
+    override suspend fun getLatestBackupInfo(): BackupInfoBO? = withContext(Dispatchers.IO) {
         runCatching {
             val token = getAccessToken()
             val encodedQuery = java.net.URLEncoder.encode(
@@ -283,7 +207,7 @@ class BackupRepositoryImpl(
                     if (date != null) dateFormat.format(date) else modifiedTime
                 }.getOrDefault(modifiedTime)
                 val sizeMb = "%.2f".format(sizeBytes.toDouble() / 1_048_576)
-                BackupInfo(
+                BackupInfoBO(
                     lastBackupDate = formattedDate,
                     backupSizeMb = sizeMb,
                     fileId = fileId,

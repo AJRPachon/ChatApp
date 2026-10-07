@@ -1,9 +1,6 @@
 package com.ajrpachon.chatapp.ui.call
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 
-import android.app.Application
-import android.content.Intent
-import android.media.projection.MediaProjectionManager
 import com.ajrpachon.chatapp.domain.model.CallStatus
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.CallRepository
@@ -11,17 +8,22 @@ import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
 import com.ajrpachon.chatapp.utils.AppLogger
-import io.livekit.android.LiveKit
 import io.livekit.android.events.DisconnectReason
 import io.livekit.android.events.ParticipantEvent
 import io.livekit.android.events.RoomEvent
 import io.livekit.android.room.Room
+import io.livekit.android.room.participant.LocalParticipant
+import io.livekit.android.room.participant.Participant
 import io.livekit.android.room.track.CameraPosition
 import io.livekit.android.room.track.LocalVideoTrack
 import io.livekit.android.room.track.Track
 import io.livekit.android.room.track.VideoTrack
 import io.livekit.android.room.track.screencapture.ScreenCaptureParams
 import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
+import com.ajrpachon.chatapp.ui.common.UiText
+import com.ajrpachon.chatapp.ui.common.toUiText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
@@ -35,6 +37,46 @@ import kotlinx.coroutines.withTimeout
 
 private const val MISSED_CALL_TIMEOUT_MS = 20_000L
 
+// Pure CallState transitions for RoomEvents that don't need instance state, kept top-level
+// (rather than private members of CallViewModel) so the class stays under detekt's
+// TooManyFunctions threshold.
+private fun CallState.withTrackSubscribed(event: RoomEvent.TrackSubscribed): CallState {
+    val subscribedTrack = event.track
+    if (subscribedTrack !is VideoTrack) return this
+    return if (event.publication.source == Track.Source.SCREEN_SHARE) {
+        copy(remoteScreenShareTrack = subscribedTrack)
+    } else {
+        copy(
+            remoteVideoTrack = subscribedTrack,
+            remoteVideoTracks = (remoteVideoTracks + subscribedTrack).distinct(),
+        )
+    }
+}
+
+private fun CallState.withTrackUnsubscribed(event: RoomEvent.TrackUnsubscribed): CallState {
+    val removedTrack = event.track as? VideoTrack ?: return this
+    if (removedTrack === remoteScreenShareTrack) {
+        return copy(remoteScreenShareTrack = null)
+    }
+    val updated = remoteVideoTracks.filter { it !== removedTrack }
+    return copy(remoteVideoTrack = updated.lastOrNull(), remoteVideoTracks = updated)
+}
+
+private fun CallState.withDisconnected(event: RoomEvent.Disconnected): CallState =
+    if (event.reason == DisconnectReason.CLIENT_INITIATED) {
+        copy(phase = CallPhase.ENDED)
+    } else {
+        copy(
+            phase = CallPhase.ERROR,
+            error = event.error?.message
+                ?.let { UiText.of(R.string.call_error_disconnected, event.reason.name, it) }
+                ?: UiText.of(R.string.call_error_disconnected_unexpected, event.reason.name),
+        )
+    }
+
+private fun CallState.withFailedToConnect(event: RoomEvent.FailedToConnect): CallState =
+    copy(phase = CallPhase.ERROR, error = UiText.of(R.string.call_error_connect, event.error.message.orEmpty()))
+
 data class CallArgs(
     val callId: String,
     val conversationId: String,
@@ -46,12 +88,12 @@ data class CallArgs(
 
 class CallViewModel(
     private val args: CallArgs,
-    private val application: Application,
+    private val roomFactory: LiveKitRoomFactory,
     private val callRepository: CallRepository,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val sendMessageUseCase: SendMessageUseCase,
     private val analyticsTracker: AnalyticsTracker,
-    private val livekitUrl: String,
+    private val livekitConfig: LiveKitConfig,
 ) : BaseViewModel<CallState, CallEffect>(CallState()) {
     private val callId get() = args.callId
     private val conversationId get() = args.conversationId
@@ -59,9 +101,6 @@ class CallViewModel(
     private val callType get() = args.callType
     private val isOutgoing get() = args.isOutgoing
     private val isGroup get() = args.isGroup
-
-    val mediaProjectionManager: MediaProjectionManager =
-        application.getSystemService(MediaProjectionManager::class.java)
 
     private var room: Room? = null
     private var durationJob: Job? = null
@@ -135,10 +174,10 @@ class CallViewModel(
                 throw IllegalStateException("Timed out waiting for current user", e)
             }
             currentUserId = user.id
-            AppLogger.d(TAG, "joinCall: userId=${user.id} roomName=$roomName livekitUrl=$livekitUrl")
+            AppLogger.d(TAG, "joinCall: userId=${user.id} roomName=$roomName livekitUrl=${livekitConfig.url}")
             val token = callRepository.fetchLivekitToken(roomName, user.id)
 
-            val livekitRoom = LiveKit.create(application)
+            val livekitRoom = roomFactory.create()
             room = livekitRoom
             updateState { it.copy(room = livekitRoom) }
 
@@ -157,7 +196,7 @@ class CallViewModel(
             }
 
             AppLogger.d(TAG, "joinCall: connecting to LiveKit room")
-            livekitRoom.connect(livekitUrl, token)
+            livekitRoom.connect(livekitConfig.url, token)
             AppLogger.d(TAG, "joinCall: connected, remoteParticipants=${livekitRoom.remoteParticipants.size}")
 
             // For incoming calls: accept immediately after connecting to LiveKit so the DB
@@ -217,7 +256,7 @@ class CallViewModel(
 
         }.onFailure { e ->
             AppLogger.e(TAG, "joinCall: FAILED", e)
-            updateState { it.copy(phase = CallPhase.ERROR, error = e.message ?: "Error al conectar") }
+            updateState { it.copy(phase = CallPhase.ERROR, error = e.toUiText(R.string.call_error_connect_default)) }
         }
     }
 
@@ -237,79 +276,65 @@ class CallViewModel(
         }
     }
 
+    // Track-state transitions live as top-level pure functions (below) rather than as more
+    // private members here, to stay under detekt's TooManyFunctions threshold for this class
+    // without falling back to the double-dispatch (outer when groups types -> inner when
+    // re-switches the same untyped event) pattern this replaced.
     private fun handleRoomEvent(event: RoomEvent) {
         AppLogger.d(TAG, "handleRoomEvent: ${event::class.simpleName}")
         when (event) {
-            is RoomEvent.ParticipantConnected -> {
-                AppLogger.d(TAG, "ParticipantConnected: identity=${event.participant.identity}")
-                missedCallJob?.cancel()
-                missedCallJob = null
-                if (state.value.phase == CallPhase.RINGING || state.value.phase == CallPhase.CONNECTING) {
-                    updateState { it.copy(phase = CallPhase.ACTIVE) }
-                    startDurationTimer()
-                    callAnalytics.logStarted()
-                }
-            }
-            is RoomEvent.ParticipantDisconnected -> {
-                AppLogger.d(TAG, "ParticipantDisconnected: identity=${event.participant.identity} phase=${state.value.phase}")
-                val phase = state.value.phase
-                if (!isGroup && phase != CallPhase.ENDED) {
-                    endCallLocally(if (phase == CallPhase.ACTIVE) "ended" else "missed")
-                }
-            }
+            is RoomEvent.ParticipantConnected -> onParticipantConnected(event)
+            is RoomEvent.ParticipantDisconnected -> onParticipantDisconnected(event)
             is RoomEvent.TrackSubscribed -> {
-                val subscribedTrack = event.track
-                if (subscribedTrack is VideoTrack) {
-                    updateState { callState ->
-                        callState.copy(
-                            remoteVideoTrack = subscribedTrack,
-                            remoteVideoTracks = (callState.remoteVideoTracks + subscribedTrack).distinct(),
-                        )
-                    }
+                if (event.publication.source == Track.Source.SCREEN_SHARE) {
+                    AppLogger.d(TAG, "TrackSubscribed: remote screen share")
                 }
-            }
-            is RoomEvent.TrackMuted -> {
-                if (event.publication.track is VideoTrack && event.participant !is io.livekit.android.room.participant.LocalParticipant) {
-                    AppLogger.d(TAG, "TrackMuted: remote video muted")
-                    updateState { it.copy(isRemoteVideoMuted = true) }
-                }
-            }
-            is RoomEvent.TrackUnmuted -> {
-                if (event.publication.track is VideoTrack && event.participant !is io.livekit.android.room.participant.LocalParticipant) {
-                    AppLogger.d(TAG, "TrackUnmuted: remote video unmuted")
-                    updateState { it.copy(isRemoteVideoMuted = false) }
-                }
+                updateState { it.withTrackSubscribed(event) }
             }
             is RoomEvent.TrackUnsubscribed -> {
-                val removedTrack = event.track as? VideoTrack
-                if (removedTrack != null) {
-                    updateState { callState ->
-                        val updated = callState.remoteVideoTracks.filter { it !== removedTrack }
-                        callState.copy(
-                            remoteVideoTrack = updated.lastOrNull(),
-                            remoteVideoTracks = updated,
-                        )
-                    }
+                if (event.track === state.value.remoteScreenShareTrack) {
+                    AppLogger.d(TAG, "TrackUnsubscribed: remote screen share ended")
                 }
+                updateState { it.withTrackUnsubscribed(event) }
             }
+            is RoomEvent.TrackMuted -> setRemoteVideoMuted(event.publication.track, event.participant, muted = true)
+            is RoomEvent.TrackUnmuted -> setRemoteVideoMuted(event.publication.track, event.participant, muted = false)
             is RoomEvent.Disconnected -> {
                 durationJob?.cancel()
                 AppLogger.e(TAG, "RoomEvent.Disconnected: reason=${event.reason} error=${event.error?.message}")
-                if (event.reason == DisconnectReason.CLIENT_INITIATED) {
-                    updateState { it.copy(phase = CallPhase.ENDED) }
-                } else {
-                    updateState { it.copy(
-                        phase = CallPhase.ERROR,
-                        error = "${event.reason.name}: ${event.error?.message ?: "desconexión inesperada"}"
-                    ) }
-                }
+                updateState { it.withDisconnected(event) }
             }
             is RoomEvent.FailedToConnect -> {
                 AppLogger.e(TAG, "RoomEvent.FailedToConnect: ${event.error.message}")
-                updateState { it.copy(phase = CallPhase.ERROR, error = "Error al conectar: ${event.error.message}") }
+                updateState { it.withFailedToConnect(event) }
             }
             else -> {}
         }
+    }
+
+    private fun onParticipantConnected(event: RoomEvent.ParticipantConnected) {
+        AppLogger.d(TAG, "ParticipantConnected: identity=${event.participant.identity}")
+        missedCallJob?.cancel()
+        missedCallJob = null
+        if (state.value.phase == CallPhase.RINGING || state.value.phase == CallPhase.CONNECTING) {
+            updateState { it.copy(phase = CallPhase.ACTIVE) }
+            startDurationTimer()
+            callAnalytics.logStarted()
+        }
+    }
+
+    private fun onParticipantDisconnected(event: RoomEvent.ParticipantDisconnected) {
+        AppLogger.d(TAG, "ParticipantDisconnected: identity=${event.participant.identity} phase=${state.value.phase}")
+        val phase = state.value.phase
+        if (!isGroup && phase != CallPhase.ENDED) {
+            endCallLocally(if (phase == CallPhase.ACTIVE) "ended" else "missed")
+        }
+    }
+
+    private fun setRemoteVideoMuted(track: Track?, participant: Participant, muted: Boolean) {
+        if (track !is VideoTrack || participant is LocalParticipant) return
+        AppLogger.d(TAG, "setRemoteVideoMuted: remote video muted=$muted")
+        updateState { it.copy(isRemoteVideoMuted = muted) }
     }
 
     private suspend fun sendCallSummaryMessage(status: String) = callMessageMutex.withLock {
@@ -320,12 +345,14 @@ class CallViewModel(
         val userId = currentUserId ?: return@withLock
         val duration = if (status == "ended") state.value.durationSeconds else null
         sendMessageUseCase(
-            conversationId = conversationId,
-            senderId = userId,
-            content = "",
-            callType = callType,
-            callStatus = status,
-            callDuration = duration,
+            OutgoingMessageBO(
+                conversationId = conversationId,
+                senderId = userId,
+                content = "",
+                callType = callType,
+                callStatus = status,
+                callDuration = duration,
+            ),
         ).onFailure { e -> AppLogger.e(TAG, "sendCallSummaryMessage: FAILED", e) }
          .onSuccess { AppLogger.d(TAG, "sendCallSummaryMessage: OK status=$status") }
     }
@@ -348,6 +375,11 @@ class CallViewModel(
         }
     }
 
+    // Also called by CallScreen's lifecycle observer to auto-pause/-resume the camera across
+    // backgrounding (CallRoute back press does moveTaskToBack instead of hanging up, so the call
+    // — and its camera — would otherwise keep running off-screen); CallScreen tracks whether a
+    // given pause was auto-triggered so a camera the user explicitly turned off themselves stays
+    // off when the app comes back to foreground.
     fun toggleCamera() {
         val off = state.value.isCameraOff
         viewModelScope.launch {
@@ -373,10 +405,6 @@ class CallViewModel(
         }
     }
 
-    fun toggleBackgroundBlur() {
-        updateState { it.copy(isBackgroundBlurred = !it.isBackgroundBlurred) }
-    }
-
     fun onIntent(intent: CallIntent) {
         when (intent) {
             is CallIntent.ToggleScreenShare -> {
@@ -389,11 +417,11 @@ class CallViewModel(
         }
     }
 
-    fun startScreenShare(mediaProjectionData: Intent) {
+    fun startScreenShare(captureParams: ScreenCaptureParams) {
         viewModelScope.launch {
             AppLogger.d(TAG, "startScreenShare: enabling screen share")
             catchResult {
-                room?.localParticipant?.setScreenShareEnabled(true, ScreenCaptureParams(mediaProjectionData))
+                room?.localParticipant?.setScreenShareEnabled(true, captureParams)
             }.onSuccess {
                 AppLogger.d(TAG, "startScreenShare: OK")
                 updateState { it.copy(isScreenSharing = true) }
@@ -414,27 +442,6 @@ class CallViewModel(
             }.onFailure { e ->
                 AppLogger.e(TAG, "stopScreenShare: FAILED", e)
             }
-        }
-    }
-
-    fun toggleInCallChat() {
-        updateState { it.copy(showInCallChat = !it.showInCallChat) }
-    }
-
-    fun sendInCallMessage(text: String) {
-        val trimmed = text.trim()
-        if (trimmed.isBlank()) return
-        val userId = currentUserId ?: return
-        updateState {
-            it.copy(inCallMessages = it.inCallMessages + InCallMessage(sender = userId, text = trimmed))
-        }
-        viewModelScope.launch(Dispatchers.IO) {
-            sendMessageUseCase(
-                conversationId = conversationId,
-                senderId = userId,
-                content = trimmed,
-            ).onFailure { e -> AppLogger.e(TAG, "sendInCallMessage: FAILED", e) }
-             .onSuccess { AppLogger.d(TAG, "sendInCallMessage: OK") }
         }
     }
 

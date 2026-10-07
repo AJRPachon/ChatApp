@@ -8,9 +8,9 @@ import com.ajrpachon.chatapp.data.remote.source.StatusRemoteSource
 import com.ajrpachon.chatapp.domain.model.StatusBO
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.StatusRepository
-import com.ajrpachon.chatapp.utils.AnalyticsEvents
+import com.ajrpachon.chatapp.domain.repository.AnalyticsEvents
 import com.ajrpachon.chatapp.utils.AppLogger
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.map

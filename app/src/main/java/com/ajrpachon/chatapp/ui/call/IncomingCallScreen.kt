@@ -16,19 +16,47 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.CallBO
+import com.ajrpachon.chatapp.domain.model.CallStatus
 import com.ajrpachon.chatapp.domain.model.CallType
 import com.ajrpachon.chatapp.ui.theme.CallAcceptedGreen
 import com.ajrpachon.chatapp.ui.theme.CallBackground
+import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
+import org.koin.androidx.compose.koinViewModel
 
+/**
+ * Draws the incoming call, if there is one. It observes [IncomingCallViewModel] itself so the host
+ * (MainActivity) only decides what accepting means: [onAccepted] gets the call to open its screen.
+ */
 @Composable
 fun IncomingCallScreen(
+    onAccepted: (CallBO) -> Unit,
+    vm: IncomingCallViewModel = koinViewModel(),
+) {
+    val state by vm.state.collectAsStateWithLifecycle()
+    state.incomingCall?.let { call ->
+        IncomingCallContent(
+            call = call,
+            onAccept = {
+                vm.onIntent(IncomingCallIntent.Accept(call.id))
+                onAccepted(call)
+            },
+            onReject = { vm.onIntent(IncomingCallIntent.Reject(call.id)) },
+        )
+    }
+}
+
+@Composable
+fun IncomingCallContent(
     call: CallBO,
     onAccept: () -> Unit,
     onReject: () -> Unit,
@@ -99,5 +127,32 @@ fun IncomingCallScreen(
                 }
             }
         }
+    }
+}
+
+private fun previewCall(type: CallType) = CallBO(
+    id = "call1",
+    conversationId = "c1",
+    callerId = "u1",
+    callerName = "Ana García",
+    calleeId = "me",
+    type = type,
+    status = CallStatus.RINGING,
+    roomName = "room1",
+)
+
+@Preview(name = "Voice call", showBackground = true)
+@Composable
+internal fun IncomingVoiceCallPreview() {
+    ChatAppTheme {
+        IncomingCallContent(call = previewCall(CallType.AUDIO), onAccept = {}, onReject = {})
+    }
+}
+
+@Preview(name = "Video call", showBackground = true)
+@Composable
+internal fun IncomingVideoCallPreview() {
+    ChatAppTheme {
+        IncomingCallContent(call = previewCall(CallType.VIDEO), onAccept = {}, onReject = {})
     }
 }

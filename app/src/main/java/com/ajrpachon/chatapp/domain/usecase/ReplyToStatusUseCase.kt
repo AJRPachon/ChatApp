@@ -1,13 +1,14 @@
 package com.ajrpachon.chatapp.domain.usecase
 
+import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
 import com.ajrpachon.chatapp.domain.model.StatusBO
-import com.ajrpachon.chatapp.domain.model.StatusReplyContext
+import com.ajrpachon.chatapp.domain.model.StatusReplyContextBO
 
 data class StatusReplyResult(val conversationId: String, val otherUserName: String)
 
 /**
  * WhatsApp-style "reply to a status": sends the reply as a normal message in the 1:1 conversation
- * with the status's owner, carrying a [StatusReplyContext] snapshot so the chat bubble can show
+ * with the status's owner, carrying a [StatusReplyContextBO] snapshot so the chat bubble can show
  * the quoted status without depending on it still existing 24h later.
  */
 class ReplyToStatusUseCase(
@@ -18,18 +19,20 @@ class ReplyToStatusUseCase(
         runCatching {
             val conversation = getOrCreateConversationUseCase(currentUserId, status.userId)
             sendMessageUseCase(
-                conversationId = conversation.id,
-                senderId = currentUserId,
-                content = text,
-                otherUserId = status.userId,
-                statusReply = StatusReplyContext(
-                    statusId = status.id,
-                    statusOwnerId = status.userId,
-                    statusText = status.text,
-                    statusImageUrl = status.imageUrl,
-                    statusVideoUrl = status.videoUrl,
-                    statusBackgroundColor = status.backgroundColor,
-                    statusExpiresAt = status.expiresAt.toEpochMilliseconds(),
+                OutgoingMessageBO(
+                    conversationId = conversation.id,
+                    senderId = currentUserId,
+                    content = text,
+                    otherUserId = status.userId,
+                    statusReply = StatusReplyContextBO(
+                        statusId = status.id,
+                        statusOwnerId = status.userId,
+                        statusText = status.text,
+                        statusImageUrl = status.imageUrl,
+                        statusVideoUrl = status.videoUrl,
+                        statusBackgroundColor = status.backgroundColor,
+                        statusExpiresAt = status.expiresAt.toEpochMilliseconds(),
+                    ),
                 ),
             ).getOrThrow()
             StatusReplyResult(conversation.id, status.userName)

@@ -56,6 +56,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -74,6 +75,8 @@ import com.github.skydoves.navgraph.annotations.NavEdge
 import com.ajrpachon.chatapp.ChatRoute
 import com.ajrpachon.chatapp.InvitationsRoute
 import com.ajrpachon.chatapp.NewChatRoute
+import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
+import kotlinx.datetime.Instant
 import org.koin.androidx.compose.koinViewModel
 
 @NavEdge(to = ChatRoute::class, label = "Open Chat")
@@ -94,24 +97,31 @@ fun NewChatScreen(
     val qrNotRecognizedText = stringResource(R.string.newchat_qr_not_recognized)
     val scanQrPromptText = stringResource(R.string.newchat_scan_qr_prompt)
 
+    val shareText: (String) -> Unit = { text ->
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, text)
+        }
+        context.startActivity(Intent.createChooser(shareIntent, shareInvitationTitle))
+    }
+
     LaunchedEffect(Unit) {
         vm.effect.collect { effect ->
             when (effect) {
                 is NewChatEffect.NavigateToChat -> onOpenConversation(effect.conversationId, effect.otherUserName)
                 is NewChatEffect.NavigateToInvitations -> onOpenInvitations()
-                is NewChatEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.text)
-                is NewChatEffect.ShareText -> {
-                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, effect.text)
-                    }
-                    context.startActivity(Intent.createChooser(shareIntent, shareInvitationTitle))
-                }
+                is NewChatEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.text.asString(context))
+                is NewChatEffect.ShareText -> shareText(effect.text.asString(context))
                 is NewChatEffect.InviteContact -> {
                     val smsIntent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:${effect.phoneNumber}")).apply {
-                        putExtra("sms_body", effect.text)
+                        putExtra("sms_body", effect.text.asString(context))
                     }
-                    context.startActivity(smsIntent)
+                    // Fall back to the share sheet on devices with no SMS app
+                    if (smsIntent.resolveActivity(context.packageManager) != null) {
+                        context.startActivity(smsIntent)
+                    } else {
+                        shareText(effect.text.asString(context))
+                    }
                 }
             }
         }
@@ -148,22 +158,41 @@ fun NewChatScreen(
         }
     }
 
+    val onScanQr = {
+        qrScanLauncher.launch(
+            ScanOptions().apply {
+                setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                setPrompt(scanQrPromptText)
+                setBeepEnabled(false)
+                setOrientationLocked(false)
+            }
+        )
+    }
+
+    NewChatContent(
+        state = state,
+        snackbarHostState = snackbarHostState,
+        onIntent = vm::onIntent,
+        onScanQr = onScanQr,
+        onBack = onBack,
+    )
+}
+
+@Composable
+fun NewChatContent(
+    state: NewChatState,
+    snackbarHostState: SnackbarHostState,
+    onIntent: (NewChatIntent) -> Unit,
+    onScanQr: () -> Unit,
+    onBack: () -> Unit,
+) {
     Scaffold(
         topBar = {
             ChatAppTopBar(
                 title = stringResource(R.string.newchat_title),
                 onBack = onBack,
                 actions = {
-                    IconButton(onClick = {
-                        qrScanLauncher.launch(
-                            ScanOptions().apply {
-                                setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-                                setPrompt(scanQrPromptText)
-                                setBeepEnabled(false)
-                                setOrientationLocked(false)
-                            }
-                        )
-                    }) {
+                    IconButton(onClick = onScanQr) {
                         Icon(
                             Icons.Default.QrCodeScanner,
                             contentDescription = stringResource(R.string.newchat_scan_qr_code),
@@ -182,7 +211,7 @@ fun NewChatScreen(
         ) {
             ChatAppSearchField(
                 value = state.query,
-                onValueChange = { vm.onIntent(NewChatIntent.QueryChanged(it)) },
+                onValueChange = { onIntent(NewChatIntent.QueryChanged(it)) },
                 placeholder = stringResource(R.string.newchat_search_placeholder),
                 modifier = Modifier
                     .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -195,8 +224,8 @@ fun NewChatScreen(
                     item {
                         InviteCodeCard(
                             username = state.currentUsername,
-                            onCopy = { vm.onIntent(NewChatIntent.CopyInviteCode(state.currentUsername)) },
-                            onShare = { vm.onIntent(NewChatIntent.ShareInviteText(state.currentUsername)) },
+                            onCopy = { onIntent(NewChatIntent.CopyInviteCode(state.currentUsername)) },
+                            onShare = { onIntent(NewChatIntent.ShareInviteText(state.currentUsername)) },
                         )
                     }
                 }
@@ -225,7 +254,7 @@ fun NewChatScreen(
                             items(state.suggestedContacts, key = { it.id }) { user ->
                                 SuggestedContactChip(
                                     user = user,
-                                    onClick = { vm.onIntent(NewChatIntent.UserAction(user)) },
+                                    onClick = { onIntent(NewChatIntent.UserAction(user)) },
                                 )
                             }
                         }
@@ -269,9 +298,9 @@ fun NewChatScreen(
                             user = user,
                             relationship = state.userRelationships[user.id],
                             isPending = user.id in state.pendingUserIds,
-                            onAction = { vm.onIntent(NewChatIntent.UserAction(user)) },
-                            onBlock = { vm.onIntent(NewChatIntent.BlockUser(user)) },
-                            onUnblock = { vm.onIntent(NewChatIntent.UnblockUser(user)) },
+                            onAction = { onIntent(NewChatIntent.UserAction(user)) },
+                            onBlock = { onIntent(NewChatIntent.BlockUser(user)) },
+                            onUnblock = { onIntent(NewChatIntent.UnblockUser(user)) },
                         )
                         HorizontalDivider()
                     }
@@ -283,7 +312,7 @@ fun NewChatScreen(
                         ContactItem(
                             contact = contact,
                             onInvite = {
-                                vm.onIntent(NewChatIntent.InviteContact(contact.phoneNumber, state.currentUsername))
+                                onIntent(NewChatIntent.InviteContact(contact.phoneNumber, state.currentUsername))
                             },
                         )
                         HorizontalDivider()
@@ -304,7 +333,7 @@ fun NewChatScreen(
                 state.error?.let { error ->
                     item {
                         Text(
-                            error,
+                            error.asString(),
                             modifier = Modifier.padding(16.dp),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.error,
@@ -313,6 +342,70 @@ fun NewChatScreen(
                 }
             }
         }
+    }
+}
+
+private fun previewUser(id: String, name: String) = UserBO(
+    id = id,
+    email = "",
+    username = name.lowercase().replace(" ", "_"),
+    displayName = name,
+    avatarUrl = null,
+    createdAt = Instant.fromEpochMilliseconds(0L),
+)
+
+@Preview(name = "Results", showBackground = true)
+@Composable
+internal fun NewChatResultsPreview() {
+    val ana = previewUser("1", "Ana García")
+    val bruno = previewUser("2", "Bruno López")
+    val carla = previewUser("3", "Carla Ruiz")
+    ChatAppTheme {
+        NewChatContent(
+            state = NewChatState(
+                currentUsername = "yo_mismo",
+                suggestedContacts = listOf(ana, bruno),
+                appUsers = listOf(ana, bruno, carla),
+                userRelationships = mapOf(
+                    ana.id to UserRelationship.CONNECTED,
+                    bruno.id to UserRelationship.PENDING_SENT,
+                    carla.id to UserRelationship.BLOCKED,
+                ),
+                contacts = listOf(PhoneContact(name = "Diego Mora", phoneNumber = "+34600000000")),
+            ),
+            snackbarHostState = remember { SnackbarHostState() },
+            onIntent = {},
+            onScanQr = {},
+            onBack = {},
+        )
+    }
+}
+
+@Preview(name = "Loading", showBackground = true)
+@Composable
+internal fun NewChatLoadingPreview() {
+    ChatAppTheme {
+        NewChatContent(
+            state = NewChatState(currentUsername = "yo_mismo", isLoadingUsers = true, isLoadingSuggested = true),
+            snackbarHostState = remember { SnackbarHostState() },
+            onIntent = {},
+            onScanQr = {},
+            onBack = {},
+        )
+    }
+}
+
+@Preview(name = "No results", showBackground = true)
+@Composable
+internal fun NewChatNoResultsPreview() {
+    ChatAppTheme {
+        NewChatContent(
+            state = NewChatState(query = "zzz", contactsPermissionDenied = true),
+            snackbarHostState = remember { SnackbarHostState() },
+            onIntent = {},
+            onScanQr = {},
+            onBack = {},
+        )
     }
 }
 

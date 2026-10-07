@@ -1,12 +1,14 @@
 package com.ajrpachon.chatapp.data.repository
 
 import com.ajrpachon.chatapp.data.remote.source.UserRemoteSource
+import com.ajrpachon.chatapp.domain.model.EncryptionUnavailableException
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.repository.CrashReporter
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.E2EEKeyManager
 import java.util.concurrent.ConcurrentHashMap
 import javax.crypto.SecretKey
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -44,23 +46,25 @@ class MessageE2EECoder(
         }
     }
 
-    /** Encrypts [content] for [otherUserId]. Falls back to plaintext on any error. */
-    suspend fun tryEncrypt(senderId: String, otherUserId: String, content: String): Pair<String, Boolean> {
-        return runCatching {
+    /**
+     * Encrypts [content] for [otherUserId]. Throws [EncryptionUnavailableException] when the
+     * recipient has no public key or anything fails: the caller must not send the text in the clear.
+     */
+    suspend fun encrypt(senderId: String, otherUserId: String, content: String): String {
+        val failure = try {
             val sharedKey = getOrDeriveSharedKey(senderId, otherUserId)
-            if (sharedKey == null) {
-                AppLogger.d("E2EE", "No public key for $otherUserId — sending unencrypted")
-                return Pair(content, false)
-            }
-            Pair(E2EEKeyManager.encrypt(sharedKey, content), true)
-        }.getOrElse { e ->
-            AppLogger.w("E2EE", "Encryption failed, sending unencrypted: ${e.message}")
-            // Silently falling back to plaintext breaks the E2EE promise for this message —
-            // worth a non-fatal report even though the send itself still succeeds.
-            crashReporter.log("E2EE encrypt failed for recipient=$otherUserId — message sent unencrypted")
+            if (sharedKey != null) return E2EEKeyManager.encrypt(sharedKey, content)
+            AppLogger.d("E2EE", "No public key for $otherUserId — message not sent")
+            null
+        } catch (e: CancellationException) {
+            throw e
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            AppLogger.w("E2EE", "Encryption failed, message not sent: ${e.message}")
+            crashReporter.log("E2EE encrypt failed for recipient=$otherUserId — message not sent")
             crashReporter.recordException(e)
-            Pair(content, false)
+            e
         }
+        throw EncryptionUnavailableException(failure)
     }
 
     /**

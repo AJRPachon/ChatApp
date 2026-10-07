@@ -4,9 +4,11 @@ import android.os.Build
 import com.ajrpachon.chatapp.domain.repository.AuthRepository
 import com.ajrpachon.chatapp.domain.model.SessionBO
 import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 import com.ajrpachon.chatapp.domain.repository.SessionRepository
+import com.ajrpachon.chatapp.ui.common.toUiText
 
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -86,8 +88,9 @@ class SessionAuditViewModel(
                     sessionRepository.delete(sessionId)
                 }
             }.onFailure { e ->
-                updateState { it.copy(error = e.message) }
-                sendEffect(SessionAuditEffect.Error(e.message ?: "Error al revocar sesión"))
+                val text = e.toUiText(R.string.sessionaudit_error_revoke)
+                updateState { it.copy(error = text) }
+                sendEffect(SessionAuditEffect.Error(text))
                 return@launch
             }
             sendEffect(SessionAuditEffect.SessionRevoked)
@@ -99,8 +102,9 @@ class SessionAuditViewModel(
             catchResult {
                 sessionRepository.deleteAllOthers()
             }.onFailure { e ->
-                updateState { it.copy(error = e.message) }
-                sendEffect(SessionAuditEffect.Error(e.message ?: "Error al cerrar otras sesiones"))
+                val text = e.toUiText(R.string.sessionaudit_error_revoke_others)
+                updateState { it.copy(error = text) }
+                sendEffect(SessionAuditEffect.Error(text))
                 return@launch
             }
             sendEffect(SessionAuditEffect.SessionRevoked)

@@ -134,7 +134,7 @@ class FcmMessageHandler(
         val channelId = "incoming_calls"
         if (nm.getNotificationChannel(channelId) == null) {
             nm.createNotificationChannel(
-                NotificationChannel(channelId, "Llamadas entrantes", NotificationManager.IMPORTANCE_HIGH).apply {
+                NotificationChannel(channelId, context.getString(R.string.notification_channel_incoming_calls), NotificationManager.IMPORTANCE_HIGH).apply {
                     setBypassDnd(true)
                     enableVibration(true)
                 }

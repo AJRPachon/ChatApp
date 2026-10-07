@@ -1,16 +1,11 @@
 package com.ajrpachon.chatapp.ui.call
 
+import com.ajrpachon.chatapp.ui.common.UiText
 import io.livekit.android.room.Room
 import io.livekit.android.room.track.LocalVideoTrack
 import io.livekit.android.room.track.VideoTrack
 
 enum class CallPhase { CONNECTING, RINGING, ACTIVE, ENDED, ERROR }
-
-data class InCallMessage(
-    val sender: String,
-    val text: String,
-    val timestamp: Long = System.currentTimeMillis(),
-)
 
 data class CallState(
     val phase: CallPhase = CallPhase.CONNECTING,
@@ -20,14 +15,12 @@ data class CallState(
     val isFrontCamera: Boolean = true,
     val remoteVideoTrack: VideoTrack? = null,
     val remoteVideoTracks: List<VideoTrack> = emptyList(),
+    val remoteScreenShareTrack: VideoTrack? = null,
     val localVideoTrack: LocalVideoTrack? = null,
     val durationSeconds: Int = 0,
-    val error: String? = null,
+    val error: UiText? = null,
     val isRemoteVideoMuted: Boolean = false,
-    val isBackgroundBlurred: Boolean = false,
     val isScreenSharing: Boolean = false,
-    val showInCallChat: Boolean = false,
-    val inCallMessages: List<InCallMessage> = emptyList(),
 )
 
 sealed class CallIntent {

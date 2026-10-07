@@ -3,7 +3,7 @@ package com.ajrpachon.chatapp.domain.usecase
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.repository.ConversationFileExporter
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.TimeZone
@@ -31,25 +31,27 @@ class ExportConversationUseCase(
 
     private fun formatMessages(messages: List<MessageBO>): String {
         val timeZone = TimeZone.currentSystemDefault()
-        return buildString {
-            for (msg in messages) {
-                if (msg.isDeleted) continue
-                val local = msg.createdAt.toLocalDateTime(timeZone)
-                val date = "%02d:%02d %02d/%02d/%04d".format(
-                    local.hour, local.minute, local.dayOfMonth, local.monthNumber, local.year,
-                )
-                val line = when {
-                    msg.content.isNotBlank() -> "[$date] ${msg.senderName}: ${msg.content}"
-                    msg.imageUrl != null -> "[$date] ${msg.senderName}: [Imagen]"
-                    msg.audioUrl != null -> "[$date] ${msg.senderName}: [Audio]"
-                    msg.gifUrl != null -> "[$date] ${msg.senderName}: [GIF]"
-                    msg.stickerUrl != null -> "[$date] ${msg.senderName}: [Sticker]"
-                    msg.fileUrl != null -> "[$date] ${msg.senderName}: [Archivo: ${msg.fileName ?: ""}]"
-                    msg.videoUrl != null -> "[$date] ${msg.senderName}: [Video]"
-                    else -> continue
-                }
-                appendLine(line)
-            }
+        return messages
+            .filterNot { it.isDeleted }
+            .mapNotNull { formatLine(it, timeZone) }
+            .joinToString(separator = "") { it + "\n" }
+    }
+
+    /** One export line for [msg], or null when it has nothing printable. */
+    private fun formatLine(msg: MessageBO, timeZone: TimeZone): String? {
+        val local = msg.createdAt.toLocalDateTime(timeZone)
+        val date = "%02d:%02d %02d/%02d/%04d".format(
+            local.hour, local.minute, local.dayOfMonth, local.monthNumber, local.year,
+        )
+        return when {
+            msg.content.isNotBlank() -> "[$date] ${msg.senderName}: ${msg.content}"
+            msg.imageUrl != null -> "[$date] ${msg.senderName}: [Imagen]"
+            msg.audioUrl != null -> "[$date] ${msg.senderName}: [Audio]"
+            msg.gifUrl != null -> "[$date] ${msg.senderName}: [GIF]"
+            msg.stickerUrl != null -> "[$date] ${msg.senderName}: [Sticker]"
+            msg.fileUrl != null -> "[$date] ${msg.senderName}: [Archivo: ${msg.fileName ?: ""}]"
+            msg.videoUrl != null -> "[$date] ${msg.senderName}: [Video]"
+            else -> null
         }
     }
 }

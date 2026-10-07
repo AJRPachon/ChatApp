@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -33,6 +32,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.ajrpachon.chatapp.ui.theme.ChatAppShapeExtras
 
 // ── Shimmer brush ─────────────────────────────────────────────────────────────
 
@@ -66,7 +66,7 @@ fun shimmerBrush(): Brush {
 @Composable
 fun ShimmerBox(
     modifier: Modifier = Modifier,
-    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(6.dp),
+    shape: androidx.compose.ui.graphics.Shape = ChatAppShapeExtras.Thumbnail,
 ) {
     Box(
         modifier = modifier
@@ -85,7 +85,7 @@ fun ShimmerLine(
     modifier: Modifier = Modifier,
     height: Dp = 12.dp,
 ) {
-    ShimmerBox(modifier = modifier.height(height), shape = RoundedCornerShape(6.dp))
+    ShimmerBox(modifier = modifier.height(height), shape = ChatAppShapeExtras.Thumbnail)
 }
 
 // ── Conversation list skeleton ────────────────────────────────────────────────
@@ -161,9 +161,9 @@ fun ChatMessagesSkeleton(
 @Composable
 private fun ChatBubbleSkeleton(fromMe: Boolean, widthFraction: Float) {
     val shape = if (fromMe) {
-        RoundedCornerShape(topStart = 16.dp, topEnd = 4.dp, bottomStart = 16.dp, bottomEnd = 16.dp)
+        ChatAppShapeExtras.BubbleSent
     } else {
-        RoundedCornerShape(topStart = 4.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 16.dp)
+        ChatAppShapeExtras.BubbleReceived
     }
     Row(
         modifier = Modifier
@@ -213,14 +213,14 @@ private fun InvitationItemSkeleton() {
                 modifier = Modifier
                     .weight(1f)
                     .height(42.dp),
-                shape = RoundedCornerShape(50),
+                shape = CircleShape,
             )
             Spacer(Modifier.width(8.dp))
             ShimmerBox(
                 modifier = Modifier
                     .weight(1f)
                     .height(42.dp),
-                shape = RoundedCornerShape(50),
+                shape = CircleShape,
             )
         }
     }

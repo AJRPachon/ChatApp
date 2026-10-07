@@ -14,15 +14,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -42,10 +39,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.sp
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.components.ChatAppSearchField
 import coil3.compose.AsyncImage
+import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
+import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
+import com.ajrpachon.chatapp.ui.theme.ChatAppTextSizes
 import org.koin.androidx.compose.koinViewModel
 
 // ── Main picker ───────────────────────────────────────────────────────────────
@@ -73,12 +72,12 @@ fun StickerGifPicker(
             Tab(
                 selected = selectedTab == 0,
                 onClick = { selectedTab = 0 },
-                text = { Text("Stickers") },
+                text = { Text(stringResource(R.string.stickers_tab_stickers)) },
             )
             Tab(
                 selected = selectedTab == 1,
                 onClick = { selectedTab = 1 },
-                text = { Text("GIFs") },
+                text = { Text(stringResource(R.string.stickers_tab_gifs)) },
             )
         }
         when (selectedTab) {
@@ -134,7 +133,7 @@ private fun StickerTab(
             Tab(
                 selected = false,
                 onClick = onOpenStore,
-                text = { Text("+", fontSize = 20.sp) },
+                text = { Text("+", fontSize = ChatAppTextSizes.TabAction) },
             )
         }
 
@@ -164,7 +163,7 @@ private fun StickerTab(
                         contentScale = ContentScale.Fit,
                         modifier = Modifier
                             .size(64.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(MaterialTheme.shapes.small)
                             .clickable { onSelected(sticker.imageUrl) },
                     )
                 }
@@ -191,7 +190,7 @@ private fun GifTab(onSelected: (String) -> Unit, vm: GifPickerViewModel = koinVi
         ChatAppSearchField(
             value = state.query,
             onValueChange = { vm.onIntent(GifPickerIntent.QueryChanged(it)) },
-            placeholder = "Buscar GIFs…",
+            placeholder = stringResource(R.string.gif_search_placeholder),
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
         )
         when {
@@ -203,19 +202,20 @@ private fun GifTab(onSelected: (String) -> Unit, vm: GifPickerViewModel = koinVi
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text("GIFs no disponibles", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.gif_unavailable), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(
                     "Configura tu propia clave API de Giphy para activar esta función.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Button(onClick = { vm.onIntent(GifPickerIntent.ShowKeyDialog) }) {
-                    Text("Configurar clave API")
-                }
+                ChatAppPrimaryButton(
+                    text = stringResource(R.string.gif_configure_key),
+                    onClick = { vm.onIntent(GifPickerIntent.ShowKeyDialog) },
+                )
             }
             state.errorState == GifPickerError.NETWORK_ERROR -> Box(
                 Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center
             ) {
-                Text("Error de red. Inténtalo de nuevo.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.gif_network_error), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             else -> {
             LazyVerticalGrid(
@@ -232,7 +232,7 @@ private fun GifTab(onSelected: (String) -> Unit, vm: GifPickerViewModel = koinVi
                         modifier = Modifier
                             .height(100.dp)
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(MaterialTheme.shapes.small)
                             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f))
                             .clickable { onSelected(gif.fullUrl) },
                     )
@@ -250,24 +250,24 @@ private fun GiphyApiKeyDialog(initialKey: String, onSave: (String) -> Unit, onDi
     var key by remember { mutableStateOf(initialKey) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Clave API de Giphy") },
+        title = { Text(stringResource(R.string.gif_api_key_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Obtén una clave gratuita en developers.giphy.com y pégala aquí.")
+                Text(stringResource(R.string.gif_api_key_help))
                 OutlinedTextField(
                     value = key,
                     onValueChange = { key = it },
-                    label = { Text("API Key") },
+                    label = { Text(stringResource(R.string.gif_api_key_label)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(key) }, enabled = key.isNotBlank()) { Text("Guardar") }
+            ChatAppTextButton(text = stringResource(R.string.gif_api_key_save), onClick = { onSave(key) }, enabled = key.isNotBlank())
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar") }
+            ChatAppTextButton(text = stringResource(R.string.gif_api_key_cancel), onClick = onDismiss)
         },
     )
 }

@@ -1,3 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Splash screen ("Opción I" — mismos tokens que ui/theme/Color.kt). En claro, igual que en
+         oscuro, la insignia del icono se funde con el fondo (mismo color) en vez de recortarse
+         como chip oscuro — así el icono se ve "blanco" (huecos claros), como en el diseño, en
+         vez de con un círculo oscuro detrás que no pega con un fondo claro. -->
+    <color name="splash_background">#F2F5F4</color>
+    <color name="splash_icon_background">#F2F5F4</color>
+    <color name="splash_badge_accent">#3D6EA5</color>
 </resources>

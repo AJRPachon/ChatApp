@@ -4,9 +4,11 @@ import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.MessageStatsRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
+import com.ajrpachon.chatapp.ui.common.toUiText
 import com.ajrpachon.chatapp.utils.AppLogger
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -63,7 +65,7 @@ class UsageStatsViewModel(
                 val messagesPerDay = (6 downTo 0).map { daysAgo ->
                     val epochDay = todayEpochDay - daysAgo
                     val date = java.time.LocalDate.ofEpochDay(epochDay)
-                    val label = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale("es", "ES"))
+                    val label = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
                         .replaceFirstChar { it.uppercaseChar() }
                     val count = dbMap[epochDay] ?: 0
                     label to count
@@ -85,7 +87,7 @@ class UsageStatsViewModel(
                 }
             }.onFailure { e ->
                 AppLogger.e(TAG, "loadStats failed", e)
-                updateState { it.copy(isLoading = false, error = e.message ?: "Error al cargar estadísticas") }
+                updateState { it.copy(isLoading = false, error = e.toUiText(R.string.usagestats_error_load)) }
             }
         }
     }

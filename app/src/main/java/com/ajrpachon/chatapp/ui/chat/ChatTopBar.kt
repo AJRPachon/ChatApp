@@ -77,7 +77,7 @@ import com.ajrpachon.chatapp.ui.theme.IncognitoBannerBackground
 @Composable
 internal fun ChatTopBar(
     state: ChatState,
-    vm: ChatViewModel,
+    onIntent: (ChatIntent) -> Unit,
     latestPinned: MessageBO?,
     pinnedBannerVisible: Boolean,
     onHidePinnedBanner: () -> Unit,
@@ -108,13 +108,13 @@ internal fun ChatTopBar(
         if (state.isMultiSelectActive) {
             TopAppBar(
                 navigationIcon = {
-                    IconButton(onClick = { vm.onIntent(ChatIntent.ClearSelection) }) {
+                    IconButton(onClick = { onIntent(ChatIntent.ClearSelection) }) {
                         Icon(Icons.Default.Close, contentDescription = stringResource(R.string.chat_cancel_selection))
                     }
                 },
                 title = { Text(stringResource(R.string.chat_selected_count, state.selectedMessageIds.size)) },
                 actions = {
-                    IconButton(onClick = { vm.onIntent(ChatIntent.ShowForwardSelectionDialog) }) {
+                    IconButton(onClick = { onIntent(ChatIntent.ShowForwardSelectionDialog) }) {
                         Icon(Icons.AutoMirrored.Filled.Forward, contentDescription = stringResource(R.string.chat_forward_selected))
                     }
                     IconButton(onClick = { showDeleteSelectionConfirm.value = true }) {
@@ -212,7 +212,7 @@ internal fun ChatTopBar(
             actions = {
                 if (state.scheduling.messageCount > 0) {
                     Box {
-                        IconButton(onClick = { vm.onIntent(ChatIntent.ShowScheduledSheet) }) {
+                        IconButton(onClick = { onIntent(ChatIntent.ShowScheduledSheet) }) {
                             Icon(Icons.Default.Schedule, contentDescription = stringResource(R.string.chat_scheduled_messages))
                         }
                         Box(
@@ -251,7 +251,7 @@ internal fun ChatTopBar(
                                 leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null) },
                                 onClick = {
                                     callMenuExpanded = false
-                                    vm.onIntent(ChatIntent.StartCall("audio"))
+                                    onIntent(ChatIntent.StartCall("audio"))
                                 },
                             )
                             DropdownMenuItem(
@@ -264,7 +264,7 @@ internal fun ChatTopBar(
                                 leadingIcon = { Icon(Icons.Default.Videocam, contentDescription = null) },
                                 onClick = {
                                     callMenuExpanded = false
-                                    vm.onIntent(ChatIntent.StartCall("video"))
+                                    onIntent(ChatIntent.StartCall("video"))
                                 },
                             )
                         }
@@ -287,7 +287,7 @@ internal fun ChatTopBar(
                             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                             onClick = {
                                 menuExpanded = false
-                                vm.onIntent(ChatIntent.OpenSearch)
+                                onIntent(ChatIntent.OpenSearch)
                             },
                         )
                         DropdownMenuItem(
@@ -303,9 +303,9 @@ internal fun ChatTopBar(
                             onClick = {
                                 menuExpanded = false
                                 if (state.mute.isMuted) {
-                                    vm.onIntent(ChatIntent.MuteFor(0L))
+                                    onIntent(ChatIntent.MuteFor(0L))
                                 } else {
-                                    vm.onIntent(ChatIntent.ShowMuteDialog)
+                                    onIntent(ChatIntent.ShowMuteDialog)
                                 }
                             },
                         )
@@ -327,7 +327,7 @@ internal fun ChatTopBar(
                             enabled = !state.isExporting,
                             onClick = {
                                 menuExpanded = false
-                                vm.onIntent(ChatIntent.ExportConversation)
+                                onIntent(ChatIntent.ExportConversation)
                             },
                         )
                         DropdownMenuItem(
@@ -335,7 +335,7 @@ internal fun ChatTopBar(
                             leadingIcon = { Icon(Icons.Default.Timer, contentDescription = null) },
                             onClick = {
                                 menuExpanded = false
-                                vm.onIntent(ChatIntent.ShowDisappearingModeSheet)
+                                onIntent(ChatIntent.ShowDisappearingModeSheet)
                             },
                         )
                         DropdownMenuItem(
@@ -349,7 +349,7 @@ internal fun ChatTopBar(
                             },
                             onClick = {
                                 menuExpanded = false
-                                vm.onIntent(ChatIntent.ToggleIncognito)
+                                onIntent(ChatIntent.ToggleIncognito)
                             },
                         )
                         DropdownMenuItem(
@@ -381,7 +381,7 @@ internal fun ChatTopBar(
                                     },
                                     onClick = {
                                         menuExpanded = false
-                                        vm.onIntent(ChatIntent.LeaveGroup)
+                                        onIntent(ChatIntent.LeaveGroup)
                                     },
                                 )
                             }
@@ -398,7 +398,7 @@ internal fun ChatTopBar(
                     onScrollToMessage(latestPinned.id)
                 },
                 onHide = onHidePinnedBanner,
-                onDismiss = { vm.onIntent(ChatIntent.UnpinMessage(latestPinned.id)) },
+                onDismiss = { onIntent(ChatIntent.UnpinMessage(latestPinned.id)) },
             )
         }
     }

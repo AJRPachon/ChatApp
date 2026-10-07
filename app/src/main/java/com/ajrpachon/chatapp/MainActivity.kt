@@ -10,6 +10,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -43,14 +44,10 @@ import androidx.navigation3.ui.NavDisplay
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import com.ajrpachon.chatapp.ui.auth.IntegrityBlockedScreen
 import com.ajrpachon.chatapp.domain.repository.AppLockRepository
-import com.ajrpachon.chatapp.utils.IntegrityChecker
-import com.ajrpachon.chatapp.utils.IntegrityResult
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.ui.Alignment
-import com.ajrpachon.chatapp.ui.call.IncomingCallIntent
+import com.ajrpachon.chatapp.domain.model.IntegrityResultBO
 import com.ajrpachon.chatapp.domain.model.isGroupCall
 import com.ajrpachon.chatapp.ui.call.IncomingCallScreen
-import com.ajrpachon.chatapp.ui.call.IncomingCallViewModel
+import com.ajrpachon.chatapp.ui.common.AppSplashScreen
 import com.ajrpachon.chatapp.ui.common.MotionConstants.NAV_TRANSITION_MS
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import com.ajrpachon.chatapp.domain.model.ThemePreference
@@ -59,19 +56,18 @@ import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.utils.SessionGuard
 import kotlinx.coroutines.flow.first
 
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.auth.handleDeeplinks
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.lifecycleScope
+import com.ajrpachon.chatapp.data.remote.source.AuthRemoteSource
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
-import com.ajrpachon.chatapp.utils.AnalyticsEvents
+import com.ajrpachon.chatapp.domain.repository.AuthRepository
+import com.ajrpachon.chatapp.domain.repository.AnalyticsEvents
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.get
-import org.koin.androidx.compose.koinViewModel
 
 // ── Activity ───────────────────────────────────────────────────────────────
 
@@ -86,7 +82,28 @@ class MainActivity : ComponentActivity() {
     private var showRootWarning by mutableStateOf(false)
     private val shouldShowAppLock = mutableStateOf(false)
 
+    // Read from setKeepOnScreenCondition's lambda, which the platform polls on its own thread
+    // outside Compose — set true from a Compose SideEffect on the very first frame Compose draws
+    // (see setContent below), NOT once integrity/route resolve. Android always paints something
+    // of its own before any app process can draw a single frame — that gap can't be skipped — so
+    // the system's SplashScreen (styled as a plain "Opción I" icon on the right background, see
+    // themes.xml) only needs to cover THAT gap. The moment our first Compose frame is ready it
+    // takes over, and that first frame is AppSplashScreen (the full "Splash · oscuro y claro"
+    // design: icon + wordmark + tagline) for as long as the integrity check and initial route
+    // are still resolving — one continuous handoff, system icon straight into the real splash,
+    // with nothing blank or unbranded in between.
+    @Volatile
+    private var contentReady = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
+        splashScreen.setKeepOnScreenCondition { !contentReady }
+        // The default exit transition fades the system's own icon out (~200ms) while our
+        // AppSplashScreen — which reproduces that same icon — is already visible underneath.
+        // Since both icons are similar, that fade reads as the icon briefly going dim/muddy
+        // instead of a clean handoff. Skip the animation: remove the system splash the instant
+        // it's allowed to go, so only our (correct, full-color) icon is ever on screen.
+        splashScreen.setOnExitAnimationListener { it.remove() }
         enableEdgeToEdge()
         // enableEdgeToEdge() sets window.isNavigationBarContrastEnforced = true on API 29-34,
         // which paints a translucent system scrim over the 3-button navigation bar. Screens with
@@ -103,7 +120,7 @@ class MainActivity : ComponentActivity() {
         // Handle cold-start deep link (chatapp://chat/{id}) or FCM intent extras
         val coldUri = intent.data
         if (coldUri != null && coldUri.scheme == "chatapp" && coldUri.host == "chat") {
-            pendingConversationId.value = coldUri.lastPathSegment?.takeIf { UUID_REGEX.matches(it) }
+            pendingConversationId.value = coldUri.lastPathSegment?.takeIf { uuidRegex.matches(it) }
             pendingOtherUserName.value = coldUri.getQueryParameter("name")?.take(100)?.ifBlank { null }
         } else {
             pendingConversationId.value = intent.validatedConversationId()
@@ -111,7 +128,7 @@ class MainActivity : ComponentActivity() {
         }
         if (pendingConversationId.value != null) logNotificationOpened()
         val getCurrentUser: GetCurrentUserUseCase = get()
-        val supabase: SupabaseClient = get()
+        val authRepository: AuthRepository = get()
         setContent {
             val themeRepository: ThemeRepository = get()
             val themePreference by themeRepository.observe().collectAsState(initial = ThemePreference.SYSTEM)
@@ -121,32 +138,17 @@ class MainActivity : ComponentActivity() {
                 ThemePreference.SYSTEM -> isSystemInDarkTheme()
             }
             ChatAppTheme(darkTheme = darkTheme) {
+                // This frame is drawing, so the system SplashScreen can come down now — whether
+                // what follows below is AppSplashScreen or the real content depends on the gate
+                // just after, but either way something of ours is now on screen.
+                SideEffect { contentReady = true }
+
                 // ── 1. Play Integrity gate ──────────────────────────────────
-                val integrityResult by produceState<IntegrityResult?>(initialValue = null) {
-                    value = IntegrityChecker.check(this@MainActivity, supabase)
+                val integrityResult by produceState<IntegrityResultBO?>(initialValue = null) {
+                    value = authRepository.checkIntegrity()
                 }
 
-                when (val integrity = integrityResult) {
-                    null -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
-                        ) { CircularProgressIndicator() }
-                        return@ChatAppTheme
-                    }
-                    is IntegrityResult.Failed -> {
-                        IntegrityBlockedScreen(onExit = { finish() })
-                        return@ChatAppTheme
-                    }
-                    is IntegrityResult.Error -> {
-                        AppLogger.w("MainActivity", "Integrity check error (allowing): ${integrity.message}")
-                    }
-                    is IntegrityResult.Passed -> Unit
-                }
-
-                // ── 2. Normal app flow ──────────────────────────────────────
                 val sessionGuard: SessionGuard = get()
-                val isExpired by sessionExpired
                 val initialRoute by produceState<NavKey?>(initialValue = null) {
                     val hasUser = getCurrentUser().first() != null
                     value = when {
@@ -154,7 +156,7 @@ class MainActivity : ComponentActivity() {
                         sessionGuard.isSessionExpired() -> {
                             // Sign out server-side and clear local guard before routing
                             lifecycleScope.launch(Dispatchers.IO) {
-                                runCatching { get<SupabaseClient>().auth.signOut() }
+                                runCatching { get<AuthRemoteSource>().signOut() }
                                 sessionGuard.clearSession()
                             }
                             AuthRoute
@@ -162,6 +164,25 @@ class MainActivity : ComponentActivity() {
                         else -> ConversationListRoute
                     }
                 }
+
+                if (integrityResult == null || initialRoute == null) {
+                    AppSplashScreen(darkTheme = darkTheme)
+                    return@ChatAppTheme
+                }
+
+                when (val integrity = integrityResult) {
+                    is IntegrityResultBO.Failed -> {
+                        IntegrityBlockedScreen(onExit = { finish() })
+                        return@ChatAppTheme
+                    }
+                    is IntegrityResultBO.Error -> {
+                        AppLogger.w("MainActivity", "Integrity check error (allowing): ${integrity.message}")
+                    }
+                    is IntegrityResultBO.Passed, null -> Unit
+                }
+
+                // ── 2. Normal app flow ──────────────────────────────────────
+                val isExpired by sessionExpired
                 val resolvedRoute = initialRoute ?: return@ChatAppTheme
                 val backStack = rememberNavBackStack(resolvedRoute)
 
@@ -215,13 +236,6 @@ class MainActivity : ComponentActivity() {
                     backStack.add(ChatRoute(id, name))
                 }
 
-                val incomingCallVm: IncomingCallViewModel = koinViewModel()
-                val incomingCallState by incomingCallVm.state.collectAsState()
-
-                SideEffect {
-                    AppLogger.d("MainActivity", "RECOMPOSE vmHash=${System.identityHashCode(incomingCallVm)} incomingCall=${incomingCallState.incomingCall?.id ?: "null"}")
-                }
-
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -240,6 +254,12 @@ class MainActivity : ComponentActivity() {
                     onBack = {
                         when {
                             backStack.lastOrNull() is AppLockRoute -> moveTaskToBack(true)
+                            // An active call must never be hung up by a plain back press/gesture
+                            // — that's what the in-call hang-up button is for. Route back to the
+                            // same "leave the app, keep what's running" behavior as Home instead
+                            // of popping CallRoute off the stack, which would clear CallViewModel
+                            // (rememberViewModelStoreNavEntryDecorator) and disconnect the room.
+                            backStack.lastOrNull() is CallRoute -> moveTaskToBack(true)
                             backStack.size > 1 -> backStack.removeLastOrNull()
                             else -> finish()
                         }
@@ -325,49 +345,41 @@ class MainActivity : ComponentActivity() {
                     entryProvider = { key -> appNavEntryProvider(key, backStack) },
                 )
 
-                incomingCallState.incomingCall?.let { call ->
-                    IncomingCallScreen(
-                        call = call,
-                        onAccept = {
-                            incomingCallVm.onIntent(IncomingCallIntent.Accept(call.id))
-                            backStack.add(
-                                CallRoute(
-                                    callId = call.id,
-                                    conversationId = call.conversationId,
-                                    roomName = call.roomName,
-                                    callType = call.type.wireValue,
-                                    otherUserName = call.callerName,
-                                    isOutgoing = false,
-                                    isGroup = call.isGroupCall(),
-                                )
+                IncomingCallScreen(
+                    onAccepted = { call ->
+                        backStack.add(
+                            CallRoute(
+                                callId = call.id,
+                                conversationId = call.conversationId,
+                                roomName = call.roomName,
+                                callType = call.type.wireValue,
+                                otherUserName = call.callerName,
+                                isOutgoing = false,
+                                isGroup = call.isGroupCall(),
                             )
-                        },
-                        onReject = { incomingCallVm.onIntent(IncomingCallIntent.Reject(call.id)) },
-                    )
-                }
+                        )
+                    },
+                )
 
                 // Root warning dialog — shown only once on first launch if root is detected
                 if (showRootWarning) {
                     AlertDialog(
                         onDismissRequest = { /* non-dismissable via back/outside tap */ },
-                        title = { Text("Rooted device detected") },
+                        title = { Text(stringResource(R.string.root_warning_title)) },
                         text = {
-                            Text(
-                                "Running on a rooted device may compromise the security of your messages. " +
-                                "Do you want to continue?"
-                            )
+                            Text(stringResource(R.string.root_warning_message))
                         },
                         confirmButton = {
                             TextButton(onClick = {
                                 saveRootWarningAccepted()
                                 showRootWarning = false
                             }) {
-                                Text("Continue")
+                                Text(stringResource(R.string.root_warning_continue))
                             }
                         },
                         dismissButton = {
                             TextButton(onClick = { finish() }) {
-                                Text("Exit")
+                                Text(stringResource(R.string.root_warning_exit))
                             }
                         },
                     )
@@ -391,7 +403,7 @@ class MainActivity : ComponentActivity() {
         if (sessionGuard.isSessionExpired()) {
             // Mid-session expiry: sign out and signal the UI to navigate to AuthRoute
             lifecycleScope.launch(Dispatchers.IO) {
-                runCatching { get<SupabaseClient>().auth.signOut() }
+                runCatching { get<AuthRemoteSource>().signOut() }
                 sessionGuard.clearSession()
             }
             sessionExpired.value = true
@@ -416,9 +428,9 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         val uri = intent.data
         when {
-            uri != null && uri.isValidAuthCallback() -> get<SupabaseClient>().handleDeeplinks(intent)
+            uri != null && uri.isValidAuthCallback() -> get<AuthRemoteSource>().handleAuthDeepLink(intent)
             uri != null && uri.isChatDeepLink() -> {
-                val conversationId = uri.lastPathSegment?.takeIf { UUID_REGEX.matches(it) }
+                val conversationId = uri.lastPathSegment?.takeIf { uuidRegex.matches(it) }
                 val name = uri.getQueryParameter("name")?.take(100)?.ifBlank { null }
                 conversationId?.let {
                     pendingConversationId.value = it
@@ -475,13 +487,13 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private val UUID_REGEX = Regex(
+private val uuidRegex = Regex(
     "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
     RegexOption.IGNORE_CASE,
 )
 
 private fun Intent.validatedConversationId(): String? =
-    getStringExtra("conversation_id")?.takeIf { UUID_REGEX.matches(it) }
+    getStringExtra("conversation_id")?.takeIf { uuidRegex.matches(it) }
 
 private fun Intent.validatedUserName(): String? =
     getStringExtra("other_user_name")?.take(100)?.ifBlank { null }

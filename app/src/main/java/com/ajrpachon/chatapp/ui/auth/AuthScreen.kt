@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.ui.auth
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,15 +21,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Security
@@ -38,16 +36,15 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import android.content.Intent
 import android.provider.Settings
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -58,7 +55,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
@@ -69,6 +65,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -77,15 +74,25 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.ui.common.AppSplashScreen
 import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
 import com.ajrpachon.chatapp.ui.components.ChatAppTextField
+import com.ajrpachon.chatapp.ui.theme.Signal_SurfaceDark
 import com.github.skydoves.navgraph.annotations.NavDestination
 import com.github.skydoves.navgraph.annotations.NavEdge
 import com.ajrpachon.chatapp.AuthRoute
 import com.ajrpachon.chatapp.ConversationListRoute
+import com.ajrpachon.chatapp.ui.common.UiText
+import com.ajrpachon.chatapp.ui.components.ChatAppOutlinedButton
+import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
+import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 
 @NavEdge(to = ConversationListRoute::class, label = "Sign In")
 @NavDestination(route = AuthRoute::class)
@@ -95,6 +102,7 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
     val state by vm.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val googleCredentialFetcher: GoogleCredentialFetcher = koinInject()
     val integrityFailedMessage = stringResource(R.string.auth_integrity_failed_message)
     val checkEmailVerificationMessage = stringResource(R.string.auth_check_email_verification)
 
@@ -108,6 +116,19 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
                     }
                     context.startActivity(intent)
                 }
+                is AuthEffect.RequestGoogleCredential -> launch {
+                    try {
+                        when (val result = googleCredentialFetcher.fetch(context, effect.hashedNonce)) {
+                            is GoogleCredentialResult.Token -> vm.onIntent(AuthIntent.GoogleTokenReceived(result.idToken))
+                            is GoogleCredentialResult.NoCredential -> vm.onIntent(AuthIntent.GoogleSignInFailed(message = null, noCredential = true))
+                            is GoogleCredentialResult.Failed -> vm.onIntent(AuthIntent.GoogleSignInFailed(message = result.message, noCredential = false))
+                        }
+                    } catch (e: CancellationException) {
+                        // The screen left while the credential sheet was up: let the ViewModel stop its spinner.
+                        vm.onIntent(AuthIntent.GoogleSignInCancelled)
+                        throw e
+                    }
+                }
                 is AuthEffect.IntegrityFailed -> {
                     snackbar.showSnackbar(
                         message = integrityFailedMessage,
@@ -120,7 +141,7 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
 
     LaunchedEffect(state.error) {
         state.error?.let {
-            snackbar.showSnackbar(it)
+            snackbar.showSnackbar(it.asString(context))
             vm.onIntent(AuthIntent.DismissError)
         }
     }
@@ -132,13 +153,30 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
         }
     }
 
-    Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { innerPadding ->
-        when {
-            state.isLoading -> Box(
-                modifier = Modifier.fillMaxSize().padding(innerPadding),
-                contentAlignment = Alignment.Center,
-            ) { CircularProgressIndicator() }
+    AuthContent(state = state, snackbarHostState = snackbar, onIntent = vm::onIntent)
+}
 
+@Composable
+fun AuthContent(
+    state: AuthState,
+    snackbarHostState: SnackbarHostState,
+    onIntent: (AuthIntent) -> Unit,
+) {
+    // AuthViewModel's own init block (a second integrity check + session restore) keeps this
+    // true for a beat after MainActivity's splash has already come down. Render the same
+    // AppSplashScreen rather than a bare spinner: MainActivity's splash gate only waits on ITS
+    // OWN integrity check + initial route, not on this screen's, so without this the branded
+    // splash would hand off to an unbranded spinner on a blank screen for however long this
+    // second check takes — exactly the kind of jump the design is meant to hide. AppSplashScreen
+    // has no reveal animation to replay, so mounting it again here is a silent continuation, not
+    // a restart.
+    if (state.isLoading) {
+        AppSplashScreen(darkTheme = MaterialTheme.colorScheme.background == Signal_SurfaceDark)
+        return
+    }
+
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { innerPadding ->
+        when {
             state.needsMfaChallenge -> Box(
                 modifier = Modifier.fillMaxSize().padding(innerPadding),
                 contentAlignment = Alignment.Center,
@@ -147,8 +185,8 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
                     code = state.mfaCodeInput,
                     error = state.mfaError,
                     isLoading = state.mfaIsLoading,
-                    onCodeChange = { vm.onIntent(AuthIntent.MfaCodeChanged(it)) },
-                    onVerify = { vm.onIntent(AuthIntent.VerifyMfaCode) },
+                    onCodeChange = { onIntent(AuthIntent.MfaCodeChanged(it)) },
+                    onVerify = { onIntent(AuthIntent.VerifyMfaCode) },
                 )
             }
 
@@ -159,18 +197,66 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
                 UsernameSetupContent(
                     username = state.usernameInput,
                     error = state.usernameError,
-                    onUsernameChange = { vm.onIntent(AuthIntent.UsernameChanged(it)) },
-                    onConfirm = { vm.onIntent(AuthIntent.ConfirmUsername) },
+                    onUsernameChange = { onIntent(AuthIntent.UsernameChanged(it)) },
+                    onConfirm = { onIntent(AuthIntent.ConfirmUsername) },
                 )
             }
 
             else -> LoginContent(
                 state = state,
-                onIntent = { vm.onIntent(it) },
-                onGoogleSignIn = { vm.onIntent(AuthIntent.SignInWithGoogle(context)) },
+                onIntent = onIntent,
+                onGoogleSignIn = { onIntent(AuthIntent.SignInWithGoogle) },
                 contentPadding = innerPadding,
             )
         }
+    }
+}
+
+@Preview(name = "Sign in", showBackground = true)
+@Composable
+internal fun AuthSignInPreview() {
+    ChatAppTheme {
+        AuthContent(
+            state = AuthState(isLoading = false),
+            snackbarHostState = remember { SnackbarHostState() },
+            onIntent = {},
+        )
+    }
+}
+
+@Preview(name = "Sign up", showBackground = true)
+@Composable
+internal fun AuthSignUpPreview() {
+    ChatAppTheme {
+        AuthContent(
+            state = AuthState(isLoading = false, authMode = AuthMode.SIGN_UP),
+            snackbarHostState = remember { SnackbarHostState() },
+            onIntent = {},
+        )
+    }
+}
+
+@Preview(name = "Username setup", showBackground = true)
+@Composable
+internal fun AuthUsernameSetupPreview() {
+    ChatAppTheme {
+        AuthContent(
+            state = AuthState(isLoading = false, needsUsername = true, usernameInput = "ana_g"),
+            snackbarHostState = remember { SnackbarHostState() },
+            onIntent = {},
+        )
+    }
+}
+
+@Preview(name = "MFA challenge", showBackground = true)
+@Composable
+internal fun AuthMfaChallengePreview() {
+    ChatAppTheme {
+        AuthContent(
+            state = AuthState(isLoading = false, needsMfaChallenge = true, mfaCodeInput = "123"),
+            snackbarHostState = remember { SnackbarHostState() },
+            onIntent = {},
+        )
     }
 }
 
@@ -204,9 +290,15 @@ private fun LoginContent(
         val availableHeightPx = with(density) { maxHeight.roundToPx() }
         var heroCardHeightPx by remember { mutableIntStateOf(0) }
         var linkBlockHeightPx by remember { mutableIntStateOf(0) }
-        val fillerHeight = with(density) {
+        val targetFillerHeight = with(density) {
             (availableHeightPx - heroCardHeightPx - linkBlockHeightPx).coerceAtLeast(0).toDp()
         }
+        // heroCardHeightPx always lags one frame behind the real layout (onSizeChanged only
+        // reports it after the fact), so while the card's height is itself animating — e.g. the
+        // confirm-password field expanding in on sign-up — targetFillerHeight corrects itself
+        // discretely every frame instead of tracking smoothly, which reads as the link block
+        // jumping. Animating the filler itself smooths that catch-up into one continuous move.
+        val fillerHeight by animateDpAsState(targetValue = targetFillerHeight, label = "auth_filler_height")
 
         Column(
             modifier = Modifier
@@ -242,23 +334,18 @@ private fun LoginContent(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
                             .statusBarsPadding()
-                            .padding(top = 40.dp, bottom = 36.dp),
+                            .padding(top = 20.dp, bottom = 36.dp),
                     ) {
-                        Box(
+                        // Fondo siempre oscuro (#0E1516), como en el resto de apariciones del
+                        // glifo de marca (icono de lanzador, splash) — el contenedor del icono no
+                        // sigue el tema claro/oscuro de la app, es parte fija de la identidad visual.
+                        Image(
+                            painter = painterResource(R.drawable.ic_launcher_foreground),
+                            contentDescription = null,
                             modifier = Modifier
-                                .size(88.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Chat,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.onPrimary,
-                            )
-                        }
-                        Spacer(Modifier.height(16.dp))
+                                .padding(top = 26.dp, bottom = 6.dp)
+                                .size(90.dp)
+                        )
                         Text(
                             stringResource(R.string.auth_app_name),
                             style = MaterialTheme.typography.headlineMedium,
@@ -299,20 +386,18 @@ private fun LoginContent(
                         // doesn't tint, so the vector's own per-path fillColors (ic_google.xml)
                         // survive — same shape/padding as ChatAppOutlinedButton otherwise, for
                         // visual consistency with the rest of the screen.
-                        OutlinedButton(
+                        ChatAppOutlinedButton(
+                            text = stringResource(R.string.auth_continue_with_google),
                             onClick = onGoogleSignIn,
                             modifier = Modifier.fillMaxWidth(),
-                            shape = MaterialTheme.shapes.small,
-                            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp),
-                        ) {
-                            Image(
-                                imageVector = ImageVector.vectorResource(R.drawable.ic_google),
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.auth_continue_with_google))
-                        }
+                            leadingContent = {
+                                Image(
+                                    imageVector = ImageVector.vectorResource(R.drawable.ic_google),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            },
+                        )
 
                         Spacer(Modifier.height(20.dp))
 
@@ -333,45 +418,31 @@ private fun LoginContent(
                         Spacer(Modifier.height(20.dp))
 
                         // ── Email/password tabs ─────────────────────────────────
+                        // The selected tab must match the track's own height exactly — both use
+                        // CircleShape, which is a percent radius computed from each
+                        // element's OWN size. Insetting the Row vertically (as well as
+                        // horizontally) used to give the inner tab a shorter height than the
+                        // track, so its "fully rounded" radius came out a few dp smaller than the
+                        // track's — a correct capsule on its own, but visibly less round than its
+                        // parent right next to it. Horizontal-only padding keeps the tab's height
+                        // identical to the track's, so both resolve to the same absolute radius.
                         Surface(
-                            shape = RoundedCornerShape(50),
+                            shape = CircleShape,
                             color = MaterialTheme.colorScheme.surfaceContainerHighest,
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Row(modifier = Modifier.padding(4.dp)) {
+                            Row(modifier = Modifier.padding(horizontal = 4.dp)) {
                                 val isSignIn = state.authMode == AuthMode.SIGN_IN
-                                Surface(
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(50),
-                                    color = if (isSignIn) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                                AuthModeTab(
+                                    text = stringResource(R.string.auth_sign_in_tab),
+                                    selected = isSignIn,
                                     onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_IN)) },
-                                ) {
-                                    Text(
-                                        stringResource(R.string.auth_sign_in_tab),
-                                        modifier = Modifier.padding(vertical = 10.dp),
-                                        style = MaterialTheme.typography.labelLarge,
-                                        fontWeight = if (isSignIn) FontWeight.SemiBold else FontWeight.Normal,
-                                        color = if (isSignIn) MaterialTheme.colorScheme.onPrimaryContainer
-                                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                    )
-                                }
-                                Surface(
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(50),
-                                    color = if (!isSignIn) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                                )
+                                AuthModeTab(
+                                    text = stringResource(R.string.auth_sign_up_tab),
+                                    selected = !isSignIn,
                                     onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_UP)) },
-                                ) {
-                                    Text(
-                                        stringResource(R.string.auth_sign_up_tab),
-                                        modifier = Modifier.padding(vertical = 10.dp),
-                                        style = MaterialTheme.typography.labelLarge,
-                                        fontWeight = if (!isSignIn) FontWeight.SemiBold else FontWeight.Normal,
-                                        color = if (!isSignIn) MaterialTheme.colorScheme.onPrimaryContainer
-                                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                    )
-                                }
+                                )
                             }
                         }
 
@@ -403,27 +474,49 @@ private fun AuthSwitchModeLink(
     val isSignUp = state.authMode == AuthMode.SIGN_UP
     if (!isSignUp) {
         if (state.showRegisterSuggestion) {
-            TextButton(
+            ChatAppTextButton(
+                text = stringResource(R.string.auth_no_account_register_here),
                 onClick = { onIntent(AuthIntent.SwitchToRegister) },
                 modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.auth_no_account_register_here))
-            }
+            )
         } else {
-            TextButton(
+            ChatAppTextButton(
+                text = stringResource(R.string.auth_no_account_register),
                 onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_UP)) },
                 modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.auth_no_account_register))
-            }
+            )
         }
     } else {
-        TextButton(
+        ChatAppTextButton(
+            text = stringResource(R.string.auth_have_account_sign_in),
             onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_IN)) },
             modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(R.string.auth_have_account_sign_in))
-        }
+        )
+    }
+}
+
+// Sign in / Sign up track segment — see the shape comment above its call site for why the
+// selected fill must share the track's own height instead of insetting on all sides.
+@Composable
+private fun RowScope.AuthModeTab(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.weight(1f),
+        shape = CircleShape,
+        color = if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
+        onClick = onClick,
+    ) {
+        Text(
+            text,
+            modifier = Modifier.padding(vertical = 8.dp, horizontal = 8.dp),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
     }
 }
 
@@ -550,7 +643,7 @@ private fun EmailPasswordForm(
 @Composable
 private fun MfaChallengeContent(
     code: String,
-    error: String?,
+    error: UiText?,
     isLoading: Boolean,
     onCodeChange: (String) -> Unit,
     onVerify: () -> Unit,
@@ -588,7 +681,7 @@ private fun MfaChallengeContent(
             label = stringResource(R.string.auth_totp_code_label),
             leadingIcon = Icons.Default.Lock,
             isError = error != null,
-            supportingText = error,
+            supportingText = error?.asString(),
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.NumberPassword,
                 imeAction = ImeAction.Done,
@@ -620,7 +713,7 @@ private fun MfaChallengeContent(
 @Composable
 private fun UsernameSetupContent(
     username: String,
-    error: String?,
+    error: UiText?,
     onUsernameChange: (String) -> Unit,
     onConfirm: () -> Unit,
 ) {
@@ -643,7 +736,7 @@ private fun UsernameSetupContent(
             onValueChange = onUsernameChange,
             label = stringResource(R.string.auth_username_label),
             isError = error != null,
-            supportingText = error,
+            supportingText = error?.asString(),
         )
         Spacer(Modifier.height(16.dp))
         ChatAppPrimaryButton(

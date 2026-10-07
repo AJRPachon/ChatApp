@@ -1,7 +1,10 @@
 package com.ajrpachon.chatapp.ui.profile
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 
 import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.domain.model.AuthErrorKind
+import com.ajrpachon.chatapp.domain.model.AuthException
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.AppLockRepository
 import com.ajrpachon.chatapp.domain.repository.AuthRepository
@@ -10,19 +13,22 @@ import com.ajrpachon.chatapp.domain.repository.ThemeRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
-import com.ajrpachon.chatapp.utils.AnalyticsEvents
+import com.ajrpachon.chatapp.ui.common.UiText
+import com.ajrpachon.chatapp.ui.common.toUiText
+import com.ajrpachon.chatapp.domain.repository.AnalyticsEvents
+import com.ajrpachon.chatapp.utils.AppDispatchers
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.UploadLimits.checkAvatarSize
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import qrcode.QRCode
 
+// LongParameterList: constructor injection via Koin, one parameter per distinct collaborator.
+@Suppress("LongParameterList")
 class ProfileViewModel(
     private val authRepository: AuthRepository,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
@@ -31,9 +37,7 @@ class ProfileViewModel(
     private val themeRepository: ThemeRepository,
     private val appLockRepository: AppLockRepository,
     private val analyticsTracker: AnalyticsTracker,
-    // Not Koin-injectable (no CoroutineDispatcher binding registered) — passed explicitly
-    // from AppModule's lambda so tests can supply a TestDispatcher instead of a real one.
-    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val dispatchers: AppDispatchers,
 ) : BaseViewModel<ProfileState, ProfileEffect>(ProfileState()) {
 
     init {
@@ -110,7 +114,7 @@ class ProfileViewModel(
                 updateState { it.copy(avatarUrl = url) }
             }.onFailure { e ->
                 AppLogger.e(TAG, "Avatar upload failed", e)
-                updateState { it.copy(error = e.message ?: "Error al subir la foto") }
+                updateState { it.copy(error = e.toUiText(R.string.profile_error_upload_photo)) }
             }
             updateState { it.copy(isUploadingAvatar = false) }
         }
@@ -166,15 +170,12 @@ class ProfileViewModel(
         }
     }
 
-    private fun Throwable.toDeleteAccountErrorMessage(): String {
-        val restException = this as? io.github.jan.supabase.exceptions.RestException
-        return when (restException?.statusCode) {
-            HTTP_UNAUTHORIZED ->
-                "Tu sesion ya no es valida. Es posible que la cuenta ya se haya eliminado; " +
-                    "vuelve a iniciar sesion para comprobarlo."
-            HTTP_TOO_MANY_REQUESTS -> "Demasiados intentos. Espera un minuto y vuelve a intentarlo."
-            HTTP_SERVER_ERROR -> "No se pudo eliminar la cuenta en el servidor. Intentalo de nuevo mas tarde."
-            else -> message ?: "Error al eliminar la cuenta"
+    private fun Throwable.toDeleteAccountErrorMessage(): UiText {
+        return when ((this as? AuthException)?.kind) {
+            AuthErrorKind.SESSION_EXPIRED -> UiText.StringResource(R.string.profile_error_session_invalid)
+            AuthErrorKind.TOO_MANY_REQUESTS -> UiText.StringResource(R.string.profile_error_too_many_attempts)
+            AuthErrorKind.SERVER_ERROR -> UiText.StringResource(R.string.profile_error_delete_server)
+            else -> toUiText(R.string.profile_error_delete_account)
         }
     }
 
@@ -204,7 +205,7 @@ class ProfileViewModel(
                 AppLogger.e(TAG, "enroll2FA failed", e)
                 updateState { it.copy(twoFactor = it.twoFactor.copy(
                     isLoading = false,
-                    enrollError = e.message ?: "Error al iniciar verificacion en dos pasos",
+                    enrollError = e.toUiText(R.string.profile_error_2fa_start),
                 )) }
             }
         }
@@ -229,7 +230,7 @@ class ProfileViewModel(
                 AppLogger.e(TAG, "verify2FACode failed", e)
                 updateState { it.copy(twoFactor = it.twoFactor.copy(
                     isLoading = false,
-                    verifyError = e.message ?: "Codigo incorrecto. Intenta de nuevo.",
+                    verifyError = e.toUiText(R.string.profile_error_2fa_code),
                 )) }
             }
         }
@@ -264,7 +265,7 @@ class ProfileViewModel(
                 AppLogger.e(TAG, "disable2FA failed", e)
                 updateState { it.copy(twoFactor = it.twoFactor.copy(
                     isLoading = false,
-                    enrollError = e.message ?: "Error al desactivar la verificacion en dos pasos",
+                    enrollError = e.toUiText(R.string.profile_error_2fa_disable),
                 )) }
             }
         }
@@ -283,14 +284,14 @@ class ProfileViewModel(
                     updateState { it.copy(
                         isSavingDisplayName = false,
                         editingDisplayName = it.displayName,
-                        error = e.message ?: "Error al guardar el nombre",
+                        error = e.toUiText(R.string.profile_error_save_name),
                     ) }
                 }
         }
     }
 
     private suspend fun generateQrBitmap(userId: String) {
-        val bitmap = withContext(defaultDispatcher) {
+        val bitmap = withContext(dispatchers.default) {
             runCatching {
                 val content = "chatapp://user/$userId"
                 val rendered = QRCode(content).render()
@@ -302,8 +303,5 @@ class ProfileViewModel(
 
     companion object {
         private const val TAG = "ProfileViewModel"
-        private const val HTTP_UNAUTHORIZED = 401
-        private const val HTTP_TOO_MANY_REQUESTS = 429
-        private const val HTTP_SERVER_ERROR = 500
     }
 }

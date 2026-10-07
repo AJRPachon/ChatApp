@@ -1,6 +1,7 @@
 package com.ajrpachon.chatapp.utils
 
 import android.util.LruCache
+import com.ajrpachon.chatapp.domain.repository.AnalyticsEvents
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.google.mlkit.nl.translate.TranslateLanguage
 import com.google.mlkit.nl.translate.Translation

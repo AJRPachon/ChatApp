@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mismo inset que ic_launcher_foreground_inset.xml, para que el icono temático (Android 13+)
+     coincida en tamaño con el icono normal. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_launcher_monochrome"
+    android:insetLeft="20.25%"
+    android:insetTop="20.25%"
+    android:insetRight="20.25%"
+    android:insetBottom="20.25%" />

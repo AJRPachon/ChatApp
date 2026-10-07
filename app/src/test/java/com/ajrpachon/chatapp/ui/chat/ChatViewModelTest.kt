@@ -45,11 +45,14 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.ui.common.UiText
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -157,7 +160,7 @@ class ChatViewModelTest {
         every { conversationRepository.observeConversations(any()) } returns flowOf(emptyList())
         every { networkMonitor.isOnline } returns flowOf(true)
         coEvery {
-            sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+            sendMessageUseCase(any())
         } returns Result.success(mockk<MessageBO>(relaxed = true))
     }
 
@@ -319,7 +322,7 @@ class ChatViewModelTest {
         runCurrent()
 
         assertEquals("", vm.state.value.inputText)
-        coVerify { sendMessageUseCase("conv1", "user1", "Hi!", any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        coVerify { sendMessageUseCase(match { it.conversationId == "conv1" && it.senderId == "user1" && it.content == "Hi!" }) }
     }
 
     @Test
@@ -330,12 +333,12 @@ class ChatViewModelTest {
         vm.onIntent(ChatIntent.Send)
         runCurrent()
 
-        coVerify(exactly = 0) { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { sendMessageUseCase(any()) }
     }
 
     @Test
     fun `Send sets error when sendMessageUseCase fails`() = chatViewModelTest {
-        coEvery { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns
+        coEvery { sendMessageUseCase(any()) } returns
                 Result.failure(RuntimeException("network error"))
 
         val vm = buildViewModel()
@@ -344,12 +347,12 @@ class ChatViewModelTest {
         vm.onIntent(ChatIntent.Send)
         runCurrent()
 
-        assertEquals("Sin conexion. El mensaje se enviara cuando vuelva la red.", vm.state.value.error)
+        assertEquals(UiText.StringResource(R.string.chat_error_offline), vm.state.value.error)
     }
 
     @Test
     fun `DismissError clears error state`() = chatViewModelTest {
-        coEvery { sendMessageUseCase(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns
+        coEvery { sendMessageUseCase(any()) } returns
                 Result.failure(RuntimeException("oops"))
 
         val vm = buildViewModel()
@@ -357,7 +360,7 @@ class ChatViewModelTest {
         vm.onIntent(ChatIntent.InputChanged("msg"))
         vm.onIntent(ChatIntent.Send)
         runCurrent()
-        assertEquals("Sin conexion. El mensaje se enviara cuando vuelva la red.", vm.state.value.error)
+        assertEquals(UiText.StringResource(R.string.chat_error_offline), vm.state.value.error)
 
         vm.onIntent(ChatIntent.DismissError)
         assertNull(vm.state.value.error)
@@ -506,6 +509,65 @@ class ChatViewModelTest {
         runCurrent()
 
         assertEquals(preview, vm.state.value.linkPreviews["https://example.com"])
+    }
+
+    // ── @mentions ─────────────────────────────────────────────────────────────
+
+    @Test
+    fun `typing an at-query in a group suggests matching members except the current user`() = chatViewModelTest {
+        val vm = buildViewModel()
+        runCurrent()
+        membersFlow.value = listOf(member("user1"), member("ana"), member("andres"), member("bea"))
+        runCurrent()
+
+        vm.onIntent(ChatIntent.InputChanged("hola @an"))
+        runCurrent()
+
+        assertEquals(listOf("ana", "andres"), vm.state.value.mentionSuggestions.map { it.username })
+    }
+
+    @Test
+    fun `bare at-sign suggests every other member`() = chatViewModelTest {
+        val vm = buildViewModel()
+        runCurrent()
+        membersFlow.value = listOf(member("user1"), member("ana"), member("bea"))
+        runCurrent()
+
+        vm.onIntent(ChatIntent.InputChanged("@"))
+        runCurrent()
+
+        assertEquals(listOf("ana", "bea"), vm.state.value.mentionSuggestions.map { it.username })
+    }
+
+    @Test
+    fun `SelectMention completes the at-query, persists the draft and clears suggestions`() = chatViewModelTest {
+        val vm = buildViewModel()
+        runCurrent()
+        membersFlow.value = listOf(member("user1"), member("ana"))
+        runCurrent()
+        vm.onIntent(ChatIntent.InputChanged("hola @an"))
+        runCurrent()
+
+        vm.onIntent(ChatIntent.SelectMention(member("ana")))
+        advanceTimeBy(600)
+        runCurrent()
+
+        assertEquals("hola @ana ", vm.state.value.inputText)
+        assertTrue(vm.state.value.mentionSuggestions.isEmpty())
+        coVerify { draftRepository.saveDraft("conv1", "hola @ana ") }
+    }
+
+    @Test
+    fun `no mention suggestions in one-to-one chats`() = chatViewModelTest {
+        coEvery { conversationRepository.getById(any()) } returns dmConvBO
+        every { conversationRepository.observeById(any()) } returns flowOf(dmConvBO)
+        val vm = buildViewModel("conv2")
+        runCurrent()
+
+        vm.onIntent(ChatIntent.InputChanged("@us"))
+        runCurrent()
+
+        assertTrue(vm.state.value.mentionSuggestions.isEmpty())
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

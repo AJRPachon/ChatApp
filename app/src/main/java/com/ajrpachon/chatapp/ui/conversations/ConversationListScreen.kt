@@ -58,7 +58,6 @@ import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -76,6 +75,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
@@ -101,6 +101,9 @@ import com.ajrpachon.chatapp.GlobalSearchRoute
 import com.ajrpachon.chatapp.InvitationsRoute
 import com.ajrpachon.chatapp.NewChatRoute
 import com.ajrpachon.chatapp.ProfileRoute
+import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
+import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
+import kotlinx.datetime.Instant
 import org.koin.androidx.compose.koinViewModel
 
 // UserBO.isOnline() only re-evaluates when read; without this tick, an item whose participant Flow
@@ -115,7 +118,6 @@ private const val ONLINE_STATUS_REFRESH_INTERVAL_MS = 15_000L
 @NavEdge(to = CreateGroupRoute::class, label = "New Group")
 @NavEdge(to = GlobalSearchRoute::class, label = "Global Search")
 @NavDestination(route = ConversationListRoute::class)
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConversationListScreen(
     onOpenConversation: (id: String, name: String, isGroup: Boolean) -> Unit,
@@ -128,11 +130,6 @@ fun ConversationListScreen(
 ) {
     val vm: ConversationListViewModel = koinViewModel()
     val state by vm.state.collectAsStateWithLifecycle()
-    var menuConvId by remember { mutableStateOf<String?>(null) }
-    val archivedSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
-    val chatArchivedMessage = stringResource(R.string.conversations_chat_archived)
     var onlineStatusTick by remember { mutableLongStateOf(0L) }
 
     LaunchedEffect(Unit) {
@@ -151,9 +148,40 @@ fun ConversationListScreen(
         }
     }
 
+    ConversationListContent(
+        state = state,
+        onlineStatusTick = onlineStatusTick,
+        onIntent = vm::onIntent,
+        onNewChat = onNewChat,
+        onNewGroup = onNewGroup,
+        onOpenProfile = onOpenProfile,
+        onOpenInvitations = onOpenInvitations,
+        onGoToGlobalSearch = onGoToGlobalSearch,
+        statusBar = { StatusBar(onViewStatus = { status -> onOpenStatusViewer(status.userId) }) },
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ConversationListContent(
+    state: ConversationListState,
+    onlineStatusTick: Long,
+    onIntent: (ConversationListIntent) -> Unit,
+    onNewChat: () -> Unit,
+    onNewGroup: () -> Unit,
+    onOpenProfile: () -> Unit,
+    onOpenInvitations: () -> Unit,
+    onGoToGlobalSearch: () -> Unit,
+    statusBar: @Composable () -> Unit,
+) {
+    var menuConvId by remember { mutableStateOf<String?>(null) }
+    val archivedSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    val chatArchivedMessage = stringResource(R.string.conversations_chat_archived)
     state.soundPickerConversationId?.let { convId ->
         AlertDialog(
-            onDismissRequest = { vm.onIntent(ConversationListIntent.DismissSoundPicker) },
+            onDismissRequest = { onIntent(ConversationListIntent.DismissSoundPicker) },
             title = { Text(stringResource(R.string.conversations_notification_sound_title)) },
             text = {
                 Column {
@@ -162,14 +190,14 @@ fun ConversationListScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    vm.onIntent(ConversationListIntent.SetNotificationSound(convId, sound))
+                                    onIntent(ConversationListIntent.SetNotificationSound(convId, sound))
                                 },
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             RadioButton(
                                 selected = false,
                                 onClick = {
-                                    vm.onIntent(ConversationListIntent.SetNotificationSound(convId, sound))
+                                    onIntent(ConversationListIntent.SetNotificationSound(convId, sound))
                                 },
                             )
                             Text(
@@ -181,16 +209,14 @@ fun ConversationListScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { vm.onIntent(ConversationListIntent.DismissSoundPicker) }) {
-                    Text(stringResource(R.string.conversations_cancel))
-                }
+                ChatAppTextButton(text = stringResource(R.string.conversations_cancel), onClick = { onIntent(ConversationListIntent.DismissSoundPicker) })
             },
         )
     }
 
     if (state.showArchivedSheet) {
         ModalBottomSheet(
-            onDismissRequest = { vm.onIntent(ConversationListIntent.DismissArchivedSheet) },
+            onDismissRequest = { onIntent(ConversationListIntent.DismissArchivedSheet) },
             sheetState = archivedSheetState,
             dragHandle = { BottomSheetDefaults.DragHandle() },
         ) {
@@ -228,11 +254,11 @@ fun ConversationListScreen(
                         ArchivedConversationItem(
                             conversation = conv,
                             onClick = dropUnlessResumed {
-                                vm.onIntent(ConversationListIntent.DismissArchivedSheet)
-                                vm.onIntent(ConversationListIntent.OpenConversation(conv.id, conv.name, conv.isGroup))
+                                onIntent(ConversationListIntent.DismissArchivedSheet)
+                                onIntent(ConversationListIntent.OpenConversation(conv.id, conv.name, conv.isGroup))
                             },
                             onUnarchive = {
-                                vm.onIntent(ConversationListIntent.ArchiveConversation(conv.id, false))
+                                onIntent(ConversationListIntent.ArchiveConversation(conv.id, false))
                             },
                         )
                     }
@@ -268,7 +294,7 @@ fun ConversationListScreen(
                         Icon(Icons.Default.Search, contentDescription = stringResource(R.string.conversations_search_content_description))
                     }
                     IconButton(
-                        onClick = { vm.onIntent(ConversationListIntent.ShowArchivedSheet) },
+                        onClick = { onIntent(ConversationListIntent.ShowArchivedSheet) },
                         modifier = Modifier.testTag("conversation_list_archived_button"),
                     ) {
                         BadgedBox(badge = {
@@ -349,7 +375,7 @@ fun ConversationListScreen(
                 contentPadding = innerPadding,
             ) {
                 item(key = "status_bar") {
-                    StatusBar(onViewStatus = { status -> onOpenStatusViewer(status.userId) })
+                    statusBar()
                 }
                 if (state.conversations.isEmpty()) {
                     item(key = "empty_state") {
@@ -389,38 +415,38 @@ fun ConversationListScreen(
                         draft = state.drafts[conv.id],
                         showMenu = menuConvId == conv.id,
                         onClick = dropUnlessResumed {
-                            vm.onIntent(ConversationListIntent.OpenConversation(conv.id, conv.name, conv.isGroup))
+                            onIntent(ConversationListIntent.OpenConversation(conv.id, conv.name, conv.isGroup))
                         },
                         onLongClick = { menuConvId = conv.id },
                         onMenuDismiss = { menuConvId = null },
                         onMuteToggle = {
                             menuConvId = null
-                            vm.onIntent(ConversationListIntent.ToggleMute(conv.id, !conv.isMuted))
+                            onIntent(ConversationListIntent.ToggleMute(conv.id, !conv.isMuted))
                         },
                         onClearChat = {
                             menuConvId = null
-                            vm.onIntent(ConversationListIntent.ClearChat(conv.id))
+                            onIntent(ConversationListIntent.ClearChat(conv.id))
                         },
                         onLeaveGroup = if (conv.isGroup) {
                             {
                                 menuConvId = null
-                                vm.onIntent(ConversationListIntent.LeaveGroup(conv.id))
+                                onIntent(ConversationListIntent.LeaveGroup(conv.id))
                             }
                         } else null,
                         onDelete = {
                             menuConvId = null
-                            vm.onIntent(ConversationListIntent.DeleteConversation(conv.id))
+                            onIntent(ConversationListIntent.DeleteConversation(conv.id))
                         },
                         onArchive = {
                             menuConvId = null
-                            vm.onIntent(ConversationListIntent.ArchiveConversation(conv.id, true))
+                            onIntent(ConversationListIntent.ArchiveConversation(conv.id, true))
                             coroutineScope.launch {
                                 snackbarHostState.showSnackbar(chatArchivedMessage)
                             }
                         },
                         onSoundPicker = {
                             menuConvId = null
-                            vm.onIntent(ConversationListIntent.ShowSoundPicker(conv.id))
+                            onIntent(ConversationListIntent.ShowSoundPicker(conv.id))
                         },
                         // A new message bumping a conversation to the top (or one getting deleted/
                         // archived out of the list) previously jumped instantly — animateItem()
@@ -436,6 +462,73 @@ fun ConversationListScreen(
             }
         }
     }
+}
+
+private fun previewConversation(id: String, name: String, isGroup: Boolean = false, unread: Int = 0) = ConversationBO(
+    id = id,
+    name = name,
+    isGroup = isGroup,
+    participants = emptyList(),
+    lastMessage = null,
+    unreadCount = unread,
+    updatedAt = Instant.fromEpochMilliseconds(0L),
+)
+
+private val previewConversations = listOf(
+    previewConversation("1", "Ana García", unread = 3),
+    previewConversation("2", "Equipo Android", isGroup = true),
+    previewConversation("3", "Bruno López"),
+)
+
+@Composable
+private fun PreviewContent(state: ConversationListState) {
+    ChatAppTheme {
+        ConversationListContent(
+            state = state,
+            onlineStatusTick = 0L,
+            onIntent = {},
+            onNewChat = {},
+            onNewGroup = {},
+            onOpenProfile = {},
+            onOpenInvitations = {},
+            onGoToGlobalSearch = {},
+            statusBar = {},
+        )
+    }
+}
+
+@Preview(name = "Conversations", showBackground = true)
+@Composable
+internal fun ConversationListPreview() {
+    PreviewContent(
+        ConversationListState(
+            conversations = previewConversations,
+            isLoading = false,
+            currentUserId = "me",
+            pendingInvitationsCount = 2,
+            drafts = mapOf("3" to "Nos vemos mañana"),
+        ),
+    )
+}
+
+@Preview(name = "Empty", showBackground = true)
+@Composable
+internal fun ConversationListEmptyPreview() {
+    PreviewContent(ConversationListState(isLoading = false, currentUserId = "me"))
+}
+
+@Preview(name = "Loading", showBackground = true)
+@Composable
+internal fun ConversationListLoadingPreview() {
+    PreviewContent(ConversationListState(isLoading = true))
+}
+
+@Preview(name = "Offline", showBackground = true)
+@Composable
+internal fun ConversationListOfflinePreview() {
+    PreviewContent(
+        ConversationListState(conversations = previewConversations, isLoading = false, currentUserId = "me", isOnline = false),
+    )
 }
 
 /**
@@ -455,6 +548,26 @@ private fun audioPreviewLabel(durationMs: Long?): String =
     } else {
         stringResource(R.string.conversations_audio_unknown_duration)
     }
+
+// Call-summary messages (MessageBO.isCallMessage) carry an empty `content` — the actual call
+// info lives in callType/callStatus instead, see CallViewModel.sendCallSummaryMessage — so
+// without this the list preview fell through to the generic `lastMsg.content` branch and
+// rendered nothing. The "missed" label is shown only to the callee (isFromMe == false), mirroring
+// CallMessageBubble's own statusText: the caller's copy of the same summary message reads as a
+// plain voice/video call rather than "missed", since from that side it wasn't missed, it went
+// unanswered. Every other status (ended, rejected, no answer) collapses to that same plain label,
+// matching how little the distinction matters from the conversation list.
+@Composable
+private fun callPreviewLabel(callType: String?, callStatus: String?, isFromMe: Boolean): String {
+    val isVideo = callType == "video"
+    val isMissed = callStatus == "missed" && !isFromMe
+    return when {
+        isVideo && isMissed -> stringResource(R.string.conversations_call_video_missed)
+        isVideo -> stringResource(R.string.conversations_call_video)
+        isMissed -> stringResource(R.string.conversations_call_voice_missed)
+        else -> stringResource(R.string.conversations_call_voice)
+    }
+}
 
 @Composable
 private fun ArchivedConversationItem(
@@ -486,6 +599,7 @@ private fun ArchivedConversationItem(
             )
             conversation.lastMessage?.let { msg ->
                 val previewText = when {
+                    msg.isCallMessage -> callPreviewLabel(msg.callType, msg.callStatus, msg.isFromMe)
                     msg.audioUrl != null -> audioPreviewLabel(msg.audioDurationMs)
                     msg.content.startsWith("poll:") -> stringResource(R.string.conversations_poll)
                     msg.content.startsWith("contact:") -> stringResource(R.string.conversations_contact)
@@ -605,7 +719,7 @@ private fun ConversationItem(
                     Box(modifier = Modifier.weight(1f)) {
                         when {
                             !draft.isNullOrBlank() -> Text(
-                                text = "${ChatConstants.DRAFT_PREFIX}$draft",
+                                text = stringResource(R.string.conversations_draft_prefix, draft),
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                                 color = MaterialTheme.colorScheme.outline,
@@ -618,6 +732,16 @@ private fun ConversationItem(
                                 } else {
                                     stringResource(R.string.conversations_photo_plural, conversation.trailingImageCount)
                                 }
+                                Text(
+                                    text = if (fromMe) stringResource(R.string.conversations_from_me_prefix, label) else label,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                            lastMsg?.isCallMessage == true -> {
+                                val label = callPreviewLabel(lastMsg.callType, lastMsg.callStatus, fromMe)
                                 Text(
                                     text = if (fromMe) stringResource(R.string.conversations_from_me_prefix, label) else label,
                                     style = MaterialTheme.typography.bodyMedium,

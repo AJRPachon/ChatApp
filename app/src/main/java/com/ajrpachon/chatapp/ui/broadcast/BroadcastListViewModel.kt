@@ -1,15 +1,19 @@
 package com.ajrpachon.chatapp.ui.broadcast
 
 import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.BroadcastListBO
+import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
 import com.ajrpachon.chatapp.domain.repository.BroadcastListRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetOrCreateConversationUseCase
 import com.ajrpachon.chatapp.domain.usecase.SearchUsersUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
+import com.ajrpachon.chatapp.ui.common.UiText
+import com.ajrpachon.chatapp.ui.common.toUiText
 import com.ajrpachon.chatapp.utils.AppLogger
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -71,7 +75,7 @@ class BroadcastListViewModel(
             BroadcastListIntent.CreateList -> createList()
             is BroadcastListIntent.DeleteList -> viewModelScope.launch {
                 catchResult { broadcastListRepository.delete(intent.listId) }
-                    .onFailure { e -> updateState { it.copy(error = e.message) } }
+                    .onFailure { e -> updateState { it.copy(error = e.toUiText()) } }
             }
             is BroadcastListIntent.OpenSendDialog -> updateState {
                 it.copy(sendingListId = intent.listId, broadcastMessage = "")
@@ -99,7 +103,7 @@ class BroadcastListViewModel(
     private fun createList() {
         val cur = state.value
         if (cur.newListName.isBlank() || cur.selectedMembers.isEmpty()) {
-            updateState { it.copy(error = "Ingresa un nombre y selecciona al menos un miembro") }
+            updateState { it.copy(error = UiText.StringResource(R.string.broadcast_error_name_and_members)) }
             return
         }
         currentUserId ?: return
@@ -114,25 +118,39 @@ class BroadcastListViewModel(
                 )
             }
                 .onSuccess { updateState { it.copy(showCreateDialog = false) } }
-                .onFailure { e -> updateState { it.copy(error = e.message ?: "Error") } }
+                .onFailure { e -> updateState { it.copy(error = e.toUiText()) } }
             updateState { it.copy(isCreating = false) }
         }
     }
 
-    private fun sendBroadcast() {
+    private class BroadcastRequest(val userId: String, val list: BroadcastListItem, val message: String)
+
+    /** The send request, or null (with the error already in the state) when it cannot be sent. */
+    private fun validBroadcastRequest(): BroadcastRequest? {
         val cur = state.value
-        val listId = cur.sendingListId ?: return
+        val listId = cur.sendingListId ?: return null
         val msg = cur.broadcastMessage.trim()
-        if (msg.isBlank()) {
-            updateState { it.copy(error = "Escribe un mensaje") }
-            return
+        val uid = currentUserId
+        val list = cur.lists.find { it.id == listId }
+        return when {
+            msg.isBlank() -> {
+                updateState { it.copy(error = UiText.StringResource(R.string.broadcast_error_write_message)) }
+                null
+            }
+            uid == null || list == null -> null
+            list.members.isEmpty() -> {
+                updateState { it.copy(error = UiText.StringResource(R.string.broadcast_error_no_members)) }
+                null
+            }
+            else -> BroadcastRequest(uid, list, msg)
         }
-        val uid = currentUserId ?: return
-        val li = cur.lists.find { it.id == listId } ?: return
-        if (li.members.isEmpty()) {
-            updateState { it.copy(error = "Sin miembros") }
-            return
-        }
+    }
+
+    private fun sendBroadcast() {
+        val request = validBroadcastRequest() ?: return
+        val uid = request.userId
+        val li = request.list
+        val msg = request.message
         viewModelScope.launch {
             updateState { it.copy(isSending = true) }
             var failures = 0
@@ -140,10 +158,12 @@ class BroadcastListViewModel(
                 catchResult {
                     val conversation = getOrCreateConversationUseCase(uid, member.id)
                     sendMessageUseCase(
-                        conversationId = conversation.id,
-                        senderId = uid,
-                        content = msg,
-                        otherUserId = member.id,
+                        OutgoingMessageBO(
+                            conversationId = conversation.id,
+                            senderId = uid,
+                            content = msg,
+                            otherUserId = member.id,
+                        ),
                     )
                 }.onFailure { e ->
                     failures++
@@ -153,7 +173,7 @@ class BroadcastListViewModel(
             updateState { it.copy(isSending = false, sendingListId = null) }
             sendEffect(
                 BroadcastListEffect.ShowToast(
-                    "Enviado a ${li.members.size - failures}/${li.members.size} contactos"
+                    UiText.of(R.string.broadcast_sent_summary_toast, li.members.size - failures, li.members.size)
                 )
             )
         }

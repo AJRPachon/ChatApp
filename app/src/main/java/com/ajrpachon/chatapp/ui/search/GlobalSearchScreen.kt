@@ -36,9 +36,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -58,13 +60,31 @@ fun GlobalSearchScreen(
         focusRequester.requestFocus()
     }
 
+    GlobalSearchContent(
+        state = state,
+        focusRequester = focusRequester,
+        onIntent = vm::onIntent,
+        onBack = onBack,
+        onOpenConversation = onOpenConversation,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun GlobalSearchContent(
+    state: GlobalSearchState,
+    focusRequester: FocusRequester,
+    onIntent: (GlobalSearchIntent) -> Unit,
+    onBack: () -> Unit,
+    onOpenConversation: (conversationId: String, conversationName: String, isGroup: Boolean, messageId: String) -> Unit,
+) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     OutlinedTextField(
                         value = state.query,
-                        onValueChange = { vm.onIntent(GlobalSearchIntent.QueryChanged(it)) },
+                        onValueChange = { onIntent(GlobalSearchIntent.QueryChanged(it)) },
                         placeholder = { Text(stringResource(R.string.search_placeholder)) },
                         singleLine = true,
                         modifier = Modifier
@@ -107,6 +127,53 @@ fun GlobalSearchScreen(
                 }
             }
         }
+    }
+}
+
+private val previewResults = listOf(
+    GlobalSearchResultItem("m1", "c1", "Familia", "Quedamos el sábado a las 10 en casa", 1_760_000_000_000L, isGroup = true),
+    GlobalSearchResultItem("m2", "c2", "Ana García", "¿Te mando el sábado el documento?", 1_759_900_000_000L),
+)
+
+@Preview(name = "Results", showBackground = true)
+@Composable
+internal fun GlobalSearchResultsPreview() {
+    ChatAppTheme {
+        GlobalSearchContent(
+            state = GlobalSearchState(query = "sábado", results = previewResults),
+            focusRequester = remember { FocusRequester() },
+            onIntent = {},
+            onBack = {},
+            onOpenConversation = { _, _, _, _ -> },
+        )
+    }
+}
+
+@Preview(name = "Hint", showBackground = true)
+@Composable
+internal fun GlobalSearchHintPreview() {
+    ChatAppTheme {
+        GlobalSearchContent(
+            state = GlobalSearchState(),
+            focusRequester = remember { FocusRequester() },
+            onIntent = {},
+            onBack = {},
+            onOpenConversation = { _, _, _, _ -> },
+        )
+    }
+}
+
+@Preview(name = "No results", showBackground = true)
+@Composable
+internal fun GlobalSearchNoResultsPreview() {
+    ChatAppTheme {
+        GlobalSearchContent(
+            state = GlobalSearchState(query = "xyzzy"),
+            focusRequester = remember { FocusRequester() },
+            onIntent = {},
+            onBack = {},
+            onOpenConversation = { _, _, _, _ -> },
+        )
     }
 }
 

@@ -43,3 +43,15 @@ fun UserDBO.toBO() = UserBO(
     showOnlineStatus = showOnlineStatus,
     publicKey = publicKey,
 )
+
+fun UserBO.toDBO(isCurrentUser: Boolean = false) = UserDBO(
+    id = id,
+    email = email,
+    username = username,
+    displayName = displayName,
+    avatarUrl = avatarUrl,
+    createdAt = createdAt.toEpochMilliseconds(),
+    isCurrentUser = isCurrentUser,
+    lastSeen = lastSeen?.toEpochMilliseconds(),
+    showOnlineStatus = showOnlineStatus,
+)

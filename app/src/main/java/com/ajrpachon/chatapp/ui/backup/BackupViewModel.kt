@@ -1,8 +1,11 @@
 package com.ajrpachon.chatapp.ui.backup
 
 import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.repository.BackupRepository
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
+import com.ajrpachon.chatapp.ui.common.UiText
+import com.ajrpachon.chatapp.ui.common.toUiText
 import com.ajrpachon.chatapp.utils.AppLogger
 import kotlinx.coroutines.launch
 
@@ -16,11 +19,19 @@ class BackupViewModel(
 
     fun onIntent(intent: BackupIntent) {
         when (intent) {
-            BackupIntent.StartBackup -> startBackup()
-            BackupIntent.StartRestore -> startRestore()
+            BackupIntent.RequestBackup -> askPassphrase(PassphraseAction.BACKUP)
+            BackupIntent.RequestRestore -> askPassphrase(PassphraseAction.RESTORE)
+            BackupIntent.DismissPassphrase -> updateState { it.copy(passphraseAction = null) }
+            is BackupIntent.StartBackup -> startBackup(intent.passphrase)
+            is BackupIntent.StartRestore -> startRestore(intent.passphrase)
             BackupIntent.DismissError -> updateState { it.copy(error = null) }
             BackupIntent.DismissSuccess -> updateState { it.copy(successMessage = null) }
         }
+    }
+
+    private fun askPassphrase(action: PassphraseAction) {
+        if (state.value.isBackingUp || state.value.isRestoring) return
+        updateState { it.copy(passphraseAction = action) }
     }
 
     private fun loadLastBackupInfo() {
@@ -41,18 +52,19 @@ class BackupViewModel(
         }
     }
 
-    private fun startBackup() {
+    private fun startBackup(passphrase: String) {
         if (state.value.isBackingUp || state.value.isRestoring) return
+        if (passphrase.length < MIN_BACKUP_PASSPHRASE_LENGTH) return
         viewModelScope.launch {
-            updateState { it.copy(isBackingUp = true, error = null) }
+            updateState { it.copy(isBackingUp = true, passphraseAction = null, error = null) }
             runCatching {
-                val info = backupRepository.backup()
+                val info = backupRepository.backup(passphrase)
                 updateState {
                     it.copy(
                         isBackingUp = false,
                         lastBackupDate = info.lastBackupDate,
                         backupSizeMb = info.backupSizeMb,
-                        successMessage = "Copia realizada correctamente",
+                        successMessage = UiText.StringResource(R.string.backup_success),
                     )
                 }
             }.onFailure { e ->
@@ -60,23 +72,24 @@ class BackupViewModel(
                 updateState {
                     it.copy(
                         isBackingUp = false,
-                        error = e.message ?: "Error al hacer la copia de seguridad",
+                        error = e.toUiText(R.string.backup_error_backup),
                     )
                 }
             }
         }
     }
 
-    private fun startRestore() {
+    private fun startRestore(passphrase: String) {
         if (state.value.isBackingUp || state.value.isRestoring) return
+        if (passphrase.isEmpty()) return
         viewModelScope.launch {
-            updateState { it.copy(isRestoring = true, error = null) }
+            updateState { it.copy(isRestoring = true, passphraseAction = null, error = null) }
             runCatching {
-                backupRepository.restore()
+                backupRepository.restore(passphrase)
                 updateState {
                     it.copy(
                         isRestoring = false,
-                        successMessage = "Mensajes restaurados correctamente",
+                        successMessage = UiText.StringResource(R.string.backup_restore_success),
                     )
                 }
             }.onFailure { e ->
@@ -84,7 +97,7 @@ class BackupViewModel(
                 updateState {
                     it.copy(
                         isRestoring = false,
-                        error = e.message ?: "Error al restaurar la copia de seguridad",
+                        error = e.toUiText(R.string.backup_error_restore),
                     )
                 }
             }

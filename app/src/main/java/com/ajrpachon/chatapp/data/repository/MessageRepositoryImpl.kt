@@ -13,40 +13,34 @@ import com.ajrpachon.chatapp.data.local.entity.ReactionDBO
 import com.ajrpachon.chatapp.data.local.entity.UserDBO
 import com.ajrpachon.chatapp.data.mapper.toBO
 import com.ajrpachon.chatapp.data.mapper.toDBO
-import com.ajrpachon.chatapp.data.remote.dto.MessageDTO
+import com.ajrpachon.chatapp.data.mapper.toDTO
 import com.ajrpachon.chatapp.data.remote.source.MessageRemoteSource
 import com.ajrpachon.chatapp.domain.model.MessageBO
-import com.ajrpachon.chatapp.domain.model.StatusReplyContext
+import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
-import com.ajrpachon.chatapp.utils.AnalyticsEvents
+import com.ajrpachon.chatapp.domain.repository.AnalyticsEvents
 import com.ajrpachon.chatapp.utils.AppLogger
 import com.ajrpachon.chatapp.utils.UploadLimits.checkAudioSize
 import com.ajrpachon.chatapp.utils.UploadLimits.checkFileSize
 import com.ajrpachon.chatapp.utils.UploadLimits.checkImageSize
 import com.ajrpachon.chatapp.utils.UploadLimits.checkVideoSize
-import com.ajrpachon.chatapp.utils.catchResult
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.storage.storage
+import com.ajrpachon.chatapp.domain.util.catchResult
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
+
 private const val TAG = "MsgRepo"
 
-private const val BUCKET = "chat-images"
-private const val AUDIO_BUCKET = "chat-audio"
-private const val FILE_BUCKET = "chat-files"
-private const val VIDEO_BUCKET = "chat-videos"
 
 class MessageRepositoryImpl(
     private val messageDao: MessageDao,
     private val userDao: UserDao,
     private val reactionDao: ReactionDao,
     private val remoteSource: MessageRemoteSource,
-    private val supabase: SupabaseClient,
     private val analyticsTracker: AnalyticsTracker,
     private val e2eeCoder: MessageE2EECoder,
 ) : MessageRepository {
@@ -83,116 +77,54 @@ class MessageRepositoryImpl(
         }.collect { send(it) }
     }
 
-    override suspend fun sendMessage(
-        conversationId: String,
-        senderId: String,
-        content: String,
-        imageUrl: String?,
-        audioUrl: String?,
-        audioDurationMs: Long?,
-        audioAmplitudes: String?,
-        replyToId: String?,
-        replyToContent: String?,
-        replyToSenderName: String?,
-        callType: String?,
-        callStatus: String?,
-        callDuration: Int?,
-        gifUrl: String?,
-        stickerUrl: String?,
-        fileUrl: String?,
-        fileName: String?,
-        fileSize: Long?,
-        fileMimeType: String?,
-        videoUrl: String?,
-        otherUserId: String?,
-        statusReply: StatusReplyContext?,
-    ): MessageBO {
+    override suspend fun sendMessage(message: OutgoingMessageBO): MessageBO {
         // Attempt E2EE for 1:1 text messages (skip for media/call messages and group chats)
+        val otherUserId = message.otherUserId
         val (finalContent, isEncrypted) = if (
-            otherUserId != null &&
-            content.isNotBlank() &&
-            imageUrl == null && audioUrl == null && callType == null &&
-            gifUrl == null && stickerUrl == null && fileUrl == null && videoUrl == null
+            otherUserId != null && message.content.isNotBlank() && !message.hasNonTextPayload
         ) {
-            e2eeCoder.tryEncrypt(senderId, otherUserId, content)
+            e2eeCoder.encrypt(message.senderId, otherUserId, message.content) to true
         } else {
-            Pair(content, false)
+            Pair(message.content, false)
         }
 
-        val messageDto = MessageDTO(
+        val messageDto = message.toDTO(
             id = java.util.UUID.randomUUID().toString(),
-            conversationId = conversationId,
-            senderId = senderId,
-            content = finalContent,
-            isRead = false,
             createdAt = Instant.fromEpochMilliseconds(System.currentTimeMillis()).toString(),
-            imageUrl = imageUrl,
-            audioUrl = audioUrl,
-            audioDurationMs = audioDurationMs,
-            audioAmplitudes = audioAmplitudes,
-            replyToId = replyToId,
-            replyToContent = replyToContent,
-            replyToSenderName = replyToSenderName,
-            callType = callType,
-            callStatus = callStatus,
-            callDuration = callDuration,
-            gifUrl = gifUrl,
-            stickerUrl = stickerUrl,
-            fileUrl = fileUrl,
-            fileName = fileName,
-            fileSize = fileSize,
-            fileMimeType = fileMimeType,
-            videoUrl = videoUrl,
+            content = finalContent,
             isEncrypted = isEncrypted,
-            replyToStatusId = statusReply?.statusId,
-            replyToStatusOwnerId = statusReply?.statusOwnerId,
-            replyToStatusText = statusReply?.statusText,
-            replyToStatusImageUrl = statusReply?.statusImageUrl,
-            replyToStatusVideoUrl = statusReply?.statusVideoUrl,
-            replyToStatusBackgroundColor = statusReply?.statusBackgroundColor,
-            replyToStatusExpiresAt = statusReply?.statusExpiresAt?.let { Instant.fromEpochMilliseconds(it).toString() },
         )
-        AppLogger.d(TAG, "DIAG sendMessage BEFORE insert audioDurationMs=$audioDurationMs dto.audioDurationMs=${messageDto.audioDurationMs}")
+        AppLogger.d(TAG, "DIAG sendMessage BEFORE insert audioDurationMs=${message.audioDurationMs} dto.audioDurationMs=${messageDto.audioDurationMs}")
         remoteSource.sendMessage(messageDto)
         val messageDbo = messageDto.toDBO()
         AppLogger.d(TAG, "DIAG sendMessage AFTER dto.toDBO() dbo.audioDurationMs=${messageDbo.audioDurationMs} id=${messageDbo.id}")
         messageDao.upsert(messageDbo)
-        val sender = userDao.getById(senderId)
-        val senderName = sender?.displayName ?: senderId
+        val sender = userDao.getById(message.senderId)
+        val senderName = sender?.displayName ?: message.senderId
         // Return with plaintext for local display
-        return messageDbo.toBO(senderId, senderName, sender?.avatarUrl).let {
-            if (isEncrypted) it.copy(content = content, isEncrypted = true) else it
+        return messageDbo.toBO(message.senderId, senderName, sender?.avatarUrl).let {
+            if (isEncrypted) it.copy(content = message.content, isEncrypted = true) else it
         }
     }
 
     override suspend fun uploadAudio(conversationId: String, bytes: ByteArray): String {
         bytes.checkAudioSize()
-        val path = "$conversationId/${java.util.UUID.randomUUID()}.m4a"
-        supabase.storage[AUDIO_BUCKET].upload(path, bytes) { upsert = false }
-        return supabase.storage[AUDIO_BUCKET].publicUrl(path)
+        return remoteSource.uploadAudio(conversationId, bytes)
     }
 
     override suspend fun uploadImage(conversationId: String, bytes: ByteArray, mimeType: String): String {
         bytes.checkImageSize()
-        val ext = if (mimeType.contains("png")) "png" else "jpg"
-        val path = "$conversationId/${java.util.UUID.randomUUID()}.$ext"
-        supabase.storage[BUCKET].upload(path, bytes) { upsert = false }
-        return supabase.storage[BUCKET].publicUrl(path)
+        return remoteSource.uploadImage(conversationId, bytes, mimeType)
     }
 
     override suspend fun uploadFile(conversationId: String, bytes: ByteArray, fileName: String, mimeType: String): String {
         bytes.checkFileSize()
-        val safeName = fileName.replace(Regex("[^A-Za-z0-9._-]"), "_")
-        val path = "$conversationId/${java.util.UUID.randomUUID()}_$safeName"
-        supabase.storage[FILE_BUCKET].upload(path, bytes) { upsert = false }
-        return supabase.storage[FILE_BUCKET].publicUrl(path)
+        return remoteSource.uploadFile(conversationId, bytes, fileName)
     }
 
     override suspend fun uploadVideo(conversationId: String, bytes: ByteArray): String {
         bytes.checkVideoSize()
-        val path = "$conversationId/${java.util.UUID.randomUUID()}.mp4"
-        supabase.storage[VIDEO_BUCKET].upload(path, bytes) { upsert = false }
-        return supabase.storage[VIDEO_BUCKET].publicUrl(path)
+        return remoteSource.uploadVideo(conversationId, bytes)
     }
 
     override suspend fun markAsRead(conversationId: String, userId: String) {

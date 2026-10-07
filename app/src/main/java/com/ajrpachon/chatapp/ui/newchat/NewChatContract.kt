@@ -2,6 +2,7 @@ package com.ajrpachon.chatapp.ui.newchat
 
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.model.UserRelationship
+import com.ajrpachon.chatapp.ui.common.UiText
 
 data class NewChatState(
     val query: String = "",
@@ -11,7 +12,7 @@ data class NewChatState(
     val contacts: List<PhoneContact> = emptyList(),
     val isLoadingUsers: Boolean = false,
     val contactsPermissionDenied: Boolean = false,
-    val error: String? = null,
+    val error: UiText? = null,
     val userRelationships: Map<String, UserRelationship> = emptyMap(),
     val pendingUserIds: Set<String> = emptySet(),
     val suggestedContacts: List<UserBO> = emptyList(),
@@ -37,7 +38,7 @@ sealed interface NewChatIntent {
 sealed interface NewChatEffect {
     data class NavigateToChat(val conversationId: String, val otherUserName: String) : NewChatEffect
     data object NavigateToInvitations : NewChatEffect
-    data class ShowMessage(val text: String) : NewChatEffect
-    data class ShareText(val text: String) : NewChatEffect
-    data class InviteContact(val phoneNumber: String, val text: String) : NewChatEffect
+    data class ShowMessage(val text: UiText) : NewChatEffect
+    data class ShareText(val text: UiText) : NewChatEffect
+    data class InviteContact(val phoneNumber: String, val text: UiText) : NewChatEffect
 }

@@ -9,6 +9,7 @@ import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.ReadUriAsBytesUseCase
 import com.ajrpachon.chatapp.domain.usecase.ReplyToStatusUseCase
 import com.ajrpachon.chatapp.domain.usecase.StatusReplyResult
+import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -237,7 +238,7 @@ class StatusViewModelTest {
         vm.onIntent(StatusIntent.PostTextStatus)
         advanceUntilIdle()
 
-        assertEquals("error de red", vm.state.value.error)
+        assertEquals(UiText.Dynamic("error de red"), vm.state.value.error)
     }
 
     // ── ReplyToStatus ─────────────────────────────────────────────────────────

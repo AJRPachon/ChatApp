@@ -1,5 +1,8 @@
 package com.ajrpachon.chatapp.ui.profile
 
+import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.domain.model.AuthErrorKind
+import com.ajrpachon.chatapp.domain.model.AuthException
 import com.ajrpachon.chatapp.domain.model.ThemePreference
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.repository.AppLockRepository
@@ -9,8 +12,9 @@ import com.ajrpachon.chatapp.domain.repository.FcmTokenRepository
 import com.ajrpachon.chatapp.domain.repository.ThemeRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
+import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.util.MainDispatcherRule
-import io.github.jan.supabase.exceptions.RestException
+import com.ajrpachon.chatapp.utils.AppDispatchers
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -69,15 +73,10 @@ class ProfileViewModelTest {
         analyticsTracker = analyticsTracker,
         // Shares the rule's scheduler so the QR-bitmap withContext() hop in init{} is
         // driven by advanceUntilIdle() instead of leaking onto a real background thread.
-        defaultDispatcher = mainDispatcherRule.testDispatcher,
+        dispatchers = AppDispatchers(mainDispatcherRule.testDispatcher),
     )
 
-    private fun restException(statusCode: Int, message: String? = null): RestException {
-        val exception = mockk<RestException>()
-        every { exception.statusCode } returns statusCode
-        every { exception.message } returns message
-        return exception
-    }
+    private fun authFailure(kind: AuthErrorKind) = AuthException(kind, IllegalStateException("backend said no"))
 
     @Test
     fun `requestDeleteAccount sends ShowDeleteAccountConfirm effect`() = runTest(mainDispatcherRule.scheduler) {
@@ -136,7 +135,7 @@ class ProfileViewModelTest {
 
     @Test
     fun `deleteAccount with 401 shows invalid session message`() = runTest(mainDispatcherRule.scheduler) {
-        coEvery { authRepository.deleteAccount() } throws restException(401)
+        coEvery { authRepository.deleteAccount() } throws authFailure(AuthErrorKind.SESSION_EXPIRED)
         val vm = buildViewModel()
         advanceUntilIdle()
 
@@ -144,12 +143,12 @@ class ProfileViewModelTest {
         advanceUntilIdle()
 
         assertFalse(vm.state.value.isDeletingAccount)
-        assertTrue(vm.state.value.error.orEmpty().contains("sesion", ignoreCase = true))
+        assertEquals(UiText.StringResource(R.string.profile_error_session_invalid), vm.state.value.error)
     }
 
     @Test
     fun `deleteAccount with 429 shows rate limit message`() = runTest(mainDispatcherRule.scheduler) {
-        coEvery { authRepository.deleteAccount() } throws restException(429)
+        coEvery { authRepository.deleteAccount() } throws authFailure(AuthErrorKind.TOO_MANY_REQUESTS)
         val vm = buildViewModel()
         advanceUntilIdle()
 
@@ -157,12 +156,12 @@ class ProfileViewModelTest {
         advanceUntilIdle()
 
         assertFalse(vm.state.value.isDeletingAccount)
-        assertTrue(vm.state.value.error.orEmpty().contains("minuto", ignoreCase = true))
+        assertEquals(UiText.StringResource(R.string.profile_error_too_many_attempts), vm.state.value.error)
     }
 
     @Test
     fun `deleteAccount with 500 shows generic server error message`() = runTest(mainDispatcherRule.scheduler) {
-        coEvery { authRepository.deleteAccount() } throws restException(500)
+        coEvery { authRepository.deleteAccount() } throws authFailure(AuthErrorKind.SERVER_ERROR)
         val vm = buildViewModel()
         advanceUntilIdle()
 
@@ -170,7 +169,7 @@ class ProfileViewModelTest {
         advanceUntilIdle()
 
         assertFalse(vm.state.value.isDeletingAccount)
-        assertTrue(vm.state.value.error.orEmpty().contains("servidor", ignoreCase = true))
+        assertEquals(UiText.StringResource(R.string.profile_error_delete_server), vm.state.value.error)
     }
 
     @Test
@@ -183,6 +182,6 @@ class ProfileViewModelTest {
         advanceUntilIdle()
 
         assertFalse(vm.state.value.isDeletingAccount)
-        assertEquals("boom", vm.state.value.error)
+        assertEquals(UiText.Dynamic("boom"), vm.state.value.error)
     }
 }

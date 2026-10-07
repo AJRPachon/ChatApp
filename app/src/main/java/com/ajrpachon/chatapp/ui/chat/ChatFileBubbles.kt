@@ -37,12 +37,12 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.StickerValidation
 import com.ajrpachon.chatapp.ui.common.formatCallDuration
+import com.ajrpachon.chatapp.ui.theme.ChatAppTextSizes
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
@@ -367,7 +367,7 @@ internal fun StickerBubble(message: MessageBO) {
         Column(horizontalAlignment = if (message.isFromMe) Alignment.End else Alignment.Start) {
             val sticker = StickerValidation.sanitize(message.stickerUrl)
             if (sticker != null) {
-                Text(text = sticker, fontSize = 64.sp)
+                Text(text = sticker, fontSize = ChatAppTextSizes.StickerMessage)
             }
             Text(
                 text = timeText,

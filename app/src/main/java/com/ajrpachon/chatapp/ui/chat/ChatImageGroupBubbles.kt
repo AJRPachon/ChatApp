@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.filled.CameraAlt
@@ -67,7 +66,7 @@ internal fun PendingImageBatchBubble(
         Row(
             modifier = Modifier
                 .widthIn(max = 260.dp)
-                .clip(RoundedCornerShape(12.dp)),
+                .clip(MaterialTheme.shapes.medium),
             horizontalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             AsyncImage(
@@ -172,7 +171,7 @@ internal fun ImageGroupBubble(
             Row(
                 modifier = Modifier
                     .widthIn(max = 260.dp)
-                    .clip(RoundedCornerShape(12.dp)),
+                    .clip(MaterialTheme.shapes.medium),
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 AsyncImage(

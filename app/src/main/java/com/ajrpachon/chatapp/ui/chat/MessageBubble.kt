@@ -19,7 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.filled.CheckCircle
@@ -176,7 +176,9 @@ internal fun ChatBubbleSlot(
 
 // ── MessageBubble ─────────────────────────────────────────────────────────────
 
-@Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList", "ReturnCount")
+// ReturnCount: one early return per special message type (contact card, poll, ...) that renders its own bubble;
+// a single-exit `when` would nest the whole regular layout inside it.
+@Suppress("ReturnCount")
 @OptIn(ExperimentalFoundationApi::class, androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 internal fun MessageBubble(
@@ -201,7 +203,6 @@ internal fun MessageBubble(
     onOpenPdf: (url: String, filename: String) -> Unit = { _, _ -> },
     onVote: ((optionId: String) -> Unit)? = null,
     onShowReactionDetails: () -> Unit = {},
-    onRetryMessage: (String) -> Unit = {},
     onCopy: (String) -> Unit = {},
     contactPhoneLookups: Map<String, ContactPhoneLookup> = emptyMap(),
     onCheckContactRelationship: (String) -> Unit = {},
@@ -507,7 +508,7 @@ internal fun MessageBubble(
                 grouped.forEach { (emoji, reactors) ->
                     val isMine = reactors.any { it.userId == currentUserId }
                     Surface(
-                        shape = RoundedCornerShape(50),
+                        shape = CircleShape,
                         color = if (isMine) MaterialTheme.colorScheme.primaryContainer
                                 else MaterialTheme.colorScheme.surfaceVariant,
                         modifier = Modifier.combinedClickable(

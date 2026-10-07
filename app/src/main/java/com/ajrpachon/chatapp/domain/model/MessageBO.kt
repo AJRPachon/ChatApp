@@ -43,7 +43,7 @@ data class MessageBO(
     val isSaved: Boolean = false,
     val sendStatus: SendStatus = SendStatus.SENT,
     // Reply-to-status (WhatsApp-style): a snapshot taken when this message was sent, not a live
-    // reference — see StatusReplyContext's doc for why.
+    // reference — see StatusReplyContextBO's doc for why.
     val replyToStatusId: String? = null,
     val replyToStatusOwnerId: String? = null,
     val replyToStatusText: String? = null,

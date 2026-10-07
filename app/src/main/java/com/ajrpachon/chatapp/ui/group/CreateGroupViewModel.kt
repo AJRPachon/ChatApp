@@ -1,12 +1,14 @@
 package com.ajrpachon.chatapp.ui.group
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 
 import androidx.lifecycle.viewModelScope
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.usecase.CreateGroupUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.SearchUsersUseCase
 import com.ajrpachon.chatapp.ui.common.BaseViewModel
+import com.ajrpachon.chatapp.ui.common.toUiText
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -88,7 +90,7 @@ class CreateGroupViewModel(
             ).onSuccess { conv ->
                 sendEffect(CreateGroupEffect.NavigateToChat(conv.id, conv.name))
             }.onFailure { e ->
-                updateState { it.copy(error = e.message ?: "Error al crear el grupo") }
+                updateState { it.copy(error = e.toUiText(R.string.group_error_create)) }
             }
             updateState { it.copy(isLoading = false) }
         }

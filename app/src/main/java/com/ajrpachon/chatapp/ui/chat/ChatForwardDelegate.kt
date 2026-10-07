@@ -1,10 +1,13 @@
 package com.ajrpachon.chatapp.ui.chat
 
+import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.MessageBO
+import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
+import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.utils.AppLogger
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -38,7 +41,7 @@ class ChatForwardDelegate(
                 updateState { it.copy(forward = it.forward.copy(showDialog = true, message = message, conversations = conversations)) }
             }.onFailure { e ->
                 AppLogger.e(TAG, "showForwardDialog failed", e)
-                updateState { it.copy(error = "No se pudo cargar las conversaciones") }
+                updateState { it.copy(error = UiText.StringResource(R.string.chat_error_load_conversations)) }
             }
         }
     }
@@ -50,13 +53,15 @@ class ChatForwardDelegate(
         scope.launch {
             catchResult {
                 messageRepository.sendMessage(
-                    conversationId = targetConversationId, senderId = uid, content = message.content,
-                    imageUrl = message.imageUrl, audioUrl = message.audioUrl, audioDurationMs = message.audioDurationMs,
-                    audioAmplitudes = message.audioAmplitudes,
-                    gifUrl = message.gifUrl, stickerUrl = message.stickerUrl,
+                    OutgoingMessageBO(
+                        conversationId = targetConversationId, senderId = uid, content = message.content,
+                        imageUrl = message.imageUrl, audioUrl = message.audioUrl, audioDurationMs = message.audioDurationMs,
+                        audioAmplitudes = message.audioAmplitudes,
+                        gifUrl = message.gifUrl, stickerUrl = message.stickerUrl,
+                    ),
                 )
-                sendEffect(ChatEffect.ShowSnackbar("Mensaje reenviado"))
-            }.onFailure { updateState { it.copy(error = "No se pudo reenviar") } }
+                sendEffect(ChatEffect.ShowSnackbar(UiText.StringResource(R.string.chat_message_forwarded)))
+            }.onFailure { updateState { it.copy(error = UiText.StringResource(R.string.chat_error_forward)) } }
         }
     }
 
@@ -68,7 +73,7 @@ class ChatForwardDelegate(
                 updateState { it.copy(forward = it.forward.copy(showSelectionDialog = true, conversations = conversations)) }
             }.onFailure { e ->
                 AppLogger.e(TAG, "showForwardSelectionDialog failed", e)
-                updateState { it.copy(error = "No se pudo cargar las conversaciones") }
+                updateState { it.copy(error = UiText.StringResource(R.string.chat_error_load_conversations)) }
             }
         }
     }
@@ -89,16 +94,18 @@ class ChatForwardDelegate(
             for (message in toForward) {
                 catchResult {
                     messageRepository.sendMessage(
-                        conversationId = targetConversationId, senderId = uid, content = message.content,
-                        imageUrl = message.imageUrl, audioUrl = message.audioUrl, audioDurationMs = message.audioDurationMs,
-                        audioAmplitudes = message.audioAmplitudes,
-                        gifUrl = message.gifUrl, stickerUrl = message.stickerUrl,
+                        OutgoingMessageBO(
+                            conversationId = targetConversationId, senderId = uid, content = message.content,
+                            imageUrl = message.imageUrl, audioUrl = message.audioUrl, audioDurationMs = message.audioDurationMs,
+                            audioAmplitudes = message.audioAmplitudes,
+                            gifUrl = message.gifUrl, stickerUrl = message.stickerUrl,
+                        ),
                     )
                     forwarded++
                 }
             }
-            if (forwarded > 0) sendEffect(ChatEffect.ShowSnackbar("$forwarded mensaje(s) reenviado(s)"))
-            else updateState { it.copy(error = "No se pudieron reenviar") }
+            if (forwarded > 0) sendEffect(ChatEffect.ShowSnackbar(UiText.of(R.string.chat_messages_forwarded_count, forwarded)))
+            else updateState { it.copy(error = UiText.StringResource(R.string.chat_error_forward_many)) }
         }
     }
 }

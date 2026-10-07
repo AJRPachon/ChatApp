@@ -2,7 +2,8 @@ package com.ajrpachon.chatapp.ui.chat
 
 import com.ajrpachon.chatapp.domain.repository.AiAssistantRepository
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.ui.common.toUiText
+import com.ajrpachon.chatapp.domain.util.catchResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -34,7 +35,7 @@ class ChatAiDelegate(
             }.getOrDefault(emptyList())
             aiAssistantRepository.summarize(snippets)
                 .onSuccess { result -> updateState { it.copy(ai = it.ai.copy(suggestion = result, isLoading = false)) } }
-                .onFailure { e -> updateState { it.copy(ai = it.ai.copy(isLoading = false), error = e.message) } }
+                .onFailure { e -> updateState { it.copy(ai = it.ai.copy(isLoading = false), error = e.toUiText()) } }
         }
     }
 
@@ -47,7 +48,7 @@ class ChatAiDelegate(
             }.getOrDefault("")
             aiAssistantRepository.suggestReply(last)
                 .onSuccess { result -> updateState { it.copy(ai = it.ai.copy(suggestion = result, isLoading = false)) } }
-                .onFailure { e -> updateState { it.copy(ai = it.ai.copy(isLoading = false), error = e.message) } }
+                .onFailure { e -> updateState { it.copy(ai = it.ai.copy(isLoading = false), error = e.toUiText()) } }
         }
     }
 
@@ -56,7 +57,7 @@ class ChatAiDelegate(
         scope.launch {
             aiAssistantRepository.freeform(prompt)
                 .onSuccess { result -> updateState { it.copy(ai = it.ai.copy(suggestion = result, isLoading = false)) } }
-                .onFailure { e -> updateState { it.copy(ai = it.ai.copy(isLoading = false), error = e.message) } }
+                .onFailure { e -> updateState { it.copy(ai = it.ai.copy(isLoading = false), error = e.toUiText()) } }
         }
     }
 

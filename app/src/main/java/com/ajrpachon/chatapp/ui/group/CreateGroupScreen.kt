@@ -36,9 +36,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
@@ -52,6 +54,8 @@ import com.github.skydoves.navgraph.annotations.NavDestination
 import com.github.skydoves.navgraph.annotations.NavEdge
 import com.ajrpachon.chatapp.ChatRoute
 import com.ajrpachon.chatapp.CreateGroupRoute
+import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
+import kotlinx.datetime.Instant
 import org.koin.androidx.compose.koinViewModel
 
 @NavEdge(to = ChatRoute::class, label = "Group Created")
@@ -75,13 +79,28 @@ fun CreateGroupScreen(
         }
     }
 
+    val context = LocalContext.current
+
     LaunchedEffect(state.error) {
         state.error?.let {
-            snackbarHostState.showSnackbar(it)
+            snackbarHostState.showSnackbar(it.asString(context))
             vm.onIntent(CreateGroupIntent.DismissError)
         }
     }
 
+    CreateGroupContent(
+        state = state,
+        snackbarHostState = snackbarHostState,
+        onIntent = vm::onIntent,
+    )
+}
+
+@Composable
+internal fun CreateGroupContent(
+    state: CreateGroupState,
+    snackbarHostState: SnackbarHostState,
+    onIntent: (CreateGroupIntent) -> Unit,
+) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -91,22 +110,64 @@ fun CreateGroupScreen(
                 } else {
                     stringResource(R.string.group_create_group_name_title)
                 },
-                onBack = { vm.onIntent(CreateGroupIntent.Back) },
+                onBack = { onIntent(CreateGroupIntent.Back) },
             )
         },
     ) { innerPadding ->
         when (state.step) {
             CreateGroupStep.SELECT_MEMBERS -> SelectMembersStep(
                 state = state,
-                onIntent = vm::onIntent,
+                onIntent = onIntent,
                 modifier = Modifier.padding(innerPadding),
             )
             CreateGroupStep.SET_INFO -> SetGroupInfoStep(
                 state = state,
-                onIntent = vm::onIntent,
+                onIntent = onIntent,
                 modifier = Modifier.padding(innerPadding),
             )
         }
+    }
+}
+
+private fun previewUser(id: String, name: String) = UserBO(
+    id = id,
+    email = "",
+    username = name.lowercase().replace(" ", "_"),
+    displayName = name,
+    avatarUrl = null,
+    createdAt = Instant.fromEpochMilliseconds(0L),
+)
+
+@Preview(name = "Select members", showBackground = true)
+@Composable
+internal fun CreateGroupSelectMembersPreview() {
+    val ana = previewUser("1", "Ana García")
+    ChatAppTheme {
+        CreateGroupContent(
+            state = CreateGroupState(
+                searchResults = listOf(ana, previewUser("2", "Bruno López"), previewUser("3", "Carla Ruiz")),
+                selectedUsers = listOf(ana),
+            ),
+            snackbarHostState = remember { SnackbarHostState() },
+            onIntent = {},
+        )
+    }
+}
+
+@Preview(name = "Group info", showBackground = true)
+@Composable
+internal fun CreateGroupSetInfoPreview() {
+    ChatAppTheme {
+        CreateGroupContent(
+            state = CreateGroupState(
+                step = CreateGroupStep.SET_INFO,
+                selectedUsers = listOf(previewUser("1", "Ana García")),
+                groupName = "Familia",
+                groupDescription = "Planes y fotos",
+            ),
+            snackbarHostState = remember { SnackbarHostState() },
+            onIntent = {},
+        )
     }
 }
 

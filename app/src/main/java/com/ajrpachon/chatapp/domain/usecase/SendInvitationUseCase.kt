@@ -1,5 +1,5 @@
 package com.ajrpachon.chatapp.domain.usecase
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 
 import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.model.UserRelationship
@@ -7,7 +7,7 @@ import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.ConversationRepository
 import com.ajrpachon.chatapp.domain.repository.InvitationRepository
 import com.ajrpachon.chatapp.domain.repository.UserRepository
-import com.ajrpachon.chatapp.utils.AnalyticsEvents
+import com.ajrpachon.chatapp.domain.repository.AnalyticsEvents
 
 sealed interface SendInvitationResult {
     data object Sent : SendInvitationResult
@@ -15,7 +15,8 @@ sealed interface SendInvitationResult {
     data object PendingReceived : SendInvitationResult
     data object Blocked : SendInvitationResult
     data class NavigateToChat(val conversationId: String, val name: String) : SendInvitationResult
-    data class Failure(val message: String) : SendInvitationResult
+    data object NotAuthenticated : SendInvitationResult
+    data class Failure(val message: String?) : SendInvitationResult
 }
 
 class SendInvitationUseCase(
@@ -29,14 +30,14 @@ class SendInvitationUseCase(
 
     suspend operator fun invoke(otherUser: UserBO): SendInvitationResult {
         val currentUserId = userRepository.getCurrentUserId()
-            ?: return SendInvitationResult.Failure("No autenticado")
+            ?: return SendInvitationResult.NotAuthenticated
 
         return when (invitationRepository.getRelationship(currentUserId, otherUser.id)) {
             UserRelationship.BLOCKED -> SendInvitationResult.Blocked
             UserRelationship.CONNECTED -> {
                 val conv = catchResult {
                     conversationRepository.getOrCreateDirectConversation(currentUserId, otherUser.id)
-                }.getOrElse { return SendInvitationResult.Failure(it.message ?: "Error") }
+                }.getOrElse { return SendInvitationResult.Failure(it.message) }
                 SendInvitationResult.NavigateToChat(conv.id, otherUser.displayName)
             }
             UserRelationship.PENDING_SENT -> SendInvitationResult.AlreadySent
@@ -48,7 +49,7 @@ class SendInvitationUseCase(
                         .onSuccess { analyticsTracker.logEvent(AnalyticsEvents.INVITATION_ACCEPTED) }
                     val conv = catchResult {
                         conversationRepository.getOrCreateDirectConversation(currentUserId, otherUser.id)
-                    }.getOrElse { return SendInvitationResult.Failure(it.message ?: "Error") }
+                    }.getOrElse { return SendInvitationResult.Failure(it.message) }
                     SendInvitationResult.NavigateToChat(conv.id, otherUser.displayName)
                 } else {
                     SendInvitationResult.PendingReceived
@@ -61,7 +62,7 @@ class SendInvitationUseCase(
                             analyticsTracker.logEvent(AnalyticsEvents.INVITATION_SENT)
                             SendInvitationResult.Sent
                         },
-                        onFailure = { SendInvitationResult.Failure(it.message ?: "Error al enviar invitación") },
+                        onFailure = { SendInvitationResult.Failure(it.message) },
                     )
             }
         }

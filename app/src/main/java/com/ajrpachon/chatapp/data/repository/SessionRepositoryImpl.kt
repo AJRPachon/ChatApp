@@ -1,7 +1,8 @@
 package com.ajrpachon.chatapp.data.repository
 
 import com.ajrpachon.chatapp.data.local.dao.SessionDao
-import com.ajrpachon.chatapp.data.local.entity.SessionDBO
+import com.ajrpachon.chatapp.data.mapper.toBO
+import com.ajrpachon.chatapp.data.mapper.toDBO
 import com.ajrpachon.chatapp.domain.model.SessionBO
 import com.ajrpachon.chatapp.domain.repository.SessionRepository
 import kotlinx.coroutines.flow.Flow
@@ -28,18 +29,3 @@ class SessionRepositoryImpl(private val dao: SessionDao) : SessionRepository {
         dao.deleteAllOthers()
 }
 
-private fun SessionDBO.toBO() = SessionBO(
-    id = id,
-    deviceInfo = deviceInfo,
-    createdAt = createdAt,
-    lastActiveAt = lastActiveAt,
-    isCurrent = isCurrent,
-)
-
-private fun SessionBO.toDBO() = SessionDBO(
-    id = id,
-    deviceInfo = deviceInfo,
-    createdAt = createdAt,
-    lastActiveAt = lastActiveAt,
-    isCurrent = isCurrent,
-)

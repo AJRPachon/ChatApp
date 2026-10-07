@@ -1,10 +1,10 @@
 package com.ajrpachon.chatapp.domain.usecase
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.GroupRepository
-import com.ajrpachon.chatapp.utils.AnalyticsEvents
+import com.ajrpachon.chatapp.domain.repository.AnalyticsEvents
 
 class CreateGroupUseCase(
     private val groupRepository: GroupRepository,

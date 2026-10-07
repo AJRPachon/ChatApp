@@ -5,6 +5,7 @@ import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.domain.usecase.CreateGroupUseCase
 import com.ajrpachon.chatapp.domain.usecase.GetCurrentUserUseCase
 import com.ajrpachon.chatapp.domain.usecase.SearchUsersUseCase
+import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.every
@@ -158,7 +159,7 @@ class CreateGroupViewModelTest {
         vm.onIntent(CreateGroupIntent.NameChanged("My Group"))
         vm.onIntent(CreateGroupIntent.Create)
         advanceUntilIdle()
-        assertEquals("server error", vm.state.value.error)
+        assertEquals(UiText.Dynamic("server error"), vm.state.value.error)
     }
 
     @Test

@@ -40,8 +40,7 @@ class SendInvitationUseCaseTest {
 
         val result = useCase(otherUser)
 
-        assertTrue(result is SendInvitationResult.Failure)
-        assertEquals("No autenticado", (result as SendInvitationResult.Failure).message)
+        assertEquals(SendInvitationResult.NotAuthenticated, result)
     }
 
     @Test

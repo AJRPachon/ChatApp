@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
@@ -32,9 +33,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.LoadStates
+import androidx.paging.PagingData
+import androidx.paging.compose.LazyPagingItems
 import com.ajrpachon.chatapp.domain.model.CallBO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -45,9 +50,14 @@ import com.ajrpachon.chatapp.ChatRoute
 import com.ajrpachon.chatapp.GroupInfoRoute
 import com.ajrpachon.chatapp.StatusViewerRoute
 import com.ajrpachon.chatapp.UserInfoRoute
+import com.ajrpachon.chatapp.domain.model.MessageBO
+import com.ajrpachon.chatapp.domain.model.ReactionBO
+import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import java.io.File
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.datetime.Instant
 
 
 // ── Screen ───────────────────────────────────────────────────────────────────
@@ -57,7 +67,6 @@ import java.io.File
 @NavEdge(to = UserInfoRoute::class, label = "User Info")
 @NavEdge(to = StatusViewerRoute::class, label = "Open Quoted Status")
 @NavDestination(route = ChatRoute::class)
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
     conversationId: String,
@@ -92,9 +101,6 @@ fun ChatScreen(
 
     val scope = rememberCoroutineScope()
     var highlightedMessageId by remember { mutableStateOf<String?>(null) }
-    // MutableState (not `by remember`) because ChatDialogHost also reads/writes this one —
-    // see its own doc for why.
-    val reactionDetailMessageId = remember { mutableStateOf<String?>(null) }
     val showScrollToBottom by remember { derivedStateOf { listState.firstVisibleItemIndex > 2 } }
 
     val onScrollToMessage: (String) -> Unit = { messageId ->
@@ -131,12 +137,6 @@ fun ChatScreen(
         vm.onIntent(ChatIntent.JumpToMessage(id))
     }
 
-    // MutableState (not `by remember`/`by rememberSaveable`) because ChatDialogHost also
-    // reads/writes these — see its own doc for why.
-    val viewerUrls = remember { mutableStateOf<List<String>>(emptyList()) }
-    val viewerInitialIndex = rememberSaveable { mutableStateOf(0) }
-    val showViewer = rememberSaveable { mutableStateOf(false) }
-
     // Tracks whether a send-triggered scroll is pending (waits for Paging to deliver the new item).
     val pendingSendScroll = remember { mutableStateOf(false) }
 
@@ -148,7 +148,7 @@ fun ChatScreen(
                 // new message arrives in the list (avoids scrolling before Paging delivers it).
                 ChatEffect.ScrollToBottom -> pendingSendScroll.value = true
                 ChatEffect.NavigateBack -> onBack()
-                is ChatEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message)
+                is ChatEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message.asString(context))
                 is ChatEffect.ShowShareSheet -> {
                     val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                         type = "text/plain"
@@ -163,7 +163,7 @@ fun ChatScreen(
                     val smsIntent = android.content.Intent(
                         android.content.Intent.ACTION_SENDTO,
                         android.net.Uri.parse("smsto:${effect.phoneNumber}"),
-                    ).apply { putExtra("sms_body", effect.text) }
+                    ).apply { putExtra("sms_body", effect.text.asString(context)) }
                     context.startActivity(smsIntent)
                 }
             }
@@ -204,14 +204,10 @@ fun ChatScreen(
 
     LaunchedEffect(state.error) {
         state.error?.let {
-            snackbarHostState.showSnackbar(it)
+            snackbarHostState.showSnackbar(it.asString(context))
             vm.onIntent(ChatIntent.DismissError)
         }
     }
-
-    // MutableState (not `by remember`) because ChatDialogHost also reads/writes this — see
-    // its own doc for why.
-    val showDeleteSelectionConfirm = remember { mutableStateOf(false) }
 
     var cameraUri by rememberSaveable { mutableStateOf<Uri?>(null) }
     var videoUri by rememberSaveable { mutableStateOf<Uri?>(null) }
@@ -282,9 +278,128 @@ fun ChatScreen(
         }
     }
 
+    val attachActions = ChatAttachActions(
+        onGallery = {
+            galleryLauncher.launch(
+                androidx.activity.result.PickVisualMediaRequest(
+                    androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly
+                )
+            )
+        },
+        onCamera = {
+            when {
+                ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
+                        == PackageManager.PERMISSION_GRANTED -> {
+                    cameraUri = createCameraUri(context)
+                    cameraUri?.let { cameraLauncher.launch(it) }
+                }
+                else -> cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+            }
+        },
+        onMic = {
+            when {
+                ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
+                        == PackageManager.PERMISSION_GRANTED -> {
+                    vm.onIntent(ChatIntent.StartRecording)
+                }
+                else -> audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            }
+        },
+        onAttachFile = { fileLauncher.launch(arrayOf("*/*")) },
+        onAttachVideo = {
+            when {
+                ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
+                        == PackageManager.PERMISSION_GRANTED -> {
+                    videoUri = createVideoUri(context)
+                    videoUri?.let { videoLauncher.launch(it) }
+                }
+                else -> videoPermissionLauncher.launch(Manifest.permission.CAMERA)
+            }
+        },
+        onLocation = {
+            when {
+                ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+                        == PackageManager.PERMISSION_GRANTED -> {
+                    vm.onIntent(ChatIntent.FetchAndSendLocation)
+                }
+                else -> locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            }
+        },
+        onContact = {
+            when {
+                ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS)
+                        == PackageManager.PERMISSION_GRANTED -> contactPickerLauncher.launch(null)
+                else -> contactPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+            }
+        },
+    )
+
+    ChatContent(
+        state = state,
+        conversationId = conversationId,
+        lazyPagingItems = lazyPagingItems,
+        reactions = reactions,
+        listState = listState,
+        snackbarHostState = snackbarHostState,
+        highlightedMessageId = highlightedMessageId,
+        showScrollToBottom = showScrollToBottom,
+        onIntent = vm::onIntent,
+        onScrollToMessage = onScrollToMessage,
+        attachActions = attachActions,
+        onBack = onBack,
+        onGroupInfo = onGroupInfo,
+        onUserInfo = onUserInfo,
+        onOpenPdf = onOpenPdf,
+        onOpenMediaGallery = onOpenMediaGallery,
+    )
+}
+
+/** The attachment entry points of [ChatBottomBar]; they launch Activity-result contracts, so [ChatScreen] owns them. */
+internal data class ChatAttachActions(
+    val onGallery: () -> Unit,
+    val onCamera: () -> Unit,
+    val onMic: () -> Unit,
+    val onAttachFile: () -> Unit,
+    val onAttachVideo: () -> Unit,
+    val onLocation: () -> Unit,
+    val onContact: () -> Unit,
+) {
+    companion object {
+        val None = ChatAttachActions({}, {}, {}, {}, {}, {}, {})
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun ChatContent(
+    state: ChatState,
+    conversationId: String,
+    lazyPagingItems: LazyPagingItems<MessageBO>,
+    reactions: Map<String, List<ReactionBO>>,
+    listState: LazyListState,
+    snackbarHostState: SnackbarHostState,
+    highlightedMessageId: String?,
+    showScrollToBottom: Boolean,
+    onIntent: (ChatIntent) -> Unit,
+    onScrollToMessage: (String) -> Unit,
+    attachActions: ChatAttachActions,
+    onBack: () -> Unit,
+    onGroupInfo: () -> Unit,
+    onUserInfo: (userId: String) -> Unit,
+    onOpenPdf: (url: String, filename: String) -> Unit,
+    onOpenMediaGallery: () -> Unit,
+) {
+    val scope = rememberCoroutineScope()
+    // MutableState (not `by remember`/`by rememberSaveable`) because ChatDialogHost also
+    // reads/writes these — see its own doc for why.
+    val reactionDetailMessageId = remember { mutableStateOf<String?>(null) }
+    val viewerUrls = remember { mutableStateOf<List<String>>(emptyList()) }
+    val viewerInitialIndex = rememberSaveable { mutableStateOf(0) }
+    val showViewer = rememberSaveable { mutableStateOf(false) }
+    val showDeleteSelectionConfirm = remember { mutableStateOf(false) }
     ChatDialogHost(
         state = state,
-        vm = vm,
+        onIntent = onIntent,
         conversationId = conversationId,
         reactions = reactions,
         showDeleteSelectionConfirm = showDeleteSelectionConfirm,
@@ -323,7 +438,7 @@ fun ChatScreen(
         topBar = {
             ChatTopBar(
                 state = state,
-                vm = vm,
+                onIntent = onIntent,
                 latestPinned = latestPinned,
                 pinnedBannerVisible = pinnedBannerVisible,
                 onHidePinnedBanner = { pinnedBannerVisible = false },
@@ -338,67 +453,21 @@ fun ChatScreen(
         bottomBar = {
             ChatBottomBar(
                 state = state,
-                vm = vm,
+                onIntent = onIntent,
                 containerColor = scaffoldContainerColor,
-                onGallery = {
-                    galleryLauncher.launch(
-                        androidx.activity.result.PickVisualMediaRequest(
-                            androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly
-                        )
-                    )
-                },
-                onCamera = {
-                    when {
-                        ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
-                                == PackageManager.PERMISSION_GRANTED -> {
-                            cameraUri = createCameraUri(context)
-                            cameraUri?.let { cameraLauncher.launch(it) }
-                        }
-                        else -> cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-                    }
-                },
-                onMic = {
-                    when {
-                        ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
-                                == PackageManager.PERMISSION_GRANTED -> {
-                            vm.onIntent(ChatIntent.StartRecording)
-                        }
-                        else -> audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                    }
-                },
-                onAttachFile = { fileLauncher.launch(arrayOf("*/*")) },
-                onAttachVideo = {
-                    when {
-                        ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
-                                == PackageManager.PERMISSION_GRANTED -> {
-                            videoUri = createVideoUri(context)
-                            videoUri?.let { videoLauncher.launch(it) }
-                        }
-                        else -> videoPermissionLauncher.launch(Manifest.permission.CAMERA)
-                    }
-                },
-                onLocation = {
-                    when {
-                        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
-                                == PackageManager.PERMISSION_GRANTED -> {
-                            vm.onIntent(ChatIntent.FetchAndSendLocation)
-                        }
-                        else -> locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-                    }
-                },
-                onContact = {
-                    when {
-                        ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS)
-                                == PackageManager.PERMISSION_GRANTED -> contactPickerLauncher.launch(null)
-                        else -> contactPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
-                    }
-                },
+                onGallery = attachActions.onGallery,
+                onCamera = attachActions.onCamera,
+                onMic = attachActions.onMic,
+                onAttachFile = attachActions.onAttachFile,
+                onAttachVideo = attachActions.onAttachVideo,
+                onLocation = attachActions.onLocation,
+                onContact = attachActions.onContact,
             )
         },
     ) { innerPadding ->
         ChatMessageList(
             state = state,
-            vm = vm,
+            onIntent = onIntent,
             lazyPagingItems = lazyPagingItems,
             listState = listState,
             scope = scope,
@@ -416,6 +485,83 @@ fun ChatScreen(
             reactionDetailMessageId = reactionDetailMessageId,
         )
     }
+}
+
+private val previewLoadStates = LoadStates(
+    refresh = LoadState.NotLoading(endOfPaginationReached = true),
+    prepend = LoadState.NotLoading(endOfPaginationReached = true),
+    append = LoadState.NotLoading(endOfPaginationReached = true),
+)
+
+private fun previewMessage(id: String, content: String, isFromMe: Boolean) = MessageBO(
+    id = id,
+    conversationId = "c1",
+    senderId = if (isFromMe) "me" else "other",
+    senderName = if (isFromMe) "Yo" else "Ana García",
+    content = content,
+    isRead = true,
+    isFromMe = isFromMe,
+    createdAt = Instant.fromEpochMilliseconds(0L),
+)
+
+@Composable
+private fun PreviewChat(state: ChatState, messages: List<MessageBO>) {
+    val items = flowOf(PagingData.from(messages, previewLoadStates)).collectAsLazyPagingItems()
+    ChatAppTheme {
+        ChatContent(
+            state = state,
+            conversationId = "c1",
+            lazyPagingItems = items,
+            reactions = emptyMap(),
+            listState = rememberLazyListState(),
+            snackbarHostState = remember { SnackbarHostState() },
+            highlightedMessageId = null,
+            showScrollToBottom = false,
+            onIntent = {},
+            onScrollToMessage = {},
+            attachActions = ChatAttachActions.None,
+            onBack = {},
+            onGroupInfo = {},
+            onUserInfo = {},
+            onOpenPdf = { _, _ -> },
+            onOpenMediaGallery = {},
+        )
+    }
+}
+
+@Preview(name = "Conversation", showBackground = true)
+@Composable
+internal fun ChatConversationPreview() {
+    PreviewChat(
+        state = ChatState(currentUserId = "me", conversationTitle = "Ana García"),
+        messages = listOf(
+            previewMessage("3", "Perfecto, nos vemos allí", isFromMe = true),
+            previewMessage("2", "¿Quedamos a las 7?", isFromMe = false),
+            previewMessage("1", "Hola, ¿qué tal?", isFromMe = true),
+        ),
+    )
+}
+
+@Preview(name = "Empty", showBackground = true)
+@Composable
+internal fun ChatEmptyPreview() {
+    PreviewChat(state = ChatState(currentUserId = "me", conversationTitle = "Ana García"), messages = emptyList())
+}
+
+@Preview(name = "Offline, typing", showBackground = true)
+@Composable
+internal fun ChatOfflinePreview() {
+    PreviewChat(
+        state = ChatState(
+            currentUserId = "me",
+            conversationTitle = "Equipo Android",
+            isGroup = true,
+            isOnline = false,
+            typingUserNames = listOf("Bruno"),
+            inputText = "Un momento…",
+        ),
+        messages = listOf(previewMessage("1", "¿Alguien revisa la PR?", isFromMe = false)),
+    )
 }
 
 private fun createCameraUri(context: Context): Uri {

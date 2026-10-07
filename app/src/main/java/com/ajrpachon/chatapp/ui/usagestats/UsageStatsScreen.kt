@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AudioFile
 import androidx.compose.material.icons.filled.Call
@@ -40,10 +39,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.components.ChatAppTopBar
+import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -51,6 +52,14 @@ fun UsageStatsScreen(onBack: () -> Unit) {
     val vm: UsageStatsViewModel = koinViewModel()
     val state by vm.state.collectAsStateWithLifecycle()
 
+    UsageStatsContent(state = state, onBack = onBack)
+}
+
+@Composable
+internal fun UsageStatsContent(
+    state: UsageStatsState,
+    onBack: () -> Unit,
+) {
     Scaffold(
         topBar = { ChatAppTopBar(title = stringResource(R.string.usagestats_title), onBack = onBack) },
     ) { innerPadding ->
@@ -182,6 +191,36 @@ fun UsageStatsScreen(onBack: () -> Unit) {
     }
 }
 
+@Preview(name = "Loading", showBackground = true)
+@Composable
+internal fun UsageStatsLoadingPreview() {
+    ChatAppTheme {
+        UsageStatsContent(state = UsageStatsState(isLoading = true), onBack = {})
+    }
+}
+
+@Preview(name = "With data", showBackground = true)
+@Composable
+internal fun UsageStatsPreview() {
+    ChatAppTheme {
+        UsageStatsContent(
+            state = UsageStatsState(
+                isLoading = false,
+                totalMessagesSent = 1240,
+                totalMessagesReceived = 1810,
+                totalCalls = 36,
+                totalCallMinutes = 412,
+                totalImages = 88,
+                totalAudio = 54,
+                totalVideos = 9,
+                mostActiveConvName = "Familia",
+                messagesPerDay = listOf("L" to 120, "M" to 98, "X" to 150, "J" to 80, "V" to 210, "S" to 175, "D" to 60),
+            ),
+            onBack = {},
+        )
+    }
+}
+
 @Composable
 private fun SectionTitle(title: String) {
     Text(
@@ -202,7 +241,7 @@ private fun StatCard(
 ) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
         ),

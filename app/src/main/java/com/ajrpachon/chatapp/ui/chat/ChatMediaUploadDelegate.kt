@@ -1,13 +1,18 @@
 package com.ajrpachon.chatapp.ui.chat
 
 import android.net.Uri
+import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.domain.model.OutgoingMessageBO
 import com.ajrpachon.chatapp.domain.repository.MessageRepository
 import com.ajrpachon.chatapp.domain.usecase.GetUriMetadataUseCase
 import com.ajrpachon.chatapp.domain.usecase.ReadUriAsBytesUseCase
 import com.ajrpachon.chatapp.domain.usecase.SendMessageUseCase
+import com.ajrpachon.chatapp.ui.common.UiText
+import com.ajrpachon.chatapp.ui.common.toUiText
 import com.ajrpachon.chatapp.utils.AppLogger
+import com.ajrpachon.chatapp.utils.UploadKind
 import com.ajrpachon.chatapp.utils.UploadLimits
-import com.ajrpachon.chatapp.utils.catchResult
+import com.ajrpachon.chatapp.domain.util.catchResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -75,8 +80,10 @@ class ChatMediaUploadDelegate(
                         val imageUrl = messageRepository.uploadImage(conversationId, bytes, mimeType)
                         val replyForImage = if (index == 0) reply else null
                         sendMessageUseCase(
-                            conversationId, userId, "", imageUrl,
-                            replyToId = replyForImage?.id, replyToContent = replyForImage?.replySnippet(), replyToSenderName = replyForImage?.senderName,
+                            OutgoingMessageBO(
+                                conversationId = conversationId, senderId = userId, content = "", imageUrl = imageUrl,
+                                replyToId = replyForImage?.id, replyToContent = replyForImage?.replySnippet(), replyToSenderName = replyForImage?.senderName,
+                            ),
                         ).getOrThrow()
                     }.onSuccess { message ->
                         if (showBatchPlaceholder) {
@@ -84,10 +91,10 @@ class ChatMediaUploadDelegate(
                                 it.copy(mediaUpload = it.mediaUpload.copy(suppressedImageMessageIds = it.mediaUpload.suppressedImageMessageIds + message.id))
                             }
                         }
-                    }.onFailure { e -> AppLogger.e(TAG, "sendImages failed", e); updateState { it.copy(error = e.message ?: "Error uploading image") } }
+                    }.onFailure { e -> AppLogger.e(TAG, "sendImages failed", e); updateState { it.copy(error = e.toUiText(R.string.chat_error_send_image)) } }
                 } else {
                     AppLogger.e(TAG, "sendImages: could not read bytes for $uri")
-                    updateState { it.copy(error = "No se pudo leer la imagen") }
+                    updateState { it.copy(error = UiText.StringResource(R.string.chat_error_read_image)) }
                 }
                 updateState { it.copy(mediaUpload = it.mediaUpload.copy(progress = it.mediaUpload.progress?.copy(completedCount = index + 1))) }
             }
@@ -111,11 +118,13 @@ class ChatMediaUploadDelegate(
                 val bytes = readUriAsBytesUseCase(uri.toString())
                 val fileUrl = messageRepository.uploadFile(conversationId, bytes, displayName, mimeType)
                 sendMessageUseCase(
-                    conversationId, userId, "", fileUrl = fileUrl, fileName = displayName,
-                    fileSize = fileSize, fileMimeType = mimeType,
-                    replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
+                    OutgoingMessageBO(
+                        conversationId = conversationId, senderId = userId, content = "", fileUrl = fileUrl, fileName = displayName,
+                        fileSize = fileSize, fileMimeType = mimeType,
+                        replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
+                    ),
                 ).getOrThrow()
-            }.onFailure { e -> AppLogger.e(TAG, "sendFile failed", e); updateState { it.copy(error = e.message ?: "Error al enviar el archivo") } }
+            }.onFailure { e -> AppLogger.e(TAG, "sendFile failed", e); updateState { it.copy(error = e.toUiText(R.string.chat_error_send_file)) } }
             updateState { it.copy(mediaUpload = it.mediaUpload.copy(isUploadingFile = false)) }
         }
     }
@@ -128,16 +137,16 @@ class ChatMediaUploadDelegate(
             updateState { it.copy(mediaUpload = it.mediaUpload.copy(isUploadingFile = true), replyingTo = null) }
             catchResult {
                 val fileSize = withContext(Dispatchers.IO) { getUriMetadataUseCase(uri.toString()) }.size
-                check(fileSize == null || fileSize <= UploadLimits.VIDEO_MAX_BYTES) {
-                    "El video supera el tamaño máximo permitido (50 MB)"
-                }
+                if (fileSize != null) UploadLimits.requireWithinLimit(UploadKind.VIDEO, fileSize)
                 val bytes = readUriAsBytesUseCase(uri.toString())
                 val videoUrl = messageRepository.uploadVideo(conversationId, bytes)
                 sendMessageUseCase(
-                    conversationId, userId, "", videoUrl = videoUrl,
-                    replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
+                    OutgoingMessageBO(
+                        conversationId = conversationId, senderId = userId, content = "", videoUrl = videoUrl,
+                        replyToId = reply?.id, replyToContent = reply?.replySnippet(), replyToSenderName = reply?.senderName,
+                    ),
                 ).getOrThrow()
-            }.onFailure { e -> AppLogger.e(TAG, "sendVideo failed", e); updateState { it.copy(error = e.message ?: "Error al enviar el video") } }
+            }.onFailure { e -> AppLogger.e(TAG, "sendVideo failed", e); updateState { it.copy(error = e.toUiText(R.string.chat_error_send_video)) } }
             updateState { it.copy(mediaUpload = it.mediaUpload.copy(isUploadingFile = false)) }
         }
     }

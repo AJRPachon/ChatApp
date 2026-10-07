@@ -1,13 +1,12 @@
 package com.ajrpachon.chatapp.data.repository
 
 import com.ajrpachon.chatapp.data.local.dao.StickerPackDao
-import com.ajrpachon.chatapp.data.local.entity.StickerDBO
-import com.ajrpachon.chatapp.data.local.entity.StickerPackDBO
+import com.ajrpachon.chatapp.data.mapper.toBO
 import com.ajrpachon.chatapp.domain.model.StickerBO
 import com.ajrpachon.chatapp.domain.model.StickerPackBO
 import com.ajrpachon.chatapp.domain.repository.AnalyticsTracker
 import com.ajrpachon.chatapp.domain.repository.StickerPackRepository
-import com.ajrpachon.chatapp.utils.AnalyticsEvents
+import com.ajrpachon.chatapp.domain.repository.AnalyticsEvents
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -31,16 +30,3 @@ class StickerPackRepositoryImpl(
     }
 }
 
-private fun StickerPackDBO.toBO() = StickerPackBO(
-    id = id,
-    name = name,
-    coverUrl = coverUrl,
-    isInstalled = isInstalled,
-)
-
-private fun StickerDBO.toBO() = StickerBO(
-    id = id,
-    packId = packId,
-    imageUrl = imageUrl,
-    tags = tags,
-)
