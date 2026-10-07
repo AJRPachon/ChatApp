@@ -270,7 +270,15 @@
     <string name="backup_size_label">Size</string>
     <string name="backup_size_mb">%1$s MB</string>
     <string name="backup_no_backups">No backups in Google Drive</string>
-    <string name="backup_disclaimer">Messages are saved as a JSON file in your personal Google Drive. Only you can access this file.</string>
+    <string name="backup_disclaimer">Messages are saved encrypted in your personal Google Drive. You need the backup passphrase to restore them: if you forget it, they cannot be recovered.</string>
+    <string name="backup_passphrase_title_backup">Backup passphrase</string>
+    <string name="backup_passphrase_title_restore">Passphrase to restore</string>
+    <string name="backup_passphrase_hint_backup">Choose a passphrase of at least %1$d characters. Without it the backup cannot be restored, and it cannot be recovered.</string>
+    <string name="backup_passphrase_hint_restore">Enter the passphrase you used when you made the backup.</string>
+    <string name="backup_passphrase_label">Passphrase</string>
+    <string name="backup_passphrase_repeat_label">Repeat the passphrase</string>
+    <string name="backup_cancel">Cancel</string>
+    <string name="backup_error_wrong_passphrase">The passphrase is wrong or the backup is damaged</string>
     <string name="backup_creating_backup">Creating backup…</string>
     <string name="backup_make_backup_button">Back up</string>
     <string name="backup_restoring_messages">Restoring messages…</string>

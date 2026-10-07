@@ -139,7 +139,7 @@ val repositoryModule = module {
             fileProviderAuthority = "${androidContext().packageName}.fileprovider",
         )
     }
-    single<BackupRepository> { BackupRepositoryImpl(androidContext(), get(), get()) }
+    single<BackupRepository> { BackupRepositoryImpl(androidContext(), get(), get(), get()) }
     single<FcmTokenSource> { FirebaseFcmTokenSource() }
     single<FcmTokenRepository> {
         val context = androidContext()

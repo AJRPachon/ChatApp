@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudUpload
@@ -18,6 +19,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -25,12 +27,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -74,6 +80,18 @@ internal fun BackupContent(
     onIntent: (BackupIntent) -> Unit,
     onBack: () -> Unit,
 ) {
+    state.passphraseAction?.let { action ->
+        PassphraseDialog(
+            action = action,
+            onConfirm = { passphrase ->
+                onIntent(
+                    if (action == PassphraseAction.BACKUP) BackupIntent.StartBackup(passphrase) else BackupIntent.StartRestore(passphrase),
+                )
+            },
+            onDismiss = { onIntent(BackupIntent.DismissPassphrase) },
+        )
+    }
+
     if (state.error != null) {
         AlertDialog(
             onDismissRequest = { onIntent(BackupIntent.DismissError) },
@@ -181,7 +199,7 @@ internal fun BackupContent(
             } else {
                 ChatAppPrimaryButton(
                     text = stringResource(R.string.backup_make_backup_button),
-                    onClick = { onIntent(BackupIntent.StartBackup) },
+                    onClick = { onIntent(BackupIntent.RequestBackup) },
                     leadingIcon = Icons.Default.CloudUpload,
                     enabled = !state.isRestoring,
                     modifier = Modifier
@@ -205,7 +223,7 @@ internal fun BackupContent(
             } else {
                 ChatAppSecondaryButton(
                     text = stringResource(R.string.backup_restore_button),
-                    onClick = { onIntent(BackupIntent.StartRestore) },
+                    onClick = { onIntent(BackupIntent.RequestRestore) },
                     leadingIcon = Icons.Default.CloudDownload,
                     enabled = !state.isBackingUp,
                     modifier = Modifier.fillMaxWidth(),
@@ -213,6 +231,64 @@ internal fun BackupContent(
             }
         }
     }
+}
+
+@Composable
+private fun PassphraseDialog(
+    action: PassphraseAction,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var passphrase by remember { mutableStateOf("") }
+    var repeated by remember { mutableStateOf("") }
+    val isBackup = action == PassphraseAction.BACKUP
+    val valid = if (isBackup) {
+        passphrase.length >= MIN_BACKUP_PASSPHRASE_LENGTH && passphrase == repeated
+    } else {
+        passphrase.isNotEmpty()
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(if (isBackup) R.string.backup_passphrase_title_backup else R.string.backup_passphrase_title_restore)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    stringResource(if (isBackup) R.string.backup_passphrase_hint_backup else R.string.backup_passphrase_hint_restore, MIN_BACKUP_PASSPHRASE_LENGTH),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                OutlinedTextField(
+                    value = passphrase,
+                    onValueChange = { passphrase = it },
+                    label = { Text(stringResource(R.string.backup_passphrase_label)) },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    modifier = Modifier.fillMaxWidth().testTag("backup_passphrase_field"),
+                )
+                if (isBackup) {
+                    OutlinedTextField(
+                        value = repeated,
+                        onValueChange = { repeated = it },
+                        label = { Text(stringResource(R.string.backup_passphrase_repeat_label)) },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            ChatAppTextButton(
+                text = stringResource(R.string.backup_accept),
+                onClick = { onConfirm(passphrase) },
+                enabled = valid,
+            )
+        },
+        dismissButton = {
+            ChatAppTextButton(text = stringResource(R.string.backup_cancel), onClick = onDismiss)
+        },
+    )
 }
 
 @Preview(name = "Never backed up", showBackground = true)
