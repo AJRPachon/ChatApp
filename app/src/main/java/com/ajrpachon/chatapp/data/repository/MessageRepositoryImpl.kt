@@ -83,7 +83,7 @@ class MessageRepositoryImpl(
         val (finalContent, isEncrypted) = if (
             otherUserId != null && message.content.isNotBlank() && !message.hasNonTextPayload
         ) {
-            e2eeCoder.tryEncrypt(message.senderId, otherUserId, message.content)
+            e2eeCoder.encrypt(message.senderId, otherUserId, message.content) to true
         } else {
             Pair(message.content, false)
         }

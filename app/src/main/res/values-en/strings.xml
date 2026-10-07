@@ -544,6 +544,7 @@
     <string name="upload_too_large_image">The image exceeds the maximum allowed size (%1$d MB)</string>
     <string name="upload_too_large_audio">The audio exceeds the maximum allowed size (%1$d MB)</string>
     <string name="upload_too_large_avatar">The photo exceeds the maximum allowed size (%1$d MB)</string>
+    <string name="error_encryption_unavailable">The message could not be encrypted, so it was not sent. The other person may not have enabled encryption yet.</string>
     <string name="upload_too_large_file">The file exceeds the maximum allowed size (%1$d MB)</string>
     <string name="upload_too_large_video">The video exceeds the maximum allowed size (%1$d MB)</string>
     <string name="newchat_code_copied">Code copied</string>

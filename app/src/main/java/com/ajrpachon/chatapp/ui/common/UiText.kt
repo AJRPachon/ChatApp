@@ -5,6 +5,7 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.domain.model.EncryptionUnavailableException
 import com.ajrpachon.chatapp.utils.UploadKind
 import com.ajrpachon.chatapp.utils.UploadTooLargeException
 
@@ -46,6 +47,7 @@ sealed interface UiText {
  */
 fun Throwable.toUiText(@StringRes fallback: Int = R.string.error_generic): UiText = when {
     this is UploadTooLargeException -> UiText.of(kind.messageRes(), limitMb)
+    this is EncryptionUnavailableException -> UiText.StringResource(R.string.error_encryption_unavailable)
     else -> message?.takeIf { it.isNotBlank() }?.let(UiText::Dynamic) ?: UiText.StringResource(fallback)
 }
 

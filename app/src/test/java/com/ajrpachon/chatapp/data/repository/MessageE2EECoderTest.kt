@@ -2,6 +2,7 @@ package com.ajrpachon.chatapp.data.repository
 
 import com.ajrpachon.chatapp.data.remote.source.PublicKeyDTO
 import com.ajrpachon.chatapp.data.remote.source.UserRemoteSource
+import com.ajrpachon.chatapp.domain.model.EncryptionUnavailableException
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.repository.CrashReporter
 import io.mockk.coEvery
@@ -10,11 +11,17 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MessageE2EECoderTest {
+
+    private suspend fun encryptFailure(content: String = "hola"): EncryptionUnavailableException {
+        val thrown = runCatching { coder.encrypt("me", "peer", content) }.exceptionOrNull()
+        assertTrue("expected EncryptionUnavailableException but was $thrown", thrown is EncryptionUnavailableException)
+        return thrown as EncryptionUnavailableException
+    }
 
     private val userRemoteSource = mockk<UserRemoteSource>()
     private val crashReporter = mockk<CrashReporter>(relaxed = true)
@@ -32,32 +39,28 @@ class MessageE2EECoderTest {
     )
 
     @Test
-    fun `tryEncrypt sends plaintext when the recipient has no public key row`() = runTest {
+    fun `encrypt refuses to send when the recipient has no public key row`() = runTest {
         coEvery { userRemoteSource.getPublicKey("peer") } returns null
 
-        val result = coder.tryEncrypt(senderId = "me", otherUserId = "peer", content = "hola")
-
-        assertEquals("hola" to false, result)
+        encryptFailure()
     }
 
     @Test
-    fun `tryEncrypt sends plaintext when the recipient public key is blank`() = runTest {
+    fun `encrypt refuses to send when the recipient public key is blank`() = runTest {
         coEvery { userRemoteSource.getPublicKey("peer") } returns PublicKeyDTO(id = "peer", publicKey = " ")
 
-        val result = coder.tryEncrypt("me", "peer", "hola")
-
-        assertEquals("hola" to false, result)
+        encryptFailure()
         verify(exactly = 0) { crashReporter.recordException(any()) }
     }
 
     @Test
-    fun `tryEncrypt falls back to plaintext and reports the failure`() = runTest {
+    fun `encrypt refuses to send and reports the failure when the key lookup fails`() = runTest {
         val failure = IllegalStateException("network down")
         coEvery { userRemoteSource.getPublicKey("peer") } throws failure
 
-        val result = coder.tryEncrypt("me", "peer", "hola")
+        val thrown = encryptFailure()
 
-        assertEquals("hola" to false, result)
+        assertSame(failure, thrown.cause)
         verify { crashReporter.recordException(failure) }
     }
 
@@ -84,8 +87,8 @@ class MessageE2EECoderTest {
     fun `a failed key lookup is not cached so the next call asks again`() = runTest {
         coEvery { userRemoteSource.getPublicKey("peer") } returns null
 
-        coder.tryEncrypt("me", "peer", "uno")
-        coder.tryEncrypt("me", "peer", "dos")
+        runCatching { coder.encrypt("me", "peer", "uno") }
+        runCatching { coder.encrypt("me", "peer", "dos") }
 
         coVerify(exactly = 2) { userRemoteSource.getPublicKey("peer") }
     }
