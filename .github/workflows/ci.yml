@@ -39,10 +39,6 @@ jobs:
           echo "LIVEKIT_URL=${{ secrets.LIVEKIT_URL }}" >> local.properties
           echo "GIPHY_API_KEY=${{ secrets.GIPHY_API_KEY }}" >> local.properties
 
-      - name: Update Gradle verification metadata
-        run: ./gradlew --write-verification-metadata sha256 help --no-daemon
-        continue-on-error: true
-
       - name: Run unit tests with coverage
         run: ./gradlew testDebugUnitTest jacocoTestReport --no-daemon
         env:
@@ -90,10 +86,6 @@ jobs:
           echo "LIVEKIT_URL=${{ secrets.LIVEKIT_URL }}" >> local.properties
           echo "GIPHY_API_KEY=${{ secrets.GIPHY_API_KEY }}" >> local.properties
 
-      - name: Update Gradle verification metadata
-        run: ./gradlew --write-verification-metadata sha256 help --no-daemon
-        continue-on-error: true
-
       - name: Run Android Lint
         run: ./gradlew lintDebug --no-daemon
 
@@ -119,10 +111,6 @@ jobs:
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-
-      - name: Update Gradle verification metadata
-        run: ./gradlew --write-verification-metadata sha256 help --no-daemon
-        continue-on-error: true
 
       - name: Run Detekt
         run: ./gradlew detekt --no-daemon
@@ -163,10 +151,6 @@ jobs:
           echo "LIVEKIT_URL=${{ secrets.LIVEKIT_URL }}" >> local.properties
           echo "GIPHY_API_KEY=${{ secrets.GIPHY_API_KEY }}" >> local.properties
 
-      - name: Update Gradle verification metadata
-        run: ./gradlew --write-verification-metadata sha256 help --no-daemon
-        continue-on-error: true
-
       - name: Build debug APK
         run: ./gradlew assembleDebug --no-daemon
 
@@ -204,10 +188,6 @@ jobs:
           echo "GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }}" >> local.properties
           echo "LIVEKIT_URL=${{ secrets.LIVEKIT_URL }}" >> local.properties
           echo "GIPHY_API_KEY=${{ secrets.GIPHY_API_KEY }}" >> local.properties
-
-      - name: Update Gradle verification metadata
-        run: ./gradlew --write-verification-metadata sha256 help --no-daemon
-        continue-on-error: true
 
       - name: Build release APK (unsigned – R8/ProGuard check)
         run: ./gradlew assembleRelease --no-daemon
