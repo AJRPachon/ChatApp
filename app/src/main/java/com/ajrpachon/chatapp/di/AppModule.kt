@@ -105,6 +105,8 @@ val networkModule = module {
     single<OkHttpClient> { OkHttpProvider.client }
 }
 
+// Registers all 23 ViewModels: 22 through viewModelOf and ChatViewModel (over the 22-parameter limit)
+// through the explicit lambda below. Checked by name against the classes in ui/ on 2026-10-07.
 val viewModelModule = module {
     // Wrappers so viewModelOf can resolve them by type: a BuildConfig string and the coroutine dispatchers.
     single { GoogleSignInConfig(BuildConfig.GOOGLE_WEB_CLIENT_ID) }

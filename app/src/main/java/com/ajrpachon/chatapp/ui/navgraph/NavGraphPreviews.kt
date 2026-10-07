@@ -35,7 +35,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,33 +55,22 @@ import com.ajrpachon.chatapp.InvitationsRoute
 import com.ajrpachon.chatapp.NewChatRoute
 import com.ajrpachon.chatapp.ProfileRoute
 import com.ajrpachon.chatapp.UserInfoRoute
+import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import com.github.skydoves.navgraph.annotations.NavPreview
 
 // ── Shared preview theme ──────────────────────────────────────────────────────
-
-private val previewPrimary = Color(0xFF6B71B8)
-private val previewSurface = Color(0xFFFBF8FF)
-private val previewOnSurface = Color(0xFF1B1B1F)
-private val previewSurfaceVariant = Color(0xFFE4E1EC)
-private val previewContainer = Color(0xFFEFECF5)
-
-private val navPreviewColors = lightColorScheme(
-    primary = previewPrimary,
-    surface = previewSurface,
-    onSurface = previewOnSurface,
-    surfaceVariant = previewSurfaceVariant,
-    surfaceContainer = previewContainer,
-)
+// The previews are drawn with the app's own theme, so they follow its tokens instead of literals.
+// Every text in this file is sample data for the NavGraph tool, not UI copy to translate.
 
 @Composable
 private fun NavPreviewTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = navPreviewColors, content = content)
+    ChatAppTheme(darkTheme = false, content = content)
 }
 
 // ── Shared stub composables ───────────────────────────────────────────────────
 
 @Composable
-private fun StubAvatar(initials: String, color: Color = previewPrimary, size: Int = 40) {
+private fun StubAvatar(initials: String, color: Color = MaterialTheme.colorScheme.primary, size: Int = 40) {
     Box(
         modifier = Modifier
             .size(size.dp)
@@ -111,16 +99,16 @@ private fun StubConversationRow(name: String, preview: String, time: String, unr
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-            Text(preview, style = MaterialTheme.typography.bodyMedium, color = Color(0xFF787680), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(preview, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         Column(horizontalAlignment = Alignment.End) {
-            Text(time, style = MaterialTheme.typography.labelSmall, color = Color(0xFF787680))
+            Text(time, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (unread > 0) {
                 Box(
                     modifier = Modifier
                         .size(18.dp)
                         .clip(CircleShape)
-                        .background(previewPrimary),
+                        .background(MaterialTheme.colorScheme.primary),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text("$unread", color = Color.White, style = MaterialTheme.typography.labelSmall)
@@ -139,12 +127,12 @@ private fun StubMessageBubble(text: String, isOwn: Boolean) {
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(16.dp))
-                .background(if (isOwn) previewPrimary else previewSurfaceVariant)
+                .background(if (isOwn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
                 .padding(horizontal = 12.dp, vertical = 8.dp),
         ) {
             Text(
                 text = text,
-                color = if (isOwn) Color.White else previewOnSurface,
+                color = if (isOwn) Color.White else MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
@@ -161,21 +149,21 @@ internal fun AuthScreenPreview() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Brush.verticalGradient(listOf(Color(0xFFDFE0FF), previewSurface)))
+                .background(Brush.verticalGradient(listOf(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.surface)))
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
             Box(
-                modifier = Modifier.size(72.dp).clip(CircleShape).background(previewPrimary),
+                modifier = Modifier.size(72.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(Icons.Default.Phone, contentDescription = null, tint = Color.White, modifier = Modifier.size(36.dp))
             }
             Spacer(Modifier.height(24.dp))
-            Text("ChatApp", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = previewPrimary)
+            Text("ChatApp", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.height(8.dp))
-            Text("Sign in to continue", style = MaterialTheme.typography.bodyLarge, color = Color(0xFF787680))
+            Text("Sign in to continue", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(32.dp))
             OutlinedTextField(value = "user@email.com", onValueChange = {}, label = { Text("Email") }, modifier = Modifier.fillMaxWidth())
             Spacer(Modifier.height(12.dp))
@@ -200,7 +188,7 @@ internal fun ConversationListScreenPreview() {
             topBar = {
                 TopAppBar(
                     title = { Text("Chats", fontWeight = FontWeight.Bold) },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = previewSurface),
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
                 )
             },
             floatingActionButton = {
@@ -238,7 +226,7 @@ internal fun ChatScreenPreview() {
                             Spacer(Modifier.width(10.dp))
                             Column {
                                 Text("Alice Johnson", fontWeight = FontWeight.SemiBold)
-                                Text("Online", style = MaterialTheme.typography.labelSmall, color = Color(0xFF5E8B6D))
+                                Text("Online", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
                             }
                         }
                     },
@@ -246,12 +234,12 @@ internal fun ChatScreenPreview() {
                         Icon(Icons.Default.Phone, contentDescription = null, modifier = Modifier.padding(8.dp))
                         Icon(Icons.Default.Videocam, contentDescription = null, modifier = Modifier.padding(8.dp))
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = previewSurface),
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
                 )
             },
             bottomBar = {
                 Row(
-                    modifier = Modifier.fillMaxWidth().background(previewSurface).padding(8.dp),
+                    modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     OutlinedTextField(
@@ -262,7 +250,7 @@ internal fun ChatScreenPreview() {
                     )
                     Spacer(Modifier.width(8.dp))
                     Box(
-                        modifier = Modifier.size(44.dp).clip(CircleShape).background(previewPrimary),
+                        modifier = Modifier.size(44.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, tint = Color.White)
@@ -294,7 +282,7 @@ internal fun InvitationsScreenPreview() {
             topBar = {
                 TopAppBar(
                     title = { Text("Invitations", fontWeight = FontWeight.Bold) },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = previewSurface),
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
                 )
             },
         ) { padding ->
@@ -304,11 +292,11 @@ internal fun InvitationsScreenPreview() {
                         modifier = Modifier.fillMaxWidth().padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        StubAvatar(('A' + i).toString(), color = Color(0xFF7986CB))
+                        StubAvatar(('A' + i).toString(), color = MaterialTheme.colorScheme.secondary)
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
                             Text("User ${i + 1}", fontWeight = FontWeight.SemiBold)
-                            Text("Sent you an invitation", style = MaterialTheme.typography.bodySmall, color = Color(0xFF787680))
+                            Text("Sent you an invitation", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         FilledTonalButton(onClick = {}) { Text("Accept") }
                     }
@@ -330,7 +318,7 @@ internal fun NewChatScreenPreview() {
             topBar = {
                 TopAppBar(
                     title = { Text("New Chat", fontWeight = FontWeight.Bold) },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = previewSurface),
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
                 )
             },
         ) { padding ->
@@ -349,11 +337,11 @@ internal fun NewChatScreenPreview() {
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        StubAvatar(('B' + i).toString(), color = Color(0xFF66BB6A))
+                        StubAvatar(('B' + i).toString(), color = MaterialTheme.colorScheme.tertiary)
                         Spacer(Modifier.width(12.dp))
                         Column {
                             Text("Contact ${i + 1}", fontWeight = FontWeight.SemiBold)
-                            Text("contact${i + 1}@email.com", style = MaterialTheme.typography.bodySmall, color = Color(0xFF787680))
+                            Text("contact${i + 1}@email.com", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -374,7 +362,7 @@ internal fun ProfileScreenPreview() {
             topBar = {
                 TopAppBar(
                     title = { Text("Profile", fontWeight = FontWeight.Bold) },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = previewSurface),
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
                 )
             },
         ) { padding ->
@@ -386,15 +374,15 @@ internal fun ProfileScreenPreview() {
                 StubAvatar("AJ", size = 80)
                 Spacer(Modifier.height(16.dp))
                 Text("AJ Pachon", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text("ajrpachon@email.com", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF787680))
+                Text("ajrpachon@email.com", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(32.dp))
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    color = previewContainer,
+                    color = MaterialTheme.colorScheme.surfaceContainer,
                 ) {
                     Column(Modifier.padding(16.dp)) {
-                        Text("Display Name", style = MaterialTheme.typography.labelMedium, color = Color(0xFF787680))
+                        Text("Display Name", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text("AJ Pachon", style = MaterialTheme.typography.bodyLarge)
                     }
                 }
@@ -417,11 +405,11 @@ internal fun CallScreenPreview() {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Brush.verticalGradient(listOf(Color(0xFF1a1a2e), Color(0xFF16213e)))),
+                .background(Brush.verticalGradient(listOf(MaterialTheme.colorScheme.inverseSurface, MaterialTheme.colorScheme.surfaceContainerHighest))),
             contentAlignment = Alignment.Center,
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                StubAvatar("AJ", color = Color(0xFF6B71B8), size = 100)
+                StubAvatar("AJ", color = MaterialTheme.colorScheme.primary, size = 100)
                 Spacer(Modifier.height(24.dp))
                 Text("Alice Johnson", color = Color.White, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(8.dp))
@@ -435,7 +423,7 @@ internal fun CallScreenPreview() {
                         Icon(Icons.Default.Videocam, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
                     }
                     Box(
-                        modifier = Modifier.size(64.dp).clip(CircleShape).background(Color(0xFFBA1A1A)),
+                        modifier = Modifier.size(64.dp).clip(CircleShape).background(MaterialTheme.colorScheme.error),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(Icons.Default.Call, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
@@ -458,7 +446,7 @@ internal fun CreateGroupScreenPreview() {
             topBar = {
                 TopAppBar(
                     title = { Text("New Group", fontWeight = FontWeight.Bold) },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = previewSurface),
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
                 )
             },
         ) { padding ->
@@ -467,10 +455,10 @@ internal fun CreateGroupScreenPreview() {
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Box(
-                    modifier = Modifier.size(80.dp).clip(CircleShape).background(previewContainer),
+                    modifier = Modifier.size(80.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainer),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Icons.Default.Group, contentDescription = null, tint = previewPrimary, modifier = Modifier.size(40.dp))
+                    Icon(Icons.Default.Group, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp))
                 }
                 Spacer(Modifier.height(24.dp))
                 OutlinedTextField(value = "Team Alpha", onValueChange = {}, label = { Text("Group Name") }, modifier = Modifier.fillMaxWidth())
@@ -484,7 +472,7 @@ internal fun CreateGroupScreenPreview() {
                         modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        StubAvatar(('C' + i).toString(), color = Color(0xFFAB47BC))
+                        StubAvatar(('C' + i).toString(), color = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(12.dp))
                         Text("Member ${i + 1}", fontWeight = FontWeight.Medium)
                     }
@@ -510,7 +498,7 @@ internal fun GroupInfoScreenPreview() {
             topBar = {
                 TopAppBar(
                     title = { Text("Group Info", fontWeight = FontWeight.Bold) },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = previewSurface),
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
                 )
             },
         ) { padding ->
@@ -520,14 +508,14 @@ internal fun GroupInfoScreenPreview() {
             ) {
                 Spacer(Modifier.height(24.dp))
                 Box(
-                    modifier = Modifier.size(80.dp).clip(CircleShape).background(Color(0xFF7986CB)),
+                    modifier = Modifier.size(80.dp).clip(CircleShape).background(MaterialTheme.colorScheme.secondary),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(Icons.Default.Group, contentDescription = null, tint = Color.White, modifier = Modifier.size(40.dp))
                 }
                 Spacer(Modifier.height(16.dp))
                 Text("Team Alpha", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text("Project coordination", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF787680))
+                Text("Project coordination", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(24.dp))
                 Text("Members", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Start))
                 Spacer(Modifier.height(8.dp))
@@ -536,13 +524,13 @@ internal fun GroupInfoScreenPreview() {
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        StubAvatar(('D' + i).toString(), color = Color(0xFFEF5350))
+                        StubAvatar(('D' + i).toString(), color = MaterialTheme.colorScheme.error)
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
                             Text("Member ${i + 1}", fontWeight = FontWeight.SemiBold)
-                            if (i == 0) Text("Admin", style = MaterialTheme.typography.labelSmall, color = previewPrimary)
+                            if (i == 0) Text("Admin", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                         }
-                        Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFF787680))
+                        Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -562,7 +550,7 @@ internal fun UserInfoScreenPreview() {
             topBar = {
                 TopAppBar(
                     title = { Text("User Info", fontWeight = FontWeight.Bold) },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = previewSurface),
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
                 )
             },
         ) { padding ->
@@ -571,16 +559,16 @@ internal fun UserInfoScreenPreview() {
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Spacer(Modifier.height(32.dp))
-                StubAvatar("BM", color = Color(0xFF26C6DA), size = 96)
+                StubAvatar("BM", color = MaterialTheme.colorScheme.secondary, size = 96)
                 Spacer(Modifier.height(16.dp))
                 Text("Bob Martinez", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text("bob.martinez@email.com", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF787680))
+                Text("bob.martinez@email.com", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(8.dp))
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = Color(0xFFBCEDCE),
+                    color = MaterialTheme.colorScheme.tertiaryContainer,
                 ) {
-                    Text("Online", modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), color = Color(0xFF0A2118), style = MaterialTheme.typography.labelMedium)
+                    Text("Online", modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), color = MaterialTheme.colorScheme.onTertiaryContainer, style = MaterialTheme.typography.labelMedium)
                 }
                 Spacer(Modifier.height(32.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
