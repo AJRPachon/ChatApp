@@ -6,6 +6,8 @@ const FIREBASE_PROJECT_ID = Deno.env.get("FIREBASE_PROJECT_ID")!;
 // Service account fields — paste individual fields instead of the full JSON file
 const SA_CLIENT_EMAIL = Deno.env.get("SA_CLIENT_EMAIL")!;
 const SA_PRIVATE_KEY = Deno.env.get("SA_PRIVATE_KEY")!; // with \n for newlines
+// Shared secret the database webhook sends in the `x-webhook-secret` header (see README.md).
+const WEBHOOK_SECRET = Deno.env.get("FCM_WEBHOOK_SECRET");
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
