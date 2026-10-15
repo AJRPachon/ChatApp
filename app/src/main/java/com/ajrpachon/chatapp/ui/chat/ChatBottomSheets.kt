@@ -54,7 +54,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.ChatTheme
+import com.ajrpachon.chatapp.domain.model.ReactionBO
 import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
+import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
+import com.ajrpachon.chatapp.ui.preview.PreviewData
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 
 // ── Modal bottom sheets used from ChatScreen ────────────────────────────────
 // Extracted per docs/chat-viewmodel-decomposition.md Phase 2 — each takes only its own narrow
@@ -487,5 +491,98 @@ internal fun WallpaperPickerSheet(
             }
         }
         Spacer(Modifier.height(16.dp))
+    }
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+
+@Composable
+@ThemePreviews
+internal fun ChatThemePickerSheetPreview() {
+    ChatAppPreview {
+        ChatThemePickerSheet(currentTheme = ChatTheme.OCEAN, onSelect = {}, onDismiss = {})
+    }
+}
+
+@Composable
+@ThemePreviews
+internal fun DisappearingModeSheetPreview() {
+    ChatAppPreview {
+        DisappearingModeSheet(currentSeconds = 86_400L, onDismiss = {}, onSelect = {})
+    }
+}
+
+@Composable
+@ThemePreviews
+internal fun AiAssistantSheetEmptyPreview() {
+    ChatAppPreview {
+        AiAssistantSheet(
+            aiSuggestion = null,
+            isAiLoading = false,
+            onDismiss = {},
+            onSuggestReply = {},
+            onFreeform = {},
+            onInsert = {},
+        )
+    }
+}
+
+@Composable
+@ThemePreviews
+internal fun AiAssistantSheetLoadingPreview() {
+    ChatAppPreview {
+        AiAssistantSheet(
+            aiSuggestion = null,
+            isAiLoading = true,
+            onDismiss = {},
+            onSuggestReply = {},
+            onFreeform = {},
+            onInsert = {},
+        )
+    }
+}
+
+@Composable
+@ThemePreviews
+internal fun AiAssistantSheetSuggestionPreview() {
+    ChatAppPreview {
+        AiAssistantSheet(
+            aiSuggestion = "¡Claro! Nos vemos a las 18:00 en la cafetería de siempre.",
+            isAiLoading = false,
+            onDismiss = {},
+            onSuggestReply = {},
+            onFreeform = {},
+            onInsert = {},
+        )
+    }
+}
+
+@Composable
+@ThemePreviews
+internal fun CreatePollSheetContentPreview() {
+    ChatAppPreview {
+        CreatePollSheetContent(onDismiss = {}, onCreate = { _, _, _ -> })
+    }
+}
+
+@Composable
+@ThemePreviews
+internal fun ReactionDetailsSheetPreview() {
+    ChatAppPreview {
+        ReactionDetailsSheet(
+            reactions = listOf(
+                ReactionBO(messageId = "1", userId = PreviewData.OTHER_NAME, emoji = "👍"),
+                ReactionBO(messageId = "1", userId = "Luis Pérez", emoji = "👍"),
+                ReactionBO(messageId = "1", userId = "Marta Ruiz", emoji = "❤️"),
+            ),
+        )
+    }
+}
+
+@Composable
+@ThemePreviews
+internal fun WallpaperPickerSheetPreview() {
+    ChatAppPreview {
+        WallpaperPickerSheet(currentColor = 0xFFE3F2FDL, onSelect = {}, onDismiss = {})
     }
 }

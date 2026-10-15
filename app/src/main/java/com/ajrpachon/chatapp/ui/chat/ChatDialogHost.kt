@@ -40,6 +40,10 @@ import androidx.compose.ui.unit.dp
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.ReactionBO
 import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
+import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
+import com.ajrpachon.chatapp.ui.preview.PreviewChatInput
+import com.ajrpachon.chatapp.ui.preview.PreviewData
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 
 /**
  * Every dialog/bottom-sheet that [ChatScreen] shows conditionally on a `state.showX` (or local
@@ -312,4 +316,166 @@ internal fun ChatDialogHost(
             onDismiss = { onIntent(ChatIntent.DismissWallpaperPicker) },
         )
     }
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+// The sticker picker/store (koinViewModel) and the image viewer (remote images) are not previewed.
+
+@Composable
+private fun ChatDialogHostPreviewHost(
+    state: ChatState,
+    showDeleteSelectionConfirm: Boolean = false,
+    reactionDetailMessageId: String? = null,
+) {
+    ChatAppPreview {
+        ChatDialogHost(
+            state = state,
+            onIntent = {},
+            conversationId = PreviewData.CONVERSATION_ID,
+            reactions = mapOf("m4" to PreviewChatInput.reactions),
+            showDeleteSelectionConfirm = remember { mutableStateOf(showDeleteSelectionConfirm) },
+            showViewer = remember { mutableStateOf(false) },
+            viewerUrls = remember { mutableStateOf(emptyList()) },
+            viewerInitialIndex = remember { mutableStateOf(0) },
+            reactionDetailMessageId = remember { mutableStateOf(reactionDetailMessageId) },
+        )
+    }
+}
+
+private fun previewDialogHostState() = ChatState(
+    currentUserId = PreviewData.ME_ID,
+    conversationTitle = PreviewData.OTHER_NAME,
+)
+
+@ThemePreviews
+@Composable
+internal fun ChatDialogHostDeleteSelectionPreview() {
+    ChatDialogHostPreviewHost(
+        state = previewDialogHostState().copy(selectedMessageIds = setOf("m1", "m2")),
+        showDeleteSelectionConfirm = true,
+    )
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatDialogHostExpiryPreview() {
+    ChatDialogHostPreviewHost(previewDialogHostState().copy(expiryDialogMessageId = "m4"))
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatDialogHostForwardPreview() {
+    ChatDialogHostPreviewHost(
+        previewDialogHostState().copy(
+            forward = ChatForwardUiState(
+                showDialog = true,
+                message = PreviewChatInput.messages.first(),
+                conversations = PreviewChatInput.conversations,
+            ),
+        ),
+    )
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatDialogHostForwardSelectionPreview() {
+    ChatDialogHostPreviewHost(
+        previewDialogHostState().copy(
+            selectedMessageIds = setOf("m1", "m2"),
+            forward = ChatForwardUiState(
+                showSelectionDialog = true,
+                conversations = PreviewChatInput.conversations,
+            ),
+        ),
+    )
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatDialogHostIncognitoPreview() {
+    ChatDialogHostPreviewHost(
+        previewDialogHostState().copy(incognito = ChatIncognitoUiState(showInfoDialog = true)),
+    )
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatDialogHostMutePreview() {
+    ChatDialogHostPreviewHost(previewDialogHostState().copy(mute = ChatMuteUiState(showDialog = true)))
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatDialogHostThemePickerPreview() {
+    ChatDialogHostPreviewHost(previewDialogHostState().copy(theme = ChatThemeUiState(showPicker = true)))
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatDialogHostDisappearingPreview() {
+    ChatDialogHostPreviewHost(
+        previewDialogHostState().copy(disappearing = ChatDisappearingUiState(seconds = 86_400L, showSheet = true)),
+    )
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatDialogHostScheduleDialogPreview() {
+    ChatDialogHostPreviewHost(
+        previewDialogHostState().copy(scheduling = ChatSchedulingUiState(showDialog = true)),
+    )
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatDialogHostScheduledSheetPreview() {
+    ChatDialogHostPreviewHost(
+        previewDialogHostState().copy(
+            scheduling = ChatSchedulingUiState(
+                showSheet = true,
+                messageCount = 1,
+                messages = PreviewChatInput.scheduledMessages,
+            ),
+        ),
+    )
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatDialogHostScheduledSheetEmptyPreview() {
+    ChatDialogHostPreviewHost(
+        previewDialogHostState().copy(scheduling = ChatSchedulingUiState(showSheet = true)),
+    )
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatDialogHostAiSheetPreview() {
+    ChatDialogHostPreviewHost(
+        previewDialogHostState().copy(
+            ai = ChatAiUiState(showSheet = true, suggestion = "Claro, nos vemos a las 7."),
+        ),
+    )
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatDialogHostCreatePollPreview() {
+    ChatDialogHostPreviewHost(
+        previewDialogHostState().copy(poll = ChatPollFeatureState(showCreateSheet = true)),
+    )
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatDialogHostReactionDetailsPreview() {
+    ChatDialogHostPreviewHost(previewDialogHostState(), reactionDetailMessageId = "m4")
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatDialogHostWallpaperPickerPreview() {
+    ChatDialogHostPreviewHost(
+        previewDialogHostState().copy(wallpaper = ChatWallpaperUiState(showPicker = true)),
+    )
 }

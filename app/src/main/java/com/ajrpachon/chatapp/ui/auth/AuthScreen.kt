@@ -89,6 +89,7 @@ import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.ui.components.ChatAppOutlinedButton
 import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -212,7 +213,7 @@ fun AuthContent(
     }
 }
 
-@Preview(name = "Sign in", showBackground = true)
+@ThemePreviews
 @Composable
 internal fun AuthSignInPreview() {
     ChatAppTheme {

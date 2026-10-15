@@ -89,6 +89,7 @@ import com.ajrpachon.chatapp.AuthRoute
 import com.ajrpachon.chatapp.ProfileRoute
 import com.ajrpachon.chatapp.ui.theme.ChatAppTextSizes
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import org.koin.androidx.compose.koinViewModel
 
 @NavEdge(to = AuthRoute::class, label = "Sign Out")
@@ -786,7 +787,7 @@ fun ProfileContent(
     }
 }
 
-@Preview(name = "Default", showBackground = true)
+@ThemePreviews
 @Composable
 internal fun ProfileDefaultPreview() {
     ChatAppTheme {

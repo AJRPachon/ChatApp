@@ -86,7 +86,8 @@ import com.ajrpachon.chatapp.ui.components.ChatAppOutlinedButton
 import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
 import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
-import kotlinx.datetime.Instant
+import com.ajrpachon.chatapp.ui.preview.PreviewData
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -361,25 +362,13 @@ fun GroupInfoContent(
     }
 }
 
-private val previewJoinedAt = Instant.fromEpochMilliseconds(0L)
-
-private fun previewMember(id: String, name: String, role: GroupRole) = GroupMemberBO(
-    userId = id,
-    conversationId = "c1",
-    displayName = name,
-    username = name.lowercase().replace(" ", "_"),
-    avatarUrl = null,
-    role = role,
-    joinedAt = previewJoinedAt,
-)
-
 private val previewMembers = listOf(
-    previewMember("1", "Ana García", GroupRole.ADMIN),
-    previewMember("2", "Bruno López", GroupRole.MEMBER),
-    previewMember("3", "Carla Ruiz", GroupRole.MEMBER),
+    PreviewData.groupMember("1", "Ana García", GroupRole.ADMIN),
+    PreviewData.groupMember("2", "Bruno López", GroupRole.MEMBER),
+    PreviewData.groupMember("3", "Carla Ruiz", GroupRole.MEMBER),
 )
 
-@Preview(name = "Admin", showBackground = true)
+@ThemePreviews
 @Composable
 internal fun GroupInfoAdminPreview() {
     ChatAppTheme {

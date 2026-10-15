@@ -42,6 +42,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -158,7 +159,7 @@ internal fun PdfViewerContent(
     }
 }
 
-@Preview(name = "Pages", showBackground = true)
+@ThemePreviews
 @Composable
 internal fun PdfViewerPagesPreview() {
     ChatAppTheme {

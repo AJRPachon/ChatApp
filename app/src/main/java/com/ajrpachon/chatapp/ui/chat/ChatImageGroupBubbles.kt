@@ -43,6 +43,9 @@ import com.ajrpachon.chatapp.domain.model.MessageBO
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
+import com.ajrpachon.chatapp.ui.preview.PreviewChatBubbles
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 
 // ── Image-batch bubbles ───────────────────────────────────────────────────────
 // Extracted per docs/chat-viewmodel-decomposition.md Phase 2 — part of the message-bubble
@@ -229,4 +232,41 @@ internal fun ImageGroupBubble(
         }
     }
     } // Box
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+
+@ThemePreviews
+@Composable
+internal fun PendingImageBatchBubblePreview() {
+    ChatAppPreview {
+        PendingImageBatchBubble(
+            uris = listOf(Uri.EMPTY, Uri.EMPTY, Uri.EMPTY),
+            progress = MediaUploadProgress(totalCount = 3, completedCount = 1, totalBytes = 3_000_000L),
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun ImageGroupBubbleOtherPreview() {
+    ChatAppPreview {
+        ImageGroupBubble(
+            messages = PreviewChatBubbles.imageGroup(isFromMe = false),
+            onImageClick = {},
+            onReply = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun ImageGroupBubbleOwnPreview() {
+    ChatAppPreview {
+        ImageGroupBubble(
+            messages = PreviewChatBubbles.imageGroup(isFromMe = true, count = 3),
+            onImageClick = {},
+            onReply = {},
+        )
+    }
 }

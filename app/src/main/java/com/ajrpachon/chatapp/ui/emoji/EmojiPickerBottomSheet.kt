@@ -25,12 +25,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.domain.model.EmojiCategoryBO
 import com.ajrpachon.chatapp.ui.theme.ChatAppTextSizes
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
@@ -126,7 +126,7 @@ internal fun EmojiPickerContent(
     }
 }
 
-@Preview(showBackground = true)
+@ThemePreviews
 @Composable
 internal fun EmojiPickerContentPreview() {
     ChatAppTheme {

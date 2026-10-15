@@ -49,6 +49,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.domain.model.SendStatus
+import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import kotlinx.coroutines.delay
 
 // ── Audio helpers ─────────────────────────────────────────────────────────────
@@ -577,5 +580,92 @@ private fun AudioSenderAvatar(
                 modifier = Modifier.size(11.dp),
             )
         }
+    }
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+// LocalAudioPlayer / RemoteAudioPlayer (and AudioPreviewBar, which embeds LocalAudioPlayer) create a
+// MediaPlayer and are not previewed; AudioPlayerRow is the pure-UI part they render.
+
+private val previewAmplitudes = List(80) { i -> ((i * 37) % 100) / 100f }
+
+@Composable
+@ThemePreviews
+internal fun RecordingBarPreview() {
+    ChatAppPreview {
+        RecordingBar(durationMs = 65_000L, amplitudeHistory = previewAmplitudes, onStop = {})
+    }
+}
+
+@Composable
+@ThemePreviews
+internal fun AudioPlayerRowIdlePreview() {
+    ChatAppPreview {
+        AudioPlayerRow(
+            isPrepared = true,
+            isPlaying = false,
+            currentMs = 0,
+            durationMs = 42_000,
+            onToggle = {},
+            realWaveform = previewAmplitudes,
+            senderInitial = "A",
+            sentTime = "10:42",
+            avatarAvailable = true,
+        )
+    }
+}
+
+@Composable
+@ThemePreviews
+internal fun AudioPlayerRowPlayingPreview() {
+    ChatAppPreview {
+        AudioPlayerRow(
+            isPrepared = true,
+            isPlaying = true,
+            currentMs = 18_000,
+            durationMs = 42_000,
+            onToggle = {},
+            realWaveform = previewAmplitudes,
+            sentTime = "10:42",
+            avatarAvailable = true,
+            showSpeedControl = true,
+            playbackSpeed = 1.5f,
+        )
+    }
+}
+
+@Composable
+@ThemePreviews
+internal fun AudioPlayerRowFromMePreview() {
+    ChatAppPreview {
+        AudioPlayerRow(
+            isPrepared = true,
+            isPlaying = false,
+            currentMs = 0,
+            durationMs = 7_000,
+            onToggle = {},
+            waveformSeed = 7,
+            senderInitial = "Y",
+            sentTime = "10:43",
+            isFromMe = true,
+            sendStatus = SendStatus.SENT,
+            isRead = true,
+            avatarAvailable = true,
+        )
+    }
+}
+
+@Composable
+@ThemePreviews
+internal fun AudioPlayerRowLoadingPreview() {
+    ChatAppPreview {
+        AudioPlayerRow(
+            isPrepared = false,
+            isPlaying = false,
+            currentMs = 0,
+            durationMs = 0,
+            onToggle = {},
+            waveformSeed = 3,
+        )
     }
 }

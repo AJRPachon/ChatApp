@@ -50,6 +50,9 @@ import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
+import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
+import com.ajrpachon.chatapp.ui.preview.PreviewData
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 
 // ── Simple modal dialogs used from ChatScreen ───────────────────────────────
 // Extracted per docs/chat-viewmodel-decomposition.md Phase 2 — each takes only its own narrow
@@ -315,5 +318,67 @@ internal fun ImageViewerDialog(
                 Icon(Icons.Default.Close, contentDescription = stringResource(R.string.chat_close), tint = Color.White)
             }
         }
+    }
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+
+@Composable
+@ThemePreviews
+internal fun ExpiryDurationDialogPreview() {
+    ChatAppPreview {
+        ExpiryDurationDialog(onDismiss = {}, onSelect = {})
+    }
+}
+
+@Composable
+@ThemePreviews
+internal fun MuteDurationDialogPreview() {
+    ChatAppPreview {
+        MuteDurationDialog(onDismiss = {}, onSelect = {})
+    }
+}
+
+@Composable
+@ThemePreviews
+internal fun ForwardConversationDialogPreview() {
+    ChatAppPreview {
+        ForwardConversationDialog(
+            conversations = listOf(
+                PreviewData.conversation("c1", PreviewData.OTHER_NAME, isGroup = false),
+                PreviewData.conversation("c2", "Equipo de diseño", isGroup = true),
+                PreviewData.conversation("c3", "Luis Pérez", isGroup = false),
+            ),
+            onDismiss = {},
+            onSelect = {},
+        )
+    }
+}
+
+@Composable
+@ThemePreviews
+internal fun ForwardConversationDialogEmptyPreview() {
+    ChatAppPreview {
+        ForwardConversationDialog(conversations = emptyList(), onDismiss = {}, onSelect = {})
+    }
+}
+
+@Composable
+@ThemePreviews
+internal fun ScheduleMessageDialogPreview() {
+    ChatAppPreview {
+        ScheduleMessageDialog(onDismiss = {}, onConfirm = {})
+    }
+}
+
+@Composable
+@ThemePreviews
+internal fun ImageViewerDialogPreview() {
+    ChatAppPreview {
+        ImageViewerDialog(
+            imageUrls = listOf("https://example.com/1.jpg", "https://example.com/2.jpg"),
+            initialIndex = 0,
+            onDismiss = {},
+        )
     }
 }

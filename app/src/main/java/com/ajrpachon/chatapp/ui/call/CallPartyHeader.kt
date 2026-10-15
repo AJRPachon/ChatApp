@@ -1,5 +1,8 @@
 package com.ajrpachon.chatapp.ui.call
 
+import androidx.compose.foundation.layout.padding
+import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
@@ -46,5 +49,21 @@ fun CallPartyHeader(name: String, modifier: Modifier = Modifier) {
             color = Color.White,
             fontWeight = FontWeight.SemiBold,
         )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun CallPartyHeaderPreview() {
+    ChatAppPreview {
+        CallPartyHeader(name = "Ana García", modifier = Modifier.padding(24.dp))
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun CallPartyHeaderLongNamePreview() {
+    ChatAppPreview {
+        CallPartyHeader(name = "María de los Ángeles Fernández de la Vega", modifier = Modifier.padding(24.dp))
     }
 }

@@ -26,11 +26,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.CallBO
-import com.ajrpachon.chatapp.domain.model.CallStatus
 import com.ajrpachon.chatapp.domain.model.CallType
 import com.ajrpachon.chatapp.ui.theme.CallAcceptedGreen
 import com.ajrpachon.chatapp.ui.theme.CallBackground
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
+import com.ajrpachon.chatapp.ui.preview.PreviewData
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import org.koin.androidx.compose.koinViewModel
 
 /**
@@ -130,22 +131,11 @@ fun IncomingCallContent(
     }
 }
 
-private fun previewCall(type: CallType) = CallBO(
-    id = "call1",
-    conversationId = "c1",
-    callerId = "u1",
-    callerName = "Ana García",
-    calleeId = "me",
-    type = type,
-    status = CallStatus.RINGING,
-    roomName = "room1",
-)
-
-@Preview(name = "Voice call", showBackground = true)
+@ThemePreviews
 @Composable
 internal fun IncomingVoiceCallPreview() {
     ChatAppTheme {
-        IncomingCallContent(call = previewCall(CallType.AUDIO), onAccept = {}, onReject = {})
+        IncomingCallContent(call = PreviewData.incomingCall(CallType.AUDIO), onAccept = {}, onReject = {})
     }
 }
 
@@ -153,6 +143,6 @@ internal fun IncomingVoiceCallPreview() {
 @Composable
 internal fun IncomingVideoCallPreview() {
     ChatAppTheme {
-        IncomingCallContent(call = previewCall(CallType.VIDEO), onAccept = {}, onReject = {})
+        IncomingCallContent(call = PreviewData.incomingCall(CallType.VIDEO), onAccept = {}, onReject = {})
     }
 }

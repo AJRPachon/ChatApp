@@ -17,13 +17,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,10 +38,16 @@ import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.itemKey
 import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.domain.model.ChatTheme
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.ReactionBO
 import com.ajrpachon.chatapp.ui.common.MotionConstants
 import com.ajrpachon.chatapp.ui.components.ChatMessagesSkeleton
+import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
+import com.ajrpachon.chatapp.ui.preview.PreviewChatInput
+import com.ajrpachon.chatapp.ui.preview.PreviewData
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
+import com.ajrpachon.chatapp.ui.preview.rememberPreviewPagingItems
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -343,3 +354,100 @@ private fun collectImageGroup(
 
 private fun MessageBO.continuesGroupOf(first: MessageBO, suppressedIds: Set<String>): Boolean =
     id !in suppressedIds && isGroupableImage() && senderId == first.senderId
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+
+@Composable
+private fun ChatMessageListPreviewHost(
+    state: ChatState,
+    messages: List<MessageBO>,
+    showScrollToBottom: Boolean = false,
+    highlightedMessageId: String? = null,
+) {
+    val items = rememberPreviewPagingItems(messages)
+    ChatAppPreview {
+        ChatMessageList(
+            state = state,
+            onIntent = {},
+            lazyPagingItems = items,
+            listState = rememberLazyListState(),
+            scope = rememberCoroutineScope(),
+            reactions = emptyMap(),
+            chatThemeColors = ChatTheme.DEFAULT.toColors(),
+            backgroundColor = MaterialTheme.colorScheme.background,
+            highlightedMessageId = highlightedMessageId,
+            showScrollToBottom = showScrollToBottom,
+            innerPadding = PaddingValues(),
+            onScrollToMessage = {},
+            onOpenPdf = { _, _ -> },
+            viewerUrls = remember { mutableStateOf(emptyList()) },
+            viewerInitialIndex = remember { mutableStateOf(0) },
+            showViewer = remember { mutableStateOf(false) },
+            reactionDetailMessageId = remember { mutableStateOf(null) },
+        )
+    }
+}
+
+private fun previewMessageListState() = ChatState(
+    currentUserId = PreviewData.ME_ID,
+    conversationTitle = PreviewData.OTHER_NAME,
+)
+
+@ThemePreviews
+@Composable
+internal fun ChatMessageListPreview() {
+    ChatMessageListPreviewHost(
+        state = previewMessageListState(),
+        messages = PreviewChatInput.messages,
+    )
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatMessageListEmptyPreview() {
+    ChatMessageListPreviewHost(state = previewMessageListState(), messages = emptyList())
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatMessageListScrollToBottomPreview() {
+    ChatMessageListPreviewHost(
+        state = previewMessageListState(),
+        messages = PreviewChatInput.messages,
+        showScrollToBottom = true,
+    )
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatMessageListHighlightedAndSelectedPreview() {
+    ChatMessageListPreviewHost(
+        state = previewMessageListState().copy(selectedMessageIds = setOf("m4")),
+        messages = PreviewChatInput.messages,
+        highlightedMessageId = "m3",
+    )
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatMessageListSearchPreview() {
+    ChatMessageListPreviewHost(
+        state = previewMessageListState().copy(
+            search = ChatSearchUiState(
+                isActive = true,
+                query = "quedamos",
+                results = PreviewChatInput.searchResults,
+            ),
+        ),
+        messages = PreviewChatInput.messages,
+    )
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatMessageListGroupPreview() {
+    ChatMessageListPreviewHost(
+        state = previewMessageListState().copy(isGroup = true, conversationTitle = "Equipo Android"),
+        messages = PreviewChatInput.messages,
+    )
+}

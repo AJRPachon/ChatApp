@@ -79,6 +79,7 @@ import com.ajrpachon.chatapp.ui.components.ChatAppAvatar
 import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
 import com.ajrpachon.chatapp.ui.theme.ChatAppShapeExtras
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.datetime.Instant
@@ -206,7 +207,7 @@ internal fun StatusBarEmptyPreview() {
     }
 }
 
-@Preview(name = "With statuses", showBackground = true)
+@ThemePreviews
 @Composable
 internal fun StatusBarWithStatusesPreview() {
     ChatAppTheme {

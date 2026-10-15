@@ -1,5 +1,7 @@
 package com.ajrpachon.chatapp.ui.components
 
+import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -44,5 +46,13 @@ fun OfflineBanner(modifier: Modifier = Modifier) {
                 color = MaterialTheme.colorScheme.onErrorContainer,
             )
         }
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun OfflineBannerPreview() {
+    ChatAppPreview {
+        OfflineBanner()
     }
 }

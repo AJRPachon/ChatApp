@@ -45,6 +45,9 @@ import com.ajrpachon.chatapp.ui.common.formatCallDuration
 import com.ajrpachon.chatapp.ui.theme.ChatAppTextSizes
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
+import com.ajrpachon.chatapp.ui.preview.PreviewChatBubbles
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 
 // ── Message-type-specific bubbles ────────────────────────────────────────────
 // Extracted per docs/chat-viewmodel-decomposition.md Phase 2 — part of the message-bubble
@@ -405,5 +408,71 @@ internal fun DeletedMessageBubble(message: MessageBO) {
                 )
             }
         }
+    }
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+
+@ThemePreviews
+@Composable
+internal fun CallMessageBubbleEndedPreview() {
+    ChatAppPreview {
+        CallMessageBubble(PreviewChatBubbles.call(isFromMe = false, status = "ended"))
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun CallMessageBubbleMissedVideoPreview() {
+    ChatAppPreview {
+        CallMessageBubble(PreviewChatBubbles.call(isFromMe = false, status = "missed", type = "video"))
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun CallMessageBubbleRejectedOwnPreview() {
+    ChatAppPreview {
+        CallMessageBubble(PreviewChatBubbles.call(isFromMe = true, status = "rejected"))
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun FileBubblePdfPreview() {
+    ChatAppPreview {
+        FileBubble(PreviewChatBubbles.pdf(isFromMe = false))
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun FileBubbleGenericPreview() {
+    ChatAppPreview {
+        FileBubble(PreviewChatBubbles.genericFile(isFromMe = true))
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun VideoBubblePreview() {
+    ChatAppPreview {
+        VideoBubble(PreviewChatBubbles.video(isFromMe = false))
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun StickerBubblePreview() {
+    ChatAppPreview {
+        StickerBubble(PreviewChatBubbles.sticker(isFromMe = true))
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun DeletedMessageBubblePreview() {
+    ChatAppPreview {
+        DeletedMessageBubble(PreviewChatBubbles.deleted(isFromMe = false))
     }
 }

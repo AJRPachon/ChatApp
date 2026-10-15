@@ -61,6 +61,9 @@ import androidx.lifecycle.compose.dropUnlessResumed
 import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.MessageBO
+import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
+import com.ajrpachon.chatapp.ui.preview.PreviewData
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import com.ajrpachon.chatapp.ui.theme.IncognitoAccent
 import com.ajrpachon.chatapp.ui.theme.IncognitoBannerBackground
 
@@ -402,4 +405,85 @@ internal fun ChatTopBar(
             )
         }
     }
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+
+@Composable
+private fun ChatTopBarPreviewHost(state: ChatState, latestPinned: MessageBO? = null) {
+    ChatAppPreview {
+        ChatTopBar(
+            state = state,
+            onIntent = {},
+            latestPinned = latestPinned,
+            pinnedBannerVisible = latestPinned != null,
+            onHidePinnedBanner = {},
+            showDeleteSelectionConfirm = remember { mutableStateOf(false) },
+            onBack = {},
+            onGroupInfo = {},
+            onUserInfo = {},
+            onOpenMediaGallery = {},
+            onScrollToMessage = {},
+        )
+    }
+}
+
+private fun previewDirectChatState() = ChatState(
+    currentUserId = PreviewData.ME_ID,
+    conversationTitle = PreviewData.OTHER_NAME,
+    otherUserId = PreviewData.OTHER_ID,
+)
+
+private fun previewGroupChatState() = ChatState(
+    currentUserId = PreviewData.ME_ID,
+    conversationTitle = "Equipo Android",
+    isGroup = true,
+    groupPresence = ChatGroupPresenceUiState(onlineMemberCount = 3, memberCount = 8),
+)
+
+@ThemePreviews
+@Composable
+internal fun ChatTopBarOnlinePreview() {
+    ChatTopBarPreviewHost(previewDirectChatState().copy(isOtherUserOnline = true))
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatTopBarOfflinePreview() {
+    ChatTopBarPreviewHost(previewDirectChatState())
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatTopBarGroupPreview() {
+    ChatTopBarPreviewHost(previewGroupChatState())
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatTopBarSelectionPreview() {
+    ChatTopBarPreviewHost(previewDirectChatState().copy(selectedMessageIds = setOf("m1", "m2")))
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatTopBarIncognitoDisappearingPreview() {
+    ChatTopBarPreviewHost(
+        previewDirectChatState().copy(
+            isOtherUserOnline = true,
+            incognito = ChatIncognitoUiState(isIncognito = true),
+            disappearing = ChatDisappearingUiState(seconds = 86_400L),
+            scheduling = ChatSchedulingUiState(messageCount = 2),
+        ),
+    )
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatTopBarPinnedBannerPreview() {
+    val pinned = PreviewData.message("m3", "Recordad: la reunión es a las 7", isFromMe = false)
+    ChatTopBarPreviewHost(
+        state = previewGroupChatState().copy(pinnedMessages = listOf(pinned)),
+        latestPinned = pinned,
+    )
 }
