@@ -1,5 +1,10 @@
 package com.ajrpachon.chatapp.ui.components
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -67,6 +72,20 @@ fun ChatAppAvatar(
                     fontSize = (size.value * 0.38f).sp,
                 )
             }
+        }
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatAppAvatarPreview() {
+    ChatAppPreview {
+        Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            ChatAppAvatar(name = "Ana García")
+            ChatAppAvatar(name = "Luis")
+            ChatAppAvatar(name = "", size = 32.dp)
+            ChatAppAvatar(name = "Equipo", isGroup = true)
+            ChatAppAvatar(name = "Ana García", size = 72.dp)
         }
     }
 }
