@@ -73,6 +73,10 @@ import com.ajrpachon.chatapp.ui.emoji.EmojiPickerBottomSheet
 import com.ajrpachon.chatapp.ui.theme.ChatAppShapeExtras
 import com.ajrpachon.chatapp.ui.theme.ReadReceiptBlue
 import com.ajrpachon.chatapp.utils.LinkPreviewData
+import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
+import com.ajrpachon.chatapp.ui.preview.PreviewChatBubbles
+import com.ajrpachon.chatapp.ui.preview.PreviewData
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 
 /**
  * [text] with every `@username` mention (see [ChatMentions.mentionRanges]) in semibold. Weight
@@ -698,6 +702,97 @@ internal fun LinkPreviewCard(data: LinkPreviewData) {
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+        }
+    }
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+
+@ThemePreviews
+@Composable
+internal fun LocationMessageCardPreview() {
+    ChatAppPreview {
+        LocationMessageCard(mapsUrl = "https://maps.google.com/?q=Plaza+Mayor")
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun LinkPreviewCardPreview() {
+    ChatAppPreview {
+        LinkPreviewCard(
+            data = LinkPreviewData(
+                title = "Guía de Jetpack Compose",
+                description = "Aprende a construir interfaces declarativas en Android.",
+                imageUrl = null,
+                url = "https://developer.android.com/compose",
+            ),
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun LinkPreviewCardNoDescriptionPreview() {
+    ChatAppPreview {
+        LinkPreviewCard(
+            data = LinkPreviewData(
+                title = "Sitio sin descripción",
+                description = null,
+                imageUrl = null,
+                url = "https://example.com/articulo",
+            ),
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun ReplyQuoteOtherPreview() {
+    ChatAppPreview {
+        ReplyQuote(
+            senderName = PreviewData.OTHER_NAME,
+            content = "Hola, ¿quedamos mañana a las 10?",
+            isFromMe = false,
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun ReplyQuoteOwnPreview() {
+    ChatAppPreview {
+        ReplyQuote(
+            senderName = "Yo",
+            content = "Hola, ¿quedamos mañana a las 10?",
+            isFromMe = true,
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun StatusReplyQuotePreview() {
+    ChatAppPreview {
+        StatusReplyQuote(
+            message = PreviewChatBubbles.text(isFromMe = true).copy(
+                replyToStatusId = "s1",
+                replyToStatusText = "Buenos días",
+            ),
+            isFromMe = true,
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun SendStatusIconsPreview() {
+    ChatAppPreview {
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(16.dp)) {
+            SendStatusIcon(sendStatus = SendStatus.PENDING, isRead = false)
+            SendStatusIcon(sendStatus = SendStatus.FAILED, isRead = false)
+            SendStatusIcon(sendStatus = SendStatus.SENT, isRead = false)
+            SendStatusIcon(sendStatus = SendStatus.SENT, isRead = true)
         }
     }
 }
