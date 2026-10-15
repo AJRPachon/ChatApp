@@ -30,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.UserRelationship
 import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
+import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 
 // ── Contact-card bubble ──────────────────────────────────────────────────────
 // Extracted per docs/chat-viewmodel-decomposition.md Phase 2 — part of the message-bubble
@@ -126,5 +128,36 @@ internal fun ContactBubble(
             )
         }
     }
+    }
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+
+@ThemePreviews
+@Composable
+internal fun ContactBubbleOtherPreview() {
+    ChatAppPreview {
+        ContactBubble(name = "Carlos Ruiz", phone = "+34 600 111 222", isFromMe = false)
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun ContactBubbleOwnPreview() {
+    ChatAppPreview {
+        ContactBubble(name = "Carlos Ruiz", phone = "+34 600 111 222", isFromMe = true)
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun ContactBubbleLoadingPreview() {
+    ChatAppPreview {
+        ContactBubble(
+            name = "Carlos Ruiz",
+            phone = "+34 600 111 222",
+            isFromMe = false,
+            lookup = ContactPhoneLookup(isLoading = true),
+        )
     }
 }

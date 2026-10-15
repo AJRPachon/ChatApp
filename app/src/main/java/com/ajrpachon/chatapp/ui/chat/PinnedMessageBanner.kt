@@ -25,6 +25,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.MessageBO
+import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
+import com.ajrpachon.chatapp.ui.preview.PreviewChatBubbles
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 
 // Extracted per docs/chat-viewmodel-decomposition.md Phase 2 — self-contained, no dependency
 // on ChatViewModel or the message-bubble rendering tree.
@@ -83,5 +86,35 @@ internal fun PinnedMessageBanner(
                 Icon(Icons.Default.Close, contentDescription = stringResource(R.string.chat_unpin), modifier = Modifier.size(16.dp))
             }
         }
+    }
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+
+@ThemePreviews
+@Composable
+internal fun PinnedMessageBannerPreview() {
+    ChatAppPreview {
+        PinnedMessageBanner(
+            message = PreviewChatBubbles.text(isFromMe = false),
+            pinnedCount = 1,
+            onTap = {},
+            onHide = {},
+            onDismiss = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun PinnedMessageBannerMultiplePreview() {
+    ChatAppPreview {
+        PinnedMessageBanner(
+            message = PreviewChatBubbles.text(isFromMe = true),
+            pinnedCount = 3,
+            onTap = {},
+            onHide = {},
+            onDismiss = {},
+        )
     }
 }

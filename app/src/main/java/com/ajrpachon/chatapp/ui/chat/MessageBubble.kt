@@ -52,6 +52,9 @@ import com.ajrpachon.chatapp.utils.LinkPreviewData
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
+import com.ajrpachon.chatapp.ui.preview.PreviewChatBubbles
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 
 // ── Message-bubble rendering tree ───────────────────────────────────────────
 // Extracted per docs/chat-viewmodel-decomposition.md Phase 2 — the higher-risk group left for
@@ -547,5 +550,188 @@ internal fun MessageBubble(
                     .size(20.dp),
             )
         }
+    }
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+
+@ThemePreviews
+@Composable
+internal fun MessageBubbleOtherPreview() {
+    ChatAppPreview {
+        MessageBubble(
+            message = PreviewChatBubbles.text(isFromMe = false),
+            onImageClick = {},
+            onReply = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun MessageBubbleOwnReadPreview() {
+    ChatAppPreview {
+        MessageBubble(
+            message = PreviewChatBubbles.text(isFromMe = true, isRead = true),
+            onImageClick = {},
+            onReply = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun MessageBubbleOwnSentPreview() {
+    ChatAppPreview {
+        MessageBubble(
+            message = PreviewChatBubbles.text(isFromMe = true, isRead = false),
+            onImageClick = {},
+            onReply = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun MessageBubbleOwnPendingPreview() {
+    ChatAppPreview {
+        MessageBubble(
+            message = PreviewChatBubbles.pending(),
+            onImageClick = {},
+            onReply = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun MessageBubbleOwnFailedPreview() {
+    ChatAppPreview {
+        MessageBubble(
+            message = PreviewChatBubbles.failed(),
+            onImageClick = {},
+            onReply = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun MessageBubbleReplyPreview() {
+    ChatAppPreview {
+        MessageBubble(
+            message = PreviewChatBubbles.reply(isFromMe = true),
+            onImageClick = {},
+            onReply = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun MessageBubbleEditedPreview() {
+    ChatAppPreview {
+        MessageBubble(
+            message = PreviewChatBubbles.edited(),
+            onImageClick = {},
+            onReply = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun MessageBubbleDeletedPreview() {
+    ChatAppPreview {
+        MessageBubble(
+            message = PreviewChatBubbles.deleted(isFromMe = false),
+            onImageClick = {},
+            onReply = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun MessageBubbleCallPreview() {
+    ChatAppPreview {
+        MessageBubble(
+            message = PreviewChatBubbles.call(isFromMe = false, status = "ended"),
+            onImageClick = {},
+            onReply = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun MessageBubbleStickerPreview() {
+    ChatAppPreview {
+        MessageBubble(
+            message = PreviewChatBubbles.sticker(isFromMe = false),
+            onImageClick = {},
+            onReply = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun MessageBubblePdfPreview() {
+    ChatAppPreview {
+        MessageBubble(
+            message = PreviewChatBubbles.pdf(isFromMe = false),
+            onImageClick = {},
+            onReply = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun MessageBubbleVideoPreview() {
+    ChatAppPreview {
+        MessageBubble(
+            message = PreviewChatBubbles.video(isFromMe = true),
+            onImageClick = {},
+            onReply = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun MessageBubbleContactPreview() {
+    ChatAppPreview {
+        MessageBubble(
+            message = PreviewChatBubbles.contact(isFromMe = false),
+            onImageClick = {},
+            onReply = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun MessageBubblePollPreview() {
+    ChatAppPreview {
+        MessageBubble(
+            message = PreviewChatBubbles.poll(isFromMe = false),
+            onImageClick = {},
+            onReply = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun MessageBubbleGroupOtherPreview() {
+    ChatAppPreview {
+        MessageBubble(
+            message = PreviewChatBubbles.text(isFromMe = false),
+            onImageClick = {},
+            onReply = {},
+            isGroup = true,
+        )
     }
 }

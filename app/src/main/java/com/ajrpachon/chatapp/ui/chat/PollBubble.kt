@@ -32,6 +32,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.PollOptionBO
+import com.ajrpachon.chatapp.domain.model.PollBO
+import com.ajrpachon.chatapp.domain.model.PollVoteBO
+import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
+import com.ajrpachon.chatapp.ui.preview.PreviewData
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 
 // ── Poll bubble ───────────────────────────────────────────────────────────────
 // Extracted per docs/chat-viewmodel-decomposition.md Phase 2 — part of the message-bubble
@@ -170,5 +175,105 @@ private fun PollOptionRow(
                     .background(MaterialTheme.colorScheme.primary),
             )
         }
+    }
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+
+@ThemePreviews
+@Composable
+internal fun PollBubbleNoVotesPreview() {
+    ChatAppPreview {
+        PollBubble(
+            pollId = "poll1",
+            isFromMe = false,
+            pollUiState = PollUiState(
+                poll = PollBO(
+                    id = "poll1",
+                    conversationId = PreviewData.CONVERSATION_ID,
+                    question = "¿Dónde cenamos el viernes?",
+                    createdBy = PreviewData.OTHER_ID,
+                    createdAt = 0L,
+                ),
+                options = listOf(
+                    PollOptionBO(id = "o1", pollId = "poll1", text = "Pizzería", voteCount = 0),
+                    PollOptionBO(id = "o2", pollId = "poll1", text = "Sushi", voteCount = 0),
+                    PollOptionBO(id = "o3", pollId = "poll1", text = "Tapas", voteCount = 0),
+                ),
+                userVotes = emptyList(),
+            ),
+            onVote = {},
+            onObserve = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun PollBubbleWithVotesPreview() {
+    ChatAppPreview {
+        PollBubble(
+            pollId = "poll1",
+            isFromMe = false,
+            pollUiState = PollUiState(
+                poll = PollBO(
+                    id = "poll1",
+                    conversationId = PreviewData.CONVERSATION_ID,
+                    question = "¿Dónde cenamos el viernes?",
+                    createdBy = PreviewData.OTHER_ID,
+                    createdAt = 0L,
+                ),
+                options = listOf(
+                    PollOptionBO(id = "o1", pollId = "poll1", text = "Pizzería", voteCount = 3),
+                    PollOptionBO(id = "o2", pollId = "poll1", text = "Sushi", voteCount = 1),
+                    PollOptionBO(id = "o3", pollId = "poll1", text = "Tapas", voteCount = 2),
+                ),
+                userVotes = emptyList(),
+            ),
+            onVote = {},
+            onObserve = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun PollBubbleVotedOwnPreview() {
+    ChatAppPreview {
+        PollBubble(
+            pollId = "poll1",
+            isFromMe = true,
+            pollUiState = PollUiState(
+                poll = PollBO(
+                    id = "poll1",
+                    conversationId = PreviewData.CONVERSATION_ID,
+                    question = "¿Dónde cenamos el viernes?",
+                    createdBy = PreviewData.OTHER_ID,
+                    createdAt = 0L,
+                ),
+                options = listOf(
+                    PollOptionBO(id = "o1", pollId = "poll1", text = "Pizzería", voteCount = 3),
+                    PollOptionBO(id = "o2", pollId = "poll1", text = "Sushi", voteCount = 1),
+                    PollOptionBO(id = "o3", pollId = "poll1", text = "Tapas", voteCount = 2),
+                ),
+                userVotes = listOf(PollVoteBO(pollId = "poll1", userId = PreviewData.ME_ID, optionId = "o1")),
+            ),
+            onVote = {},
+            onObserve = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun PollBubbleLoadingPreview() {
+    ChatAppPreview {
+        PollBubble(
+            pollId = "poll1",
+            isFromMe = false,
+            pollUiState = null,
+            onVote = {},
+            onObserve = {},
+        )
     }
 }
