@@ -29,6 +29,9 @@ interface MessageDao {
     @Query("UPDATE messages SET isRead = 1 WHERE conversationId = :conversationId")
     suspend fun markAllRead(conversationId: String)
 
+    @Query("SELECT COUNT(*) FROM messages WHERE conversationId = :conversationId AND senderId != :userId AND isRead = 0")
+    fun observeUnreadIncomingCount(conversationId: String, userId: String): Flow<Int>
+
     @Query("UPDATE messages SET isDeleted = 1 WHERE id = :messageId")
     suspend fun markDeleted(messageId: String)
 

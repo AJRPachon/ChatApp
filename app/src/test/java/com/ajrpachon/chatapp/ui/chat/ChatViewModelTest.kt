@@ -303,6 +303,57 @@ class ChatViewModelTest {
         assertTrue(vm.state.value.isCurrentUserMember)
     }
 
+    // ── Read receipts while the chat is open ──────────────────────────────────
+
+    @Test
+    fun `incoming message while screen is not resumed is not marked as read again`() = chatViewModelTest {
+        val unread = MutableStateFlow(0)
+        every { messageRepository.observeUnreadIncomingCount("conv1", "user1") } returns unread
+        buildViewModel()
+        runCurrent()
+
+        unread.value = 1
+        runCurrent()
+
+        // Only the initial mark-as-read done when the chat is opened.
+        coVerify(exactly = 1) { messageRepository.markAsRead("conv1", "user1") }
+    }
+
+    @Test
+    fun `incoming message while screen is resumed is marked as read`() = chatViewModelTest {
+        val unread = MutableStateFlow(0)
+        every { messageRepository.observeUnreadIncomingCount("conv1", "user1") } returns unread
+        val vm = buildViewModel()
+        runCurrent()
+        vm.onIntent(ChatIntent.ScreenResumed)
+        runCurrent()
+
+        unread.value = 1
+        runCurrent()
+
+        coVerify(exactly = 2) { messageRepository.markAsRead("conv1", "user1") }
+        coVerify(exactly = 2) { conversationRepository.resetUnreadCount("conv1") }
+    }
+
+    @Test
+    fun `unread messages are marked as read when the screen resumes after being paused`() = chatViewModelTest {
+        val unread = MutableStateFlow(0)
+        every { messageRepository.observeUnreadIncomingCount("conv1", "user1") } returns unread
+        val vm = buildViewModel()
+        runCurrent()
+        vm.onIntent(ChatIntent.ScreenResumed)
+        vm.onIntent(ChatIntent.ScreenPaused)
+        runCurrent()
+
+        unread.value = 2
+        runCurrent()
+        coVerify(exactly = 1) { messageRepository.markAsRead("conv1", "user1") }
+
+        vm.onIntent(ChatIntent.ScreenResumed)
+        runCurrent()
+        coVerify(exactly = 2) { messageRepository.markAsRead("conv1", "user1") }
+    }
+
     // ── Input & basic intents ─────────────────────────────────────────────────
 
     @Test
