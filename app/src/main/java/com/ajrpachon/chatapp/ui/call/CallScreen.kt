@@ -66,6 +66,7 @@ import com.ajrpachon.chatapp.ui.common.formatCallDuration
 import com.ajrpachon.chatapp.ui.theme.CallBackground
 import com.ajrpachon.chatapp.ui.theme.CallScreenShareAccent
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import com.github.skydoves.navgraph.annotations.NavDestination
 import io.livekit.android.renderer.TextureViewRenderer
 import io.livekit.android.room.Room
@@ -555,7 +556,7 @@ fun VideoView(
 // that can't render here is actual remote/local video — VideoTrack needs a live LiveKit Room —
 // so the video-call previews below stay audio-shaped (icon + name) even though callType="video".
 
-@Preview(name = "Voice — active", showBackground = true)
+@ThemePreviews
 @Composable
 internal fun CallScreenBodyActiveVoicePreview() {
     ChatAppTheme {

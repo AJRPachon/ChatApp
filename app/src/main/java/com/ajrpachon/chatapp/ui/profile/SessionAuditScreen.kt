@@ -43,6 +43,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
+import com.ajrpachon.chatapp.ui.preview.PreviewData
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -169,12 +171,7 @@ internal fun SessionAuditContent(
     }
 }
 
-private const val PREVIEW_NOW = 1_760_000_000_000L
-
-private fun previewSession(id: String, device: String, current: Boolean) =
-    SessionInfo(id = id, deviceInfo = device, createdAt = PREVIEW_NOW - 86_400_000L, lastActiveAt = PREVIEW_NOW - 3_600_000L, isCurrent = current)
-
-@Preview(name = "Sessions", showBackground = true)
+@ThemePreviews
 @Composable
 internal fun SessionAuditPreview() {
     ChatAppTheme {
@@ -182,9 +179,9 @@ internal fun SessionAuditPreview() {
             state = SessionAuditState(
                 isLoading = false,
                 sessions = listOf(
-                    previewSession("1", "Pixel 9 Pro XL · Android 16", current = true),
-                    previewSession("2", "Pixel 7 · Android 15", current = false),
-                    previewSession("3", "Galaxy Tab S9 · Android 15", current = false),
+                    PreviewData.session("1", "Pixel 9 Pro XL · Android 16", current = true),
+                    PreviewData.session("2", "Pixel 7 · Android 15", current = false),
+                    PreviewData.session("3", "Galaxy Tab S9 · Android 15", current = false),
                 ),
             ),
             snackbarHostState = remember { SnackbarHostState() },
