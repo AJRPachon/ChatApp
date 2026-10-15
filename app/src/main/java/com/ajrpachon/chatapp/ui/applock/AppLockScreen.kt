@@ -28,7 +28,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
@@ -36,7 +35,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.common.UiText
 import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
-import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
+import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -168,28 +168,20 @@ private fun AppLockContent(
     }
 }
 
-@Preview(name = "Light", showBackground = true)
+@ThemePreviews
 @Composable
 internal fun AppLockScreenPreview() {
-    ChatAppTheme(darkTheme = false) {
+    ChatAppPreview {
         AppLockContent(errorMessage = null, onUnlockClick = {})
     }
 }
 
-@Preview(name = "Dark", showBackground = true)
-@Composable
-internal fun AppLockScreenDarkPreview() {
-    ChatAppTheme(darkTheme = true) {
-        AppLockContent(errorMessage = null, onUnlockClick = {})
-    }
-}
-
-@Preview(name = "With error", showBackground = true)
+@ThemePreviews
 @Composable
 internal fun AppLockScreenErrorPreview() {
     // errorMessage comes from BiometricPrompt at runtime (a system-provided CharSequence, not
     // a string resource) — hardcoded here just to preview how that state looks.
-    ChatAppTheme(darkTheme = false) {
+    ChatAppPreview {
         AppLockContent(errorMessage = UiText.Dynamic("No se pudo verificar la huella"), onUnlockClick = {})
     }
 }
