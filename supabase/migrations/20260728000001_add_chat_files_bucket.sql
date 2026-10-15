@@ -3,7 +3,7 @@
 --
 -- Root cause: sending a file attachment fails on-device with
 -- "bucket not found", the same bug fixed for chat-videos in
--- 20260728_add_chat_videos_bucket.sql. MessageRepositoryImpl.kt
+-- 20260727235959_add_chat_videos_bucket.sql. MessageRepositoryImpl.kt
 -- uploads to supabase.storage["chat-files"] (FILE_BUCKET), but the
 -- bucket was never created via migration (or, as far as this repo's
 -- git history shows, the dashboard either). This migration creates
