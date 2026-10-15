@@ -1,5 +1,7 @@
 package com.ajrpachon.chatapp.ui.components
 
+import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -223,5 +225,41 @@ private fun InvitationItemSkeleton() {
                 shape = CircleShape,
             )
         }
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun ShimmerPrimitivesPreview() {
+    ChatAppPreview {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            ShimmerCircle(size = 52.dp)
+            ShimmerLine(modifier = Modifier.fillMaxWidth(0.6f))
+            ShimmerBox(modifier = Modifier.fillMaxWidth().height(80.dp))
+        }
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun ConversationListSkeletonPreview() {
+    ChatAppPreview {
+        ConversationListSkeleton()
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatMessagesSkeletonPreview() {
+    ChatAppPreview {
+        ChatMessagesSkeleton()
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun InvitationsSkeletonPreview() {
+    ChatAppPreview {
+        InvitationsSkeleton()
     }
 }
