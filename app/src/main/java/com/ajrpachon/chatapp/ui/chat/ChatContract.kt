@@ -327,6 +327,8 @@ sealed interface ChatIntent {
     data object SendAudio : ChatIntent
     data class StartCall(val callType: String) : ChatIntent
     data object DismissError : ChatIntent
+    data object ScreenResumed : ChatIntent
+    data object ScreenPaused : ChatIntent
     data class SetReply(val message: MessageBO) : ChatIntent
     data object CancelReply : ChatIntent
     data object OpenStickerPicker : ChatIntent

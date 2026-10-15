@@ -145,6 +145,12 @@ class ChatViewModel(
         scope = viewModelScope,
         context = delegateContext,
     )
+    private val readReceiptDelegate = ChatReadReceiptDelegate(
+        conversationId = conversationId,
+        messageRepository = messageRepository,
+        conversationRepository = conversationRepository,
+        scope = viewModelScope,
+    )
     private val pollDelegate = ChatPollDelegate(
         conversationId = conversationId,
         currentUserId = { currentUserId },
@@ -289,10 +295,7 @@ class ChatViewModel(
                 _historyVisibleFrom.value = historyVisibleFrom
                 startRemoteSync(historyVisibleFrom)
                 startTypingPresence(uid)
-                launch {
-                    catchResult { messageRepository.markAsRead(conversationId, uid) }
-                    catchResult { conversationRepository.resetUnreadCount(conversationId) }
-                }
+                readReceiptDelegate.start(uid)
                 if (otherUserId != null) {
                     launch {
                         userRepository.observeUserById(otherUserId).collect { user ->
@@ -395,6 +398,8 @@ class ChatViewModel(
             is ChatIntent.SendAudio -> audioRecordingDelegate.sendAudio()
             is ChatIntent.StartCall -> startCall(intent.callType)
             is ChatIntent.DismissError -> updateState { it.copy(error = null) }
+            is ChatIntent.ScreenResumed -> readReceiptDelegate.setScreenResumed(true)
+            is ChatIntent.ScreenPaused -> readReceiptDelegate.setScreenResumed(false)
             is ChatIntent.SetReply -> updateState { it.copy(replyingTo = intent.message) }
             is ChatIntent.CancelReply -> updateState { it.copy(replyingTo = null) }
             is ChatIntent.OpenStickerPicker -> updateState { it.copy(showStickerPicker = true) }

@@ -36,6 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.LoadStates
 import androidx.paging.PagingData
@@ -91,6 +92,12 @@ fun ChatScreen(
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val exportConversationLabel = stringResource(R.string.chat_export_conversation)
+
+    // Read receipts only while the chat is actually on screen (RESUMED), not just composed.
+    LifecycleResumeEffect(vm) {
+        vm.onIntent(ChatIntent.ScreenResumed)
+        onPauseOrDispose { vm.onIntent(ChatIntent.ScreenPaused) }
+    }
 
     DisposableEffect(conversationId) {
         ActiveChatTracker.activeConversationId = conversationId
