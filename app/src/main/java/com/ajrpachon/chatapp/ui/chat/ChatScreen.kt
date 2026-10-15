@@ -38,8 +38,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.paging.LoadStates
-import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
 import com.ajrpachon.chatapp.domain.model.CallBO
 import kotlinx.coroutines.delay
@@ -53,12 +51,13 @@ import com.ajrpachon.chatapp.StatusViewerRoute
 import com.ajrpachon.chatapp.UserInfoRoute
 import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.ReactionBO
+import com.ajrpachon.chatapp.ui.preview.PreviewData
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
+import com.ajrpachon.chatapp.ui.preview.rememberPreviewPagingItems
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import java.io.File
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.datetime.Instant
 
 
 // ── Screen ───────────────────────────────────────────────────────────────────
@@ -494,30 +493,13 @@ internal fun ChatContent(
     }
 }
 
-private val previewLoadStates = LoadStates(
-    refresh = LoadState.NotLoading(endOfPaginationReached = true),
-    prepend = LoadState.NotLoading(endOfPaginationReached = true),
-    append = LoadState.NotLoading(endOfPaginationReached = true),
-)
-
-private fun previewMessage(id: String, content: String, isFromMe: Boolean) = MessageBO(
-    id = id,
-    conversationId = "c1",
-    senderId = if (isFromMe) "me" else "other",
-    senderName = if (isFromMe) "Yo" else "Ana García",
-    content = content,
-    isRead = true,
-    isFromMe = isFromMe,
-    createdAt = Instant.fromEpochMilliseconds(0L),
-)
-
 @Composable
 private fun PreviewChat(state: ChatState, messages: List<MessageBO>) {
-    val items = flowOf(PagingData.from(messages, previewLoadStates)).collectAsLazyPagingItems()
+    val items = rememberPreviewPagingItems(messages)
     ChatAppTheme {
         ChatContent(
             state = state,
-            conversationId = "c1",
+            conversationId = PreviewData.CONVERSATION_ID,
             lazyPagingItems = items,
             reactions = emptyMap(),
             listState = rememberLazyListState(),
@@ -536,15 +518,15 @@ private fun PreviewChat(state: ChatState, messages: List<MessageBO>) {
     }
 }
 
-@Preview(name = "Conversation", showBackground = true)
+@ThemePreviews
 @Composable
 internal fun ChatConversationPreview() {
     PreviewChat(
-        state = ChatState(currentUserId = "me", conversationTitle = "Ana García"),
+        state = ChatState(currentUserId = PreviewData.ME_ID, conversationTitle = PreviewData.OTHER_NAME),
         messages = listOf(
-            previewMessage("3", "Perfecto, nos vemos allí", isFromMe = true),
-            previewMessage("2", "¿Quedamos a las 7?", isFromMe = false),
-            previewMessage("1", "Hola, ¿qué tal?", isFromMe = true),
+            PreviewData.message("3", "Perfecto, nos vemos allí", isFromMe = true),
+            PreviewData.message("2", "¿Quedamos a las 7?", isFromMe = false),
+            PreviewData.message("1", "Hola, ¿qué tal?", isFromMe = true),
         ),
     )
 }
@@ -552,7 +534,10 @@ internal fun ChatConversationPreview() {
 @Preview(name = "Empty", showBackground = true)
 @Composable
 internal fun ChatEmptyPreview() {
-    PreviewChat(state = ChatState(currentUserId = "me", conversationTitle = "Ana García"), messages = emptyList())
+    PreviewChat(
+        state = ChatState(currentUserId = PreviewData.ME_ID, conversationTitle = PreviewData.OTHER_NAME),
+        messages = emptyList(),
+    )
 }
 
 @Preview(name = "Offline, typing", showBackground = true)
@@ -560,14 +545,14 @@ internal fun ChatEmptyPreview() {
 internal fun ChatOfflinePreview() {
     PreviewChat(
         state = ChatState(
-            currentUserId = "me",
+            currentUserId = PreviewData.ME_ID,
             conversationTitle = "Equipo Android",
             isGroup = true,
             isOnline = false,
             typingUserNames = listOf("Bruno"),
             inputText = "Un momento…",
         ),
-        messages = listOf(previewMessage("1", "¿Alguien revisa la PR?", isFromMe = false)),
+        messages = listOf(PreviewData.message("1", "¿Alguien revisa la PR?", isFromMe = false)),
     )
 }
 
