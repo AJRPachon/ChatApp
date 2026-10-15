@@ -174,16 +174,18 @@ com.ajrpachon.chatapp/
 │   │   ├── dto/                      Data Transfer Objects de Supabase
 │   │   └── source/                   Fuentes remotas (Supabase, FCM tokens)
 │   ├── repository/                   Coordinan caché local ↔ Supabase remoto
-│   ├── mapper/                       Mappers centralizados DBO ↔ BO / DTO → DBO:
-│   │                                 ConversationMapper, GroupMapper, UserMapper,
-│   │                                 MessageMapper, ReactionMapper, StatusMapper,
-│   │                                 ScheduledMessageMapper, InvitationMapper
+│   ├── mapper/                       Mappers centralizados DBO ↔ BO / DTO → DBO (15):
+│   │                                 AuthMapper, BackupMapper, CallMapper,
+│   │                                 ConversationMapper, EmojiMapper, GiphyMapper,
+│   │                                 GroupMapper, InvitationMapper, MessageMapper,
+│   │                                 ReactionMapper, ScheduledMessageMapper,
+│   │                                 SessionMapper, StatusMapper, StickerPackMapper,
+│   │                                 UserMapper
 │   └── session/                      Gestión de sesión de autenticación
 │
 ├── 🟢 ui/                         ← Jetpack Compose + MVI
 │   ├── common/                       BaseViewModel (State/Intent/Effect), UiConstants
-│   │                                 (ChatConstants, CallPermissions), TimeFormatter,
-│   │                                 ChatThemeColors (mapeo ChatTheme → colores Compose)
+│   │                                 (ChatConstants, CallPermissions), TimeFormatter
 │   ├── auth/                         Login, registro, MFA challenge e IntegrityBlockedScreen
 │   ├── conversations/                Lista de conversaciones con carpetas y difusión
 │   ├── chat/                         Chat (StickerPicker, EmojiPicker, GifPicker, asistente IA,
@@ -202,6 +204,7 @@ com.ajrpachon.chatapp/
 │   ├── saved/                        Mensajes guardados
 │   ├── usagestats/                   Estadísticas de uso con gráfico de barras
 │   ├── search/                       Búsqueda global de mensajes (GlobalSearchScreen + ViewModel)
+│   ├── emoji/                        Selector de emojis (EmojiPickerViewModel)
 │   ├── components/                   Avatar, Button, TextField, Shimmer, EmojiPickerBottomSheet, OfflineBanner
 │   └── theme/                        Color, Shape, Theme (Material3 pastel)
 │
@@ -212,14 +215,15 @@ com.ajrpachon.chatapp/
 │   ├── ActiveChatTracker.kt
 │   └── PresenceManager.kt            Estado online/offline vía Supabase Realtime
 │
-├── worker/                        ← WorkManager workers (ScheduledMessageWorker)
+├── worker/                        ← WorkManager workers (ScheduledMessageWorker, MessageRetryWorker)
 ├── di/                            ← Módulos Koin (AppModule, SharedModules)
 ├── utils/                         ← AppLogger, catchResult, E2EEKeyManager,
 │                                     OkHttpProvider, SessionGuard, RootDetector,
 │                                     ClipboardProtection, IntegrityChecker,
 │                                     TranslationManager, AudioTranscriber,
 │                                     ContactSyncManager, LinkPreviewFetcher,
-│                                     SecureStorage, UploadLimits, NetworkMonitor
+│                                     SecureStorage, UploadLimits, NetworkMonitor,
+│                                     AppConstants, AppDispatchers
 ├── MainActivity.kt                ← NavDisplay + todas las rutas (Navigation 3)
 └── ChatApplication.kt             ← Inicialización de Koin y Supabase
 
@@ -229,6 +233,7 @@ supabase/
 │   ├── livekit-token/             ← Edge Function: genera JWT de LiveKit (secreto nunca en cliente)
 │   ├── verify-integrity/          ← Edge Function: valida Play Integrity token
 │   ├── ai-assistant/              ← Edge Function: proxy al modelo de IA (Claude via Anthropic API)
+│   ├── delete-account/            ← Edge Function: borra la cuenta del usuario autenticado y sus datos
 │   └── assetlinks/                ← Edge Function: sirve /.well-known/assetlinks.json
 └── migrations/                    ← Migraciones SQL del esquema
 ```
@@ -240,6 +245,8 @@ val state: StateFlow<FooState>    // estado observable
 val effects: Flow<FooEffect>      // efectos de un solo uso (navegación, toasts)
 fun onIntent(intent: FooIntent)   // punto de entrada único para interacciones
 ```
+
+Cada pantalla vive en `ui/<feature>/` con `FooContract.kt` (State/Intent/Effect), `FooViewModel.kt` (extiende `BaseViewModel`) y `FooScreen.kt`. Los ViewModels grandes se dividen en **delegates** en lugar de crecer sin límite: `ChatViewModel` delega en 13 clases `Chat*Delegate` (encuestas, medios, programación de mensajes, recibos de lectura, traducción...) que comparten un `ChatDelegateContext`. El detalle está en [`docs/chat-viewmodel-decomposition.md`](docs/chat-viewmodel-decomposition.md).
 
 ---
 
@@ -307,100 +314,29 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 | **Robolectric** | 4.16.1 | Tests unitarios con contexto Android |
 | **Room Testing** | 2.8.4 | Tests de integración en memoria para DAOs |
 
-**514 tests** repartidos en 63 ficheros:
+**846 tests** repartidos en 119 ficheros, por categoría:
 
-**ViewModels**
+| Categoría | Ficheros | Tests |
+|---|---|---|
+| ViewModels y componentes de UI (`ui/`) | 28 | 258 |
+| Repositorios (`data/repository`) | 27 | 169 |
+| Dominio: use cases, modelos y utilidades (`domain/`) | 27 | 150 |
+| DAOs y base de datos (Room en memoria, `data/local`) | 17 | 121 |
+| Mappers (`data/mapper`) | 15 | 91 |
+| Fuentes remotas y backup (`data/remote`, `data/backup`) | 2 | 16 |
+| Servicios, utilidades y navegación | 3 | 41 |
 
-| Fichero | Tests |
-|---|---|
-| `ChatViewModelTest` | 24 |
-| `StatusViewModelTest` | 19 |
-| `InvitationsViewModelTest` | 11 |
-| `CreateGroupViewModelTest` | 11 |
-| `NewChatViewModelTest` | 10 |
-| `ProfileViewModelTest` | 8 |
-| `GlobalSearchViewModelTest` | 6 |
-| `UserInfoViewModelTest` | 6 |
-| `ConversationListViewModelTest` | 5 |
-| `GifPickerViewModelTest` | 5 |
-| `ChatMediaGalleryViewModelTest` | 4 |
-| `EmojiPickerViewModelTest` | 4 |
-| `GroupInfoViewModelTest` | 4 |
+> [!NOTE]
+> Los recuentos salen del código, no se mantienen a mano. Para regenerarlos:
+> `grep -rl "@Test" app/src/test | xargs grep -c "@Test" | awk -F: '{s+=$2} END {print s}'`
 
-**DAOs (Room in-memory)**
+#### Pruebas manuales en emulador
 
-| Fichero | Tests |
-|---|---|
-| `ConversationDaoTest` | 18 |
-| `MessageDaoTest` | 15 |
-| `GroupMemberDaoTest` | 12 |
-| `StatusDaoTest` | 10 |
-| `ReactionDaoTest` | 9 |
-| `UserDaoTest` | 8 |
-| `InvitationDaoTest` | 7 |
+Para verificar flujos entre dos usuarios (mensajes, recibos de lectura, llamadas) se instala la app en dos emuladores con `./gradlew installDebug` y se inicia sesión con una cuenta distinta en cada uno. Para automatizar la interacción desde Claude Code se usa [mobile-mcp](https://github.com/mobile-next/mobile-mcp):
 
-**Repositorios**
-
-| Fichero | Tests |
-|---|---|
-| `InvitationRepositoryImplTest` | 12 |
-| `GroupRepositoryImplTest` | 11 |
-| `UserRepositoryImplTest` | 8 |
-| `PollRepositoryImplTest` | 7 |
-| `ReactionRepositoryImplTest` | 5 |
-| `BroadcastListRepositoryImplTest` | 5 |
-| `MessageRepositoryImplTest` | 3 |
-| `CallRepositoryImplTest` | 3 |
-| `PendingMessageRepositoryImplTest` | 2 |
-
-**Use Cases**
-
-| Fichero | Tests |
-|---|---|
-| `SetUsernameUseCaseTest` | 12 |
-| `SendMessageUseCaseTest` | 11 |
-| `SendInvitationUseCaseTest` | 9 |
-| `CreateGroupUseCaseTest` | 8 |
-| `UpdateGroupUseCaseTest` | 7 |
-| `ExportConversationUseCaseTest` | 6 |
-| `BlockUserUseCaseTest` | 6 |
-| `ReplyToStatusUseCaseTest` | 5 |
-| `RespondInvitationUseCaseTest` | 4 |
-| `PromoteGroupMemberUseCaseTest` | 4 |
-| `ObserveConversationsUseCaseTest` | 4 |
-| `GetCurrentUserUseCaseTest` | 4 |
-| `SearchUsersUseCaseTest` | 3 |
-| `LeaveGroupUseCaseTest` | 3 |
-| `GetOrCreateConversationUseCaseTest` | 3 |
-| `GetGroupMembersUseCaseTest` | 3 |
-| `ObserveInvitationsUseCaseTest` | 2 |
-| `GetDeviceContactsUseCaseTest` | 2 |
-| `GetCacheFilePathUseCaseTest` | 2 |
-| `ReadUriAsBytesUseCaseTest` | 1 |
-| `GetUriMetadataUseCaseTest` | 1 |
-
-**Mappers y modelos**
-
-| Fichero | Tests |
-|---|---|
-| `MessageBOTest` | 22 |
-| `MediaUrlValidatorTest` | 17 |
-| `UserMapperTest` | 16 |
-| `MessageMapperTest` | 16 |
-| `ConversationMapperTest` | 13 |
-| `InvitationMapperTest` | 10 |
-| `GroupMapperTest` | 8 |
-| `StatusMapperTest` | 5 |
-
-**Utilidades y servicios**
-
-| Fichero | Tests |
-|---|---|
-| `FcmMessageHandlerTest` | 19 |
-| `UploadLimitsTest` | 18 |
-| `ChatAudioComponentsTest` | 8 |
-| `TimeFormatterTest` | 6 |
-| `CatchResultTest` | 4 |
+```bash
+claude mcp add mobile-mcp -- npx -y @mobilenext/mobile-mcp@latest
+```
 
 ### CI/CD
 
@@ -439,80 +375,33 @@ GIPHY_API_KEY=...
 
 ---
 
+## 📚 Documentación adicional
+
+| Documento | Contenido |
+|---|---|
+| [`docs/firebase-setup.md`](docs/firebase-setup.md) | Configuración de Firebase y `google-services.json` |
+| [`docs/release-signing.md`](docs/release-signing.md) | Firma de las builds de release |
+| [`docs/room-schema-history.md`](docs/room-schema-history.md) | Historial del esquema de Room |
+| [`docs/chat-viewmodel-decomposition.md`](docs/chat-viewmodel-decomposition.md) | División de `ChatViewModel` en delegates |
+| [`docs/privacy-policy.md`](docs/privacy-policy.md) | Política de privacidad |
+| [`docs/play-data-safety-form.md`](docs/play-data-safety-form.md) | Respuestas del formulario de seguridad de datos de Google Play |
+
+---
+
 ## 🌿 Estructura de ramas (Gitflow)
 
 ```
 master        ← releases estables (v1.0, v1.1…)
 └── develop   ← integración continua
-    ├── feature/…                  (60+ feature branches de funcionalidad)
-    ├── feature/emoji-picker
-    ├── feature/message-reactions
-    ├── feature/message-search
-    ├── feature/edit-messages
-    ├── feature/deep-links
-    ├── feature/supabase-presence-migration
-    ├── feature/coil-disk-cache
-    ├── feature/camera-switch-call
-    ├── feature/notification-reply
-    ├── feature/mute-snooze
-    ├── feature/self-destruct
-    ├── feature/room-integration-tests
-    ├── feature/strictmode-debug
-    ├── feature/attachment-bottom-sheet
-    ├── feature/link-preview
-    ├── feature/audio-playback-speed
-    ├── feature/dark-mode-setting
-    ├── feature/forward-message
-    ├── feature/typing-indicator
-    ├── feature/archive-chats
-    ├── feature/shared-media-gallery
-    ├── feature/chat-viewmodel-tests
-    ├── feature/group-roles
-    ├── fix/viewmodel-coroutine-leaks
-    ├── fix/e2ee-key-cache
-    ├── fix/edge-to-edge-insets
-    ├── ci/improvements
-    ├── security/flag-secure
-    ├── security/backup-rules
-    ├── security/exported-components
-    ├── security/play-integrity
-    ├── security/session-revocation
-    ├── security/storage-size-limits
-    ├── security/proguard-obfuscation
-    ├── security/dependency-pinning
-    ├── security/coil-certificate-pinning
-    ├── security/log-sanitization
-    ├── security/message-length-validation
-    ├── security/edge-function-rate-limiting
-    ├── security/intent-validation
-    ├── security/sticker-url-validation
-    ├── security/media-url-whitelist
-    ├── security/play-integrity-enforcement
-    ├── security/deep-link-verification
-    ├── security/postgres-grants-audit
-    ├── security/clipboard-protection
-    ├── security/certificate-transparency
-    ├── security/session-expiration
-    ├── security/root-detection
-    ├── security/e2ee-messages
-    ├── feature/in-call-chat
-    ├── feature/location-sharing
-    ├── feature/screen-sharing
-    ├── feature/message-drafts
-    ├── feature/message-translation
-    ├── feature/custom-notification-sounds
-    ├── feature/audio-transcription
-    ├── feature/video-blur-background
-    ├── feature/pinned-messages
-    ├── feature/saved-messages
-    ├── feature/group-polls
-    ├── feature/sticker-packs
-    ├── feature/chat-themes
-    ├── feature/contact-qr
-    ├── feature/export-conversation
-    ├── feature/contact-sync
-    ├── feature/2fa
-    └── feature/disappearing-mode
+    ├── feat/<nombre>        funcionalidades
+    ├── fix/<nombre>         correcciones
+    ├── security/<nombre>    endurecimiento de seguridad
+    └── ci/<nombre>          pipeline y automatizaciones
 ```
 
-> **Nota para desarrollo:** Las notificaciones push FCM no funcionan en emuladores a menos que el SHA-1 del debug keystore esté registrado en Firebase Console. Ejecuta `./gradlew signingReport` para obtener el SHA-1 y añádelo en Firebase Console → Configuración del proyecto → Tus apps → Android.
+- Nunca se commitea directamente en `master` ni en `develop`: toda la integración entra por PR desde una rama `feat/*` (o `fix/*`, `security/*`, `ci/*`) creada desde `develop`.
+- Los merges se hacen siempre con merge commit (`--no-ff`), sin squash ni rebase.
+- El CI debe estar en verde en `develop` antes de mergear a `master`.
+- Las ramas anteriores a esta convención usan el prefijo `feature/`.
+
+> **Nota para desarrollo:** las notificaciones push FCM funcionan en emuladores con imagen **Google Play** y Play Services actualizado. El SHA-1 del debug keystore solo es necesario para el inicio de sesión con Google (`./gradlew signingReport`). Si no llega un push, revisa el permiso de notificaciones y que no tengas ese chat abierto; hay más detalles en [`docs/firebase-setup.md`](docs/firebase-setup.md).
