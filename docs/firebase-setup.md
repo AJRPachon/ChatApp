@@ -33,10 +33,18 @@ Ese secret contiene el JSON real del proyecto `chatapp-27ec7`, así que los buil
    ```
    Debe mostrar `"project_id": "chatapp-27ec7"`. Si muestra `chatapp-placeholder` (o cualquier otro project_id), sustitúyelo.
 6. Verifica que el `package_name` dentro del archivo coincide con `com.ajrpachon.chatapp` (el mismo `applicationId` de `app/build.gradle.kts`). Si no coincide, el plugin `google-services` falla el build con `No matching client found for package name 'com.ajrpachon.chatapp'`.
-7. (Opcional, para que FCM funcione en emuladores/dispositivos de debug) Registra el SHA-1 del debug keystore en Firebase Console → Configuración del proyecto → Tus apps → Android:
+7. (Necesario para el inicio de sesión con Google en builds de debug) Registra el SHA-1 del debug keystore en Firebase Console → Configuración del proyecto → Tus apps → Android:
    ```bash
    ./gradlew signingReport
    ```
+   El SHA-1 no es necesario para recibir notificaciones push: FCM funciona en emuladores con imagen **Google Play** (`google_apis_playstore`) y Play Services actualizado.
+
+## Si no llegan las notificaciones push en un emulador
+
+1. **Imagen del emulador:** debe ser Google Play, no solo "Google APIs".
+2. **Permiso de notificaciones:** en Android 13+ concede `POST_NOTIFICATIONS` tras instalar o hacer wipe del emulador.
+3. **Chat abierto:** la app no muestra la notificación del chat que tienes abierto en ese momento (`ChatFirebaseMessagingService`). Pon la app en segundo plano o sal del chat para probarlo.
+4. **Play Services:** actualizado y con red; si no se sincroniza, reinicia el emulador.
 
 ## Antes de compilar el release para Play Store
 

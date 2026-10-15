@@ -22,6 +22,9 @@ interface MessageRepository {
     suspend fun uploadFile(conversationId: String, bytes: ByteArray, fileName: String, mimeType: String): String
     suspend fun uploadVideo(conversationId: String, bytes: ByteArray): String
     suspend fun markAsRead(conversationId: String, userId: String)
+
+    /** Messages from other users in the conversation that are still unread locally. */
+    fun observeUnreadIncomingCount(conversationId: String, userId: String): Flow<Int>
     suspend fun deleteMessage(messageId: String): Result<Unit>
     suspend fun editMessage(messageId: String, newContent: String): Result<Unit>
     suspend fun syncMessages(conversationId: String, since: Long = 0L)

@@ -132,6 +132,9 @@ class MessageRepositoryImpl(
         remoteSource.markAsRead(conversationId, userId)
     }
 
+    override fun observeUnreadIncomingCount(conversationId: String, userId: String): Flow<Int> =
+        messageDao.observeUnreadIncomingCount(conversationId, userId)
+
     override suspend fun deleteMessage(messageId: String): Result<Unit> = catchResult {
         remoteSource.deleteMessage(messageId)
         messageDao.markDeleted(messageId)
