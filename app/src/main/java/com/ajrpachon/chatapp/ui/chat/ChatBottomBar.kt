@@ -32,6 +32,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.components.OfflineBanner
+import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
+import com.ajrpachon.chatapp.ui.preview.PreviewChatInput
+import com.ajrpachon.chatapp.ui.preview.PreviewData
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 
 /**
  * [ChatScreen]'s `Scaffold.bottomBar`: the offline banner, editing/reply preview strips, the
@@ -168,4 +172,116 @@ internal fun ChatBottomBar(
             }
         }
     }
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+
+@Composable
+private fun ChatBottomBarPreviewHost(state: ChatState) {
+    ChatAppPreview {
+        ChatBottomBar(
+            state = state,
+            onIntent = {},
+            containerColor = MaterialTheme.colorScheme.background,
+            onGallery = {},
+            onCamera = {},
+            onMic = {},
+            onAttachFile = {},
+            onAttachVideo = {},
+            onLocation = {},
+            onContact = {},
+        )
+    }
+}
+
+private fun previewBottomBarState() = ChatState(
+    currentUserId = PreviewData.ME_ID,
+    conversationTitle = PreviewData.OTHER_NAME,
+)
+
+@ThemePreviews
+@Composable
+internal fun ChatBottomBarEmptyPreview() {
+    ChatBottomBarPreviewHost(previewBottomBarState())
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatBottomBarWithTextPreview() {
+    ChatBottomBarPreviewHost(previewBottomBarState().copy(inputText = "Perfecto, nos vemos allí"))
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatBottomBarReplyingPreview() {
+    ChatBottomBarPreviewHost(
+        previewBottomBarState().copy(
+            replyingTo = PreviewData.message("m3", "¿Quedamos a las 7?", isFromMe = false),
+            inputText = "Sí, a las 7",
+        ),
+    )
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatBottomBarEditingPreview() {
+    ChatBottomBarPreviewHost(
+        previewBottomBarState().copy(
+            editingMessage = PreviewData.message("m4", "Perfecto, nos vemos allí", isFromMe = true),
+            inputText = "Perfecto, nos vemos allí a las 7",
+        ),
+    )
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatBottomBarRecordingPreview() {
+    ChatBottomBarPreviewHost(
+        previewBottomBarState().copy(
+            audioState = AudioState(
+                isRecording = true,
+                recordingDurationMs = 12_000L,
+                amplitudeHistory = listOf(0.1f, 0.4f, 0.7f, 0.3f, 0.9f, 0.5f, 0.2f, 0.6f),
+            ),
+        ),
+    )
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatBottomBarOfflineTypingPreview() {
+    ChatBottomBarPreviewHost(
+        previewBottomBarState().copy(
+            isOnline = false,
+            typingUserNames = listOf("Ana", "Bruno"),
+        ),
+    )
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatBottomBarMentionSuggestionsPreview() {
+    ChatBottomBarPreviewHost(
+        previewBottomBarState().copy(
+            isGroup = true,
+            inputText = "Hola @a",
+            groupPresence = ChatGroupPresenceUiState(
+                onlineMemberCount = 2,
+                memberCount = 2,
+                members = PreviewChatInput.members,
+            ),
+        ),
+    )
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatBottomBarUploadingPreview() {
+    ChatBottomBarPreviewHost(
+        previewBottomBarState().copy(
+            mediaUpload = ChatMediaUploadUiState(
+                progress = MediaUploadProgress(totalCount = 3, completedCount = 1, totalBytes = 4_200_000L),
+            ),
+        ),
+    )
 }
