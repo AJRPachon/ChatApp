@@ -53,7 +53,6 @@ import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
 import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
 import com.ajrpachon.chatapp.ui.preview.PreviewData
 import com.ajrpachon.chatapp.ui.preview.ThemePreviews
-import kotlinx.datetime.Instant
 
 // ── Simple modal dialogs used from ChatScreen ───────────────────────────────
 // Extracted per docs/chat-viewmodel-decomposition.md Phase 2 — each takes only its own narrow
@@ -324,16 +323,6 @@ internal fun ImageViewerDialog(
 
 // ── Previews ──────────────────────────────────────────────────────────────────
 
-private fun previewConversation(id: String, name: String, isGroup: Boolean) = ConversationBO(
-    id = id,
-    name = name,
-    isGroup = isGroup,
-    participants = emptyList(),
-    lastMessage = null,
-    unreadCount = 0,
-    updatedAt = Instant.fromEpochMilliseconds(0L),
-)
-
 @Composable
 @ThemePreviews
 internal fun ExpiryDurationDialogPreview() {
@@ -356,9 +345,9 @@ internal fun ForwardConversationDialogPreview() {
     ChatAppPreview {
         ForwardConversationDialog(
             conversations = listOf(
-                previewConversation("c1", PreviewData.OTHER_NAME, isGroup = false),
-                previewConversation("c2", "Equipo de diseño", isGroup = true),
-                previewConversation("c3", "Luis Pérez", isGroup = false),
+                PreviewData.conversation("c1", PreviewData.OTHER_NAME, isGroup = false),
+                PreviewData.conversation("c2", "Equipo de diseño", isGroup = true),
+                PreviewData.conversation("c3", "Luis Pérez", isGroup = false),
             ),
             onDismiss = {},
             onSelect = {},

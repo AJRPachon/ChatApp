@@ -46,6 +46,7 @@ import com.ajrpachon.chatapp.ui.components.ChatAppSecondaryButton
 import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
 import com.ajrpachon.chatapp.ui.components.ChatAppTopBar
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -299,7 +300,7 @@ internal fun BackupEmptyPreview() {
     }
 }
 
-@Preview(name = "With a backup", showBackground = true)
+@ThemePreviews
 @Composable
 internal fun BackupWithDataPreview() {
     ChatAppTheme {

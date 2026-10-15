@@ -18,13 +18,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.GroupRole
 import com.ajrpachon.chatapp.ui.components.ChatAppAvatar
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import kotlinx.datetime.Instant
 
 /**
@@ -78,7 +78,7 @@ private fun MentionSuggestionRow(member: GroupMemberBO, onClick: () -> Unit) {
     }
 }
 
-@Preview(showBackground = true)
+@ThemePreviews
 @Composable
 internal fun MentionSuggestionListPreview() {
     fun member(id: String, name: String, username: String) = GroupMemberBO(
