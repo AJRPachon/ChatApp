@@ -332,7 +332,7 @@ La app implementa un modelo de seguridad en capas para proteger los mensajes y l
 
 #### Pruebas manuales en emulador
 
-Para verificar flujos entre dos usuarios (mensajes, recibos de lectura, llamadas) se instala la app en dos emuladores (`emulator-5554` y `emulator-5556`) con `./gradlew installDebug` y se inicia sesión con una cuenta distinta en cada uno. Para automatizar la interacción desde Claude Code se usa [mobile-mcp](https://github.com/mobile-next/mobile-mcp):
+Para verificar flujos entre dos usuarios (mensajes, recibos de lectura, llamadas) se instala la app en dos emuladores con `./gradlew installDebug` y se inicia sesión con una cuenta distinta en cada uno. Para automatizar la interacción desde Claude Code se usa [mobile-mcp](https://github.com/mobile-next/mobile-mcp):
 
 ```bash
 claude mcp add mobile-mcp -- npx -y @mobilenext/mobile-mcp@latest
