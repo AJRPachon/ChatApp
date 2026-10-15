@@ -404,4 +404,4 @@ master        ← releases estables (v1.0, v1.1…)
 - El CI debe estar en verde en `develop` antes de mergear a `master`.
 - Las ramas anteriores a esta convención usan el prefijo `feature/`.
 
-> **Nota para desarrollo:** Las notificaciones push FCM no funcionan en emuladores a menos que el SHA-1 del debug keystore esté registrado en Firebase Console. Ejecuta `./gradlew signingReport` para obtener el SHA-1 y añádelo en Firebase Console → Configuración del proyecto → Tus apps → Android.
+> **Nota para desarrollo:** las notificaciones push FCM funcionan en emuladores con imagen **Google Play** y Play Services actualizado. El SHA-1 del debug keystore solo es necesario para el inicio de sesión con Google (`./gradlew signingReport`). Si no llega un push, revisa el permiso de notificaciones y que no tengas ese chat abierto; hay más detalles en [`docs/firebase-setup.md`](docs/firebase-setup.md).
