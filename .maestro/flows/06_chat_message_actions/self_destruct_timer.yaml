@@ -1,0 +1,35 @@
+# Long-press text > self-destruct: pick 1 hour, the expiry label appears; remove it again.
+appId: com.ajrpachon.chatapp
+name: "06 · Temporizador de autodestrucción"
+tags:
+  - chat
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "timer-${RUN_ID}"
+- runFlow:
+    file: ../../subflows/long_press_message.yaml
+    env:
+      TEXT: "timer-${RUN_ID}"
+- tapOn:
+    id: message_menu_timer
+- tapOn:
+    id: expiry_option_1
+- extendedWaitUntil:
+    visible:
+      id: message_expiry_label
+    timeout: 15000
+- runFlow:
+    file: ../../subflows/long_press_message.yaml
+    env:
+      TEXT: "timer-${RUN_ID}"
+- tapOn:
+    id: message_menu_timer
+- tapOn:
+    id: expiry_option_4
+- extendedWaitUntil:
+    notVisible:
+      id: message_expiry_label
+    timeout: 15000

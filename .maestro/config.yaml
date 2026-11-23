@@ -6,3 +6,4 @@ flows:
 excludeTags:
   - multidevice
   - destructive
+  - known-bug

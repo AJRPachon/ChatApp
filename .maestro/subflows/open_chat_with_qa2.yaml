@@ -1,0 +1,8 @@
+# Sign in as QA and open the 1:1 chat with QA2 (fixture conversation, see flows/00_setup).
+appId: com.ajrpachon.chatapp
+---
+- runFlow: login.yaml
+- runFlow:
+    file: open_conversation.yaml
+    env:
+      CONTACT: ${QA2_NAME}

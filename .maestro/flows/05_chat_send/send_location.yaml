@@ -1,0 +1,18 @@
+# Attach > Location: sends the current location (mocked with setLocation) as a location card.
+appId: com.ajrpachon.chatapp
+name: "05 · Enviar ubicación"
+tags:
+  - chat
+---
+- setLocation:
+    latitude: 40.4168
+    longitude: -3.7038
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/open_attach.yaml
+    env:
+      ITEM: attach_location
+- extendedWaitUntil:
+    visible:
+      id: message_location_own
+    timeout: 45000

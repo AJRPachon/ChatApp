@@ -1,0 +1,42 @@
+# Long-press text > Edit: editing banner appears, cancel restores; confirming changes the text and
+# shows the "edited" label.
+appId: com.ajrpachon.chatapp
+name: "06 · Editar mensaje"
+tags:
+  - chat
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "edit-${RUN_ID}"
+- runFlow:
+    file: ../../subflows/long_press_message.yaml
+    env:
+      TEXT: "edit-${RUN_ID}"
+- tapOn:
+    id: message_menu_edit
+- assertVisible:
+    id: edit_banner
+- tapOn:
+    id: edit_banner_cancel
+- assertNotVisible:
+    id: edit_banner
+- runFlow:
+    file: ../../subflows/long_press_message.yaml
+    env:
+      TEXT: "edit-${RUN_ID}"
+- tapOn:
+    id: message_menu_edit
+- tapOn:
+    id: chat_input_field
+- eraseText
+- inputText: "edited-${RUN_ID}"
+- tapOn:
+    id: chat_send_button
+- extendedWaitUntil:
+    visible:
+      text: "edited-${RUN_ID}"
+    timeout: 15000
+- assertVisible:
+    id: message_edited_label

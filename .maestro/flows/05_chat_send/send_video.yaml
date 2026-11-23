@@ -1,0 +1,20 @@
+# Attach > Video: pick the fixture video from the photo picker; an own video bubble appears.
+appId: com.ajrpachon.chatapp
+name: "05 · Enviar vídeo"
+tags:
+  - chat
+  - slow
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/open_attach.yaml
+    env:
+      ITEM: attach_video
+- runFlow:
+    file: ../../subflows/pick_first_media.yaml
+    env:
+      KIND: video
+- extendedWaitUntil:
+    visible:
+      id: message_video_own
+    timeout: 60000

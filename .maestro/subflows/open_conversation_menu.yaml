@@ -1,0 +1,12 @@
+# From the conversation list: long-press the row titled CONTACT and tap menu item ITEM
+# (conversation_menu_mute|clear|sound|archive|leave|delete).
+appId: com.ajrpachon.chatapp
+---
+- scrollUntilVisible:
+    element:
+      id: "conversation_row_${CONTACT}"
+    direction: DOWN
+- longPressOn:
+    id: "conversation_row_${CONTACT}"
+- tapOn:
+    id: ${ITEM}

@@ -1,0 +1,21 @@
+# Long-press menu: mute shows the muted icon on the row; the same entry turns notifications back on.
+appId: com.ajrpachon.chatapp
+name: "03 · Silenciar y reactivar desde la lista"
+tags:
+  - conversations
+---
+- runFlow: ../../subflows/login.yaml
+- runFlow:
+    file: ../../subflows/open_conversation_menu.yaml
+    env:
+      CONTACT: ${QA2_NAME}
+      ITEM: conversation_menu_mute
+- assertVisible:
+    id: conversation_row_muted_icon
+- runFlow:
+    file: ../../subflows/open_conversation_menu.yaml
+    env:
+      CONTACT: ${QA2_NAME}
+      ITEM: conversation_menu_mute
+- assertNotVisible:
+    id: conversation_row_muted_icon

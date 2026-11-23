@@ -1,0 +1,30 @@
+# Archive from the long-press menu removes the row and adds it to the archived sheet;
+# unarchiving from the sheet brings it back.
+appId: com.ajrpachon.chatapp
+name: "03 · Archivar y desarchivar"
+tags:
+  - conversations
+---
+- runFlow: ../../subflows/login.yaml
+- runFlow:
+    file: ../../subflows/open_conversation_menu.yaml
+    env:
+      CONTACT: ${QA2_NAME}
+      ITEM: conversation_menu_archive
+- extendedWaitUntil:
+    notVisible:
+      id: "conversation_row_${QA2_NAME}"
+    timeout: 10000
+- assertVisible:
+    id: archived_badge
+- tapOn:
+    id: conversation_list_archived_button
+- assertVisible:
+    id: archived_sheet
+- tapOn:
+    id: "archived_unarchive_${QA2_NAME}"
+- back
+- extendedWaitUntil:
+    visible:
+      id: "conversation_row_${QA2_NAME}"
+    timeout: 10000

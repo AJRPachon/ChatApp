@@ -1,0 +1,49 @@
+# Long-pressing a bubble outside its text (here: the status tick) enters multi-select; cancel
+# exits; selecting two messages and deleting them (with confirmation) removes both.
+appId: com.ajrpachon.chatapp
+name: "06 · Multiselección - cancelar y borrar con confirmación"
+tags:
+  - chat
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "ms1-${RUN_ID}"
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "ms2-${RUN_ID}"
+- extendedWaitUntil:
+    visible:
+      id: "message_status_(sent|read)"
+    timeout: 15000
+# Enter and cancel
+- longPressOn:
+    id: "message_status_(sent|read)"
+    index: -1
+- assertVisible:
+    id: chat_selection_count
+- tapOn:
+    id: chat_selection_cancel
+- assertNotVisible:
+    id: chat_selection_count
+# Select the last two and delete
+- longPressOn:
+    id: "message_status_(sent|read)"
+    index: -1
+- tapOn:
+    id: "message_status_(sent|read)"
+    index: -2
+- assertVisible:
+    id: message_selected_check
+- tapOn:
+    id: chat_selection_delete
+- tapOn:
+    id: delete_confirm
+- extendedWaitUntil:
+    notVisible:
+      text: "ms2-${RUN_ID}"
+    timeout: 15000
+- assertNotVisible:
+    text: "ms1-${RUN_ID}"

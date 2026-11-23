@@ -1,0 +1,13 @@
+# The archived sheet shows its empty state when nothing is archived.
+appId: com.ajrpachon.chatapp
+name: "03 · Hoja de archivados vacía"
+tags:
+  - conversations
+---
+- runFlow: ../../subflows/login.yaml
+- tapOn:
+    id: conversation_list_archived_button
+- assertVisible:
+    id: archived_sheet
+- assertVisible:
+    id: archived_empty

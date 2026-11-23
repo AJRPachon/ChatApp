@@ -1,0 +1,21 @@
+# Long-press text > Delete removes the message (rendered as a deleted bubble).
+appId: com.ajrpachon.chatapp
+name: "06 · Borrar mensaje"
+tags:
+  - chat
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "del-${RUN_ID}"
+- runFlow:
+    file: ../../subflows/long_press_message.yaml
+    env:
+      TEXT: "del-${RUN_ID}"
+- tapOn:
+    id: message_menu_delete
+- extendedWaitUntil:
+    notVisible:
+      text: "del-${RUN_ID}"
+    timeout: 15000

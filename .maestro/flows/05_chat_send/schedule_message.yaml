@@ -1,0 +1,33 @@
+# Long-press Send schedules a message (date -> time pickers); the scheduled icon appears, the
+# sheet lists it, and cancelling it empties the sheet.
+appId: com.ajrpachon.chatapp
+name: "05 · Programar mensaje y cancelarlo"
+tags:
+  - chat
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- tapOn:
+    id: chat_input_field
+- inputText: "sched-${RUN_ID}"
+- longPressOn:
+    id: chat_send_button
+- tapOn:
+    id: schedule_date_next
+- tapOn:
+    id: schedule_confirm
+- extendedWaitUntil:
+    visible:
+      id: chat_scheduled_icon
+    timeout: 15000
+- tapOn:
+    id: chat_scheduled_icon
+- assertVisible:
+    id: scheduled_sheet
+- assertVisible:
+    text: "sched-${RUN_ID}"
+- tapOn:
+    id: scheduled_cancel_0
+- extendedWaitUntil:
+    notVisible:
+      text: "sched-${RUN_ID}"
+    timeout: 10000

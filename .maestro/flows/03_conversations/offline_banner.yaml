@@ -1,0 +1,19 @@
+# Airplane mode shows the offline banner on the list; turning it off hides it again.
+appId: com.ajrpachon.chatapp
+name: "03 · Banner sin conexión"
+tags:
+  - conversations
+onFlowComplete:
+  - setAirplaneMode: disabled
+---
+- runFlow: ../../subflows/login.yaml
+- setAirplaneMode: enabled
+- extendedWaitUntil:
+    visible:
+      id: offline_banner
+    timeout: 15000
+- setAirplaneMode: disabled
+- extendedWaitUntil:
+    notVisible:
+      id: offline_banner
+    timeout: 30000

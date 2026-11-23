@@ -1,0 +1,25 @@
+# Attach > Contact: pick a device contact in the system contact picker; a contact card bubble is sent.
+# Needs at least one contact on the emulator (setup-emulators.ps1 creates "QA Contact").
+appId: com.ajrpachon.chatapp
+name: "05 · Enviar contacto"
+tags:
+  - chat
+  - slow
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/open_attach.yaml
+    env:
+      ITEM: attach_contact
+- extendedWaitUntil:
+    visible:
+      text: "QA Contact"
+    timeout: 20000
+- tapOn:
+    text: "QA Contact"
+- extendedWaitUntil:
+    visible:
+      id: message_contact_own
+    timeout: 30000
+- assertVisible:
+    id: contact_card_primary_action

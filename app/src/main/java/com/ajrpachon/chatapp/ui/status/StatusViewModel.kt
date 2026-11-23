@@ -32,7 +32,7 @@ class StatusViewModel(
         viewModelScope.launch {
             val contactIds = contactIds()
             statusRepository.observeActiveStatuses(contactIds).collect { statuses ->
-                updateState { it.copy(statuses = statuses) }
+                updateState { it.copy(statuses = statuses, hasLoadedStatuses = true) }
             }
         }
         onIntent(StatusIntent.Refresh)

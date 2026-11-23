@@ -1,0 +1,34 @@
+# Attach > File: pick the fixture PDF in the system document picker; the PDF bubble opens the
+# in-app PDF viewer (back + share).
+appId: com.ajrpachon.chatapp
+name: "05 · Enviar PDF y abrir el visor de PDF"
+tags:
+  - chat
+  - slow
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/open_attach.yaml
+    env:
+      ITEM: attach_file
+- runFlow:
+    file: ../../subflows/pick_document.yaml
+    env:
+      FILE_NAME: qa_document.pdf
+- extendedWaitUntil:
+    visible:
+      id: message_file_own
+    timeout: 45000
+- tapOn:
+    id: pdf_open_button
+    index: -1
+- extendedWaitUntil:
+    visible:
+      id: pdf_share_button
+    timeout: 20000
+- assertNotVisible:
+    id: pdf_error
+- tapOn:
+    id: pdf_back_button
+- assertVisible:
+    id: chat_input_field

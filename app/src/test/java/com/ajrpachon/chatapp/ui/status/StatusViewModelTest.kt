@@ -75,6 +75,19 @@ class StatusViewModelTest {
         assertFalse(state.isLoading)
     }
 
+    @Test
+    fun `hasLoadedStatuses becomes true only after the local list first emits`() = runTest(mainDispatcherRule.scheduler) {
+        every { statusRepository.observeActiveStatuses(any()) } returns kotlinx.coroutines.flow.flow { awaitCancellation() }
+        val pending = buildVm()
+        advanceUntilIdle()
+        assertFalse(pending.state.value.hasLoadedStatuses)
+
+        every { statusRepository.observeActiveStatuses(any()) } returns statusesFlow
+        val loaded = buildVm()
+        advanceUntilIdle()
+        assertTrue(loaded.state.value.hasLoadedStatuses)
+    }
+
     // ── observeActiveStatuses reflects repository flow ────────────────────────
 
     @Test

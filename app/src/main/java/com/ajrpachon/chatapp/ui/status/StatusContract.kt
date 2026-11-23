@@ -6,6 +6,11 @@ import com.ajrpachon.chatapp.ui.common.UiText
 
 data class StatusState(
     val statuses: List<StatusBO> = emptyList(),
+    /**
+     * False until the local status list has emitted once. The full-screen viewer closes itself
+     * when it has nothing to show, so it must not judge an empty list before this is true.
+     */
+    val hasLoadedStatuses: Boolean = false,
     val isLoading: Boolean = false,
     val error: UiText? = null,
     val showComposeDialog: Boolean = false,

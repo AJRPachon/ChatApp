@@ -1,0 +1,28 @@
+# Compose a text status and publish it; the viewer (which starts at the oldest live status)
+# reaches it by tapping forward.
+appId: com.ajrpachon.chatapp
+name: "04 · Publicar estado de texto y verlo"
+tags:
+  - status
+---
+- runFlow: ../../subflows/login.yaml
+- runFlow:
+    file: ../../subflows/status_publish_text.yaml
+    env:
+      STATUS_TEXT: "status${RUN_ID}"
+- tapOn:
+    id: status_my_avatar
+- extendedWaitUntil:
+    visible:
+      id: status_viewer
+    timeout: 5000
+- repeat:
+    while:
+      notVisible:
+        text: ".*status${RUN_ID}.*"
+    times: 15
+    commands:
+      - tapOn:
+          id: status_viewer_next_zone
+- assertVisible:
+    text: ".*status${RUN_ID}.*"

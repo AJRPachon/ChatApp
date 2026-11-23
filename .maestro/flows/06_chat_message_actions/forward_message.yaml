@@ -1,0 +1,33 @@
+# Long-press text > Forward: pick the QA group; the message shows up in that conversation.
+appId: com.ajrpachon.chatapp
+name: "06 · Reenviar mensaje a otro chat"
+tags:
+  - chat
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "fwd-${RUN_ID}"
+- runFlow:
+    file: ../../subflows/long_press_message.yaml
+    env:
+      TEXT: "fwd-${RUN_ID}"
+- tapOn:
+    id: message_menu_forward
+- tapOn:
+    id: "forward_target_${QA_GROUP}"
+- extendedWaitUntil:
+    notVisible:
+      id: "forward_target_.*"
+    timeout: 15000
+- tapOn:
+    id: chat_back_button
+- runFlow:
+    file: ../../subflows/open_conversation.yaml
+    env:
+      CONTACT: ${QA_GROUP}
+- extendedWaitUntil:
+    visible:
+      text: "fwd-${RUN_ID}"
+    timeout: 20000

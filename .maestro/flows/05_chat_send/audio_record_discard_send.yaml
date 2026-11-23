@@ -1,0 +1,43 @@
+# Voice message: record + discard leaves nothing; record + send produces an own audio bubble
+# whose player can be started.
+appId: com.ajrpachon.chatapp
+name: "05 · Audio - grabar, descartar y enviar"
+tags:
+  - chat
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+# Discard
+- tapOn:
+    id: chat_mic_button
+- extendedWaitUntil:
+    visible:
+      id: chat_recording_stop_button
+    timeout: 5000
+- tapOn:
+    id: chat_recording_stop_button
+- tapOn:
+    id: chat_audio_discard_button
+- assertVisible:
+    id: chat_mic_button
+# Send
+- tapOn:
+    id: chat_mic_button
+- extendedWaitUntil:
+    visible:
+      id: chat_recording_stop_button
+    timeout: 5000
+- runFlow:
+    file: ../../subflows/wait.yaml
+    env:
+      MS: "2500"
+- tapOn:
+    id: chat_recording_stop_button
+- tapOn:
+    id: chat_audio_send_button
+- extendedWaitUntil:
+    visible:
+      id: message_audio_own
+    timeout: 45000
+- tapOn:
+    id: audio_player_play
+    index: -1

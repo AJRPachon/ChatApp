@@ -1,0 +1,26 @@
+# Attach > AI: suggest a reply, then insert it into the input field.
+appId: com.ajrpachon.chatapp
+name: "05 · Asistente de IA - sugerir e insertar"
+tags:
+  - chat
+  - slow
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/open_attach.yaml
+    env:
+      ITEM: attach_ai
+- assertVisible:
+    id: ai_sheet
+- tapOn:
+    id: ai_suggest
+- extendedWaitUntil:
+    visible:
+      id: ai_insert
+    timeout: 60000
+- tapOn:
+    id: ai_insert
+- assertNotVisible:
+    id: ai_sheet
+- assertVisible:
+    id: chat_send_button

@@ -1,0 +1,29 @@
+# Chat menu > Search: typing finds the message; tapping the result jumps to it; close hides search.
+appId: com.ajrpachon.chatapp
+name: "06 · Buscar dentro del chat y saltar al mensaje"
+tags:
+  - chat
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "needle-${RUN_ID}"
+- runFlow:
+    file: ../../subflows/open_chat_menu.yaml
+    env:
+      ITEM: chat_menu_search
+- tapOn:
+    id: chat_search_field
+- inputText: "needle-${RUN_ID}"
+- extendedWaitUntil:
+    visible:
+      id: chat_search_result
+    timeout: 15000
+- tapOn:
+    id: chat_search_result
+    index: 0
+- assertNotVisible:
+    id: chat_search_field
+- assertVisible:
+    text: "needle-${RUN_ID}"

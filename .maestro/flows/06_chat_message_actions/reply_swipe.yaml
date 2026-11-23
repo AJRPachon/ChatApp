@@ -1,0 +1,32 @@
+# Swiping a bubble right starts a reply (preview bar), cancel clears it; sending a reply renders
+# the quoted message inside the new bubble.
+appId: com.ajrpachon.chatapp
+name: "06 · Responder con swipe"
+tags:
+  - chat
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "orig-${RUN_ID}"
+- swipe:
+    from:
+      text: "orig-${RUN_ID}"
+    direction: RIGHT
+- assertVisible:
+    id: reply_preview_bar
+- tapOn:
+    id: reply_preview_cancel
+- assertNotVisible:
+    id: reply_preview_bar
+- swipe:
+    from:
+      text: "orig-${RUN_ID}"
+    direction: RIGHT
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "reply-${RUN_ID}"
+- assertNotVisible:
+    id: reply_preview_bar

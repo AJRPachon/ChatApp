@@ -507,6 +507,36 @@ fun StatusViewerScreen(
             )
         }
 
+        // Drawn right above the media but BELOW the story text and header: those have no pointer
+        // input, so taps on them still fall through to these zones, while they stay in the
+        // accessibility tree. Drawn last (on top of everything) they hid the story text from
+        // TalkBack and UI automation, which only saw two blank full-screen buttons.
+        // Tap zones to navigate — no ripple: a full-screen highlight on every
+        // tap would be distracting for a story viewer (Instagram/WhatsApp
+        // don't show one either). Drawn before the reply bar below, so where
+        // the two overlap at the bottom, the reply bar (a later Box sibling —
+        // topmost in both z-order and hit-testing) wins touches, not this Row.
+        Row(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxSize()
+                    .testTag("status_viewer_prev_zone")
+                    .clickable(interactionSource = null, indication = null) {
+                        if (currentIndex > 0) currentIndex-- else onClose()
+                    },
+            )
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxSize()
+                    .testTag("status_viewer_next_zone")
+                    .clickable(interactionSource = null, indication = null) {
+                        if (currentIndex < statuses.lastIndex) currentIndex++ else onClose()
+                    },
+            )
+        }
+
         if (!current.text.isNullOrBlank()) {
             Text(
                 text = current.text,
@@ -591,32 +621,6 @@ fun StatusViewerScreen(
                     )
                 }
             }
-        }
-
-        // Tap zones to navigate — no ripple: a full-screen highlight on every
-        // tap would be distracting for a story viewer (Instagram/WhatsApp
-        // don't show one either). Drawn before the reply bar below, so where
-        // the two overlap at the bottom, the reply bar (a later Box sibling —
-        // topmost in both z-order and hit-testing) wins touches, not this Row.
-        Row(modifier = Modifier.fillMaxSize()) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxSize()
-                    .testTag("status_viewer_prev_zone")
-                    .clickable(interactionSource = null, indication = null) {
-                        if (currentIndex > 0) currentIndex-- else onClose()
-                    },
-            )
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxSize()
-                    .testTag("status_viewer_next_zone")
-                    .clickable(interactionSource = null, indication = null) {
-                        if (currentIndex < statuses.lastIndex) currentIndex++ else onClose()
-                    },
-            )
         }
 
         // Reply bar — only for someone else's status; replying to your own doesn't make sense
@@ -704,11 +708,28 @@ fun StatusViewerScreen(
         }
     }
 
+    // Derived here rather than read from state.userStatuses: that copy is filled by the
+    // FilterUserStatuses intent one frame *after* statuses arrive, and the viewer closes itself
+    // as soon as it is handed an empty list — so opening "My status" used to flash a blank
+    // screen and close immediately while this screen's ViewModel was still loading.
+    val userStatuses = remember(state.statuses, userId) { state.statuses.filter { it.userId == userId } }
+    if (!state.hasLoadedStatuses) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black),
+            contentAlignment = Alignment.Center,
+        ) {
+            androidx.compose.material3.CircularProgressIndicator(color = Color.White)
+        }
+        return
+    }
+
     Box {
         StatusViewerScreen(
-            statuses = state.userStatuses,
+            statuses = userStatuses,
             initialIndex = initialStatusId
-                ?.let { id -> state.userStatuses.indexOfFirst { it.id == id }.takeIf { it >= 0 } }
+                ?.let { id -> userStatuses.indexOfFirst { it.id == id }.takeIf { it >= 0 } }
                 ?: 0,
             onClose = onClose,
             onSendReply = { status, text -> vm.onIntent(StatusIntent.ReplyToStatus(status, text)) },

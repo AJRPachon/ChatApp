@@ -286,9 +286,6 @@ fun ConversationListContent(
         },
         topBar = {
             Column {
-                AnimatedVisibility(visible = !state.isOnline) {
-                    OfflineBanner(modifier = Modifier.testTag("offline_banner"))
-                }
             TopAppBar(
                 title = {
                     Text(
@@ -349,6 +346,11 @@ fun ConversationListContent(
                     containerColor = MaterialTheme.colorScheme.surface,
                 ),
             )
+            // Below the TopAppBar (which owns the status-bar inset): placed above it, the banner
+            // was drawn underneath the status bar, overlapping the clock and icons.
+            AnimatedVisibility(visible = !state.isOnline) {
+                OfflineBanner(modifier = Modifier.testTag("offline_banner"))
+            }
             } // end Column (topBar)
         },
         floatingActionButton = {

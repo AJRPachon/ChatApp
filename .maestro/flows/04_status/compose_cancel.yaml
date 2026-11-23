@@ -1,0 +1,15 @@
+# The publish button is disabled while the text is empty; cancelling publishes nothing.
+appId: com.ajrpachon.chatapp
+name: "04 · Cancelar estado"
+tags:
+  - status
+---
+- runFlow: ../../subflows/login.yaml
+- runFlow: ../../subflows/status_compose_text.yaml
+- assertVisible:
+    id: status_publish_button
+    enabled: false
+- tapOn:
+    id: status_compose_cancel
+- assertNotVisible:
+    id: status_compose_text_field

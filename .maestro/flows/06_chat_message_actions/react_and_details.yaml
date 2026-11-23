@@ -1,0 +1,31 @@
+# Long-press text > React opens the emoji sheet; choosing one adds a reaction chip; long-pressing
+# the chip opens the reaction details sheet.
+appId: com.ajrpachon.chatapp
+name: "06 · Reaccionar y ver detalle de reacciones"
+tags:
+  - chat
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "react-${RUN_ID}"
+- runFlow:
+    file: ../../subflows/long_press_message.yaml
+    env:
+      TEXT: "react-${RUN_ID}"
+- tapOn:
+    id: message_menu_react
+- tapOn:
+    text: "👍"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: message_reaction_chip
+    timeout: 15000
+- longPressOn:
+    id: message_reaction_chip
+    index: -1
+- assertVisible:
+    id: reaction_details_sheet
+- back

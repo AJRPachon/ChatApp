@@ -1,0 +1,38 @@
+# Copy puts the text in the clipboard (pasted back into the input); Translate shows a translation
+# under the bubble that can be dismissed.
+appId: com.ajrpachon.chatapp
+name: "06 · Copiar y traducir"
+tags:
+  - chat
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "buenos días ${RUN_ID}"
+- runFlow:
+    file: ../../subflows/long_press_message.yaml
+    env:
+      TEXT: "buenos días ${RUN_ID}"
+- tapOn:
+    id: message_menu_copy
+- tapOn:
+    id: chat_input_field
+- pasteText
+- assertVisible:
+    id: chat_send_button
+- eraseText
+- runFlow:
+    file: ../../subflows/long_press_message.yaml
+    env:
+      TEXT: "buenos días ${RUN_ID}"
+- tapOn:
+    id: message_menu_translate
+- extendedWaitUntil:
+    visible:
+      id: message_translation
+    timeout: 30000
+- tapOn:
+    id: message_translation_dismiss
+- assertNotVisible:
+    id: message_translation

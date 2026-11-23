@@ -1,0 +1,57 @@
+# Attach > Stickers: send the first sticker of the first pack. GIF tab: either results (send one)
+# or, without a Giphy key, the "configure key" state with its dialog.
+appId: com.ajrpachon.chatapp
+name: "05 · Stickers y GIF"
+tags:
+  - chat
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/open_attach.yaml
+    env:
+      ITEM: attach_sticker
+- assertVisible:
+    id: sticker_picker_tab_stickers
+- runFlow:
+    when:
+      visible:
+        id: sticker_item_0
+    commands:
+      - tapOn:
+          id: sticker_item_0
+      - extendedWaitUntil:
+          visible:
+            id: message_sticker_own
+          timeout: 30000
+      - runFlow:
+          file: ../../subflows/open_attach.yaml
+          env:
+            ITEM: attach_sticker
+- tapOn:
+    id: sticker_picker_tab_gifs
+- extendedWaitUntil:
+    visible:
+      id: "gif_item_0|gif_configure_key_button"
+    timeout: 20000
+- runFlow:
+    when:
+      visible:
+        id: gif_configure_key_button
+    commands:
+      - tapOn:
+          id: gif_configure_key_button
+      - assertVisible:
+          id: giphy_key_field
+      - tapOn:
+          id: giphy_key_cancel
+- runFlow:
+    when:
+      visible:
+        id: gif_item_0
+    commands:
+      - tapOn:
+          id: gif_item_0
+      - extendedWaitUntil:
+          visible:
+            id: message_gif_own
+          timeout: 30000

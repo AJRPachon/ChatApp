@@ -3,6 +3,8 @@
 # Play Integrity returned "Failed" — there is no bypass by design.
 appId: com.ajrpachon.chatapp
 ---
+# A previous flow that failed mid-way may have left airplane mode on.
+- setAirplaneMode: disabled
 - launchApp:
     clearState: true
     permissions:

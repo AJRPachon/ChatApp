@@ -1,0 +1,38 @@
+# In the Android system photo picker: pick the most recent PHOTO (default) or VIDEO (KIND=video),
+# then confirm if the picker is in multi-select mode.
+# The picker is system UI built in Compose without resource ids, so items are matched by their
+# content description, in either system language ("Foto tomado el …" / "Photo taken on …",
+# "Video creado el …" / "Video taken on …").
+appId: com.ajrpachon.chatapp
+env:
+  KIND: ${KIND || 'photo'}
+---
+- runFlow:
+    when:
+      true: ${KIND == 'video'}
+    commands:
+      - extendedWaitUntil:
+          visible:
+            text: "(V[ií]deo|Video) .*"
+          timeout: 15000
+      - tapOn:
+          text: "(V[ií]deo|Video) .*"
+          index: 0
+- runFlow:
+    when:
+      true: ${KIND != 'video'}
+    commands:
+      - extendedWaitUntil:
+          visible:
+            text: "(Foto|Photo) .*"
+          timeout: 15000
+      - tapOn:
+          text: "(Foto|Photo) .*"
+          index: 0
+- runFlow:
+    when:
+      visible:
+        text: "(Añadir|Add).*"
+    commands:
+      - tapOn:
+          text: "(Añadir|Add).*"

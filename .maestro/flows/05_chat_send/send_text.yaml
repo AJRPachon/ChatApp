@@ -1,0 +1,18 @@
+# [S] Send a text message: it appears as an own text bubble with a sent/read tick.
+appId: com.ajrpachon.chatapp
+name: "05 · Enviar texto"
+tags:
+  - smoke
+  - chat
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "hola-${RUN_ID}"
+- assertVisible:
+    id: message_text_own
+- extendedWaitUntil:
+    visible:
+      id: "message_status_(sent|read)"
+    timeout: 15000
