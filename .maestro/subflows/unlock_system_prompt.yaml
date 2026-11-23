@@ -1,0 +1,17 @@
+# System BiometricPrompt with device-credential fallback: switch to PIN if needed and enter the
+# emulator PIN set by setup-emulators.ps1 (1234).
+appId: com.ajrpachon.chatapp
+---
+- runFlow:
+    when:
+      visible:
+        text: "(Usar PIN|Use PIN)"
+    commands:
+      - tapOn:
+          text: "(Usar PIN|Use PIN)"
+- extendedWaitUntil:
+    visible:
+      text: ".*(PIN).*"
+    timeout: 10000
+- inputText: "1234"
+- pressKey: Enter

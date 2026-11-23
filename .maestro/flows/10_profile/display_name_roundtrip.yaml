@@ -1,0 +1,29 @@
+# Profile: change the display name (saved on IME Done), check it persists after reopening, restore it.
+appId: com.ajrpachon.chatapp
+name: "10 · Nombre visible ida y vuelta"
+tags:
+  - profile
+---
+- runFlow: ../../subflows/login.yaml
+- tapOn:
+    id: conversation_list_profile_button
+- tapOn:
+    id: profile_display_name_field
+- eraseText
+- inputText: "qaname${RUN_ID}"
+- pressKey: Enter
+- back
+- tapOn:
+    id: conversation_list_profile_button
+- assertVisible:
+    text: "qaname${RUN_ID}"
+- tapOn:
+    id: profile_display_name_field
+- eraseText
+- inputText: ${QA_NAME}
+- pressKey: Enter
+- back
+- tapOn:
+    id: conversation_list_profile_button
+- assertVisible:
+    text: ${QA_NAME}

@@ -1,0 +1,27 @@
+# Create group: Create stays disabled without a name; back from step 2 returns to member selection.
+appId: com.ajrpachon.chatapp
+name: "09 · Crear grupo - validación y volver atrás"
+tags:
+  - groups
+---
+- runFlow: ../../subflows/login.yaml
+- tapOn:
+    id: conversation_list_new_group_fab
+- tapOn:
+    id: create_group_search_field
+- inputText: ${QA2_USERNAME}
+- extendedWaitUntil:
+    visible:
+      id: "create_group_user_${QA2_USERNAME}"
+    timeout: 15000
+- tapOn:
+    id: "create_group_user_${QA2_USERNAME}"
+- hideKeyboard
+- tapOn:
+    id: create_group_next_button
+- assertVisible:
+    id: create_group_create_button
+    enabled: false
+- back
+- assertVisible:
+    id: create_group_next_button

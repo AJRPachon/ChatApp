@@ -1,0 +1,70 @@
+# Backup: passphrase validation, create a backup, restore with the right passphrase, and a wrong
+# passphrase shows the error dialog.
+appId: com.ajrpachon.chatapp
+name: "10 · Copia de seguridad y restauración"
+tags:
+  - profile
+  - slow
+---
+- runFlow: ../../subflows/login.yaml
+- tapOn:
+    id: conversation_list_profile_button
+- scrollUntilVisible:
+    element:
+      id: profile_backup_row
+    direction: DOWN
+- tapOn:
+    id: profile_backup_row
+- tapOn:
+    id: backup_make_backup_button
+- tapOn:
+    id: backup_passphrase_field
+- inputText: "QaBackup${RUN_ID}"
+- tapOn:
+    id: backup_passphrase_repeat_field
+- inputText: "Mismatch${RUN_ID}"
+- hideKeyboard
+- assertVisible:
+    id: backup_confirm
+    enabled: false
+- tapOn:
+    id: backup_passphrase_repeat_field
+- eraseText
+- inputText: "QaBackup${RUN_ID}"
+- hideKeyboard
+- tapOn:
+    id: backup_confirm
+- extendedWaitUntil:
+    visible:
+      id: backup_last_date
+    timeout: 60000
+# Restore with a wrong passphrase -> error dialog
+- tapOn:
+    id: backup_restore_button
+- tapOn:
+    id: backup_passphrase_field
+- inputText: "wrong${RUN_ID}"
+- hideKeyboard
+- tapOn:
+    id: backup_confirm
+- extendedWaitUntil:
+    visible:
+      id: backup_error_ok
+    timeout: 60000
+- tapOn:
+    id: backup_error_ok
+# Restore with the right one
+- tapOn:
+    id: backup_restore_button
+- tapOn:
+    id: backup_passphrase_field
+- inputText: "QaBackup${RUN_ID}"
+- hideKeyboard
+- tapOn:
+    id: backup_confirm
+- extendedWaitUntil:
+    visible:
+      id: backup_snackbar
+    timeout: 60000
+- assertNotVisible:
+    id: backup_error_ok

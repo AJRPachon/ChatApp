@@ -1,0 +1,37 @@
+# Global search: a unique sent message is found and opening the result lands in that chat; a
+# nonsense query shows the empty state.
+appId: com.ajrpachon.chatapp
+name: "11 · Búsqueda global"
+tags:
+  - search
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "findme${RUN_ID}"
+- tapOn:
+    id: chat_back_button
+- tapOn:
+    id: conversation_list_search_button
+- tapOn:
+    id: global_search_field
+- inputText: "zzzqqq${RUN_ID}"
+- extendedWaitUntil:
+    visible:
+      id: global_search_empty
+    timeout: 15000
+- eraseText
+- inputText: "findme${RUN_ID}"
+- extendedWaitUntil:
+    visible:
+      id: global_search_result_0
+    timeout: 15000
+- tapOn:
+    id: global_search_result_0
+- extendedWaitUntil:
+    visible:
+      id: chat_input_field
+    timeout: 15000
+- assertVisible:
+    text: "findme${RUN_ID}"

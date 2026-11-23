@@ -1,0 +1,42 @@
+# Chat menu > Disappearing messages: 4 options; picking 24 h marks it selected; set back to off.
+appId: com.ajrpachon.chatapp
+name: "07 · Mensajes temporales"
+tags:
+  - chat
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/open_chat_menu.yaml
+    env:
+      ITEM: chat_menu_disappearing
+- assertVisible:
+    id: disappearing_sheet
+- assertVisible:
+    id: disappearing_option_3
+- tapOn:
+    id: disappearing_option_1
+- runFlow:
+    when:
+      notVisible:
+        id: disappearing_sheet
+    commands:
+      - runFlow:
+          file: ../../subflows/open_chat_menu.yaml
+          env:
+            ITEM: chat_menu_disappearing
+- assertVisible:
+    id: disappearing_selected_1
+- tapOn:
+    id: disappearing_option_0
+- runFlow:
+    when:
+      notVisible:
+        id: disappearing_sheet
+    commands:
+      - runFlow:
+          file: ../../subflows/open_chat_menu.yaml
+          env:
+            ITEM: chat_menu_disappearing
+- assertVisible:
+    id: disappearing_selected_0
+- back

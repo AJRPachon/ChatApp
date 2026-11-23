@@ -160,6 +160,61 @@ jobs:
           name: app-debug
           path: app/build/outputs/apk/debug/app-debug.apk
 
+  # ── E2E smoke (Maestro on an emulator) ───────────────────────────────────────
+  # Runs the flows tagged `smoke` in .maestro/ against the debug APK built above. The full
+  # suite (multi-device, destructive, es+en) runs locally — see .maestro/README.md.
+  # Needs repo secrets QA_EMAIL / QA_PASSWORD (the @claudeqa QA account).
+  e2e-smoke:
+    name: E2E smoke (Maestro)
+    needs: [build-debug]
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download debug APK
+        uses: actions/download-artifact@v4
+        with:
+          name: app-debug
+          path: apk
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Install Maestro CLI
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Run smoke flows on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          QA_EMAIL: ${{ secrets.QA_EMAIL }}
+          QA_PASSWORD: ${{ secrets.QA_PASSWORD }}
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -dns-server 8.8.8.8
+          script: |
+            adb install -r -g apk/app-debug.apk
+            maestro test .maestro --include-tags smoke --format junit --output maestro-report.xml --test-output-dir maestro-out -e QA_EMAIL="$QA_EMAIL" -e QA_PASSWORD="$QA_PASSWORD" -e QA_NAME=claudeqa -e QA2_NAME=claudeqa2 -e QA2_USERNAME=claudeqa2 -e QA_GROUP="Maestro Test Group" -e RUN_ID=ci${{ github.run_id }}
+
+      - name: Upload Maestro results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-smoke
+          path: |
+            maestro-report.xml
+            maestro-out/
+
   # ── Build Release APK (R8/ProGuard check) ─────────────────────────────────────
   build-release:
     name: Build Release APK

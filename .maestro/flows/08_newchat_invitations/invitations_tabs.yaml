@@ -1,0 +1,23 @@
+# Invitations screen: received / sent tabs switch the list (each with its own empty state).
+appId: com.ajrpachon.chatapp
+name: "08 · Pestañas de invitaciones"
+tags:
+  - newchat
+---
+- runFlow: ../../subflows/login.yaml
+- tapOn:
+    id: conversation_list_invitations_button
+- assertVisible:
+    id: invitations_tab_received
+- tapOn:
+    id: invitations_tab_sent
+- extendedWaitUntil:
+    visible:
+      id: "invitations_empty|invitation_row_.*"
+    timeout: 15000
+- tapOn:
+    id: invitations_tab_received
+- extendedWaitUntil:
+    visible:
+      id: "invitations_empty|invitation_row_.*"
+    timeout: 15000

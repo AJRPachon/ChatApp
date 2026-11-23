@@ -1,0 +1,41 @@
+# Chat menu > Shared media: images/videos tabs. Top-bar title > User info: info/media tabs.
+appId: com.ajrpachon.chatapp
+name: "07 · Multimedia compartida e info del contacto"
+tags:
+  - chat
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/open_chat_menu.yaml
+    env:
+      ITEM: chat_menu_media
+- assertVisible:
+    id: media_gallery_tab_images
+- tapOn:
+    id: media_gallery_tab_videos
+- tapOn:
+    id: media_gallery_tab_images
+- runFlow:
+    when:
+      visible:
+        id: media_item
+    commands:
+      - tapOn:
+          id: media_item
+          index: 0
+      - assertVisible:
+          id: fullscreen_viewer
+      - back
+- tapOn:
+    id: chat_app_top_bar_back_button
+- tapOn:
+    id: chat_top_bar_title
+- assertVisible:
+    id: user_info_tab_info
+- tapOn:
+    id: user_info_tab_media
+- tapOn:
+    id: user_info_tab_info
+- back
+- assertVisible:
+    id: chat_input_field

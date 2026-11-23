@@ -1,0 +1,32 @@
+# Profile: online-status switch toggles and toggles back; theme light/dark/system; My QR sheet.
+appId: com.ajrpachon.chatapp
+name: "10 · Estado en línea, tema y código QR"
+tags:
+  - profile
+---
+- runFlow: ../../subflows/login.yaml
+- tapOn:
+    id: conversation_list_profile_button
+- tapOn:
+    id: profile_online_status_switch
+- tapOn:
+    id: profile_online_status_switch
+- scrollUntilVisible:
+    element:
+      id: profile_theme_dark_option
+    direction: DOWN
+- tapOn:
+    id: profile_theme_dark_option
+- tapOn:
+    id: profile_theme_light_option
+- tapOn:
+    id: profile_theme_system_option
+- scrollUntilVisible:
+    element:
+      id: profile_my_qr_code_button
+    direction: UP
+- tapOn:
+    id: profile_my_qr_code_button
+- assertVisible:
+    id: qr_sheet
+- back

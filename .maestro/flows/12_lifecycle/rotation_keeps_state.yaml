@@ -1,0 +1,21 @@
+# Rotating the device in a chat keeps the typed text and the screen.
+appId: com.ajrpachon.chatapp
+name: "12 · Rotación conserva el estado del chat"
+tags:
+  - lifecycle
+onFlowComplete:
+  - setOrientation: PORTRAIT
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- tapOn:
+    id: chat_input_field
+- inputText: "rotate${RUN_ID}"
+- setOrientation: LANDSCAPE_LEFT
+- assertVisible:
+    text: "rotate${RUN_ID}"
+- setOrientation: PORTRAIT
+- assertVisible:
+    text: "rotate${RUN_ID}"
+- tapOn:
+    id: chat_input_field
+- eraseText

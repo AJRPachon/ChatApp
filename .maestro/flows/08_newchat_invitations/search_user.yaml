@@ -1,0 +1,22 @@
+# New chat: searching a username shows that user; an already-connected user opens the chat.
+appId: com.ajrpachon.chatapp
+name: "08 · Buscar usuario y abrir chat existente"
+tags:
+  - newchat
+---
+- runFlow: ../../subflows/login.yaml
+- tapOn:
+    id: conversation_list_new_chat_fab
+- tapOn:
+    id: newchat_search_field
+- inputText: ${QA2_USERNAME}
+- extendedWaitUntil:
+    visible:
+      id: "newchat_user_row_${QA2_USERNAME}"
+    timeout: 20000
+- tapOn:
+    id: "newchat_user_row_${QA2_USERNAME}"
+- extendedWaitUntil:
+    visible:
+      id: chat_input_field
+    timeout: 15000
