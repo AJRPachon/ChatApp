@@ -1,5 +1,7 @@
 package com.ajrpachon.chatapp.ui.chat
 
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import com.ajrpachon.chatapp.ui.common.qaTag
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -78,11 +80,13 @@ fun StickerGifPicker(
                 selected = selectedTab == 0,
                 onClick = { selectedTab = 0 },
                 text = { Text(stringResource(R.string.stickers_tab_stickers)) },
+                modifier = Modifier.qaTag("sticker_picker_tab_stickers"),
             )
             Tab(
                 selected = selectedTab == 1,
                 onClick = { selectedTab = 1 },
                 text = { Text(stringResource(R.string.stickers_tab_gifs)) },
+                modifier = Modifier.qaTag("sticker_picker_tab_gifs"),
             )
         }
         when (selectedTab) {
@@ -144,6 +148,7 @@ internal fun StickerTabContent(
                 Tab(
                     selected = selectedIndex == i,
                     onClick = { onSelectPack(i) },
+                    modifier = Modifier.qaTag("sticker_pack_tab_$i"),
                 ) {
                     AsyncImage(
                         model = pack.coverUrl,
@@ -159,6 +164,7 @@ internal fun StickerTabContent(
                 selected = false,
                 onClick = onOpenStore,
                 text = { Text("+", fontSize = ChatAppTextSizes.TabAction) },
+                modifier = Modifier.qaTag("sticker_open_store"),
             )
         }
 
@@ -170,7 +176,7 @@ internal fun StickerTabContent(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    "Instala packs desde la tienda →",
+                    stringResource(R.string.stickers_install_from_store_hint),
                     color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -181,7 +187,7 @@ internal fun StickerTabContent(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                items(stickers, key = { it.id }) { sticker ->
+                itemsIndexed(stickers, key = { _, it -> it.id }) { index, sticker ->
                     AsyncImage(
                         model = sticker.imageUrl,
                         contentDescription = sticker.tags,
@@ -189,6 +195,7 @@ internal fun StickerTabContent(
                         modifier = Modifier
                             .size(64.dp)
                             .clip(MaterialTheme.shapes.small)
+                            .qaTag("sticker_item_$index")
                             .clickable { onSelected(sticker.imageUrl) },
                     )
                 }
@@ -226,7 +233,9 @@ internal fun GifTabContent(
             value = state.query,
             onValueChange = { onIntent(GifPickerIntent.QueryChanged(it)) },
             placeholder = stringResource(R.string.gif_search_placeholder),
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier
+                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .qaTag("gif_search_field"),
         )
         when {
             state.isLoading -> Box(Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
@@ -239,12 +248,13 @@ internal fun GifTabContent(
             ) {
                 Text(stringResource(R.string.gif_unavailable), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(
-                    "Configura tu propia clave API de Giphy para activar esta función.",
+                    stringResource(R.string.gif_configure_key_hint),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 ChatAppPrimaryButton(
                     text = stringResource(R.string.gif_configure_key),
                     onClick = { onIntent(GifPickerIntent.ShowKeyDialog) },
+                    modifier = Modifier.qaTag("gif_configure_key_button"),
                 )
             }
             state.errorState == GifPickerError.NETWORK_ERROR -> Box(
@@ -259,7 +269,7 @@ internal fun GifTabContent(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                items(state.gifs, key = { it.previewUrl }) { gif ->
+                itemsIndexed(state.gifs, key = { _, it -> it.previewUrl }) { index, gif ->
                     AsyncImage(
                         model = gif.previewUrl,
                         contentDescription = stringResource(R.string.chat_gif_content_description),
@@ -269,6 +279,7 @@ internal fun GifTabContent(
                             .fillMaxWidth()
                             .clip(MaterialTheme.shapes.small)
                             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f))
+                            .qaTag("gif_item_$index")
                             .clickable { onSelected(gif.fullUrl) },
                     )
                 }
@@ -294,15 +305,24 @@ private fun GiphyApiKeyDialog(initialKey: String, onSave: (String) -> Unit, onDi
                     onValueChange = { key = it },
                     label = { Text(stringResource(R.string.gif_api_key_label)) },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().qaTag("giphy_key_field"),
                 )
             }
         },
         confirmButton = {
-            ChatAppTextButton(text = stringResource(R.string.gif_api_key_save), onClick = { onSave(key) }, enabled = key.isNotBlank())
+            ChatAppTextButton(
+                text = stringResource(R.string.gif_api_key_save),
+                onClick = { onSave(key) },
+                enabled = key.isNotBlank(),
+                modifier = Modifier.qaTag("giphy_key_save"),
+            )
         },
         dismissButton = {
-            ChatAppTextButton(text = stringResource(R.string.gif_api_key_cancel), onClick = onDismiss)
+            ChatAppTextButton(
+                text = stringResource(R.string.gif_api_key_cancel),
+                onClick = onDismiss,
+                modifier = Modifier.qaTag("giphy_key_cancel"),
+            )
         },
     )
 }

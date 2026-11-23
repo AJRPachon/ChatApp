@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.chat
 
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -194,6 +195,7 @@ private fun PdfFileCard(
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .fillMaxWidth()
+                        .testTag("pdf_open_button")
                         .clickable {
                             val url = message.fileUrl ?: return@clickable
                             val filename = message.fileName ?: documentPdfDefault

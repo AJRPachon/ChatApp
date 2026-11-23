@@ -649,6 +649,8 @@
     <string name="stickers_tab_stickers">Stickers</string>
     <string name="stickers_tab_gifs">GIFs</string>
     <string name="gif_unavailable">GIFs unavailable</string>
+    <string name="stickers_install_from_store_hint">Install packs from the store →</string>
+    <string name="gif_configure_key_hint">Set up your own Giphy API key to enable this feature.</string>
     <string name="gif_configure_key">Set API key</string>
     <string name="gif_network_error">Network error. Try again.</string>
     <string name="gif_api_key_title">Giphy API key</string>

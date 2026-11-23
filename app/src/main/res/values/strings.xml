@@ -649,6 +649,8 @@
     <string name="stickers_tab_stickers">Stickers</string>
     <string name="stickers_tab_gifs">GIFs</string>
     <string name="gif_unavailable">GIFs no disponibles</string>
+    <string name="stickers_install_from_store_hint">Instala packs desde la tienda →</string>
+    <string name="gif_configure_key_hint">Configura tu propia clave API de Giphy para activar esta función.</string>
     <string name="gif_configure_key">Configurar clave API</string>
     <string name="gif_network_error">Error de red. Inténtalo de nuevo.</string>
     <string name="gif_api_key_title">Clave API de Giphy</string>

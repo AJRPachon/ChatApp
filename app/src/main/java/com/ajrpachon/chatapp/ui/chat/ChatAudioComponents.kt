@@ -407,7 +407,7 @@ internal fun AudioPlayerRow(
         IconButton(
             onClick = onToggle,
             enabled = isPrepared,
-            modifier = Modifier.size(52.dp),
+            modifier = Modifier.size(52.dp).testTag("audio_player_play"),
         ) {
             Icon(
                 imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
