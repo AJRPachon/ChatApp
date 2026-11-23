@@ -51,3 +51,6 @@ supabase/functions/.env
 # Release signing (upload keystore, never commit)
 *.jks
 *.keystore
+
+# Documentación local (no versionada)
+docs/

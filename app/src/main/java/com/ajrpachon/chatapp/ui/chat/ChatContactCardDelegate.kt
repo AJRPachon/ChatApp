@@ -17,8 +17,7 @@ private const val TAG = "ChatContactCardDelegate"
  * Handles the shared-contact-card lookups keyed by phone (see [ContactPhoneLookup]'s doc):
  * resolving whether the phone number belongs to an existing user and the current user's
  * relationship to them, and the card's primary action (invite / accept / navigate to the
- * existing chat, depending on that relationship). Sixth slice of the decomposition in
- * docs/chat-viewmodel-decomposition.md — see [ChatAiDelegate] for the pattern this follows.
+ * existing chat, depending on that relationship). See [ChatAiDelegate] for the pattern this follows.
  */
 class ChatContactCardDelegate(
     private val currentUserId: () -> String?,

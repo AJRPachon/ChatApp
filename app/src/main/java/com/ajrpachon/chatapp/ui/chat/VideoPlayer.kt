@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -35,6 +36,16 @@ import com.ajrpachon.chatapp.R
 
 @Composable
 fun InlineVideoPlayer(url: String, modifier: Modifier = Modifier) {
+    if (LocalInspectionMode.current) {
+        // No ExoPlayer or network in the IDE preview: show the same placeholder as without a thumbnail.
+        Box(modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant))
+        return
+    }
+    InlineVideoPlayerImpl(url = url, modifier = modifier)
+}
+
+@Composable
+private fun InlineVideoPlayerImpl(url: String, modifier: Modifier) {
     val context = LocalContext.current
 
     // Extract first frame as thumbnail (blocking call – kept on calling thread

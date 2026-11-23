@@ -1,5 +1,9 @@
 package com.ajrpachon.chatapp.ui.components
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material.icons.filled.MoreVert
+import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,4 +39,23 @@ fun ChatAppTopBar(
         actions = actions,
         modifier = modifier,
     )
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatAppTopBarPreview() {
+    ChatAppPreview {
+        Column {
+            ChatAppTopBar(title = "Ajustes", onBack = {})
+            ChatAppTopBar(
+                title = "Un título de pantalla muy largo que no cabe en una sola línea",
+                onBack = {},
+                actions = {
+                    IconButton(onClick = {}) {
+                        Icon(Icons.Default.MoreVert, contentDescription = null)
+                    }
+                },
+            )
+        }
+    }
 }

@@ -40,7 +40,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.domain.model.GiphyGifBO
+import com.ajrpachon.chatapp.domain.model.StickerBO
+import com.ajrpachon.chatapp.domain.model.StickerPackBO
 import com.ajrpachon.chatapp.ui.components.ChatAppSearchField
+import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
 import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
@@ -110,15 +115,35 @@ private fun StickerTab(
         else kotlinx.coroutines.flow.flowOf(emptyList())
     }.collectAsState(initial = emptyList())
 
+    StickerTabContent(
+        packs = packs,
+        stickers = stickers,
+        selectedIndex = safeIndex,
+        onSelectPack = { selectedPackIndex = it },
+        onSelected = onSelected,
+        onOpenStore = onOpenStore,
+    )
+}
+
+/** Pack tabs and sticker grid, without the ViewModel, so it can be previewed. */
+@Composable
+internal fun StickerTabContent(
+    packs: List<StickerPackBO>,
+    stickers: List<StickerBO>,
+    selectedIndex: Int,
+    onSelectPack: (Int) -> Unit,
+    onSelected: (String) -> Unit,
+    onOpenStore: () -> Unit,
+) {
     Column {
         PrimaryScrollableTabRow(
-            selectedTabIndex = safeIndex,
+            selectedTabIndex = selectedIndex,
             edgePadding = 8.dp,
         ) {
             packs.forEachIndexed { i, pack ->
                 Tab(
-                    selected = safeIndex == i,
-                    onClick = { selectedPackIndex = i },
+                    selected = selectedIndex == i,
+                    onClick = { onSelectPack(i) },
                 ) {
                     AsyncImage(
                         model = pack.coverUrl,
@@ -178,18 +203,28 @@ private fun StickerTab(
 private fun GifTab(onSelected: (String) -> Unit, vm: GifPickerViewModel = koinViewModel()) {
     val state by vm.state.collectAsStateWithLifecycle()
 
+    GifTabContent(state = state, onIntent = vm::onIntent, onSelected = onSelected)
+}
+
+/** Search field and GIF grid, without the ViewModel, so it can be previewed. */
+@Composable
+internal fun GifTabContent(
+    state: GifPickerState,
+    onIntent: (GifPickerIntent) -> Unit,
+    onSelected: (String) -> Unit,
+) {
     if (state.showKeyDialog) {
         GiphyApiKeyDialog(
             initialKey = state.savedApiKey,
-            onSave = { key -> vm.onIntent(GifPickerIntent.SaveApiKey(key)) },
-            onDismiss = { vm.onIntent(GifPickerIntent.DismissKeyDialog) },
+            onSave = { key -> onIntent(GifPickerIntent.SaveApiKey(key)) },
+            onDismiss = { onIntent(GifPickerIntent.DismissKeyDialog) },
         )
     }
 
     Column {
         ChatAppSearchField(
             value = state.query,
-            onValueChange = { vm.onIntent(GifPickerIntent.QueryChanged(it)) },
+            onValueChange = { onIntent(GifPickerIntent.QueryChanged(it)) },
             placeholder = stringResource(R.string.gif_search_placeholder),
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
         )
@@ -209,7 +244,7 @@ private fun GifTab(onSelected: (String) -> Unit, vm: GifPickerViewModel = koinVi
                 )
                 ChatAppPrimaryButton(
                     text = stringResource(R.string.gif_configure_key),
-                    onClick = { vm.onIntent(GifPickerIntent.ShowKeyDialog) },
+                    onClick = { onIntent(GifPickerIntent.ShowKeyDialog) },
                 )
             }
             state.errorState == GifPickerError.NETWORK_ERROR -> Box(
@@ -270,4 +305,93 @@ private fun GiphyApiKeyDialog(initialKey: String, onSave: (String) -> Unit, onDi
             ChatAppTextButton(text = stringResource(R.string.gif_api_key_cancel), onClick = onDismiss)
         },
     )
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+
+private val previewPacks = listOf(
+    StickerPackBO(id = "p1", name = "Animales", coverUrl = "https://preview.invalid/p1.png", isInstalled = true),
+    StickerPackBO(id = "p2", name = "Memes", coverUrl = "https://preview.invalid/p2.png", isInstalled = true),
+)
+
+private val previewStickers = List(6) {
+    StickerBO(id = "s$it", packId = "p1", imageUrl = "https://preview.invalid/s$it.png", tags = "sticker $it")
+}
+
+private val previewGifs = List(6) {
+    GiphyGifBO(previewUrl = "https://preview.invalid/g$it.gif", fullUrl = "https://preview.invalid/full$it.gif")
+}
+
+@ThemePreviews
+@Composable
+internal fun StickerTabContentPreview() {
+    ChatAppPreview {
+        StickerTabContent(
+            packs = previewPacks,
+            stickers = previewStickers,
+            selectedIndex = 0,
+            onSelectPack = {},
+            onSelected = {},
+            onOpenStore = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun StickerTabContentEmptyPreview() {
+    ChatAppPreview {
+        StickerTabContent(
+            packs = emptyList(),
+            stickers = emptyList(),
+            selectedIndex = 0,
+            onSelectPack = {},
+            onSelected = {},
+            onOpenStore = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun GifTabContentPreview() {
+    ChatAppPreview {
+        GifTabContent(
+            state = GifPickerState(query = "gato", gifs = previewGifs, isLoading = false),
+            onIntent = {},
+            onSelected = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun GifTabContentLoadingPreview() {
+    ChatAppPreview {
+        GifTabContent(state = GifPickerState(isLoading = true), onIntent = {}, onSelected = {})
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun GifTabContentApiKeyInvalidPreview() {
+    ChatAppPreview {
+        GifTabContent(
+            state = GifPickerState(isLoading = false, errorState = GifPickerError.API_KEY_INVALID),
+            onIntent = {},
+            onSelected = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun GifTabContentNetworkErrorPreview() {
+    ChatAppPreview {
+        GifTabContent(
+            state = GifPickerState(isLoading = false, errorState = GifPickerError.NETWORK_ERROR),
+            onIntent = {},
+            onSelected = {},
+        )
+    }
 }

@@ -1,5 +1,13 @@
 package com.ajrpachon.chatapp.ui.components
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -174,5 +182,66 @@ fun ChatAppTextButton(
             textAlign = textAlign,
             modifier = if (textAlign != null) Modifier.fillMaxWidth() else Modifier,
         )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatAppPrimaryButtonPreview() {
+    ChatAppPreview {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            ChatAppPrimaryButton(text = "Continuar", onClick = {}, modifier = Modifier.fillMaxWidth())
+            ChatAppPrimaryButton(text = "Nuevo chat", onClick = {}, leadingIcon = Icons.Default.Add, modifier = Modifier.fillMaxWidth())
+            ChatAppPrimaryButton(text = "Continuar", onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth())
+            ChatAppPrimaryButton(text = "Continuar", onClick = {}, isLoading = true, modifier = Modifier.fillMaxWidth())
+        }
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatAppSecondaryButtonPreview() {
+    ChatAppPreview {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            ChatAppSecondaryButton(text = "Cancelar", onClick = {}, modifier = Modifier.fillMaxWidth())
+            ChatAppSecondaryButton(text = "Añadir", onClick = {}, leadingIcon = Icons.Default.Add, modifier = Modifier.fillMaxWidth())
+            ChatAppSecondaryButton(text = "Cancelar", onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth())
+        }
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatAppOutlinedButtonPreview() {
+    ChatAppPreview {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            ChatAppOutlinedButton(text = "Otra opción", onClick = {}, modifier = Modifier.fillMaxWidth())
+            ChatAppOutlinedButton(text = "Añadir", onClick = {}, leadingIcon = Icons.Default.Add, modifier = Modifier.fillMaxWidth())
+            ChatAppOutlinedButton(text = "Otra opción", onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth())
+        }
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatAppDestructiveButtonPreview() {
+    ChatAppPreview {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            ChatAppDestructiveButton(text = "Cerrar sesión", onClick = {}, modifier = Modifier.fillMaxWidth())
+            ChatAppDestructiveButton(text = "Eliminar", onClick = {}, leadingIcon = Icons.Default.Delete, modifier = Modifier.fillMaxWidth())
+            ChatAppDestructiveButton(text = "Cerrar sesión", onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth())
+        }
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatAppTextButtonPreview() {
+    ChatAppPreview {
+        Column(modifier = Modifier.padding(16.dp)) {
+            ChatAppTextButton(text = "Olvidé mi contraseña", onClick = {})
+            ChatAppTextButton(text = "Añadir", onClick = {}, leadingIcon = Icons.Default.Add)
+            ChatAppTextButton(text = "Deshabilitado", onClick = {}, enabled = false)
+        }
     }
 }

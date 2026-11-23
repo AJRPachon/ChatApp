@@ -1,5 +1,11 @@
 package com.ajrpachon.chatapp.ui.components
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.ui.unit.dp
+import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -104,4 +110,42 @@ fun ChatAppSearchField(
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
     )
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatAppTextFieldPreview() {
+    ChatAppPreview {
+        Column(modifier = Modifier.padding(16.dp)) {
+            ChatAppTextField(value = "", onValueChange = {}, label = "Nombre", placeholder = "Escribe tu nombre")
+            ChatAppTextField(value = "Ana García", onValueChange = {}, label = "Nombre", leadingIcon = Icons.Default.Person)
+            ChatAppTextField(
+                value = "correo-no-valido",
+                onValueChange = {},
+                label = "Correo",
+                isError = true,
+                supportingText = "El correo no es válido",
+            )
+            ChatAppTextField(value = "No editable", onValueChange = {}, label = "Usuario", enabled = false)
+            ChatAppTextField(
+                value = "Un mensaje largo que ocupa varias líneas para comprobar el comportamiento del campo con texto extenso",
+                onValueChange = {},
+                label = "Mensaje",
+                singleLine = false,
+                maxLines = 3,
+            )
+        }
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun ChatAppSearchFieldPreview() {
+    ChatAppPreview {
+        Column(modifier = Modifier.padding(16.dp)) {
+            ChatAppSearchField(value = "", onValueChange = {}, placeholder = "Buscar")
+            ChatAppSearchField(value = "Ana", onValueChange = {}, placeholder = "Buscar")
+            ChatAppSearchField(value = "", onValueChange = {}, placeholder = "Buscar", enabled = false)
+        }
+    }
 }

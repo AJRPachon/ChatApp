@@ -6,7 +6,7 @@ package com.ajrpachon.chatapp.ui.chat
  * emit a one-shot [ChatEffect]. Introduced when a fourth delegate constructor (individually
  * taking `getState`/`updateState`/`sendEffect` alongside its own repository deps) tripped
  * detekt's LongParameterList threshold — bundling these three keeps each delegate's param count
- * down to its actual dependencies. See docs/chat-viewmodel-decomposition.md.
+ * down to its actual dependencies.
  */
 class ChatDelegateContext(
     val getState: () -> ChatState,

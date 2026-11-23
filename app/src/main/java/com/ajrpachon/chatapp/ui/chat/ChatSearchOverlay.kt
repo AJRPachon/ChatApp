@@ -38,6 +38,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.domain.model.MessageBO
+import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
+import com.ajrpachon.chatapp.ui.preview.PreviewChatInput
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
@@ -155,5 +158,57 @@ internal fun SearchResultItem(message: MessageBO, onClick: () -> Unit = {}) {
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
+    }
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+
+@Composable
+private fun MessageSearchOverlayPreviewHost(
+    query: String,
+    results: List<MessageBO>,
+    isSearching: Boolean = false,
+) {
+    ChatAppPreview {
+        MessageSearchOverlay(
+            query = query,
+            results = results,
+            isSearching = isSearching,
+            topPadding = 0.dp,
+            onQueryChange = {},
+            onClose = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun MessageSearchOverlayEmptyPreview() {
+    MessageSearchOverlayPreviewHost(query = "", results = emptyList())
+}
+
+@ThemePreviews
+@Composable
+internal fun MessageSearchOverlayResultsPreview() {
+    MessageSearchOverlayPreviewHost(query = "quedamos", results = PreviewChatInput.searchResults)
+}
+
+@ThemePreviews
+@Composable
+internal fun MessageSearchOverlaySearchingPreview() {
+    MessageSearchOverlayPreviewHost(query = "quedamos", results = emptyList(), isSearching = true)
+}
+
+@ThemePreviews
+@Composable
+internal fun MessageSearchOverlayNoResultsPreview() {
+    MessageSearchOverlayPreviewHost(query = "zzz", results = emptyList())
+}
+
+@ThemePreviews
+@Composable
+internal fun SearchResultItemPreview() {
+    ChatAppPreview {
+        SearchResultItem(message = PreviewChatInput.searchResults.first())
     }
 }

@@ -10,7 +10,7 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 // Room schema history: the database was reset to version 1 on 2026-10-06, before the first public
 // release, so there are no migrations yet. From the first published version on, every change to an
 // entity needs a `Migration(X, Y)` registered with `addMigrations(...)` in buildChatDatabase and
-// the exported `app/schemas/.../Y.json`. See docs/room-schema-history.md.
+// the exported `app/schemas/.../Y.json`.
 
 /** Fills the built-in sticker packs when the database file is first created. */
 internal val stickerSeedCallback = object : RoomDatabase.Callback() {

@@ -55,7 +55,8 @@ import com.github.skydoves.navgraph.annotations.NavEdge
 import com.ajrpachon.chatapp.ChatRoute
 import com.ajrpachon.chatapp.CreateGroupRoute
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
-import kotlinx.datetime.Instant
+import com.ajrpachon.chatapp.ui.preview.PreviewData
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import org.koin.androidx.compose.koinViewModel
 
 @NavEdge(to = ChatRoute::class, label = "Group Created")
@@ -129,23 +130,14 @@ internal fun CreateGroupContent(
     }
 }
 
-private fun previewUser(id: String, name: String) = UserBO(
-    id = id,
-    email = "",
-    username = name.lowercase().replace(" ", "_"),
-    displayName = name,
-    avatarUrl = null,
-    createdAt = Instant.fromEpochMilliseconds(0L),
-)
-
-@Preview(name = "Select members", showBackground = true)
+@ThemePreviews
 @Composable
 internal fun CreateGroupSelectMembersPreview() {
-    val ana = previewUser("1", "Ana García")
+    val ana = PreviewData.user("1", "Ana García")
     ChatAppTheme {
         CreateGroupContent(
             state = CreateGroupState(
-                searchResults = listOf(ana, previewUser("2", "Bruno López"), previewUser("3", "Carla Ruiz")),
+                searchResults = listOf(ana, PreviewData.user("2", "Bruno López"), PreviewData.user("3", "Carla Ruiz")),
                 selectedUsers = listOf(ana),
             ),
             snackbarHostState = remember { SnackbarHostState() },
@@ -161,7 +153,7 @@ internal fun CreateGroupSetInfoPreview() {
         CreateGroupContent(
             state = CreateGroupState(
                 step = CreateGroupStep.SET_INFO,
-                selectedUsers = listOf(previewUser("1", "Ana García")),
+                selectedUsers = listOf(PreviewData.user("1", "Ana García")),
                 groupName = "Familia",
                 groupDescription = "Planes y fotos",
             ),

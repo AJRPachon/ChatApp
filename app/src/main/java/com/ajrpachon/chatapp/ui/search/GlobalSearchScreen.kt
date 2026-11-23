@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -135,7 +136,7 @@ private val previewResults = listOf(
     GlobalSearchResultItem("m2", "c2", "Ana García", "¿Te mando el sábado el documento?", 1_759_900_000_000L),
 )
 
-@Preview(name = "Results", showBackground = true)
+@ThemePreviews
 @Composable
 internal fun GlobalSearchResultsPreview() {
     ChatAppTheme {

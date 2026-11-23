@@ -49,11 +49,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
-import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
 import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
-import kotlinx.datetime.Instant
+import com.ajrpachon.chatapp.ui.preview.PreviewData
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -313,26 +313,17 @@ fun BroadcastListContent(
     }
 }
 
-private fun previewUser(id: String, name: String) = UserBO(
-    id = id,
-    email = "",
-    username = name.lowercase().replace(" ", "_"),
-    displayName = name,
-    avatarUrl = null,
-    createdAt = Instant.fromEpochMilliseconds(0L),
-)
-
 private val previewLists = listOf(
     BroadcastListItem(
         id = "1",
         name = "Familia",
         createdAt = 0L,
-        members = listOf(previewUser("1", "Ana García"), previewUser("2", "Bruno López")),
+        members = listOf(PreviewData.user("1", "Ana García"), PreviewData.user("2", "Bruno López")),
     ),
-    BroadcastListItem(id = "2", name = "Trabajo", createdAt = 0L, members = listOf(previewUser("3", "Carla Ruiz"))),
+    BroadcastListItem(id = "2", name = "Trabajo", createdAt = 0L, members = listOf(PreviewData.user("3", "Carla Ruiz"))),
 )
 
-@Preview(name = "Lists", showBackground = true)
+@ThemePreviews
 @Composable
 internal fun BroadcastListPreview() {
     ChatAppTheme {
@@ -355,7 +346,7 @@ internal fun BroadcastListEmptyPreview() {
 @Preview(name = "Create dialog", showBackground = true)
 @Composable
 internal fun BroadcastListCreateDialogPreview() {
-    val ana = previewUser("1", "Ana García")
+    val ana = PreviewData.user("1", "Ana García")
     ChatAppTheme {
         BroadcastListContent(
             state = BroadcastListUiState(
@@ -363,7 +354,7 @@ internal fun BroadcastListCreateDialogPreview() {
                 isLoading = false,
                 showCreateDialog = true,
                 newListName = "Amigos",
-                searchResults = listOf(ana, previewUser("2", "Bruno López")),
+                searchResults = listOf(ana, PreviewData.user("2", "Bruno López")),
                 selectedMembers = listOf(ana),
                 selectedMemberIds = setOf(ana.id),
             ),

@@ -48,6 +48,7 @@ import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.chat.gallery.ChatMediaGalleryState
 import com.ajrpachon.chatapp.ui.chat.gallery.ChatMediaGalleryViewModel
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -133,7 +134,7 @@ internal fun ChatMediaGalleryEmptyPreview() {
     }
 }
 
-@Preview(name = "With media", showBackground = true)
+@ThemePreviews
 @Composable
 internal fun ChatMediaGalleryPreview() {
     ChatAppTheme {

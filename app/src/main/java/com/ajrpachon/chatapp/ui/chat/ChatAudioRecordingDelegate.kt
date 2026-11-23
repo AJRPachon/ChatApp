@@ -26,7 +26,7 @@ private const val MAX_AMPLITUDE = 32767f
 /**
  * Handles voice-message recording: start/stop/discard, sending the finished recording, and the
  * MediaRecorder resource lifecycle itself (including [cleanup] for the owning ChatViewModel's
- * `onCleared()`). Part of the eighth slice of docs/chat-viewmodel-decomposition.md — see
+ * `onCleared()`). See
  * [ChatMediaUploadDelegate]'s doc for why this concern was split into 3 delegates instead of 1.
  *
  * Draft-save debouncing stays owned by ChatViewModel (shared with plain typing/sending/

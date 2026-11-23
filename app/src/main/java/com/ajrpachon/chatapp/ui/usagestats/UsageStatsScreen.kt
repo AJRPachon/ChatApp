@@ -45,6 +45,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.ui.components.ChatAppTopBar
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -199,7 +200,7 @@ internal fun UsageStatsLoadingPreview() {
     }
 }
 
-@Preview(name = "With data", showBackground = true)
+@ThemePreviews
 @Composable
 internal fun UsageStatsPreview() {
     ChatAppTheme {

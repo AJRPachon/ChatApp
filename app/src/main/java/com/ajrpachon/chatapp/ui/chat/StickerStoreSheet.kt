@@ -32,7 +32,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.ajrpachon.chatapp.R
+import com.ajrpachon.chatapp.domain.model.StickerBO
+import com.ajrpachon.chatapp.domain.model.StickerPackBO
 import com.ajrpachon.chatapp.ui.components.ChatAppPrimaryButton
+import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import org.koin.androidx.compose.koinViewModel
 
 // ── Sticker Store bottom sheet ────────────────────────────────────────────────
@@ -52,6 +56,22 @@ fun StickerStoreSheet(
         sheetState = sheetState,
         modifier = Modifier.fillMaxHeight(0.7f),
     ) {
+        StickerStoreContent(
+            packs = packs,
+            onInstall = { packId -> vm.onIntent(StickerPackIntent.InstallPack(packId)) },
+            stickersForPack = { packId -> vm.stickersForPack(packId).collectAsState().value },
+        )
+    }
+}
+
+/** Title and pack list of the store, without the ViewModel or the sheet, so it can be previewed. */
+@Composable
+internal fun StickerStoreContent(
+    packs: List<StickerPackBO>,
+    onInstall: (packId: String) -> Unit,
+    stickersForPack: @Composable (packId: String) -> List<StickerBO>,
+) {
+    Column {
         Text(
             text = stringResource(R.string.sticker_store_title),
             style = MaterialTheme.typography.titleLarge,
@@ -75,8 +95,8 @@ fun StickerStoreSheet(
                 items(packs, key = { it.id }) { pack ->
                     StickerPackStoreRow(
                         pack = pack,
-                        onInstall = { vm.onIntent(StickerPackIntent.InstallPack(pack.id)) },
-                        vm = vm,
+                        stickers = stickersForPack(pack.id),
+                        onInstall = { onInstall(pack.id) },
                     )
                 }
             }
@@ -86,11 +106,10 @@ fun StickerStoreSheet(
 
 @Composable
 private fun StickerPackStoreRow(
-    pack: com.ajrpachon.chatapp.domain.model.StickerPackBO,
+    pack: StickerPackBO,
+    stickers: List<StickerBO>,
     onInstall: () -> Unit,
-    vm: StickerPackViewModel,
 ) {
-    val stickers by vm.stickersForPack(pack.id).collectAsState()
     val preview = stickers.take(5)
 
     Row(
@@ -132,5 +151,30 @@ private fun StickerPackStoreRow(
         Spacer(Modifier.width(8.dp))
 
         ChatAppPrimaryButton(text = stringResource(R.string.sticker_store_install), onClick = onInstall)
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun StickerStoreContentPreview() {
+    ChatAppPreview {
+        StickerStoreContent(
+            packs = listOf(
+                StickerPackBO(id = "p1", name = "Animales", coverUrl = "https://preview.invalid/p1.png"),
+                StickerPackBO(id = "p2", name = "Memes", coverUrl = "https://preview.invalid/p2.png"),
+            ),
+            onInstall = {},
+            stickersForPack = { packId ->
+                List(5) { StickerBO(id = "$packId-$it", packId = packId, imageUrl = "https://preview.invalid/$it.png") }
+            },
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun StickerStoreContentEmptyPreview() {
+    ChatAppPreview {
+        StickerStoreContent(packs = emptyList(), onInstall = {}, stickersForPack = { emptyList() })
     }
 }

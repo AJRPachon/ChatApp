@@ -58,6 +58,7 @@ import com.ajrpachon.chatapp.R
 import com.ajrpachon.chatapp.UserInfoRoute
 import com.ajrpachon.chatapp.ui.components.ChatAppTopBar
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import com.github.skydoves.navgraph.annotations.NavDestination
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -166,7 +167,7 @@ internal fun UserInfoContent(
     }
 }
 
-@Preview(name = "Profile", showBackground = true)
+@ThemePreviews
 @Composable
 internal fun UserInfoPreview() {
     ChatAppTheme {

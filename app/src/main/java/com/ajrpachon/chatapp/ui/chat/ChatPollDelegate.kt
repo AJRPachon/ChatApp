@@ -14,8 +14,7 @@ private const val TAG = "ChatPollDelegate"
 
 /**
  * Handles polls: observing a poll's live question/options/current-user-vote for
- * [ChatPollFeatureState.uiStates], creating a poll, and voting. Third slice of the
- * decomposition in docs/chat-viewmodel-decomposition.md — see [ChatAiDelegate] for the pattern
+ * [ChatPollFeatureState.uiStates], creating a poll, and voting. See [ChatAiDelegate] for the pattern
  * this follows.
  */
 class ChatPollDelegate(

@@ -21,9 +21,8 @@ private const val TAG = "ChatQuickSendDelegate"
 
 /**
  * Handles the "one message, no upload progress" sends: GIFs, stickers, a shared contact card
- * (including resolving it from a picked device contact), and the current device location. Part
- * of the eighth slice of docs/chat-viewmodel-decomposition.md — see [ChatMediaUploadDelegate]'s
- * doc for why this concern was split into 3 delegates instead of 1.
+ * (including resolving it from a picked device contact), and the current device location.
+ * See [ChatMediaUploadDelegate]'s doc for why this concern was split into 3 delegates instead of 1.
  */
 class ChatQuickSendDelegate(
     private val conversationId: String,

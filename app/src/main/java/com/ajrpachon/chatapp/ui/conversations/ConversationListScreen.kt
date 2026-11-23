@@ -103,7 +103,8 @@ import com.ajrpachon.chatapp.NewChatRoute
 import com.ajrpachon.chatapp.ProfileRoute
 import com.ajrpachon.chatapp.ui.components.ChatAppTextButton
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
-import kotlinx.datetime.Instant
+import com.ajrpachon.chatapp.ui.preview.PreviewData
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import org.koin.androidx.compose.koinViewModel
 
 // UserBO.isOnline() only re-evaluates when read; without this tick, an item whose participant Flow
@@ -464,20 +465,10 @@ fun ConversationListContent(
     }
 }
 
-private fun previewConversation(id: String, name: String, isGroup: Boolean = false, unread: Int = 0) = ConversationBO(
-    id = id,
-    name = name,
-    isGroup = isGroup,
-    participants = emptyList(),
-    lastMessage = null,
-    unreadCount = unread,
-    updatedAt = Instant.fromEpochMilliseconds(0L),
-)
-
 private val previewConversations = listOf(
-    previewConversation("1", "Ana García", unread = 3),
-    previewConversation("2", "Equipo Android", isGroup = true),
-    previewConversation("3", "Bruno López"),
+    PreviewData.conversation("1", "Ana García", unread = 3),
+    PreviewData.conversation("2", "Equipo Android", isGroup = true),
+    PreviewData.conversation("3", "Bruno López"),
 )
 
 @Composable
@@ -497,7 +488,7 @@ private fun PreviewContent(state: ConversationListState) {
     }
 }
 
-@Preview(name = "Conversations", showBackground = true)
+@ThemePreviews
 @Composable
 internal fun ConversationListPreview() {
     PreviewContent(

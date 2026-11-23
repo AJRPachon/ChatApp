@@ -42,10 +42,10 @@ import com.ajrpachon.chatapp.ui.components.ChatAppTopBar
 import com.ajrpachon.chatapp.ui.components.InvitationsSkeleton
 import com.github.skydoves.navgraph.annotations.NavDestination
 import com.ajrpachon.chatapp.InvitationsRoute
-import com.ajrpachon.chatapp.domain.model.UserBO
 import com.ajrpachon.chatapp.ui.theme.ChatAppShapeExtras
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
-import kotlinx.datetime.Instant
+import com.ajrpachon.chatapp.ui.preview.PreviewData
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import org.koin.androidx.compose.koinViewModel
 
 @NavDestination(route = InvitationsRoute::class)
@@ -122,32 +122,13 @@ internal fun InvitationsContent(
     }
 }
 
-private fun previewUser(id: String, name: String) = UserBO(
-    id = id,
-    email = "",
-    username = name.lowercase(),
-    displayName = name,
-    avatarUrl = null,
-    createdAt = Instant.fromEpochMilliseconds(0L),
-)
-
-private fun previewInvitation(id: String, from: String, to: String? = null, status: InvitationStatus = InvitationStatus.PENDING) =
-    InvitationBO(
-        id = id,
-        sender = previewUser("s$id", from),
-        receiverId = "me",
-        status = status,
-        createdAt = Instant.fromEpochMilliseconds(0L),
-        receiver = to?.let { previewUser("r$id", it) },
-    )
-
-@Preview(name = "Received", showBackground = true)
+@ThemePreviews
 @Composable
 internal fun InvitationsReceivedPreview() {
     ChatAppTheme {
         InvitationsContent(
             state = InvitationsState(
-                invitations = listOf(previewInvitation("1", "Ana García"), previewInvitation("2", "Bruno López")),
+                invitations = listOf(PreviewData.invitation("1", "Ana García"), PreviewData.invitation("2", "Bruno López")),
                 isLoading = false,
             ),
             snackbar = remember { SnackbarHostState() },
@@ -166,8 +147,8 @@ internal fun InvitationsSentPreview() {
                 isLoading = false,
                 selectedTab = InvitationsTab.SENT,
                 sentInvitations = listOf(
-                    previewInvitation("1", "Yo", to = "Carla Ruiz"),
-                    previewInvitation("2", "Yo", to = "Diego Pérez", status = InvitationStatus.ACCEPTED),
+                    PreviewData.invitation("1", "Yo", to = "Carla Ruiz"),
+                    PreviewData.invitation("2", "Yo", to = "Diego Pérez", status = InvitationStatus.ACCEPTED),
                 ),
             ),
             snackbar = remember { SnackbarHostState() },

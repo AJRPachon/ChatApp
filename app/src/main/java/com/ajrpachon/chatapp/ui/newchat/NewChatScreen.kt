@@ -76,7 +76,8 @@ import com.ajrpachon.chatapp.ChatRoute
 import com.ajrpachon.chatapp.InvitationsRoute
 import com.ajrpachon.chatapp.NewChatRoute
 import com.ajrpachon.chatapp.ui.theme.ChatAppTheme
-import kotlinx.datetime.Instant
+import com.ajrpachon.chatapp.ui.preview.PreviewData
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import org.koin.androidx.compose.koinViewModel
 
 @NavEdge(to = ChatRoute::class, label = "Open Chat")
@@ -345,21 +346,12 @@ fun NewChatContent(
     }
 }
 
-private fun previewUser(id: String, name: String) = UserBO(
-    id = id,
-    email = "",
-    username = name.lowercase().replace(" ", "_"),
-    displayName = name,
-    avatarUrl = null,
-    createdAt = Instant.fromEpochMilliseconds(0L),
-)
-
-@Preview(name = "Results", showBackground = true)
+@ThemePreviews
 @Composable
 internal fun NewChatResultsPreview() {
-    val ana = previewUser("1", "Ana García")
-    val bruno = previewUser("2", "Bruno López")
-    val carla = previewUser("3", "Carla Ruiz")
+    val ana = PreviewData.user("1", "Ana García")
+    val bruno = PreviewData.user("2", "Bruno López")
+    val carla = PreviewData.user("3", "Carla Ruiz")
     ChatAppTheme {
         NewChatContent(
             state = NewChatState(

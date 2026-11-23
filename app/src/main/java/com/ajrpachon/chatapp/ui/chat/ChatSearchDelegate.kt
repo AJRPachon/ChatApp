@@ -12,8 +12,7 @@ private const val JUMP_HIGHLIGHT_MS = 2_000L
 
 /**
  * Handles in-conversation message search (debounced) and jumping to/highlighting a message
- * (from search results or a reply reference). Seventh slice of the decomposition in
- * docs/chat-viewmodel-decomposition.md — see [ChatAiDelegate] for the pattern this follows.
+ * (from search results or a reply reference). See [ChatAiDelegate] for the pattern this follows.
  */
 class ChatSearchDelegate(
     private val conversationId: String,

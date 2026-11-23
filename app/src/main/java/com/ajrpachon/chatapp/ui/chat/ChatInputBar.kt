@@ -67,6 +67,9 @@ import com.ajrpachon.chatapp.domain.model.MessageBO
 import com.ajrpachon.chatapp.domain.model.MessageLimits
 import com.ajrpachon.chatapp.ui.common.MotionConstants
 import com.ajrpachon.chatapp.ui.components.ChatAppTextField
+import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
+import com.ajrpachon.chatapp.ui.preview.PreviewData
+import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 import kotlinx.coroutines.launch
 
 // ── Chat input bar ────────────────────────────────────────────────────────────
@@ -420,5 +423,96 @@ internal fun ReplyPreviewBar(message: MessageBO, onCancel: () -> Unit) {
                 modifier = Modifier.size(18.dp),
             )
         }
+    }
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+
+@Composable
+private fun NormalInputBarPreviewHost(
+    inputText: String = "",
+    isSending: Boolean = false,
+    isUploadingImage: Boolean = false,
+    mediaUploadProgress: MediaUploadProgress? = null,
+) {
+    ChatAppPreview {
+        NormalInputBar(
+            inputText = inputText,
+            isSending = isSending,
+            isUploadingImage = isUploadingImage,
+            mediaUploadProgress = mediaUploadProgress,
+            onTextChange = {},
+            onSend = {},
+            onGallery = {},
+            onCamera = {},
+            onMic = {},
+            onSticker = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun NormalInputBarEmptyPreview() {
+    NormalInputBarPreviewHost()
+}
+
+@ThemePreviews
+@Composable
+internal fun NormalInputBarWithTextPreview() {
+    NormalInputBarPreviewHost(inputText = "Perfecto, nos vemos allí")
+}
+
+@ThemePreviews
+@Composable
+internal fun NormalInputBarSendingPreview() {
+    NormalInputBarPreviewHost(inputText = "Enviando este mensaje…", isSending = true)
+}
+
+@ThemePreviews
+@Composable
+internal fun NormalInputBarUploadingPreview() {
+    NormalInputBarPreviewHost(
+        mediaUploadProgress = MediaUploadProgress(totalCount = 4, completedCount = 1, totalBytes = 6_400_000L),
+    )
+}
+
+@ThemePreviews
+@Composable
+internal fun AttachmentBottomSheetPreview() {
+    ChatAppPreview {
+        AttachmentBottomSheet(
+            onGallery = {},
+            onCamera = {},
+            onFile = {},
+            onVideo = {},
+            onSticker = {},
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun AttachmentBottomSheetScheduleDisabledPreview() {
+    ChatAppPreview {
+        AttachmentBottomSheet(
+            onGallery = {},
+            onCamera = {},
+            onFile = {},
+            onVideo = {},
+            onSticker = {},
+            isScheduleEnabled = false,
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+internal fun ReplyPreviewBarPreview() {
+    ChatAppPreview {
+        ReplyPreviewBar(
+            message = PreviewData.message("m3", "¿Quedamos a las 7?", isFromMe = false),
+            onCancel = {},
+        )
     }
 }

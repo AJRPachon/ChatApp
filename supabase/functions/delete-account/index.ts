@@ -30,7 +30,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2"
 //   - message_reactions.user_id and fcm_tokens.user_id both have an
 //     explicit `REFERENCES auth.users(id) ON DELETE CASCADE`
 //     (20260626000003_message_reactions.sql /
-//     20260505_fcm_notifications.sql) — no explicit cleanup needed.
+//     20260505000000_fcm_notifications.sql) — no explicit cleanup needed.
 //   - user_status.user_id REFERENCES public.profiles(id) ON DELETE
 //     CASCADE (20260807092830_add_status_stories.sql), so the *rows*
 //     clean up transitively once profiles cascades. Storage objects
