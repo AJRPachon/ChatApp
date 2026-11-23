@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.chat
 
+import com.ajrpachon.chatapp.ui.common.qaTag
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Schedule
@@ -83,10 +85,15 @@ internal fun ChatDialogHost(
                         onIntent(ChatIntent.DeleteSelectedMessages)
                     },
                     color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.qaTag("delete_confirm"),
                 )
             },
             dismissButton = {
-                ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = { showDeleteSelectionConfirm.value = false })
+                ChatAppTextButton(
+                    text = stringResource(R.string.chat_cancel),
+                    onClick = { showDeleteSelectionConfirm.value = false },
+                    modifier = Modifier.qaTag("delete_cancel"),
+                )
             },
         )
     }
@@ -129,10 +136,18 @@ internal fun ChatDialogHost(
                 Text(stringResource(R.string.chat_incognito_mode_description))
             },
             confirmButton = {
-                ChatAppTextButton(text = stringResource(R.string.chat_incognito_confirm_activate), onClick = { onIntent(ChatIntent.ConfirmIncognito) })
+                ChatAppTextButton(
+                    text = stringResource(R.string.chat_incognito_confirm_activate),
+                    onClick = { onIntent(ChatIntent.ConfirmIncognito) },
+                    modifier = Modifier.qaTag("incognito_confirm"),
+                )
             },
             dismissButton = {
-                ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = { onIntent(ChatIntent.DismissIncognitoDialog) })
+                ChatAppTextButton(
+                    text = stringResource(R.string.chat_cancel),
+                    onClick = { onIntent(ChatIntent.DismissIncognitoDialog) },
+                    modifier = Modifier.qaTag("incognito_cancel"),
+                )
             },
         )
     }
@@ -209,13 +224,16 @@ internal fun ChatDialogHost(
                 text = stringResource(R.string.chat_scheduled_messages),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .qaTag("scheduled_sheet"),
             )
             if (state.scheduling.messages.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(200.dp),
+                        .height(200.dp)
+                        .qaTag("scheduled_empty"),
                     contentAlignment = Alignment.Center,
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -235,11 +253,12 @@ internal fun ChatDialogHost(
                 }
             } else {
                 LazyColumn {
-                    items(state.scheduling.messages, key = { it.id }) { msg ->
+                    itemsIndexed(state.scheduling.messages, key = { _, it -> it.id }) { index, msg ->
                         val formatter = remember { java.text.SimpleDateFormat("dd MMM HH:mm", java.util.Locale.getDefault()) }
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .qaTag("scheduled_row_$index")
                                 .padding(horizontal = 16.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
@@ -256,7 +275,10 @@ internal fun ChatDialogHost(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
-                            IconButton(onClick = { onIntent(ChatIntent.CancelScheduledMessage(msg.id)) }) {
+                            IconButton(
+                                onClick = { onIntent(ChatIntent.CancelScheduledMessage(msg.id)) },
+                                modifier = Modifier.qaTag("scheduled_cancel_$index"),
+                            ) {
                                 Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.chat_cancel_scheduled_message))
                             }
                         }
@@ -301,7 +323,7 @@ internal fun ChatDialogHost(
                 onDismissRequest = { reactionDetailMessageId.value = null },
                 sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             ) {
-                ReactionDetailsSheet(reactions = msgReactions)
+                ReactionDetailsSheet(reactions = msgReactions, modifier = Modifier.qaTag("reaction_details_sheet"))
             }
         }
     }

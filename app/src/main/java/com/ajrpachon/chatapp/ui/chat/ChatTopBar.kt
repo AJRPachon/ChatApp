@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.chat
 
+import com.ajrpachon.chatapp.ui.common.qaTag
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
@@ -97,7 +98,8 @@ internal fun ChatTopBar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(IncognitoBannerBackground)
-                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                    .padding(horizontal = 16.dp, vertical = 6.dp)
+                    .testTag("incognito_banner"),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
             ) {
@@ -111,16 +113,21 @@ internal fun ChatTopBar(
         if (state.isMultiSelectActive) {
             TopAppBar(
                 navigationIcon = {
-                    IconButton(onClick = { onIntent(ChatIntent.ClearSelection) }) {
+                    IconButton(onClick = { onIntent(ChatIntent.ClearSelection) }, modifier = Modifier.testTag("chat_selection_cancel")) {
                         Icon(Icons.Default.Close, contentDescription = stringResource(R.string.chat_cancel_selection))
                     }
                 },
-                title = { Text(stringResource(R.string.chat_selected_count, state.selectedMessageIds.size)) },
+                title = {
+                    Text(
+                        stringResource(R.string.chat_selected_count, state.selectedMessageIds.size),
+                        modifier = Modifier.testTag("chat_selection_count"),
+                    )
+                },
                 actions = {
-                    IconButton(onClick = { onIntent(ChatIntent.ShowForwardSelectionDialog) }) {
+                    IconButton(onClick = { onIntent(ChatIntent.ShowForwardSelectionDialog) }, modifier = Modifier.testTag("chat_selection_forward")) {
                         Icon(Icons.AutoMirrored.Filled.Forward, contentDescription = stringResource(R.string.chat_forward_selected))
                     }
-                    IconButton(onClick = { showDeleteSelectionConfirm.value = true }) {
+                    IconButton(onClick = { showDeleteSelectionConfirm.value = true }, modifier = Modifier.testTag("chat_selection_delete")) {
                         Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.chat_delete_selected))
                     }
                 },
@@ -198,6 +205,7 @@ internal fun ChatTopBar(
                                 text = line,
                                 style = MaterialTheme.typography.labelSmall,
                                 maxLines = 1,
+                                modifier = Modifier.testTag("chat_presence_subtitle"),
                                 color = if (isActive)
                                     MaterialTheme.colorScheme.tertiary
                                 else
@@ -208,14 +216,14 @@ internal fun ChatTopBar(
                 }
             },
             navigationIcon = {
-                IconButton(onClick = dropUnlessResumed { onBack() }) {
+                IconButton(onClick = dropUnlessResumed { onBack() }, modifier = Modifier.testTag("chat_back_button")) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.chat_back))
                 }
             },
             actions = {
                 if (state.scheduling.messageCount > 0) {
                     Box {
-                        IconButton(onClick = { onIntent(ChatIntent.ShowScheduledSheet) }) {
+                        IconButton(onClick = { onIntent(ChatIntent.ShowScheduledSheet) }, modifier = Modifier.testTag("chat_scheduled_icon")) {
                             Icon(Icons.Default.Schedule, contentDescription = stringResource(R.string.chat_scheduled_messages))
                         }
                         Box(
@@ -237,7 +245,7 @@ internal fun ChatTopBar(
                 if (state.isGroup || state.otherUserId != null) {
                     var callMenuExpanded by remember { mutableStateOf(false) }
                     Box {
-                        IconButton(onClick = { callMenuExpanded = true }) {
+                        IconButton(onClick = { callMenuExpanded = true }, modifier = Modifier.testTag("chat_call_button")) {
                             Icon(Icons.Default.PhoneInTalk, contentDescription = stringResource(R.string.chat_call))
                         }
                         DropdownMenu(
@@ -245,6 +253,7 @@ internal fun ChatTopBar(
                             onDismissRequest = { callMenuExpanded = false },
                         ) {
                             DropdownMenuItem(
+                                modifier = Modifier.qaTag("chat_call_voice_option"),
                                 text = {
                                     Text(
                                         if (state.isGroup) stringResource(R.string.chat_group_voice_call)
@@ -258,6 +267,7 @@ internal fun ChatTopBar(
                                 },
                             )
                             DropdownMenuItem(
+                                modifier = Modifier.qaTag("chat_call_video_option"),
                                 text = {
                                     Text(
                                         if (state.isGroup) stringResource(R.string.chat_group_video_call)
@@ -286,6 +296,7 @@ internal fun ChatTopBar(
                         onDismissRequest = { menuExpanded = false },
                     ) {
                         DropdownMenuItem(
+                            modifier = Modifier.qaTag("chat_menu_search"),
                             text = { Text(stringResource(R.string.chat_search_messages)) },
                             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                             onClick = {
@@ -294,6 +305,7 @@ internal fun ChatTopBar(
                             },
                         )
                         DropdownMenuItem(
+                            modifier = Modifier.qaTag("chat_menu_mute"),
                             text = {
                                 Text(if (state.mute.isMuted) stringResource(R.string.chat_enable_notifications) else stringResource(R.string.chat_mute))
                             },
@@ -319,6 +331,7 @@ internal fun ChatTopBar(
                         // OpenWallpaperPicker en ChatViewModel) sigue intacto — solo se oculta esta
                         // entrada de menú para que el usuario no pueda cambiarlo por ahora.
                         DropdownMenuItem(
+                            modifier = Modifier.qaTag("chat_menu_export"),
                             text = { Text(stringResource(R.string.chat_export_conversation)) },
                             leadingIcon = {
                                 if (state.isExporting) {
@@ -334,6 +347,7 @@ internal fun ChatTopBar(
                             },
                         )
                         DropdownMenuItem(
+                            modifier = Modifier.qaTag("chat_menu_disappearing"),
                             text = { Text(stringResource(R.string.chat_disappearing_mode)) },
                             leadingIcon = { Icon(Icons.Default.Timer, contentDescription = null) },
                             onClick = {
@@ -342,6 +356,7 @@ internal fun ChatTopBar(
                             },
                         )
                         DropdownMenuItem(
+                            modifier = Modifier.qaTag("chat_menu_incognito"),
                             text = { Text(if (state.incognito.isIncognito) stringResource(R.string.chat_disable_incognito) else stringResource(R.string.chat_incognito_mode)) },
                             leadingIcon = {
                                 Icon(
@@ -356,6 +371,7 @@ internal fun ChatTopBar(
                             },
                         )
                         DropdownMenuItem(
+                            modifier = Modifier.qaTag("chat_menu_media"),
                             text = { Text(stringResource(R.string.chat_shared_media)) },
                             leadingIcon = { Icon(Icons.Default.PhotoLibrary, contentDescription = null) },
                             onClick = {
@@ -365,6 +381,7 @@ internal fun ChatTopBar(
                         )
                         if (state.isGroup) {
                             DropdownMenuItem(
+                                modifier = Modifier.qaTag("chat_menu_group_info"),
                                 text = { Text(stringResource(R.string.chat_group_info)) },
                                 leadingIcon = { Icon(Icons.Default.Info, contentDescription = null) },
                                 onClick = {
@@ -374,6 +391,7 @@ internal fun ChatTopBar(
                             )
                             if (state.isCurrentUserMember) {
                                 DropdownMenuItem(
+                                    modifier = Modifier.qaTag("chat_menu_leave"),
                                     text = { Text(stringResource(R.string.chat_leave_group), color = MaterialTheme.colorScheme.error) },
                                     leadingIcon = {
                                         Icon(

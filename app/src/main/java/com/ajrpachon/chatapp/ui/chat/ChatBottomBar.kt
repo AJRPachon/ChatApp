@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.chat
 
+import androidx.compose.ui.platform.testTag
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -87,11 +88,16 @@ internal fun ChatBottomBar(
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
                             Column {
-                                Text(stringResource(R.string.chat_editing_message), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                                Text(
+                                    stringResource(R.string.chat_editing_message),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.testTag("edit_banner"),
+                                )
                                 Text(editingMessage.content.take(60), style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
                         }
-                        IconButton(onClick = { onIntent(ChatIntent.CancelEdit) }) {
+                        IconButton(onClick = { onIntent(ChatIntent.CancelEdit) }, modifier = Modifier.testTag("edit_banner_cancel")) {
                             Icon(Icons.Default.Close, contentDescription = stringResource(R.string.chat_cancel_edit))
                         }
                     }
@@ -120,7 +126,9 @@ internal fun ChatBottomBar(
                         text = typingText,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp, vertical = 2.dp)
+                            .testTag("typing_indicator"),
                     )
                 }
                 val mentionSuggestions = state.mentionSuggestions

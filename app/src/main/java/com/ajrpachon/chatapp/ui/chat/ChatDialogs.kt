@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.chat
 
+import com.ajrpachon.chatapp.ui.common.qaTag
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -78,11 +79,11 @@ internal fun ExpiryDurationDialog(onDismiss: () -> Unit, onSelect: (Long?) -> Un
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 androidx.compose.foundation.layout.Spacer(androidx.compose.ui.Modifier.height(8.dp))
-                options.forEach { (label, value) ->
+                options.forEachIndexed { index, (label, value) ->
                     ChatAppTextButton(
                         text = label,
                         onClick = { onSelect(value) },
-                        modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().qaTag("expiry_option_$index"),
                         textAlign = TextAlign.Start,
                     )
                 }
@@ -90,7 +91,7 @@ internal fun ExpiryDurationDialog(onDismiss: () -> Unit, onSelect: (Long?) -> Un
         },
         confirmButton = {},
         dismissButton = {
-            ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = onDismiss)
+            ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = onDismiss, modifier = Modifier.qaTag("dialog_cancel"))
         },
     )
 }
@@ -108,11 +109,11 @@ internal fun MuteDurationDialog(onDismiss: () -> Unit, onSelect: (Long) -> Unit)
         title = { Text(stringResource(R.string.chat_mute_notifications_title)) },
         text = {
             androidx.compose.foundation.layout.Column {
-                options.forEach { (label, value) ->
+                options.forEachIndexed { index, (label, value) ->
                     ChatAppTextButton(
                         text = label,
                         onClick = { onSelect(value) },
-                        modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().qaTag("mute_option_$index"),
                         textAlign = TextAlign.Start,
                     )
                 }
@@ -120,7 +121,7 @@ internal fun MuteDurationDialog(onDismiss: () -> Unit, onSelect: (Long) -> Unit)
         },
         confirmButton = {},
         dismissButton = {
-            ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = onDismiss)
+            ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = onDismiss, modifier = Modifier.qaTag("dialog_cancel"))
         },
     )
 }
@@ -147,6 +148,7 @@ internal fun ForwardConversationDialog(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .qaTag("forward_target_${conv.name}")
                                 .clickable { onSelect(conv.id) }
                                 .padding(vertical = 10.dp, horizontal = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
@@ -196,7 +198,7 @@ internal fun ForwardConversationDialog(
         },
         confirmButton = {},
         dismissButton = {
-            ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = onDismiss)
+            ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = onDismiss, modifier = Modifier.qaTag("dialog_cancel"))
         },
     )
 }
@@ -221,10 +223,14 @@ internal fun ScheduleMessageDialog(
         DatePickerDialog(
             onDismissRequest = onDismiss,
             confirmButton = {
-                ChatAppTextButton(text = stringResource(R.string.chat_next), onClick = { showTimePicker = true })
+                ChatAppTextButton(
+                    text = stringResource(R.string.chat_next),
+                    onClick = { showTimePicker = true },
+                    modifier = Modifier.qaTag("schedule_date_next"),
+                )
             },
             dismissButton = {
-                ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = onDismiss)
+                ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = onDismiss, modifier = Modifier.qaTag("dialog_cancel"))
             },
         ) {
             DatePicker(state = datePickerState)
@@ -250,10 +256,10 @@ internal fun ScheduleMessageDialog(
                         set(java.util.Calendar.MILLISECOND, 0)
                     }
                     onConfirm(cal.timeInMillis)
-                })
+                }, modifier = Modifier.qaTag("schedule_confirm"))
             },
             dismissButton = {
-                ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = onDismiss)
+                ChatAppTextButton(text = stringResource(R.string.chat_cancel), onClick = onDismiss, modifier = Modifier.qaTag("dialog_cancel"))
             },
         )
     }
@@ -279,7 +285,12 @@ internal fun ImageViewerDialog(
             initialPage = initialIndex.coerceIn(0, imageUrls.lastIndex),
         ) { imageUrls.size }
 
-        androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .qaTag("fullscreen_viewer"),
+        ) {
             // One photo per page, always centered (Fit + fillMaxSize letterboxes instead of
             // pinning content to the top) — swipe between photos instead of stacking them in a
             // scrollable column.
@@ -313,7 +324,8 @@ internal fun ImageViewerDialog(
                     .align(Alignment.TopEnd)
                     .statusBarsPadding()
                     .padding(top = 4.dp, end = 8.dp)
-                    .background(Color.Black.copy(alpha = 0.4f), CircleShape),
+                    .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+                    .qaTag("fullscreen_viewer_close"),
             ) {
                 Icon(Icons.Default.Close, contentDescription = stringResource(R.string.chat_close), tint = Color.White)
             }

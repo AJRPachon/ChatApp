@@ -636,6 +636,16 @@
     <string name="chat_cannot_invite_contact">No puedes enviar una invitación a este contacto</string>
     <string name="chat_uploading_progress">Subiendo %1$d de %2$d · %3$s</string>
     <string name="chat_attach_title">Adjuntar</string>
+    <string name="chat_attach_option_gallery">Galería</string>
+    <string name="chat_attach_option_camera">Cámara</string>
+    <string name="chat_attach_option_file">Archivo</string>
+    <string name="chat_attach_option_video">Vídeo</string>
+    <string name="chat_attach_option_sticker">Stickers</string>
+    <string name="chat_attach_option_location">Ubicación</string>
+    <string name="chat_attach_option_poll">Encuesta</string>
+    <string name="chat_attach_option_contact">Contacto</string>
+    <string name="chat_attach_option_schedule">Programar</string>
+    <string name="chat_attach_option_ai">IA</string>
     <string name="stickers_tab_stickers">Stickers</string>
     <string name="stickers_tab_gifs">GIFs</string>
     <string name="gif_unavailable">GIFs no disponibles</string>

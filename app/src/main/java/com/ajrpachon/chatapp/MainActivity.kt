@@ -43,6 +43,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import com.ajrpachon.chatapp.ui.auth.IntegrityBlockedScreen
+import com.ajrpachon.chatapp.ui.common.qaTag
 import com.ajrpachon.chatapp.domain.repository.AppLockRepository
 import com.ajrpachon.chatapp.domain.model.IntegrityResultBO
 import com.ajrpachon.chatapp.domain.model.isGroupCall
@@ -370,15 +371,21 @@ class MainActivity : ComponentActivity() {
                             Text(stringResource(R.string.root_warning_message))
                         },
                         confirmButton = {
-                            TextButton(onClick = {
-                                saveRootWarningAccepted()
-                                showRootWarning = false
-                            }) {
+                            TextButton(
+                                onClick = {
+                                    saveRootWarningAccepted()
+                                    showRootWarning = false
+                                },
+                                modifier = Modifier.qaTag("root_warning_continue_button"),
+                            ) {
                                 Text(stringResource(R.string.root_warning_continue))
                             }
                         },
                         dismissButton = {
-                            TextButton(onClick = { finish() }) {
+                            TextButton(
+                                onClick = { finish() },
+                                modifier = Modifier.qaTag("root_warning_exit_button"),
+                            ) {
                                 Text(stringResource(R.string.root_warning_exit))
                             }
                         },

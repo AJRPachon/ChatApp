@@ -72,6 +72,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import com.ajrpachon.chatapp.ui.common.qaTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -190,6 +191,7 @@ fun ConversationListContent(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .qaTag("sound_picker_option_${sound.name.lowercase()}")
                                 .clickable {
                                     onIntent(ConversationListIntent.SetNotificationSound(convId, sound))
                                 },
@@ -210,7 +212,11 @@ fun ConversationListContent(
                 }
             },
             confirmButton = {
-                ChatAppTextButton(text = stringResource(R.string.conversations_cancel), onClick = { onIntent(ConversationListIntent.DismissSoundPicker) })
+                ChatAppTextButton(
+                    text = stringResource(R.string.conversations_cancel),
+                    onClick = { onIntent(ConversationListIntent.DismissSoundPicker) },
+                    modifier = Modifier.qaTag("sound_picker_cancel"),
+                )
             },
         )
     }
@@ -225,13 +231,16 @@ fun ConversationListContent(
                 text = stringResource(R.string.conversations_archived_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .qaTag("archived_sheet"),
             )
             if (state.archivedConversations.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(200.dp),
+                        .height(200.dp)
+                        .qaTag("archived_empty"),
                     contentAlignment = Alignment.Center,
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -278,7 +287,7 @@ fun ConversationListContent(
         topBar = {
             Column {
                 AnimatedVisibility(visible = !state.isOnline) {
-                    OfflineBanner()
+                    OfflineBanner(modifier = Modifier.testTag("offline_banner"))
                 }
             TopAppBar(
                 title = {
@@ -300,7 +309,7 @@ fun ConversationListContent(
                     ) {
                         BadgedBox(badge = {
                             if (state.archivedConversations.isNotEmpty()) {
-                                Badge { Text(state.archivedConversations.size.toString()) }
+                                Badge(modifier = Modifier.testTag("archived_badge")) { Text(state.archivedConversations.size.toString()) }
                             }
                         }) {
                             Icon(Icons.Default.Inventory2, contentDescription = stringResource(R.string.conversations_archived_content_description))
@@ -329,7 +338,7 @@ fun ConversationListContent(
                     ) {
                         BadgedBox(badge = {
                             if (state.pendingInvitationsCount > 0) {
-                                Badge { Text(state.pendingInvitationsCount.toString()) }
+                                Badge(modifier = Modifier.testTag("invitations_badge")) { Text(state.pendingInvitationsCount.toString()) }
                             }
                         }) {
                             Icon(Icons.Default.Notifications, contentDescription = stringResource(R.string.conversations_invitations_content_description))
@@ -383,7 +392,8 @@ fun ConversationListContent(
                         Box(
                             modifier = Modifier
                                 .fillParentMaxHeight(0.7f)
-                                .fillMaxWidth(),
+                                .fillMaxWidth()
+                                .testTag("conversation_list_empty"),
                             contentAlignment = Alignment.Center,
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -569,6 +579,7 @@ private fun ArchivedConversationItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .qaTag("archived_row_${conversation.name}")
             .combinedClickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -605,7 +616,7 @@ private fun ArchivedConversationItem(
                 )
             }
         }
-        IconButton(onClick = onUnarchive) {
+        IconButton(onClick = onUnarchive, modifier = Modifier.qaTag("archived_unarchive_${conversation.name}")) {
             Icon(
                 Icons.Default.Unarchive,
                 contentDescription = stringResource(R.string.conversations_unarchive_content_description),
@@ -642,6 +653,7 @@ private fun ConversationItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .testTag("conversation_row_${conversation.name}")
                 .combinedClickable(onClick = onClick, onLongClick = onLongClick)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -817,7 +829,9 @@ private fun ConversationItem(
                             Icon(
                                 Icons.AutoMirrored.Filled.VolumeOff,
                                 contentDescription = stringResource(R.string.conversations_muted_content_description),
-                                modifier = Modifier.size(14.dp),
+                                modifier = Modifier
+                                    .size(14.dp)
+                                    .testTag("conversation_row_muted_icon"),
                                 tint = MaterialTheme.colorScheme.outline,
                             )
                         }
@@ -825,6 +839,7 @@ private fun ConversationItem(
                             Badge(
                                 containerColor = MaterialTheme.colorScheme.primary,
                                 contentColor = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.testTag("conversation_row_unread_badge"),
                             ) {
                                 Text(
                                     text = if (conversation.unreadCount > ChatConstants.MAX_UNREAD_DISPLAY) ChatConstants.MAX_UNREAD_LABEL else conversation.unreadCount.toString(),
@@ -858,27 +873,32 @@ private fun ConversationItem(
                     )
                 },
                 onClick = onMuteToggle,
+                modifier = Modifier.qaTag("conversation_menu_mute"),
             )
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.conversations_menu_clear_chat)) },
                 leadingIcon = { Icon(Icons.Default.DeleteSweep, contentDescription = null) },
                 onClick = onClearChat,
+                modifier = Modifier.qaTag("conversation_menu_clear"),
             )
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.conversations_menu_notification_sound)) },
                 leadingIcon = { Icon(Icons.Default.NotificationsActive, contentDescription = null) },
                 onClick = onSoundPicker,
+                modifier = Modifier.qaTag("conversation_menu_sound"),
             )
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.conversations_menu_archive)) },
                 leadingIcon = { Icon(Icons.Default.Archive, contentDescription = null) },
                 onClick = onArchive,
+                modifier = Modifier.qaTag("conversation_menu_archive"),
             )
             if (onLeaveGroup != null) {
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.conversations_menu_leave_group)) },
                     leadingIcon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null) },
                     onClick = onLeaveGroup,
+                    modifier = Modifier.qaTag("conversation_menu_leave"),
                 )
             }
             DropdownMenuItem(
@@ -887,6 +907,7 @@ private fun ConversationItem(
                     Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                 },
                 onClick = onDelete,
+                modifier = Modifier.qaTag("conversation_menu_delete"),
             )
         }
     }

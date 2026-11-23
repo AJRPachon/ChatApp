@@ -1,5 +1,7 @@
 package com.ajrpachon.chatapp.ui.chat
 
+import com.ajrpachon.chatapp.domain.model.LocationMessageFormat
+import androidx.compose.ui.platform.testTag
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -178,6 +180,7 @@ internal fun ChatMessageList(
                 Box(
                     Modifier
                         .padding(top = 8.dp)
+                        .testTag(message.qaTag())
                         .animateItem(
                             fadeInSpec = tween(MotionConstants.LIST_ITEM_ANIM_MS),
                             placementSpec = tween(MotionConstants.LIST_ITEM_ANIM_MS, easing = FastOutSlowInEasing),
@@ -311,7 +314,10 @@ internal fun ChatMessageList(
                 .align(Alignment.BottomEnd)
                 .padding(end = 16.dp, bottom = innerPadding.calculateBottomPadding() + 16.dp),
         ) {
-            SmallFloatingActionButton(onClick = { scope.launch { listState.animateScrollToItem(0) } }) {
+            SmallFloatingActionButton(
+                onClick = { scope.launch { listState.animateScrollToItem(0) } },
+                modifier = Modifier.testTag("scroll_to_bottom_fab"),
+            ) {
                 Icon(Icons.Default.KeyboardArrowDown, contentDescription = stringResource(R.string.chat_scroll_to_bottom))
             }
         }
@@ -449,4 +455,27 @@ internal fun ChatMessageListGroupPreview() {
         state = previewMessageListState().copy(isGroup = true, conversationTitle = "Equipo Android"),
         messages = PreviewChatInput.messages,
     )
+}
+
+/**
+ * Stable automation tag for a message row: `message_<kind>_<own|other>` (e.g. `message_text_own`,
+ * `message_poll_other`). Lets Maestro assert *what kind* of bubble arrived without relying on
+ * localized labels.
+ */
+private fun MessageBO.qaTag(): String {
+    val kind = when {
+        isDeleted -> "deleted"
+        isCallMessage -> "call"
+        stickerUrl != null -> "sticker"
+        content.startsWith("contact:{") -> "contact"
+        fileUrl != null -> "file"
+        videoUrl != null -> "video"
+        content.startsWith("poll:") -> "poll"
+        audioUrl != null -> "audio"
+        gifUrl != null -> "gif"
+        imageUrl != null -> "image"
+        LocationMessageFormat.parseMapsUrl(content) != null -> "location"
+        else -> "text"
+    }
+    return "message_${kind}_${if (isFromMe) "own" else "other"}"
 }

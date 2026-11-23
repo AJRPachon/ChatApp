@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.chat
 
+import com.ajrpachon.chatapp.ui.common.qaTag
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -166,7 +167,7 @@ internal fun DisappearingModeSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
     ) {
-        Column(modifier = Modifier.padding(bottom = 32.dp)) {
+        Column(modifier = Modifier.padding(bottom = 32.dp).qaTag("disappearing_sheet")) {
             Text(
                 stringResource(R.string.chat_disappearing_mode),
                 style = MaterialTheme.typography.titleMedium,
@@ -179,10 +180,11 @@ internal fun DisappearingModeSheet(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp),
             )
-            options.forEach { (label, seconds) ->
+            options.forEachIndexed { index, (label, seconds) ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .qaTag("disappearing_option_$index")
                         .clickable { onSelect(seconds) }
                         .padding(horizontal = 16.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -193,6 +195,7 @@ internal fun DisappearingModeSheet(
                             Icons.Default.Done,
                             contentDescription = stringResource(R.string.chat_selected),
                             tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.qaTag("disappearing_selected_$index"),
                         )
                     }
                 }
@@ -222,7 +225,8 @@ internal fun AiAssistantSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
-                .padding(bottom = 24.dp),
+                .padding(bottom = 24.dp)
+                .qaTag("ai_sheet"),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
@@ -239,6 +243,7 @@ internal fun AiAssistantSheet(
                     onClick = onSuggestReply,
                     label = { Text(stringResource(R.string.chat_suggest_reply)) },
                     enabled = !isAiLoading,
+                    modifier = Modifier.qaTag("ai_suggest"),
                 )
             }
 
@@ -251,7 +256,7 @@ internal fun AiAssistantSheet(
                 OutlinedTextField(
                     value = freeformText,
                     onValueChange = { freeformText = it },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).qaTag("ai_freeform_field"),
                     placeholder = { Text(stringResource(R.string.chat_ask_question_placeholder)) },
                     singleLine = true,
                     enabled = !isAiLoading,
@@ -264,6 +269,7 @@ internal fun AiAssistantSheet(
                         }
                     },
                     enabled = freeformText.isNotBlank() && !isAiLoading,
+                    modifier = Modifier.qaTag("ai_send"),
                 ) {
                     Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.chat_send_query))
                 }
@@ -291,6 +297,7 @@ internal fun AiAssistantSheet(
                         .padding(12.dp),
                 ) {
                     Text(
+                        modifier = Modifier.qaTag("ai_suggestion_text"),
                         text = aiSuggestion,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -299,7 +306,7 @@ internal fun AiAssistantSheet(
 
                 androidx.compose.material3.Button(
                     onClick = onInsert,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().qaTag("ai_insert"),
                 ) {
                     Text(stringResource(R.string.chat_insert_in_message))
                 }
@@ -336,7 +343,7 @@ internal fun CreatePollSheetContent(
             value = question,
             onValueChange = { question = it },
             label = { Text(stringResource(R.string.chat_question)) },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().qaTag("poll_question_field"),
             singleLine = true,
         )
 
@@ -351,7 +358,7 @@ internal fun CreatePollSheetContent(
                         options = options.toMutableList().also { it[index] = newValue }
                     },
                     label = { Text(stringResource(R.string.chat_option_number, index + 1)) },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).qaTag("poll_option_field_$index"),
                     singleLine = true,
                 )
                 if (options.size > 2) {
@@ -375,6 +382,7 @@ internal fun CreatePollSheetContent(
                 text = stringResource(R.string.chat_add_option),
                 onClick = { options = options + "" },
                 leadingIcon = Icons.Default.Add,
+                modifier = Modifier.qaTag("poll_add_option"),
             )
         }
 
@@ -387,13 +395,17 @@ internal fun CreatePollSheetContent(
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.weight(1f),
             )
-            Switch(checked = allowMultiple, onCheckedChange = { allowMultiple = it })
+            Switch(
+                checked = allowMultiple,
+                onCheckedChange = { allowMultiple = it },
+                modifier = Modifier.qaTag("poll_multiple_switch"),
+            )
         }
 
         androidx.compose.material3.Button(
             onClick = { onCreate(question, options.filter { it.isNotBlank() }, allowMultiple); onDismiss() },
             enabled = isValid,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().qaTag("poll_create_button"),
         ) { Text(stringResource(R.string.chat_create_poll)) }
     }
 }
@@ -401,10 +413,11 @@ internal fun CreatePollSheetContent(
 @Composable
 internal fun ReactionDetailsSheet(
     reactions: List<com.ajrpachon.chatapp.domain.model.ReactionBO>,
+    modifier: Modifier = Modifier,
 ) {
     val grouped = reactions.groupBy { it.emoji }
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .navigationBarsPadding(),
