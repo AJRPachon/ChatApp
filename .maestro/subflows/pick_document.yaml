@@ -1,7 +1,8 @@
 # In the system document picker (DocumentsUI): pick the fixture file whose metadata line matches
 # MATCH (default: the PDF). The picker opens in "Recent", where the file name is only in a content
 # description, but the metadata line ("3:21 p.m., 589 B, Documento PDF" / "PDF document") is
-# visible text in either language.
+# visible text in either language. Tap the whole row (item_root): tapping the metadata text itself
+# opens the file preview instead of selecting it.
 appId: com.ajrpachon.chatapp
 env:
   MATCH: ${MATCH || '.*PDF.*'}
@@ -11,5 +12,6 @@ env:
       text: ${MATCH}
     timeout: 15000
 - tapOn:
-    text: ${MATCH}
-    index: 0
+    id: ".*:id/item_root"
+    containsDescendants:
+      - text: ${MATCH}

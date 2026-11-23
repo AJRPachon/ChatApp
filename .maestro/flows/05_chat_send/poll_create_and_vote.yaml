@@ -3,10 +3,8 @@ appId: com.ajrpachon.chatapp
 name: "05 · Crear encuesta y votar"
 tags:
   - chat
-  - known-bug
-# KNOWN BUG: the poll bubble stays on "Cargando encuesta…" even on the device that created it
-# (and polls have no backend at all, so the other participant can never load it). Excluded by
-# default until fixed; run with -IncludeTags known-bug.
+# Single device only: polls have no backend yet, so the other participant can't load them
+# (see README, known bugs).
 ---
 - runFlow: ../../subflows/open_chat_with_qa2.yaml
 - runFlow:

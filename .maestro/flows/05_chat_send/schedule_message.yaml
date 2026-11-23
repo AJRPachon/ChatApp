@@ -9,8 +9,21 @@ tags:
 - tapOn:
     id: chat_input_field
 - inputText: "sched-${RUN_ID}"
-- longPressOn:
-    id: chat_send_button
+- hideKeyboard
+# The send button moves while the keyboard closes; retry the long press until the picker opens.
+- repeat:
+    while:
+      notVisible:
+        id: schedule_date_next
+    times: 3
+    commands:
+      - longPressOn:
+          id: chat_send_button
+      - extendedWaitUntil:
+          visible:
+            id: schedule_date_next
+          timeout: 4000
+          optional: true
 - tapOn:
     id: schedule_date_next
 - tapOn:

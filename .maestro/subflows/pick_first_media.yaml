@@ -1,5 +1,5 @@
 # In the Android system photo picker: pick the most recent PHOTO (default) or VIDEO (KIND=video),
-# then confirm if the picker is in multi-select mode.
+# then confirm if the picker is in multi-select mode ("Listo" / "Done").
 # The picker is system UI built in Compose without resource ids, so items are matched by their
 # content description, in either system language ("Foto tomado el …" / "Photo taken on …",
 # "Video creado el …" / "Video taken on …").
@@ -32,7 +32,7 @@ env:
 - runFlow:
     when:
       visible:
-        text: "(Añadir|Add).*"
+        text: "(Listo|Done|Añadir|Add)"
     commands:
       - tapOn:
-          text: "(Añadir|Add).*"
+          text: "(Listo|Done|Añadir|Add)"

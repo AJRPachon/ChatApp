@@ -98,9 +98,8 @@ Los resultados (junit, capturas, logcat) quedan en `.maestro/out/<RUN_ID>-<idiom
 | Arreglado | Las zonas táctiles del visor tapaban el texto del estado para TalkBack/automatización |
 | Arreglado | Textos de la hoja de adjuntos y del selector de stickers/GIF sin traducir |
 | Arreglado | Paging del chat: tras cualquier invalidación de Room desaparecían los ~29 mensajes más nuevos (`getRefreshKey` con receta de páginas sobre claves de offset) |
-| Arreglado | El chat no seguía al mensaje más reciente tras la sincronización inicial |
+| Arreglado | El chat no seguía al mensaje más reciente tras la sincronización inicial ni al enviar con la ventana de Paging llena (las burbujas recién enviadas y las encuestas, "Cargando encuesta…", quedaban fuera de vista u obsoletas) |
 | Abierto (`known-bug`) | "Vaciar chat" solo borra Room: al abrir el chat se re-sincroniza y vuelve todo |
-| Abierto (`known-bug`) | La burbuja de encuesta se queda en "Cargando encuesta…" incluso en el dispositivo que la crea |
 | Abierto | Las encuestas son solo locales (`PollRepositoryImpl` no tiene backend): el otro participante ve "Cargando encuesta…" para siempre y los votos no se comparten. Fuera de `group_realtime` hasta que se implemente |
 | Por confirmar | Los estados con imagen se ven en blanco en el visor |
 
