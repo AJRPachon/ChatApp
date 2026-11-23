@@ -246,7 +246,7 @@ val effects: Flow<FooEffect>      // efectos de un solo uso (navegación, toasts
 fun onIntent(intent: FooIntent)   // punto de entrada único para interacciones
 ```
 
-Cada pantalla vive en `ui/<feature>/` con `FooContract.kt` (State/Intent/Effect), `FooViewModel.kt` (extiende `BaseViewModel`) y `FooScreen.kt`. Los ViewModels grandes se dividen en **delegates** en lugar de crecer sin límite: `ChatViewModel` delega en 13 clases `Chat*Delegate` (encuestas, medios, programación de mensajes, recibos de lectura, traducción...) que comparten un `ChatDelegateContext`. El detalle está en [`docs/chat-viewmodel-decomposition.md`](docs/chat-viewmodel-decomposition.md).
+Cada pantalla vive en `ui/<feature>/` con `FooContract.kt` (State/Intent/Effect), `FooViewModel.kt` (extiende `BaseViewModel`) y `FooScreen.kt`. Los ViewModels grandes se dividen en **delegates** en lugar de crecer sin límite: `ChatViewModel` delega en 13 clases `Chat*Delegate` (encuestas, medios, programación de mensajes, recibos de lectura, traducción...) que comparten un `ChatDelegateContext`.
 
 ---
 
@@ -375,19 +375,6 @@ GIPHY_API_KEY=...
 
 ---
 
-## 📚 Documentación adicional
-
-| Documento | Contenido |
-|---|---|
-| [`docs/firebase-setup.md`](docs/firebase-setup.md) | Configuración de Firebase y `google-services.json` |
-| [`docs/release-signing.md`](docs/release-signing.md) | Firma de las builds de release |
-| [`docs/room-schema-history.md`](docs/room-schema-history.md) | Historial del esquema de Room |
-| [`docs/chat-viewmodel-decomposition.md`](docs/chat-viewmodel-decomposition.md) | División de `ChatViewModel` en delegates |
-| [`docs/privacy-policy.md`](docs/privacy-policy.md) | Política de privacidad |
-| [`docs/play-data-safety-form.md`](docs/play-data-safety-form.md) | Respuestas del formulario de seguridad de datos de Google Play |
-
----
-
 ## 🌿 Estructura de ramas (Gitflow)
 
 ```
@@ -404,4 +391,4 @@ master        ← releases estables (v1.0, v1.1…)
 - El CI debe estar en verde en `develop` antes de mergear a `master`.
 - Las ramas anteriores a esta convención usan el prefijo `feature/`.
 
-> **Nota para desarrollo:** las notificaciones push FCM funcionan en emuladores con imagen **Google Play** y Play Services actualizado. El SHA-1 del debug keystore solo es necesario para el inicio de sesión con Google (`./gradlew signingReport`). Si no llega un push, revisa el permiso de notificaciones y que no tengas ese chat abierto; hay más detalles en [`docs/firebase-setup.md`](docs/firebase-setup.md).
+> **Nota para desarrollo:** las notificaciones push FCM funcionan en emuladores con imagen **Google Play** y Play Services actualizado. El SHA-1 del debug keystore solo es necesario para el inicio de sesión con Google (`./gradlew signingReport`). Si no llega un push, revisa el permiso de notificaciones y que no tengas ese chat abierto.
