@@ -2,7 +2,8 @@ name: Claude Code
 
 # Responde a menciones @claude en issues, PRs y comentarios de revisión.
 # Requiere la GitHub App de Claude instalada en el repo (https://github.com/apps/claude)
-# y el secreto ANTHROPIC_API_KEY configurado en Settings → Secrets → Actions.
+# y el secreto CLAUDE_CODE_OAUTH_TOKEN (generado con `claude setup-token`, usa la
+# suscripción Pro/Max) configurado en Settings → Secrets → Actions.
 
 on:
   issue_comment:
@@ -35,6 +36,6 @@ jobs:
 
       - uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           additional_permissions: |
             actions: read
