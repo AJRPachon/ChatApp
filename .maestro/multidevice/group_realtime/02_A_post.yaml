@@ -1,0 +1,15 @@
+# A writes in the group, mentioning B.
+# (Polls are not part of this scenario: they are local-only today — see README, known bugs.)
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- runFlow: ../../subflows/login.yaml
+- runFlow:
+    file: ../../subflows/open_conversation.yaml
+    env:
+      CONTACT: ${QA_GROUP}
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "grpmsg${RUN_ID}"

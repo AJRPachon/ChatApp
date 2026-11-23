@@ -1,10 +1,9 @@
-# A sees B's vote counted in real time.
+# A sees B's answer in the group in real time.
 appId: com.ajrpachon.chatapp
 tags:
   - multidevice
 ---
 - extendedWaitUntil:
     visible:
-      id: "poll_count_X${RUN_ID}"
-      text: "1"
+      text: "grpback${RUN_ID}"
     timeout: 30000

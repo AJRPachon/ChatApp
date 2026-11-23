@@ -209,7 +209,10 @@ fun ChatScreen(
     }
 
     // Subsequent scrolls: new sent messages and incoming messages while near the bottom.
-    LaunchedEffect(lazyPagingItems.itemCount) {
+    // Keyed on the newest message id, not just itemCount: once Paging's loaded window is full,
+    // a new message can shift the window without changing the count, and the effect never ran.
+    val newestMessageId = if (lazyPagingItems.itemCount > 0) lazyPagingItems.peek(0)?.id else null
+    LaunchedEffect(lazyPagingItems.itemCount, newestMessageId) {
         if (!initialScrollDone.value) return@LaunchedEffect
         val count = lazyPagingItems.itemCount
         if (count == 0) return@LaunchedEffect

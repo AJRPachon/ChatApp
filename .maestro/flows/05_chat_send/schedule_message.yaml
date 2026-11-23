@@ -19,8 +19,20 @@ tags:
     visible:
       id: chat_scheduled_icon
     timeout: 15000
-- tapOn:
-    id: chat_scheduled_icon
+# The icon appears while the keyboard is still closing, so the first tap can land mid-layout.
+- repeat:
+    while:
+      notVisible:
+        id: scheduled_sheet
+    times: 3
+    commands:
+      - tapOn:
+          id: chat_scheduled_icon
+      - extendedWaitUntil:
+          visible:
+            id: scheduled_sheet
+          timeout: 4000
+          optional: true
 - assertVisible:
     id: scheduled_sheet
 - assertVisible:

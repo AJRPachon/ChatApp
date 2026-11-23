@@ -1,0 +1,17 @@
+# B receives A's group message in real time, attributed to A, and answers.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- extendedWaitUntil:
+    visible:
+      text: "grpmsg${RUN_ID}"
+    timeout: 30000
+- assertVisible:
+    id: message_text_other
+- assertVisible:
+    text: ${QA_NAME}
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "grpback${RUN_ID}"
