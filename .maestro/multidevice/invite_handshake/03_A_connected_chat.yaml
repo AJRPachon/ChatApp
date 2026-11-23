@@ -1,0 +1,16 @@
+# [D] A now sees @claudeqa2 as connected: tapping the row opens the 1:1 chat.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+  - destructive
+---
+- extendedWaitUntil:
+    notVisible:
+      id: "newchat_pending_sent_${QA2_USERNAME}"
+    timeout: 30000
+- tapOn:
+    id: "newchat_user_row_${QA2_USERNAME}"
+- extendedWaitUntil:
+    visible:
+      id: chat_input_field
+    timeout: 20000

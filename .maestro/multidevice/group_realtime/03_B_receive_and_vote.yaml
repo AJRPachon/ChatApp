@@ -1,0 +1,22 @@
+# B receives A's group message (with sender attribution) and votes in the poll.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- extendedWaitUntil:
+    visible:
+      text: "grpmsg${RUN_ID}"
+    timeout: 30000
+- assertVisible:
+    text: ${QA_NAME}
+- extendedWaitUntil:
+    visible:
+      id: "poll_vote_X${RUN_ID}"
+    timeout: 30000
+- tapOn:
+    id: "poll_vote_X${RUN_ID}"
+- extendedWaitUntil:
+    visible:
+      id: "poll_count_X${RUN_ID}"
+      text: "1"
+    timeout: 15000

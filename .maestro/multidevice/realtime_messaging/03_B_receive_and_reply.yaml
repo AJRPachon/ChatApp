@@ -1,0 +1,31 @@
+# B receives A's message in real time (as an incoming bubble), sees the typing indicator and A
+# online, reacts to it and replies.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- extendedWaitUntil:
+    visible:
+      text: "rt${RUN_ID}"
+    timeout: 30000
+- assertVisible:
+    id: message_text_other
+- extendedWaitUntil:
+    visible:
+      id: typing_indicator
+    timeout: 15000
+- assertVisible:
+    id: chat_presence_subtitle
+- runFlow:
+    file: ../../subflows/long_press_message.yaml
+    env:
+      TEXT: "rt${RUN_ID}"
+- tapOn:
+    id: message_menu_react
+- tapOn:
+    text: "👍"
+    index: 0
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "back${RUN_ID}"

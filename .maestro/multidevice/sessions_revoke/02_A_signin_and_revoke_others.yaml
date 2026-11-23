@@ -1,0 +1,29 @@
+# [D] A signs in with the same account, opens Sessions (two devices) and closes all the others.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+  - destructive
+---
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      LOGIN_EMAIL: ${DISPOSABLE_EMAIL}
+      LOGIN_PASSWORD: ${DISPOSABLE_PASSWORD}
+- tapOn:
+    id: conversation_list_profile_button
+- scrollUntilVisible:
+    element:
+      id: profile_session_audit_row
+    direction: DOWN
+- tapOn:
+    id: profile_session_audit_row
+- extendedWaitUntil:
+    visible:
+      id: session_row_1
+    timeout: 20000
+- tapOn:
+    id: session_revoke_all_others
+- extendedWaitUntil:
+    notVisible:
+      id: session_row_1
+    timeout: 20000

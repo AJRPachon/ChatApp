@@ -1,0 +1,15 @@
+# B rejects the incoming call; the overlay goes away.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- extendedWaitUntil:
+    visible:
+      id: incoming_call_overlay
+    timeout: 45000
+- tapOn:
+    id: incoming_call_reject_button
+- extendedWaitUntil:
+    notVisible:
+      id: incoming_call_overlay
+    timeout: 10000

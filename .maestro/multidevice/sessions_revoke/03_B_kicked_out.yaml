@@ -1,0 +1,11 @@
+# [D] B is sent back to the sign-in screen once its session is revoked (on next resume at most).
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+  - destructive
+---
+- runFlow: ../../subflows/background_resume.yaml
+- extendedWaitUntil:
+    visible:
+      id: auth_email_field
+    timeout: 45000

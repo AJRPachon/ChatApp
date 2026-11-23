@@ -1,22 +1,15 @@
-# In the system document picker (DocumentsUI): open Downloads and pick FILE_NAME (pushed to
-# /sdcard/Download by setup-emulators.ps1).
+# In the system document picker (DocumentsUI): pick the fixture file whose metadata line matches
+# MATCH (default: the PDF). The picker opens in "Recent", where the file name is only in a content
+# description, but the metadata line ("3:21 p.m., 589 B, Documento PDF" / "PDF document") is
+# visible text in either language.
 appId: com.ajrpachon.chatapp
+env:
+  MATCH: ${MATCH || '.*PDF.*'}
 ---
 - extendedWaitUntil:
     visible:
-      text: ".*(Download|Descargas).*"
-    timeout: 15000
-- runFlow:
-    when:
-      notVisible:
-        text: ${FILE_NAME}
-    commands:
-      - tapOn:
-          text: ".*(Download|Descargas).*"
-          index: 0
-- extendedWaitUntil:
-    visible:
-      text: ${FILE_NAME}
+      text: ${MATCH}
     timeout: 15000
 - tapOn:
-    text: ${FILE_NAME}
+    text: ${MATCH}
+    index: 0

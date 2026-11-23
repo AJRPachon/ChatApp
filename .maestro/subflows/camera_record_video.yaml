@@ -1,0 +1,22 @@
+# In the emulator camera app launched for video capture: start recording, wait ~3 s, stop and
+# confirm. System UI: selectors are the camera app's own resource ids.
+appId: com.ajrpachon.chatapp
+---
+- extendedWaitUntil:
+    visible:
+      id: ".*(shutter_button|shutter).*"
+    timeout: 20000
+- tapOn:
+    id: ".*(shutter_button|shutter).*"
+- runFlow:
+    file: wait.yaml
+    env:
+      MS: "3000"
+- tapOn:
+    id: ".*(shutter_button|shutter).*"
+- extendedWaitUntil:
+    visible:
+      id: ".*(done_button|btn_done|confirm).*"
+    timeout: 20000
+- tapOn:
+    id: ".*(done_button|btn_done|confirm).*"

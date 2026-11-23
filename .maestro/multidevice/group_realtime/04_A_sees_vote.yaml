@@ -1,0 +1,10 @@
+# A sees B's vote counted in real time.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- extendedWaitUntil:
+    visible:
+      id: "poll_count_X${RUN_ID}"
+      text: "1"
+    timeout: 30000

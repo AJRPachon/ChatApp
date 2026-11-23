@@ -1,0 +1,13 @@
+# A (@claudeqa) signs in, opens the chat with B and sends a message; leaves "typing…" going.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "rt${RUN_ID}"
+- tapOn:
+    id: chat_input_field
+- inputText: "typing"

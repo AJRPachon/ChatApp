@@ -11,13 +11,17 @@
 .EXAMPLE
   ./run-multidevice.ps1                          # every scenario
   ./run-multidevice.ps1 -Scenario realtime_messaging
+  ./run-multidevice.ps1 -IncludeDestructive      # also invite_handshake / sessions_revoke
 #>
 param(
     [string]$Scenario = '',
     [string]$DeviceA = 'emulator-5554',
     [string]$DeviceB = 'emulator-5556',
     [ValidateSet('es', 'en')][string]$Locale = 'es',
-    [string]$RunId = ''
+    [string]$RunId = '',
+    # Scenarios with a setup.ps1 create disposable accounts (Supabase Admin API, service role key
+    # in .env): skipped unless asked for.
+    [switch]$IncludeDestructive
 )
 . "$PSScriptRoot/common.ps1"
 
@@ -31,6 +35,10 @@ $scenarios = if ($Scenario) { @(Get-Item (Join-Path $scenarioRoot $Scenario)) } 
 $failed = @()
 
 foreach ($sc in $scenarios) {
+    if (-not $Scenario -and -not $IncludeDestructive -and (Test-Path (Join-Path $sc.FullName 'setup.ps1'))) {
+        Write-Host "(omitido $($sc.Name): destructivo, usa -IncludeDestructive)"
+        continue
+    }
     Write-Host "`n=== $($sc.Name) (RUN_ID=$RunId) ==="
     $outDir = Join-Path $script:MaestroRoot "out/$RunId-multidevice/$($sc.Name)"
     New-Item -ItemType Directory -Force $outDir | Out-Null

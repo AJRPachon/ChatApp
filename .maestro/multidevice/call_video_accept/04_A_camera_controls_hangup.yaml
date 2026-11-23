@@ -1,0 +1,25 @@
+# A: camera off/on, flip camera, hang up.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- extendedWaitUntil:
+    visible:
+      id: call_phase_active
+    timeout: 45000
+- tapOn:
+    id: call_flip_button
+- tapOn:
+    id: call_camera_button
+- assertVisible:
+    id: call_camera_button_off
+- tapOn:
+    id: call_camera_button_off
+- assertVisible:
+    id: call_camera_button
+- tapOn:
+    id: call_hangup_button
+- extendedWaitUntil:
+    notVisible:
+      id: call_screen
+    timeout: 20000

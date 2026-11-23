@@ -1,0 +1,27 @@
+# [D] B sees the invitation badge and the received invitation, and accepts it.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+  - destructive
+---
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      LOGIN_EMAIL: ${QA2_EMAIL}
+      LOGIN_PASSWORD: ${QA2_PASSWORD}
+- extendedWaitUntil:
+    visible:
+      id: invitations_badge
+    timeout: 30000
+- tapOn:
+    id: conversation_list_invitations_button
+- extendedWaitUntil:
+    visible:
+      id: "invitation_accept_${DISPOSABLE_USERNAME}"
+    timeout: 20000
+- tapOn:
+    id: "invitation_accept_${DISPOSABLE_USERNAME}"
+- extendedWaitUntil:
+    notVisible:
+      id: "invitation_accept_${DISPOSABLE_USERNAME}"
+    timeout: 20000

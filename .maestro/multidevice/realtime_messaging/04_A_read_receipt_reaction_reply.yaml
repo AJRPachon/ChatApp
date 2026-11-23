@@ -1,0 +1,41 @@
+# A sees B's reply, the read tick on its own message and B's reaction; then edits and deletes a
+# message so B can check the propagation.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- tapOn:
+    id: chat_input_field
+- eraseText
+- extendedWaitUntil:
+    visible:
+      text: "back${RUN_ID}"
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      id: message_status_read
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      id: message_reaction_chip
+    timeout: 30000
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "toedit${RUN_ID}"
+- runFlow:
+    file: ../../subflows/long_press_message.yaml
+    env:
+      TEXT: "toedit${RUN_ID}"
+- tapOn:
+    id: message_menu_edit
+- tapOn:
+    id: chat_input_field
+- eraseText
+- inputText: "edited${RUN_ID}"
+- tapOn:
+    id: chat_send_button
+- extendedWaitUntil:
+    visible:
+      text: "edited${RUN_ID}"
+    timeout: 15000

@@ -1,0 +1,15 @@
+# A's call ends on its own after the rejection and the call bubble is shown in the chat.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- extendedWaitUntil:
+    visible:
+      id: "call_phase_ended|chat_input_field"
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      id: chat_input_field
+    timeout: 20000
+- assertVisible:
+    id: message_call_own

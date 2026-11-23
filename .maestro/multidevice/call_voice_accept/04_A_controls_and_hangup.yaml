@@ -1,0 +1,37 @@
+# A sees the call active, mutes / unmutes the mic, opens and cancels the screen-share prompt, and
+# hangs up; the call bubble appears in the chat.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- extendedWaitUntil:
+    visible:
+      id: call_phase_active
+    timeout: 45000
+- tapOn:
+    id: call_mic_button
+- assertVisible:
+    id: call_mic_button_muted
+- tapOn:
+    id: call_mic_button_muted
+- assertVisible:
+    id: call_mic_button
+- tapOn:
+    id: call_screen_share_button
+- runFlow:
+    when:
+      visible:
+        text: "(Cancelar|Cancel)"
+    commands:
+      - tapOn:
+          text: "(Cancelar|Cancel)"
+- tapOn:
+    id: call_hangup_button
+- extendedWaitUntil:
+    notVisible:
+      id: call_screen
+    timeout: 20000
+- extendedWaitUntil:
+    visible:
+      id: message_call_own
+    timeout: 20000

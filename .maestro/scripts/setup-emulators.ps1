@@ -46,13 +46,15 @@ foreach ($d in $Devices) {
     }
 
     # Device contact "QA Contact" for the contact-picker flows (attach contact, new chat contacts).
-    $existing = Invoke-Adb $d shell content query --uri content://com.android.contacts/data --projection data1 --where "data1='QA Contact'"
+    # Each `content` command goes to `adb shell` as ONE string: split arguments lose the quoting
+    # of the value and the rows are silently created empty.
+    $existing = Invoke-Adb $d shell "content query --uri content://com.android.contacts/contacts --projection display_name"
     if (-not ($existing -match 'QA Contact')) {
-        Invoke-Adb $d shell content insert --uri content://com.android.contacts/raw_contacts --bind account_type:n: --bind account_name:n: | Out-Null
-        $rawId = ((Invoke-Adb $d shell content query --uri content://com.android.contacts/raw_contacts --projection _id --sort '_id DESC') |
+        Invoke-Adb $d shell "content insert --uri content://com.android.contacts/raw_contacts --bind account_type:n: --bind account_name:n:" | Out-Null
+        $rawId = ((Invoke-Adb $d shell "content query --uri content://com.android.contacts/raw_contacts --projection _id --sort '_id DESC'") |
             Select-Object -First 1) -replace '.*_id=(\d+).*', '$1'
-        Invoke-Adb $d shell content insert --uri content://com.android.contacts/data --bind raw_contact_id:i:$rawId --bind mimetype:s:vnd.android.cursor.item/name --bind data1:s:'QA Contact' | Out-Null
-        Invoke-Adb $d shell content insert --uri content://com.android.contacts/data --bind raw_contact_id:i:$rawId --bind mimetype:s:vnd.android.cursor.item/phone_v2 --bind data1:s:'+34600000000' --bind data2:i:2 | Out-Null
+        Invoke-Adb $d shell "content insert --uri content://com.android.contacts/data --bind raw_contact_id:i:$rawId --bind mimetype:s:vnd.android.cursor.item/name --bind data1:s:'QA Contact'" | Out-Null
+        Invoke-Adb $d shell "content insert --uri content://com.android.contacts/data --bind raw_contact_id:i:$rawId --bind mimetype:s:vnd.android.cursor.item/phone_v2 --bind data1:s:+34600000000 --bind data2:i:2" | Out-Null
         Write-Host '  contacto "QA Contact" creado'
     }
 

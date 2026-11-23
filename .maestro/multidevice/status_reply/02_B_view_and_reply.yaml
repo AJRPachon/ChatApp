@@ -1,0 +1,39 @@
+# B sees A's status avatar, opens it, finds the new story and replies; the reply opens the 1:1 chat.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      LOGIN_EMAIL: ${QA2_EMAIL}
+      LOGIN_PASSWORD: ${QA2_PASSWORD}
+- extendedWaitUntil:
+    visible:
+      id: "status_avatar_${QA_NAME}"
+    timeout: 30000
+- tapOn:
+    id: "status_avatar_${QA_NAME}"
+- extendedWaitUntil:
+    visible:
+      id: status_viewer
+    timeout: 15000
+- repeat:
+    while:
+      notVisible:
+        text: ".*story${RUN_ID}.*"
+    times: 20
+    commands:
+      - tapOn:
+          id: status_viewer_next_zone
+- tapOn:
+    id: status_reply_field
+- inputText: "reply${RUN_ID}"
+- tapOn:
+    id: status_reply_send_button
+- extendedWaitUntil:
+    visible:
+      id: chat_input_field
+    timeout: 20000
+- assertVisible:
+    text: "reply${RUN_ID}"

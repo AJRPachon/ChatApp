@@ -1,0 +1,13 @@
+# B sees A's edit (new text + "edited" label) without reopening the chat.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- extendedWaitUntil:
+    visible:
+      text: "edited${RUN_ID}"
+    timeout: 30000
+- assertVisible:
+    id: message_edited_label
+- assertNotVisible:
+    text: "toedit${RUN_ID}"

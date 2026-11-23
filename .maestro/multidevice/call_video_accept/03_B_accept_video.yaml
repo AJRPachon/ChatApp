@@ -1,0 +1,21 @@
+# B sees a *video* call, accepts it and receives A's camera feed.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- extendedWaitUntil:
+    visible:
+      id: incoming_call_overlay
+    timeout: 45000
+- assertVisible:
+    id: incoming_call_type_video
+- tapOn:
+    id: incoming_call_accept_button
+- extendedWaitUntil:
+    visible:
+      id: call_phase_active
+    timeout: 45000
+- extendedWaitUntil:
+    visible:
+      id: call_remote_video
+    timeout: 30000

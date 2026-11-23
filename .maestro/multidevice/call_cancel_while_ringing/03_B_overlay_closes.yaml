@@ -1,0 +1,11 @@
+# The incoming-call overlay on B closes by itself once A cancels (no orphan "ringing" screen).
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- extendedWaitUntil:
+    notVisible:
+      id: incoming_call_overlay
+    timeout: 30000
+- assertVisible:
+    id: conversation_list_new_chat_fab

@@ -1,6 +1,7 @@
-# Attach > Video: pick the fixture video from the photo picker; an own video bubble appears.
+# Attach > Video records a clip with the camera app (CaptureVideo, not a picker); an own video
+# bubble appears.
 appId: com.ajrpachon.chatapp
-name: "05 · Enviar vídeo"
+name: "05 · Grabar y enviar vídeo"
 tags:
   - chat
   - slow
@@ -10,11 +11,8 @@ tags:
     file: ../../subflows/open_attach.yaml
     env:
       ITEM: attach_video
-- runFlow:
-    file: ../../subflows/pick_first_media.yaml
-    env:
-      KIND: video
+- runFlow: ../../subflows/camera_record_video.yaml
 - extendedWaitUntil:
     visible:
       id: message_video_own
-    timeout: 60000
+    timeout: 90000
