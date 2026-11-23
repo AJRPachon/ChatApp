@@ -93,23 +93,6 @@ internal fun ChatTopBar(
     onScrollToMessage: (String) -> Unit,
 ) {
     Column {
-        if (state.incognito.isIncognito) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(IncognitoBannerBackground)
-                    .padding(horizontal = 16.dp, vertical = 6.dp)
-                    .testTag("incognito_banner"),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-            ) {
-                Text(
-                    text = stringResource(R.string.chat_incognito_banner),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.White,
-                )
-            }
-        }
         if (state.isMultiSelectActive) {
             TopAppBar(
                 navigationIcon = {
@@ -411,6 +394,25 @@ internal fun ChatTopBar(
                 }
             },
         )
+        // Below the TopAppBar (which owns the status-bar inset): above it, the banner was drawn
+        // underneath the status bar, over the clock and icons.
+        if (state.incognito.isIncognito) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(IncognitoBannerBackground)
+                    .padding(horizontal = 16.dp, vertical = 6.dp)
+                    .testTag("incognito_banner"),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                Text(
+                    text = stringResource(R.string.chat_incognito_banner),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White,
+                )
+            }
+        }
         if (latestPinned != null && pinnedBannerVisible) {
             PinnedMessageBanner(
                 message = latestPinned,

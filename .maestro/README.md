@@ -96,6 +96,7 @@ Los resultados (junit, capturas, logcat) quedan en `.maestro/out/<RUN_ID>-<idiom
 |---|---|
 | Arreglado | `NetworkMonitor` no detectaba el modo avión (re-consultaba `activeNetwork` en `onLost`) |
 | Arreglado | El banner "Sin conexión" se pintaba debajo de la barra de estado |
+| Arreglado | El aviso de modo incógnito del chat también se pintaba debajo de la barra de estado |
 | Arreglado | El visor de estados se cerraba solo al abrirlo mientras cargaba |
 | Arreglado | Las zonas táctiles del visor tapaban el texto del estado para TalkBack/automatización |
 | Arreglado | Textos de la hoja de adjuntos y del selector de stickers/GIF sin traducir |

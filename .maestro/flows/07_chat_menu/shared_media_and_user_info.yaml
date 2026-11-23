@@ -26,8 +26,7 @@ tags:
       - assertVisible:
           id: fullscreen_viewer
       - back
-- tapOn:
-    id: chat_app_top_bar_back_button
+- back
 - tapOn:
     id: chat_top_bar_title
 - assertVisible:
