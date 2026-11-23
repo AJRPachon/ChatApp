@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -187,7 +186,7 @@ internal fun StickerTabContent(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                itemsIndexed(stickers, key = { _, it -> it.id }) { index, sticker ->
+                itemsIndexed(stickers, key = { _, item -> item.id }) { index, sticker ->
                     AsyncImage(
                         model = sticker.imageUrl,
                         contentDescription = sticker.tags,
@@ -269,7 +268,7 @@ internal fun GifTabContent(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                itemsIndexed(state.gifs, key = { _, it -> it.previewUrl }) { index, gif ->
+                itemsIndexed(state.gifs, key = { _, item -> item.previewUrl }) { index, gif ->
                     AsyncImage(
                         model = gif.previewUrl,
                         contentDescription = stringResource(R.string.chat_gif_content_description),

@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -253,7 +252,7 @@ internal fun ChatDialogHost(
                 }
             } else {
                 LazyColumn {
-                    itemsIndexed(state.scheduling.messages, key = { _, it -> it.id }) { index, msg ->
+                    itemsIndexed(state.scheduling.messages, key = { _, item -> item.id }) { index, msg ->
                         val formatter = remember { java.text.SimpleDateFormat("dd MMM HH:mm", java.util.Locale.getDefault()) }
                         Row(
                             modifier = Modifier

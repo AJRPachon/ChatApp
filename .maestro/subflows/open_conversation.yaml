@@ -1,0 +1,14 @@
+# From the conversation list, open the chat whose row title is CONTACT (display name or group name).
+appId: com.ajrpachon.chatapp
+---
+- scrollUntilVisible:
+    element:
+      id: "conversation_row_${CONTACT}"
+    direction: DOWN
+    timeout: 20000
+- tapOn:
+    id: "conversation_row_${CONTACT}"
+- extendedWaitUntil:
+    visible:
+      id: chat_input_field
+    timeout: 15000

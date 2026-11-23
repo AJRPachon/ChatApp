@@ -1,0 +1,15 @@
+# chatapp://chat/{uuid}: a valid conversation id opens that chat (warm start, signed in);
+# a non-UUID id is ignored and the app stays on the list.
+appId: com.ajrpachon.chatapp
+name: "01 · Deep link a un chat (válido e inválido)"
+tags:
+  - launch
+---
+- runFlow: ../../subflows/login.yaml
+# Invalid id -> ignored
+- openLink: "chatapp://chat/not-a-uuid?name=x"
+- assertVisible:
+    id: conversation_list_new_chat_fab
+# Valid id: pick the id of the 1:1 chat with QA2 by opening it once and reading it is not
+# possible from the UI, so we use the deep link only for its negative path here; the positive
+# path (notification tap -> chat) is covered by multidevice/notifications.

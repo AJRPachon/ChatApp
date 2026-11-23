@@ -1,0 +1,8 @@
+# Send the app to background for a few seconds and bring it back (no state clearing).
+appId: com.ajrpachon.chatapp
+---
+- pressKey: Home
+- waitForAnimationToEnd:
+    timeout: 3000
+- launchApp:
+    stopApp: false

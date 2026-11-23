@@ -1,0 +1,9 @@
+# Inside a chat: long-press the message whose text is TEXT (opens the message context menu).
+appId: com.ajrpachon.chatapp
+---
+- longPressOn:
+    text: ${TEXT}
+- extendedWaitUntil:
+    visible:
+      id: message_menu_copy
+    timeout: 5000

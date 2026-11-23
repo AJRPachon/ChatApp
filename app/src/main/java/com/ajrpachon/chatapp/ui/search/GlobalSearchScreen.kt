@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
@@ -222,7 +221,7 @@ private fun ResultsList(
 ) {
     val dateFormat = remember { SimpleDateFormat("dd MMM HH:mm", Locale.getDefault()) }
     LazyColumn {
-        itemsIndexed(results, key = { _, it -> it.messageId }) { index, result ->
+        itemsIndexed(results, key = { _, item -> item.messageId }) { index, result ->
             Column(
                 modifier = Modifier
                     .fillMaxWidth()

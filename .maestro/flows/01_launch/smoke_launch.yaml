@@ -1,0 +1,12 @@
+# [S] Cold start on a clean install reaches the sign-in screen.
+appId: com.ajrpachon.chatapp
+name: "01 · Arranque limpio llega al login"
+tags:
+  - smoke
+  - launch
+---
+- runFlow: ../../subflows/launch_clean.yaml
+- assertVisible:
+    id: auth_email_field
+- assertVisible:
+    id: auth_submit_button

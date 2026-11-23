@@ -1,0 +1,23 @@
+# Fresh launch: clears app data, grants every runtime permission, and gets past the
+# first-launch dialogs (root warning on test-keys emulator images). Fails loudly if
+# Play Integrity returned "Failed" — there is no bypass by design.
+appId: com.ajrpachon.chatapp
+---
+- launchApp:
+    clearState: true
+    permissions:
+      all: allow
+- extendedWaitUntil:
+    visible:
+      id: "auth_email_field|conversation_list_new_chat_fab|root_warning_continue_button|integrity_blocked_screen"
+    timeout: 45000
+- runFlow:
+    when:
+      visible:
+        id: root_warning_continue_button
+    commands:
+      - tapOn:
+          id: root_warning_continue_button
+- assertNotVisible:
+    id: integrity_blocked_screen
+    label: "Play Integrity bloquea la app en este dispositivo (IntegrityBlockedScreen)"

@@ -1,0 +1,8 @@
+# Maestro workspace config — see README.md.
+# Single-device suite: every flow under flows/. Multi-device scenarios (multidevice/) are run by
+# scripts/run-multidevice.ps1; destructive flows need disposable accounts (scripts/qa-accounts.ps1).
+flows:
+  - "flows/**"
+excludeTags:
+  - multidevice
+  - destructive

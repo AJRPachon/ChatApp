@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.profile
 
+import com.ajrpachon.chatapp.ui.debugmenu.DebugMenu
 import com.ajrpachon.chatapp.ui.common.qaTag
 import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -100,6 +101,7 @@ fun ProfileScreen(
     onSignOut: () -> Unit,
     onBackup: () -> Unit = {},
     onSessionAudit: () -> Unit = {},
+    onDebugMenu: () -> Unit = {},
 ) {
     val vm: ProfileViewModel = koinViewModel()
     val state by vm.state.collectAsStateWithLifecycle()
@@ -206,6 +208,7 @@ fun ProfileScreen(
         onSignOutClick = vm::signOut,
         onSignOutAllClick = vm::requestSignOutAll,
         onDeleteAccountClick = vm::requestDeleteAccount,
+        onDebugMenu = onDebugMenu,
     )
 }
 
@@ -222,6 +225,7 @@ fun ProfileContent(
     onSignOutClick: () -> Unit,
     onSignOutAllClick: () -> Unit,
     onDeleteAccountClick: () -> Unit,
+    onDebugMenu: () -> Unit = {},
 ) {
     var showQrSheet by remember { mutableStateOf(false) }
     val qrSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -714,6 +718,9 @@ fun ProfileContent(
                     }
                 }
             }
+
+            // Debug builds only: entry to the QA menu (no-op object in release/benchmark).
+            DebugMenu.ProfileEntry(onClick = onDebugMenu)
 
             Spacer(Modifier.size(24.dp))
             Spacer(Modifier.weight(1f))

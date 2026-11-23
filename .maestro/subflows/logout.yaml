@@ -1,0 +1,15 @@
+# From the conversation list: Profile -> Sign out -> back on the auth screen.
+appId: com.ajrpachon.chatapp
+---
+- tapOn:
+    id: conversation_list_profile_button
+- scrollUntilVisible:
+    element:
+      id: profile_sign_out_button
+    direction: DOWN
+- tapOn:
+    id: profile_sign_out_button
+- extendedWaitUntil:
+    visible:
+      id: auth_email_field
+    timeout: 20000
