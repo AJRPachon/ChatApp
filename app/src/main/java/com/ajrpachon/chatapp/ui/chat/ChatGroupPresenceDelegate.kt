@@ -23,8 +23,8 @@ private const val ONLINE_STATUS_REFRESH_INTERVAL_MS = 15_000L
  * each member's online status (for `onlineMemberCount`/`memberCount`), and reacting when the
  * current user joins or leaves the group.
  *
- * Row 9 of docs/chat-viewmodel-decomposition.md — deliberately last and separately designed
- * (unlike delegates 1-8c). Two things keep this from being a mechanical move:
+ * Deliberately last and separately designed (unlike the other delegates). Two things keep
+ * this from being a mechanical move:
  *
  * - Unlike the intent-driven delegates, nothing dispatches this from `onIntent` — [start] is
  *   called once from ChatViewModel's `init`, only for group conversations, mirroring the

@@ -60,7 +60,7 @@ android {
     }
     // Whether we actually have a usable upload keystore (local.properties or CI secrets).
     // Contributors/CI without one still build debug and an *unsigned* release APK — only
-    // assembling a real signed release/bundle needs this, per docs/release-signing.md.
+    // assembling a real signed release/bundle needs this.
     val hasReleaseSigning = releaseStoreFilePath.isNotBlank()
 
     signingConfigs {

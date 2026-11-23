@@ -67,8 +67,7 @@ private fun MessageBO.isGroupableImage(): Boolean = imageUrl != null && audioUrl
 /**
  * [ChatScreen]'s `Scaffold` content: the message list itself (paged, with the pending-image-
  * batch placeholder and image-group/suppressed-message logic), the loading skeleton, the
- * scroll-to-bottom FAB, and the search overlay. Extracted per
- * docs/chat-viewmodel-decomposition.md Phase 2.
+ * scroll-to-bottom FAB, and the search overlay.
  *
  * [viewerUrls]/[viewerInitialIndex]/[showViewer]/[reactionDetailMessageId] are [MutableState]
  * because [ChatDialogHost] (rendered elsewhere in ChatScreen) owns the image viewer and

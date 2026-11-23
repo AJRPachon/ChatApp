@@ -48,7 +48,7 @@ import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 /**
  * Every dialog/bottom-sheet that [ChatScreen] shows conditionally on a `state.showX` (or local
  * one-off) flag, in one place, instead of ~20 independent `if` blocks inline in the screen's own
- * body. Extracted per docs/chat-viewmodel-decomposition.md Phase 2.
+ * body.
  *
  * [showDeleteSelectionConfirm]/[showViewer]/[viewerUrls]/[viewerInitialIndex]/
  * [reactionDetailMessageId] are [MutableState] rather than plain values + callbacks because

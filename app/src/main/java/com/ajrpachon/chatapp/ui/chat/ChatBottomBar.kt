@@ -40,8 +40,7 @@ import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 /**
  * [ChatScreen]'s `Scaffold.bottomBar`: the offline banner, editing/reply preview strips, the
  * typing indicator, the group `@mention` suggestions, and the recording/audio-preview/normal-input
- * switch. Extracted per
- * docs/chat-viewmodel-decomposition.md Phase 2.
+ * switch.
  *
  * The attachment-picker callbacks ([onGallery]/[onCamera]/[onMic]/[onAttachFile]/
  * [onAttachVideo]/[onLocation]/[onContact]) are pre-built closures from [ChatScreen] rather than

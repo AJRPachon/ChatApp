@@ -18,8 +18,7 @@ private const val TAG = "ChatForwardDelegate"
 
 /**
  * Handles forwarding: a single message (forward dialog) or a multi-select batch (forward
- * selection dialog). Fifth slice of the decomposition in docs/chat-viewmodel-decomposition.md —
- * see [ChatAiDelegate] for the pattern this follows.
+ * selection dialog). See [ChatAiDelegate] for the pattern this follows.
  */
 class ChatForwardDelegate(
     private val conversationId: String,

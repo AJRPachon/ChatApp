@@ -98,7 +98,7 @@ private fun rememberMentionHighlighted(text: String): AnnotatedString = remember
 }
 
 // ── Shared bubble content ────────────────────────────────────────────────────
-// Extracted per docs/chat-viewmodel-decomposition.md Phase 2 — part of the message-bubble
+// Part of the message-bubble
 // rendering tree, rendered from MessageBubble.kt.
 
 /**

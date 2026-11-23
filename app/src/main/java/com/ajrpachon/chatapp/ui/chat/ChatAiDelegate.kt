@@ -9,8 +9,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Handles the AI-assistant sheet (summarize / suggest-reply / freeform prompt) — the first
- * concern extracted out of ChatViewModel's flat method list. See
- * docs/chat-viewmodel-decomposition.md for the migration plan this follows.
+ * concern extracted out of ChatViewModel's flat method list.
  *
  * [ChatState]/[ChatIntent] are unchanged: this delegate only ever produces a new state via
  * [context]'s `updateState` (bound to `BaseViewModel.updateState`), the same `.copy()` pattern

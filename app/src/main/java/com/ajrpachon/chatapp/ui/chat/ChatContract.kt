@@ -29,8 +29,7 @@ data class ContactPhoneLookup(
 )
 
 /**
- * Contact-card relationship lookups, owned by [ChatContactCardDelegate]. Sixth of the nested
- * groups in docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan.
+ * Contact-card relationship lookups, owned by [ChatContactCardDelegate].
  */
 data class ChatContactCardUiState(
     // Keyed by phone (see ContactPhoneLookup doc).
@@ -39,8 +38,7 @@ data class ChatContactCardUiState(
 
 /**
  * In-conversation message search + jump-to-message highlighting, owned by
- * [ChatSearchDelegate]. Seventh of the nested groups in
- * docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan.
+ * [ChatSearchDelegate].
  *
  * [highlightedMessageId] lives here (not a separate top-level field) because it's only ever
  * set by [ChatSearchDelegate.jumpToMessage] — reached both from a tapped search result and
@@ -58,9 +56,7 @@ data class ChatSearchUiState(
 )
 
 /**
- * Image-batch/file/video upload state, owned by [ChatMediaUploadDelegate]. Eighth of the
- * nested groups in docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent"
- * plan.
+ * Image-batch/file/video upload state, owned by [ChatMediaUploadDelegate].
  *
  * [isUploadingFile] covers `sendFile`/`sendVideo` (a single upload, no per-item progress);
  * [progress]/[pendingImageUris]/[suppressedImageMessageIds] cover `sendImages` (a batch, with
@@ -101,8 +97,7 @@ data class MediaUploadProgress(
 )
 
 /**
- * AI-assistant sheet state, owned by [ChatAiDelegate]. First of the nested groups in
- * docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan.
+ * AI-assistant sheet state, owned by [ChatAiDelegate].
  */
 data class ChatAiUiState(
     val showSheet: Boolean = false,
@@ -111,24 +106,20 @@ data class ChatAiUiState(
 )
 
 /**
- * Per-message translation/transcription state, owned by [ChatTranslationDelegate]. Second of
- * the nested groups in docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent"
- * plan.
+ * Per-message translation/transcription state, owned by [ChatTranslationDelegate].
  */
 data class ChatTranslationUiState(
     // messageId → translated text
     val translatedTexts: Map<String, String> = emptyMap(),
     val translatingMessageIds: Set<String> = emptySet(),
     // messageId → transcribed text. No UI reads this yet, and the delegate that populates it
-    // has a real bug (transcribes the live mic, not the message's audio) — see
-    // docs/audio-transcription-todo.md before building UI on top of this field.
+    // has a real bug (transcribes the live mic, not the message's audio) — fix that
+    // before building UI on top of this field.
     val transcriptions: Map<String, UiText> = emptyMap(),
 )
 
 /**
- * Poll creation-sheet visibility + per-poll observed data, owned by [ChatPollDelegate]. Third
- * of the nested groups in docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/
- * ChatIntent" plan.
+ * Poll creation-sheet visibility + per-poll observed data, owned by [ChatPollDelegate].
  */
 data class ChatPollFeatureState(
     val showCreateSheet: Boolean = false,
@@ -138,8 +129,7 @@ data class ChatPollFeatureState(
 
 /**
  * Scheduled-message dialog/sheet visibility + the live list, owned by
- * [ChatSchedulingDelegate]. Fourth of the nested groups in
- * docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan.
+ * [ChatSchedulingDelegate].
  *
  * [scheduledAtMs] is set by [ChatSchedulingDelegate.scheduleMessage] and read back by that same
  * function to format the "Mensaje programado para HH:mm" confirmation snackbar.
@@ -154,8 +144,7 @@ data class ChatSchedulingUiState(
 
 /**
  * Single-message forward dialog + multi-select forward-selection dialog, owned by
- * [ChatForwardDelegate]. Fifth of the nested groups in
- * docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan.
+ * [ChatForwardDelegate].
  *
  * [conversations] is shared by both dialogs (only one is ever shown at a time, per
  * [ChatForwardDelegate]) rather than duplicated per-dialog.
@@ -168,9 +157,8 @@ data class ChatForwardUiState(
 )
 
 /**
- * Live group-member presence, owned by [ChatGroupPresenceDelegate]. Tenth of the nested groups
- * in docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan (there is no
- * ninth row here — `audioState`/[AudioState] was already grouped before this plan started).
+ * Live group-member presence, owned by [ChatGroupPresenceDelegate]. `audioState`/[AudioState]
+ * is grouped separately.
  *
  * Deliberately narrow: `isGroup`/`isCurrentUserMember`/`groupAvatarUrl` stay flat on
  * [ChatState] — they're conversation identity set once from `conversationRepository` in
@@ -186,8 +174,7 @@ data class ChatGroupPresenceUiState(
 
 /**
  * Mute state + its confirmation dialog, owned directly by `ChatViewModel` (no delegate — see
- * `toggleMute`/`muteFor`). Eleventh of the nested groups in
- * docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan.
+ * `toggleMute`/`muteFor`).
  */
 data class ChatMuteUiState(
     val isMuted: Boolean = false,
@@ -199,8 +186,7 @@ data class ChatMuteUiState(
 /**
  * Chat wallpaper theme (colors, bubble style) + its picker sheet, owned directly by
  * `ChatViewModel` (no delegate — set via `setChatTheme`, observed from `chatThemeRepository`
- * in `init`). Twelfth of the nested groups in docs/chat-viewmodel-decomposition.md's
- * "Shrinking ChatState/ChatIntent" plan.
+ * in `init`).
  */
 data class ChatThemeUiState(
     val theme: ChatTheme = ChatTheme.DEFAULT,
@@ -209,8 +195,7 @@ data class ChatThemeUiState(
 
 /**
  * Disappearing-messages mode + its picker sheet, owned directly by `ChatViewModel` (no
- * delegate — set via `setDisappearingMode`). Thirteenth of the nested groups in
- * docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan.
+ * delegate — set via `setDisappearingMode`).
  */
 data class ChatDisappearingUiState(
     // 0 = off, >0 = seconds for new messages to auto-expire
@@ -221,8 +206,7 @@ data class ChatDisappearingUiState(
 /**
  * Incognito mode (messages not persisted to local Room DB) + its explanatory confirm dialog,
  * owned directly by `ChatViewModel` (no delegate — `toggleIncognito`/`confirmIncognito`,
- * `isIncognito` itself observed from `incognitoRepository` in `init`). Fifteenth of the nested
- * groups in docs/chat-viewmodel-decomposition.md's "Shrinking ChatState/ChatIntent" plan.
+ * `isIncognito` itself observed from `incognitoRepository` in `init`).
  */
 data class ChatIncognitoUiState(
     val isIncognito: Boolean = false,
@@ -232,8 +216,6 @@ data class ChatIncognitoUiState(
 /**
  * Chat wallpaper color + its picker sheet, owned directly by `ChatViewModel` (no delegate —
  * `SetWallpaperColor` writes straight through `wallpaperRepository`, observed back in `init`).
- * Sixteenth and last of the nested groups in docs/chat-viewmodel-decomposition.md's "Shrinking
- * ChatState/ChatIntent" plan.
  */
 data class ChatWallpaperUiState(
     val color: Long? = null,
