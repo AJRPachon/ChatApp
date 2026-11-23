@@ -28,9 +28,9 @@ tags:
       TEXT: "edit-${RUN_ID}"
 - tapOn:
     id: message_menu_edit
-- tapOn:
-    id: chat_input_field
-- eraseText
+# Don't tap the field: Edit already focuses it with the cursor at the end, while a tap moves the
+# cursor to the tap point and eraseText (backspaces) would leave the characters after it.
+- eraseText: 60
 - inputText: "edited-${RUN_ID}"
 - tapOn:
     id: chat_send_button

@@ -71,6 +71,8 @@ Los resultados (junit, capturas, logcat) quedan en `.maestro/out/<RUN_ID>-<idiom
   seguidas de espacio ("Tmp 123" acabó siendo "Temp 123").
 - Para salir de un chat: `tapOn: id: chat_back_button` (un `back` con el teclado abierto solo lo cierra).
 - Nombres de flow sin `: / \ * ? < > |` (Maestro crea carpetas con ellos y en Windows falla).
+- **Selectores solo en ASCII**: en Windows Maestro lee mal emojis y acentos del YAML ("👍" llegaba
+  como "?"). Para emojis se usa `emoji_item_<n>`; en regex, `.` en lugar de la letra acentuada.
 - Tags transversales: `smoke`, `slow`, `multidevice`, `destructive`, `known-bug`.
 
 ## Peculiaridades del entorno

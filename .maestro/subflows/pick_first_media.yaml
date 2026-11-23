@@ -13,10 +13,10 @@ env:
     commands:
       - extendedWaitUntil:
           visible:
-            text: "(V[ií]deo|Video) .*"
+            text: "(V.deo|Video) .*"
           timeout: 15000
       - tapOn:
-          text: "(V[ií]deo|Video) .*"
+          text: "(V.deo|Video) .*"
           index: 0
 - runFlow:
     when:
@@ -32,7 +32,7 @@ env:
 - runFlow:
     when:
       visible:
-        text: "(Listo|Done|Añadir|Add)"
+        text: "(Listo|Done|A.adir|Add)"
     commands:
       - tapOn:
-          text: "(Listo|Done|Añadir|Add)"
+          text: "(Listo|Done|A.adir|Add)"

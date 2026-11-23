@@ -7,9 +7,11 @@ tags:
 - runFlow: ../../subflows/login.yaml
 - tapOn:
     id: conversation_list_profile_button
+# Tap the right edge so the cursor lands at the end of the existing text before erasing.
 - tapOn:
     id: profile_display_name_field
-- eraseText
+    point: "95%,50%"
+- eraseText: 60
 - inputText: "qaname${RUN_ID}"
 - pressKey: Enter
 - back
@@ -17,9 +19,11 @@ tags:
     id: conversation_list_profile_button
 - assertVisible:
     text: "qaname${RUN_ID}"
+# Tap the right edge so the cursor lands at the end of the existing text before erasing.
 - tapOn:
     id: profile_display_name_field
-- eraseText
+    point: "95%,50%"
+- eraseText: 60
 - inputText: ${QA_NAME}
 - pressKey: Enter
 - back

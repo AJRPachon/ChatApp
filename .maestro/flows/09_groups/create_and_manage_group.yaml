@@ -20,9 +20,11 @@ tags:
     id: group_info_menu
 - tapOn:
     id: group_info_edit
+# Tap the right edge so the cursor lands at the end of the existing text before erasing.
 - tapOn:
     id: group_edit_name
-- eraseText
+    point: "95%,50%"
+- eraseText: 60
 - inputText: "grpedit${RUN_ID}"
 - tapOn:
     id: group_edit_description

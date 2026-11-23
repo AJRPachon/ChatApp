@@ -23,8 +23,7 @@ tags:
 - tapOn:
     id: message_menu_react
 - tapOn:
-    text: "👍"
-    index: 0
+    id: emoji_item_0
 - runFlow:
     file: ../../subflows/send_text.yaml
     env:
