@@ -1,0 +1,28 @@
+# Fixture (idempotent): B accepts A's invitation if there is one.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+  - fixture
+---
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      LOGIN_EMAIL: ${QA2_EMAIL}
+      LOGIN_PASSWORD: ${QA2_PASSWORD}
+- tapOn:
+    id: conversation_list_invitations_button
+- extendedWaitUntil:
+    visible:
+      id: "invitations_empty|invitation_row_.*"
+    timeout: 20000
+- runFlow:
+    when:
+      visible:
+        id: "invitation_accept_${QA_USERNAME}"
+    commands:
+      - tapOn:
+          id: "invitation_accept_${QA_USERNAME}"
+      - extendedWaitUntil:
+          notVisible:
+            id: "invitation_accept_${QA_USERNAME}"
+          timeout: 20000
