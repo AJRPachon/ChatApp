@@ -1,5 +1,7 @@
 package com.ajrpachon.chatapp.ui.userinfo
 
+import androidx.compose.ui.platform.testTag
+import com.ajrpachon.chatapp.ui.common.qaTag
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -151,11 +153,13 @@ internal fun UserInfoContent(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
                     text = { Text(stringResource(R.string.userinfo_tab_info)) },
+                    modifier = Modifier.testTag("user_info_tab_info"),
                 )
                 Tab(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
                     text = { Text(stringResource(R.string.userinfo_tab_media)) },
+                    modifier = Modifier.testTag("user_info_tab_media"),
                 )
             }
 
@@ -231,6 +235,7 @@ fun MediaGalleryTab(mediaUrls: List<String>) {
                     modifier = Modifier
                         .aspectRatio(1f)
                         .fillMaxWidth()
+                        .testTag("media_item")
                         .clickable { fullScreenUrl = url },
                 )
             }
@@ -295,7 +300,8 @@ private fun MediaFullScreenViewer(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .statusBarsPadding()
-                    .padding(16.dp),
+                    .padding(16.dp)
+                    .qaTag("fullscreen_viewer_close"),
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,

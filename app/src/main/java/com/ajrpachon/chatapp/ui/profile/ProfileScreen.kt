@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.profile
 
+import com.ajrpachon.chatapp.ui.common.qaTag
 import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -62,7 +63,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.luminance
@@ -130,13 +130,19 @@ fun ProfileScreen(
             title = { androidx.compose.material3.Text(stringResource(R.string.profile_sign_out_all_dialog_title)) },
             text = { androidx.compose.material3.Text(stringResource(R.string.profile_sign_out_all_dialog_text)) },
             confirmButton = {
-                androidx.compose.material3.TextButton(onClick = {
-                    showSignOutAllDialog = false
-                    vm.signOutAll()
-                }) { androidx.compose.material3.Text(stringResource(R.string.profile_sign_out_all_confirm)) }
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        showSignOutAllDialog = false
+                        vm.signOutAll()
+                    },
+                    modifier = Modifier.qaTag("sign_out_all_confirm"),
+                ) { androidx.compose.material3.Text(stringResource(R.string.profile_sign_out_all_confirm)) }
             },
             dismissButton = {
-                androidx.compose.material3.TextButton(onClick = { showSignOutAllDialog = false }) {
+                androidx.compose.material3.TextButton(
+                    onClick = { showSignOutAllDialog = false },
+                    modifier = Modifier.qaTag("sign_out_all_cancel"),
+                ) {
                     androidx.compose.material3.Text(stringResource(R.string.profile_cancel))
                 }
             },
@@ -157,11 +163,14 @@ fun ProfileScreen(
                     colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.error,
                     ),
-                    modifier = Modifier.testTag("profile_delete_account_confirm_button"),
+                    modifier = Modifier.qaTag("profile_delete_account_confirm_button"),
                 ) { androidx.compose.material3.Text(stringResource(R.string.profile_delete_account_confirm)) }
             },
             dismissButton = {
-                androidx.compose.material3.TextButton(onClick = { showDeleteAccountDialog = false }) {
+                androidx.compose.material3.TextButton(
+                    onClick = { showDeleteAccountDialog = false },
+                    modifier = Modifier.qaTag("profile_delete_account_cancel_button"),
+                ) {
                     androidx.compose.material3.Text(stringResource(R.string.profile_cancel))
                 }
             },
@@ -230,7 +239,8 @@ fun ProfileContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
-                    .padding(bottom = 40.dp),
+                    .padding(bottom = 40.dp)
+                    .qaTag("qr_sheet"),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
@@ -272,7 +282,8 @@ fun ProfileContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
-                    .padding(bottom = 40.dp),
+                    .padding(bottom = 40.dp)
+                    .qaTag("profile_2fa_sheet"),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
@@ -306,7 +317,9 @@ fun ProfileContent(
                             style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace),
                             color = MaterialTheme.colorScheme.primary,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(16.dp),
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .qaTag("profile_2fa_secret_text"),
                         )
                     }
                 }
@@ -330,6 +343,7 @@ fun ProfileContent(
                         keyboard?.hide()
                         onIntent(ProfileIntent.Verify2FACode(verifyCode))
                     }),
+                    modifier = Modifier.qaTag("profile_2fa_code_field"),
                 )
                 val enrollError = state.twoFactor.enrollError
                 if (enrollError != null) {
@@ -350,7 +364,9 @@ fun ProfileContent(
                             onIntent(ProfileIntent.Verify2FACode(verifyCode))
                         },
                         enabled = verifyCode.length == 6,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .qaTag("profile_2fa_verify"),
                     )
                 }
             }
@@ -364,7 +380,7 @@ fun ProfileContent(
                     onClick = { showQrSheet = true },
                     modifier = Modifier
                         .size(52.dp)
-                        .testTag("profile_my_qr_code_button"),
+                        .qaTag("profile_my_qr_code_button"),
                 ) {
                     Icon(
                         Icons.Default.QrCode,
@@ -394,6 +410,7 @@ fun ProfileContent(
                         // Design canvas: a plain primaryContainer-filled circle, no border ring —
                         // matches Signal_PrimaryContainer/Signal_OnPrimaryContainer exactly.
                         .background(MaterialTheme.colorScheme.primaryContainer)
+                        .qaTag("profile_avatar")
                         .clickable(enabled = !state.isUploadingAvatar) {
                             onAvatarClick()
                         },
@@ -469,7 +486,7 @@ fun ProfileContent(
                 }),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .testTag("profile_display_name_field"),
+                    .qaTag("profile_display_name_field"),
             )
             if (state.isSavingDisplayName) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp))
@@ -511,7 +528,7 @@ fun ProfileContent(
                     Switch(
                         checked = state.showOnlineStatus,
                         onCheckedChange = { onIntent(ProfileIntent.ToggleOnlineStatus(it)) },
-                        modifier = Modifier.testTag("profile_online_status_switch"),
+                        modifier = Modifier.qaTag("profile_online_status_switch"),
                     )
                 }
             }
@@ -571,7 +588,7 @@ fun ProfileContent(
                         Switch(
                             checked = state.isAppLockEnabled,
                             onCheckedChange = { onIntent(ProfileIntent.ToggleAppLock) },
-                            modifier = Modifier.testTag("profile_app_lock_switch"),
+                            modifier = Modifier.qaTag("profile_app_lock_switch"),
                         )
                     }
 
@@ -625,12 +642,14 @@ fun ProfileContent(
                             ChatAppDestructiveButton(
                                 text = stringResource(R.string.profile_2fa_deactivate),
                                 onClick = { onIntent(ProfileIntent.Disable2FA) },
+                                modifier = Modifier.qaTag("profile_2fa_deactivate"),
                             )
                         } else {
                             ChatAppSecondaryButton(
                                 text = stringResource(R.string.profile_2fa_activate),
                                 onClick = { onIntent(ProfileIntent.Enroll2FA) },
                                 leadingIcon = Icons.Default.Shield,
+                                modifier = Modifier.qaTag("profile_2fa_activate"),
                             )
                         }
                     }
@@ -643,7 +662,7 @@ fun ProfileContent(
                             .fillMaxWidth()
                             .clickable { onSessionAudit() }
                             .padding(16.dp)
-                            .testTag("profile_session_audit_row"),
+                            .qaTag("profile_session_audit_row"),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
@@ -677,7 +696,7 @@ fun ProfileContent(
                         .fillMaxWidth()
                         .clickable { onBackup() }
                         .padding(16.dp)
-                        .testTag("profile_backup_row"),
+                        .qaTag("profile_backup_row"),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
@@ -719,7 +738,7 @@ fun ProfileContent(
                             .fillMaxWidth()
                             .clickable { onSignOutClick() }
                             .padding(16.dp)
-                            .testTag("profile_sign_out_button"),
+                            .qaTag("profile_sign_out_button"),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
@@ -737,7 +756,7 @@ fun ProfileContent(
                             .fillMaxWidth()
                             .clickable { onSignOutAllClick() }
                             .padding(16.dp)
-                            .testTag("profile_sign_out_all_button"),
+                            .qaTag("profile_sign_out_all_button"),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
@@ -760,7 +779,7 @@ fun ProfileContent(
                             CircularProgressIndicator(
                                 modifier = Modifier
                                     .size(24.dp)
-                                    .testTag("profile_deleting_account_indicator"),
+                                    .qaTag("profile_deleting_account_indicator"),
                             )
                         }
                     } else {
@@ -769,7 +788,7 @@ fun ProfileContent(
                                 .fillMaxWidth()
                                 .clickable { onDeleteAccountClick() }
                                 .padding(16.dp)
-                                .testTag("profile_delete_account_button"),
+                                .qaTag("profile_delete_account_button"),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
@@ -935,7 +954,7 @@ private fun ThemeSelector(
                 modifier = Modifier
                     .weight(1f)
                     .clickable { onSelect(pref) }
-                    .testTag("profile_theme_${pref.name.lowercase()}_option"),
+                    .qaTag("profile_theme_${pref.name.lowercase()}_option"),
                 shape = MaterialTheme.shapes.small,
                 color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
                         else MaterialTheme.colorScheme.surfaceVariant,

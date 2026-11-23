@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.invitations
 
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -97,11 +98,13 @@ internal fun InvitationsContent(
                     text = stringResource(R.string.invitations_filter_received, state.invitations.size),
                     selected = state.selectedTab == InvitationsTab.RECEIVED,
                     onClick = { onIntent(InvitationsIntent.SelectTab(InvitationsTab.RECEIVED)) },
+                    testTag = "invitations_tab_received",
                 )
                 FilterChip(
                     text = stringResource(R.string.invitations_filter_sent),
                     selected = state.selectedTab == InvitationsTab.SENT,
                     onClick = { onIntent(InvitationsIntent.SelectTab(InvitationsTab.SENT)) },
+                    testTag = "invitations_tab_sent",
                 )
             }
 
@@ -172,9 +175,10 @@ internal fun InvitationsEmptyPreview() {
 }
 
 @Composable
-private fun FilterChip(text: String, selected: Boolean, onClick: () -> Unit) {
+private fun FilterChip(text: String, selected: Boolean, onClick: () -> Unit, testTag: String) {
     Box(
         modifier = Modifier
+            .testTag(testTag)
             .clip(ChatAppShapeExtras.Thumbnail)
             .background(
                 if (selected) MaterialTheme.colorScheme.primary
@@ -210,6 +214,7 @@ private fun ReceivedList(
                     avatarUrl = invitation.sender.avatarUrl,
                     name = invitation.sender.displayName,
                     subtitle = stringResource(R.string.invitations_wants_to_add_you),
+                    testTag = "invitation_row_${invitation.sender.username}",
                 ) {
                     ActionIcon(
                         icon = Icons.Default.Check,
@@ -217,6 +222,7 @@ private fun ReceivedList(
                         container = MaterialTheme.colorScheme.primary,
                         tint = MaterialTheme.colorScheme.onPrimary,
                         onClick = { onAccept(invitation.id) },
+                        testTag = "invitation_accept_${invitation.sender.username}",
                     )
                     ActionIcon(
                         icon = Icons.Default.Close,
@@ -224,6 +230,7 @@ private fun ReceivedList(
                         container = MaterialTheme.colorScheme.surfaceVariant,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         onClick = { onReject(invitation.id) },
+                        testTag = "invitation_reject_${invitation.sender.username}",
                     )
                 }
             }
@@ -252,6 +259,8 @@ private fun SentList(
                         InvitationStatus.ACCEPTED -> stringResource(R.string.invitations_sent_accepted)
                         InvitationStatus.REJECTED -> stringResource(R.string.invitations_sent_rejected)
                     },
+                    testTag = "invitation_row_${receiver?.username.orEmpty()}",
+                    subtitleTag = "invitation_status_${invitation.status.name.lowercase()}",
                 ) {
                     if (invitation.status == InvitationStatus.PENDING) {
                         ActionIcon(
@@ -260,6 +269,7 @@ private fun SentList(
                             container = MaterialTheme.colorScheme.surfaceVariant,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             onClick = { onCancel(invitation.id) },
+                            testTag = "invitation_cancel_${receiver?.username.orEmpty()}",
                         )
                     }
                 }
@@ -270,7 +280,7 @@ private fun SentList(
 
 @Composable
 private fun EmptyState(text: String) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().testTag("invitations_empty"), contentAlignment = Alignment.Center) {
         Text(text, style = MaterialTheme.typography.bodyLarge)
     }
 }
@@ -286,11 +296,14 @@ private fun InvitationRow(
     avatarUrl: String?,
     name: String,
     subtitle: String,
+    testTag: String,
+    subtitleTag: String? = null,
     actions: @Composable () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .testTag(testTag)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -306,6 +319,7 @@ private fun InvitationRow(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = if (subtitleTag != null) Modifier.testTag(subtitleTag) else Modifier,
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { actions() }
@@ -319,9 +333,11 @@ private fun ActionIcon(
     container: androidx.compose.ui.graphics.Color,
     tint: androidx.compose.ui.graphics.Color,
     onClick: () -> Unit,
+    testTag: String,
 ) {
     Box(
         modifier = Modifier
+            .testTag(testTag)
             .size(34.dp)
             .clip(MaterialTheme.shapes.small)
             .background(container)

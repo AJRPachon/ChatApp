@@ -1,5 +1,7 @@
 package com.ajrpachon.chatapp.ui.group
 
+import androidx.compose.ui.platform.testTag
+import com.ajrpachon.chatapp.ui.common.qaTag
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -207,7 +209,8 @@ fun GroupInfoContent(
             Column(
                 modifier = Modifier
                     .padding(24.dp)
-                    .navigationBarsPadding(),
+                    .navigationBarsPadding()
+                    .qaTag("group_invite_link_sheet"),
             ) {
                 Text(
                     stringResource(R.string.group_invite_link_title),
@@ -232,12 +235,12 @@ fun GroupInfoContent(
                                 onIntent(GroupInfoIntent.DismissInviteLinkSheet)
                             }
                         },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).qaTag("group_invite_link_copy"),
                     )
                     ChatAppPrimaryButton(
                         text = stringResource(R.string.group_share),
                         onClick = { onIntent(GroupInfoIntent.ShareInviteLink) },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).qaTag("group_invite_link_share"),
                     )
                 }
             }
@@ -264,7 +267,7 @@ fun GroupInfoContent(
                 actions = {
                     var menuExpanded by remember { mutableStateOf(false) }
                     Box {
-                        IconButton(onClick = { menuExpanded = true }) {
+                        IconButton(onClick = { menuExpanded = true }, modifier = Modifier.testTag("group_info_menu")) {
                             Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.group_more_options))
                         }
                         DropdownMenu(
@@ -273,6 +276,7 @@ fun GroupInfoContent(
                         ) {
                             if (state.isCurrentUserAdmin) {
                                 DropdownMenuItem(
+                                    modifier = Modifier.qaTag("group_info_edit"),
                                     text = { Text(stringResource(R.string.group_edit_group)) },
                                     leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
                                     onClick = {
@@ -282,6 +286,7 @@ fun GroupInfoContent(
                                 )
                             }
                             DropdownMenuItem(
+                                modifier = Modifier.qaTag("group_info_leave"),
                                 text = { Text(stringResource(R.string.group_leave_group), color = MaterialTheme.colorScheme.error) },
                                 leadingIcon = {
                                     Icon(
@@ -325,10 +330,10 @@ fun GroupInfoContent(
                         stringResource(R.string.group_participants_count, state.members.size),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).testTag("group_participants_count"),
                     )
                     if (state.isCurrentUserAdmin) {
-                        IconButton(onClick = { onIntent(GroupInfoIntent.OpenAddMember) }) {
+                        IconButton(onClick = { onIntent(GroupInfoIntent.OpenAddMember) }, modifier = Modifier.testTag("group_add_member_button")) {
                             Icon(Icons.Default.AddCircle, contentDescription = stringResource(R.string.group_add_member_content_description))
                         }
                     }
@@ -354,7 +359,9 @@ fun GroupInfoContent(
                         headlineContent = { Text(stringResource(R.string.group_invite_link_headline)) },
                         supportingContent = { Text(stringResource(R.string.group_invite_link_supporting)) },
                         leadingContent = { Icon(Icons.Default.Link, contentDescription = null) },
-                        modifier = Modifier.clickable { onIntent(GroupInfoIntent.GenerateInviteLink) },
+                        modifier = Modifier
+                            .testTag("group_invite_link_row")
+                            .clickable { onIntent(GroupInfoIntent.GenerateInviteLink) },
                     )
                 }
             }
@@ -432,6 +439,7 @@ private fun GroupHeader(
                     .size(96.dp)
                     .clip(CircleShape)
                     .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                    .testTag("group_info_avatar")
                     .clickable(enabled = isAdmin, onClick = onPickAvatar),
                 contentAlignment = Alignment.Center,
             ) {
@@ -514,6 +522,7 @@ private fun MemberItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .testTag("group_member_row_${member.username}")
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -544,7 +553,9 @@ private fun MemberItem(
                     ) {
                         Text(
                             stringResource(R.string.group_admin_badge),
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            modifier = Modifier
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                .testTag("group_member_admin_badge_${member.username}"),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                         )
@@ -562,7 +573,7 @@ private fun MemberItem(
 
         if (isCurrentUserAdmin && !isCurrentUser) {
             Box {
-                IconButton(onClick = { showMenu = true }) {
+                IconButton(onClick = { showMenu = true }, modifier = Modifier.testTag("group_member_menu_${member.username}")) {
                     Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.group_options_content_description))
                 }
                 DropdownMenu(
@@ -571,18 +582,21 @@ private fun MemberItem(
                 ) {
                     if (member.role == GroupRole.MEMBER) {
                         DropdownMenuItem(
+                            modifier = Modifier.qaTag("group_member_menu_promote"),
                             text = { Text(stringResource(R.string.group_make_admin)) },
                             leadingIcon = { Icon(Icons.Default.AdminPanelSettings, contentDescription = null) },
                             onClick = { showMenu = false; onPromote() },
                         )
                     } else if (!isLastAdmin) {
                         DropdownMenuItem(
+                            modifier = Modifier.qaTag("group_member_menu_demote"),
                             text = { Text(stringResource(R.string.group_remove_admin)) },
                             leadingIcon = { Icon(Icons.Default.AdminPanelSettings, contentDescription = null) },
                             onClick = { showMenu = false; onDemote() },
                         )
                     }
                     DropdownMenuItem(
+                        modifier = Modifier.qaTag("group_member_menu_remove"),
                         text = { Text(stringResource(R.string.group_remove_from_group), color = MaterialTheme.colorScheme.error) },
                         leadingIcon = {
                             Icon(Icons.Default.PersonRemove, contentDescription = null,
@@ -610,7 +624,11 @@ private fun HistoryChoiceDialog(
             Text(stringResource(R.string.group_history_dialog_message, userName))
         },
         confirmButton = {
-            ChatAppTextButton(text = stringResource(R.string.group_history_see), onClick = onSeeHistory)
+            ChatAppTextButton(
+                text = stringResource(R.string.group_history_see),
+                onClick = onSeeHistory,
+                modifier = Modifier.qaTag("group_history_see"),
+            )
         },
         dismissButton = {
             Column {
@@ -618,8 +636,13 @@ private fun HistoryChoiceDialog(
                     text = stringResource(R.string.group_history_blank),
                     onClick = onBlankHistory,
                     color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.qaTag("group_history_blank"),
                 )
-                ChatAppTextButton(text = stringResource(R.string.group_history_cancel), onClick = onDismiss)
+                ChatAppTextButton(
+                    text = stringResource(R.string.group_history_cancel),
+                    onClick = onDismiss,
+                    modifier = Modifier.qaTag("group_history_cancel"),
+                )
             }
         },
     )
@@ -643,6 +666,7 @@ private fun EditGroupDialog(
                     value = name,
                     onValueChange = onNameChange,
                     label = stringResource(R.string.group_name_label),
+                    modifier = Modifier.qaTag("group_edit_name"),
                 )
                 ChatAppTextField(
                     value = description,
@@ -650,14 +674,24 @@ private fun EditGroupDialog(
                     label = stringResource(R.string.group_description_label),
                     singleLine = false,
                     maxLines = 3,
+                    modifier = Modifier.qaTag("group_edit_description"),
                 )
             }
         },
         confirmButton = {
-            ChatAppTextButton(text = stringResource(R.string.group_save), onClick = onSave, enabled = name.isNotBlank())
+            ChatAppTextButton(
+                text = stringResource(R.string.group_save),
+                onClick = onSave,
+                enabled = name.isNotBlank(),
+                modifier = Modifier.qaTag("group_edit_save"),
+            )
         },
         dismissButton = {
-            ChatAppTextButton(text = stringResource(R.string.group_cancel), onClick = onDismiss)
+            ChatAppTextButton(
+                text = stringResource(R.string.group_cancel),
+                onClick = onDismiss,
+                modifier = Modifier.qaTag("group_edit_cancel"),
+            )
         },
     )
 }
@@ -681,7 +715,9 @@ private fun AddMemberSheet(
             value = query,
             onValueChange = onQueryChange,
             placeholder = stringResource(R.string.group_search_placeholder),
-            modifier = Modifier.padding(horizontal = 16.dp),
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .qaTag("group_add_member_search"),
         )
         Spacer(Modifier.height(8.dp))
         if (results.isEmpty() && query.isNotBlank()) {
@@ -695,6 +731,7 @@ private fun AddMemberSheet(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .qaTag("group_add_member_user_${user.username}")
                     .clickable { onAddUser(user) }
                     .padding(horizontal = 16.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,

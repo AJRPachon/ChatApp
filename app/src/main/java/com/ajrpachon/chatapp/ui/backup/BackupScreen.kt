@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.backup
 
+import com.ajrpachon.chatapp.ui.common.qaTag
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,7 +34,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -99,13 +99,17 @@ internal fun BackupContent(
             title = { Text(stringResource(R.string.backup_error_title)) },
             text = { Text(state.error?.asString().orEmpty()) },
             confirmButton = {
-                ChatAppTextButton(text = stringResource(R.string.backup_accept), onClick = { onIntent(BackupIntent.DismissError) })
+                ChatAppTextButton(
+                    text = stringResource(R.string.backup_accept),
+                    onClick = { onIntent(BackupIntent.DismissError) },
+                    modifier = Modifier.qaTag("backup_error_ok"),
+                )
             },
         )
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState, modifier = Modifier.qaTag("backup_snackbar")) },
         topBar = {
             ChatAppTopBar(title = stringResource(R.string.backup_top_bar_title), onBack = onBack)
         },
@@ -149,6 +153,7 @@ internal fun BackupContent(
                             Text(
                                 state.lastBackupDate.orEmpty(),
                                 style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.qaTag("backup_last_date"),
                             )
                         }
                         if (state.backupSizeMb != null) {
@@ -172,6 +177,7 @@ internal fun BackupContent(
                             stringResource(R.string.backup_no_backups),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.qaTag("backup_no_backups"),
                         )
                     }
                 }
@@ -205,7 +211,7 @@ internal fun BackupContent(
                     enabled = !state.isRestoring,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .testTag("backup_make_backup_button"),
+                        .qaTag("backup_make_backup_button"),
                 )
             }
 
@@ -227,7 +233,9 @@ internal fun BackupContent(
                     onClick = { onIntent(BackupIntent.RequestRestore) },
                     leadingIcon = Icons.Default.CloudDownload,
                     enabled = !state.isBackingUp,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .qaTag("backup_restore_button"),
                 )
             }
         }
@@ -264,7 +272,7 @@ private fun PassphraseDialog(
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    modifier = Modifier.fillMaxWidth().testTag("backup_passphrase_field"),
+                    modifier = Modifier.fillMaxWidth().qaTag("backup_passphrase_field"),
                 )
                 if (isBackup) {
                     OutlinedTextField(
@@ -274,7 +282,7 @@ private fun PassphraseDialog(
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().qaTag("backup_passphrase_repeat_field"),
                     )
                 }
             }
@@ -284,10 +292,15 @@ private fun PassphraseDialog(
                 text = stringResource(R.string.backup_accept),
                 onClick = { onConfirm(passphrase) },
                 enabled = valid,
+                modifier = Modifier.qaTag("backup_confirm"),
             )
         },
         dismissButton = {
-            ChatAppTextButton(text = stringResource(R.string.backup_cancel), onClick = onDismiss)
+            ChatAppTextButton(
+                text = stringResource(R.string.backup_cancel),
+                onClick = onDismiss,
+                modifier = Modifier.qaTag("backup_cancel"),
+            )
         },
     )
 }
