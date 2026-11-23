@@ -57,7 +57,7 @@ import com.ajrpachon.chatapp.ui.preview.PreviewChatBubbles
 import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 
 // ── Message-bubble rendering tree ───────────────────────────────────────────
-// Extracted per docs/chat-viewmodel-decomposition.md Phase 2 — the higher-risk group left for
+// The higher-risk group left for
 // a later pass after the self-contained dialogs/sheets. This file holds the hub (MessageBubble,
 // the per-message-type dispatcher) plus the two building blocks nearly every bubble type in the
 // other bubble files renders through: ReplySelectContainer (swipe-to-reply + multi-select

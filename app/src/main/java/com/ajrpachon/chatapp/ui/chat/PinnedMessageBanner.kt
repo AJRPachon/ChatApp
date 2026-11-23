@@ -29,7 +29,7 @@ import com.ajrpachon.chatapp.ui.preview.ChatAppPreview
 import com.ajrpachon.chatapp.ui.preview.PreviewChatBubbles
 import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 
-// Extracted per docs/chat-viewmodel-decomposition.md Phase 2 — self-contained, no dependency
+// Self-contained, no dependency
 // on ChatViewModel or the message-bubble rendering tree.
 
 /**

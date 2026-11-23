@@ -70,7 +70,7 @@ import com.ajrpachon.chatapp.ui.theme.IncognitoBannerBackground
 /**
  * [ChatScreen]'s `Scaffold.topBar`: the incognito banner, the app bar itself (title/avatar or
  * multi-select count, back/clear-selection navigation, the call/overflow menus), and the
- * pinned-message banner. Extracted per docs/chat-viewmodel-decomposition.md Phase 2.
+ * pinned-message banner.
  *
  * [showDeleteSelectionConfirm] is [MutableState] because [ChatDialogHost] (rendered elsewhere in
  * ChatScreen) owns the confirmation dialog this bar's delete action triggers — same reasoning as

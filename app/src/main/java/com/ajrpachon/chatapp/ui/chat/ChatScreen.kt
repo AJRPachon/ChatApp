@@ -567,7 +567,7 @@ private fun createVideoUri(context: Context): Uri {
 }
 
 // The message-bubble rendering tree (MessageBubble + everything it dispatches to) was
-// extracted per docs/chat-viewmodel-decomposition.md Phase 2:
+// extracted into:
 // - MessageBubble.kt: pollIdOf/contactPhoneOf, ReplySelectContainer, ChatBubbleSlot, MessageBubble
 // - ChatFileBubbles.kt: CallMessageBubble, FileBubble, PdfFileCard, GenericFileBubble,
 //   formatFileSize, VideoBubble, StickerBubble, DeletedMessageBubble

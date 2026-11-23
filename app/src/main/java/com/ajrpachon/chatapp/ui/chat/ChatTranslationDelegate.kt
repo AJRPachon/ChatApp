@@ -9,8 +9,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
- * Handles per-message translation and audio transcription — second slice of the decomposition
- * in docs/chat-viewmodel-decomposition.md. See [ChatAiDelegate] for the pattern this follows
+ * Handles per-message translation and audio transcription. See [ChatAiDelegate] for the pattern this follows
  * (state mutated only via [ChatDelegateContext], [ChatState]/[ChatIntent]/ChatScreen unchanged).
  */
 class ChatTranslationDelegate(
@@ -50,10 +49,9 @@ class ChatTranslationDelegate(
 
     // KNOWN BUG, not fixed here: transcribeFromMic() records this device's live mic, not the
     // message's actual audio file — there is no UI call site today so it hasn't shipped
-    // user-visibly. See docs/audio-transcription-todo.md for why (AudioTranscriber wraps
-    // Android's SpeechRecognizer, which has no file-input API) and the recommended fix (an
-    // Edge Function calling a cloud STT API that accepts the app's .m4a/AAC recordings, e.g.
-    // OpenAI's Whisper transcription endpoint).
+    // user-visibly. Why: AudioTranscriber wraps Android's SpeechRecognizer, which has no
+    // file-input API. Recommended fix: an Edge Function calling a cloud STT API that accepts
+    // the app's .m4a/AAC recordings, e.g. OpenAI's Whisper transcription endpoint.
     fun transcribeAudio(messageId: String) {
         scope.launch {
             val transcript = catchResult { audioTranscriber.transcribeFromMic() }.getOrNull()

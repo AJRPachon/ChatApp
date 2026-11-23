@@ -123,7 +123,7 @@ class ChatViewModel(
     val pinnedMessages: Flow<List<MessageBO>> =
         messageRepository.getPinnedMessages(conversationId, currentUserId ?: "")
 
-    // See docs/chat-viewmodel-decomposition.md — delegates extracted out of this class's flat
+    // Delegates extracted out of this class's flat
     // method list, one concern each, all sharing delegateContext as their only hook back into
     // this ViewModel's state/effects.
     private val delegateContext = ChatDelegateContext(

@@ -48,7 +48,7 @@ import com.ajrpachon.chatapp.ui.preview.PreviewChatBubbles
 import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 
 // ── Image-batch bubbles ───────────────────────────────────────────────────────
-// Extracted per docs/chat-viewmodel-decomposition.md Phase 2 — part of the message-bubble
+// Part of the message-bubble
 // rendering tree. Called directly from ChatScreen's LazyColumn (not from MessageBubble):
 // PendingImageBatchBubble is the in-flight upload placeholder, ImageGroupBubble is the
 // server-backed >2-photo group it hands off to once the batch finishes uploading — see

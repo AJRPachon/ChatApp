@@ -50,7 +50,7 @@ import com.ajrpachon.chatapp.ui.preview.PreviewChatBubbles
 import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 
 // ── Message-type-specific bubbles ────────────────────────────────────────────
-// Extracted per docs/chat-viewmodel-decomposition.md Phase 2 — part of the message-bubble
+// Part of the message-bubble
 // rendering tree, rendered from MessageBubble.kt via ChatBubbleSlot (defined there).
 
 @Composable

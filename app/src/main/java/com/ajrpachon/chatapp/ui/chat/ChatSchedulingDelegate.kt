@@ -17,8 +17,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Handles scheduled messages: scheduling the current input for later delivery, and cancelling
- * an already-scheduled one. Fourth slice of the decomposition in
- * docs/chat-viewmodel-decomposition.md — see [ChatAiDelegate] for the pattern this follows.
+ * an already-scheduled one. See [ChatAiDelegate] for the pattern this follows.
  *
  * Draft-save debouncing itself stays owned by ChatViewModel (it's shared with plain typing and
  * sending, not scheduling-specific) — [cancelDraftSave] is the narrow hook this delegate needs

@@ -61,7 +61,7 @@ import com.ajrpachon.chatapp.ui.preview.PreviewData
 import com.ajrpachon.chatapp.ui.preview.ThemePreviews
 
 // ── Modal bottom sheets used from ChatScreen ────────────────────────────────
-// Extracted per docs/chat-viewmodel-decomposition.md Phase 2 — each takes only its own narrow
+// Each takes only its own narrow
 // params, no dependency on ChatViewModel or the message-bubble rendering tree.
 
 @OptIn(ExperimentalMaterial3Api::class)

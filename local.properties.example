@@ -19,7 +19,7 @@ LIVEKIT_URL=wss://<your-project>.livekit.cloud
 # Giphy
 GIPHY_API_KEY=<your-giphy-api-key>
 
-# Release signing (upload keystore for Play Store AABs) — see docs/release-signing.md.
+# Release signing (upload keystore for Play Store AABs).
 # Only needed to run assembleRelease/bundleRelease locally; safe to leave empty otherwise.
 RELEASE_STORE_FILE=upload-keystore.jks
 RELEASE_STORE_PASSWORD=<upload-keystore-password>

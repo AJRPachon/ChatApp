@@ -24,8 +24,7 @@ private const val DEFAULT_FILE_MIME_TYPE = "application/octet-stream"
 private const val DEFAULT_FILE_DISPLAY_NAME = "archivo"
 
 /**
- * Handles uploading and sending images (as a batch), a generic file, and a video. Part of the
- * eighth slice of docs/chat-viewmodel-decomposition.md — split out of the originally single
+ * Handles uploading and sending images (as a batch), a generic file, and a video. Split out of the originally single
  * "ChatMediaDelegate" entry into three smaller delegates (this one, [ChatQuickSendDelegate],
  * [ChatAudioRecordingDelegate]) since one delegate covering all of it tripped detekt's
  * LongParameterList threshold, and the three really are distinct concerns anyway.
