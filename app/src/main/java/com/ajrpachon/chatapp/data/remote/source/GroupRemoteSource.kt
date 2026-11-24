@@ -142,13 +142,18 @@ class GroupRemoteSource(private val supabase: SupabaseClient) {
     }
 
     suspend fun updateMemberRole(conversationId: String, userId: String, role: String) {
-        supabase.postgrest["conversation_participants"]
+        // Ask for the updated rows back: under RLS a forbidden update is not an error, it just
+        // matches 0 rows — without this check "Make admin" silently did nothing.
+        val updated = supabase.postgrest["conversation_participants"]
             .update(buildJsonObject { put("role", role) }) {
+                select()
                 filter {
                     eq("conversation_id", conversationId)
                     eq("user_id", userId)
                 }
             }
+            .decodeList<kotlinx.serialization.json.JsonObject>()
+        check(updated.isNotEmpty()) { "Role update for $userId in $conversationId matched no rows (RLS)" }
     }
 
     fun getCurrentUserId(): String? = supabase.auth.currentUserOrNull()?.id

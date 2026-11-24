@@ -13,6 +13,7 @@ tags:
     element:
       id: profile_backup_row
     direction: DOWN
+    centerElement: true
 - tapOn:
     id: profile_backup_row
 - tapOn:

@@ -22,6 +22,9 @@ tags:
 - assertVisible:
     id: create_group_create_button
     enabled: false
-- back
+# In-app back (top bar) returns to step 1. NOTE: the *system* back leaves the whole screen
+# instead (UX observation, see README).
+- tapOn:
+    id: chat_app_top_bar_back_button
 - assertVisible:
     id: create_group_next_button

@@ -83,3 +83,66 @@ function Stop-MobileMcpAgent {
         Write-Host "[$Device] parado el agente de mobile-mcp (pid $agentPid)"
     }
 }
+
+function Get-UiNodes {
+    <# Flat list of {Text, Id, Class, Bounds, Checked} parsed from a uiautomator dump of $Device. #>
+    param([string]$Device)
+    $dump = ''
+    for ($try = 0; $try -lt 4 -and -not $dump.Contains('<node'); $try++) {
+        # uiautomator sometimes returns "null root node" while a window is still animating in.
+        Invoke-Adb $Device shell rm -f /sdcard/qa_ui.xml 2>$null | Out-Null
+        Invoke-Adb $Device shell uiautomator dump /sdcard/qa_ui.xml 2>$null | Out-Null
+        $dump = ((Invoke-Adb $Device shell cat /sdcard/qa_ui.xml 2>$null) -join '')
+        if (-not $dump.Contains('<node')) { Start-Sleep -Seconds 1 }
+    }
+    $nodes = @()
+    foreach ($m in [regex]::Matches($dump, '<node [^>]*>')) {
+        $attrs = @{}
+        foreach ($a in [regex]::Matches($m.Value, '([\w-]+)="([^"]*)"')) { $attrs[$a.Groups[1].Value] = [System.Net.WebUtility]::HtmlDecode($a.Groups[2].Value) }
+        $nodes += [pscustomobject]@{ Text = $attrs['text']; Id = $attrs['resource-id']; Class = $attrs['class']; Bounds = $attrs['bounds']; Checked = $attrs['checked'] }
+    }
+    return $nodes
+}
+
+function Get-NodeRect($node) {
+    $m = [regex]::Match([string]$node.Bounds, '\[(\d+),(\d+)\]\[(\d+),(\d+)\]')
+    return @([int]$m.Groups[1].Value, [int]$m.Groups[2].Value, [int]$m.Groups[3].Value, [int]$m.Groups[4].Value)
+}
+
+function Disable-GboardCorrections {
+    <# Turns off Gboard auto-correction, auto-capitalisation, smart compose and word suggestions:
+       with them on, `inputText` + Enter could commit a *suggestion* instead of the typed text
+       ("claudeqa" became "claudeqa2"), and words followed by a space got autocorrected. #>
+    param([string]$Device)
+    Invoke-Adb $Device shell am start -a android.settings.INPUT_METHOD_SETTINGS | Out-Null
+    Start-Sleep -Seconds 2
+    $g = Get-UiNodes $Device | Where-Object { $_.Text -eq 'Gboard' } | Select-Object -First 1
+    if (-not $g) { Write-Host "[$Device] Gboard no encontrado"; return }
+    $r = Get-NodeRect $g; Invoke-Adb $Device shell input tap ([int](($r[0] + $r[2]) / 2)) ([int](($r[1] + $r[3]) / 2))
+    Start-Sleep -Seconds 2
+    $c = Get-UiNodes $Device | Where-Object { $_.Text -in @('Correcciones y sugerencias', 'Text correction') } | Select-Object -First 1
+    if (-not $c) { Write-Host "[$Device] menu de correcciones no encontrado"; return }
+    $r = Get-NodeRect $c; Invoke-Adb $Device shell input tap ([int](($r[0] + $r[2]) / 2)) ([int](($r[1] + $r[3]) / 2))
+    Start-Sleep -Seconds 2
+    $titles = @('Corrección automática', 'Auto-correction', 'Mayúsculas automáticas', 'Auto-capitalization',
+        'Redacción inteligente', 'Smart Compose', 'Sugerencias de palabras', 'Show suggestion strip', 'Word suggestions')
+    $done = @()
+    for ($pass = 0; $pass -lt 2; $pass++) {
+        $nodes = Get-UiNodes $Device
+        $switches = $nodes | Where-Object { $_.Class -eq 'android.widget.Switch' }
+        foreach ($t in ($nodes | Where-Object { $_.Text -in $titles })) {
+            $tr = Get-NodeRect $t
+            $sw = $switches | Where-Object { $sr = Get-NodeRect $_; $sr[1] -le ($tr[3] + 60) -and $sr[3] -ge ($tr[1] - 60) } | Select-Object -First 1
+            if ($sw -and $sw.Checked -eq 'true' -and $t.Text -notin $done) {
+                $done += $t.Text
+                $sr = Get-NodeRect $sw
+                Invoke-Adb $Device shell input tap ([int](($sr[0] + $sr[2]) / 2)) ([int](($sr[1] + $sr[3]) / 2))
+                Start-Sleep -Milliseconds 400
+                Write-Host "[$Device] Gboard: desactivado '$($t.Text)'"
+            }
+        }
+        Invoke-Adb $Device shell input swipe 670 2400 670 1200 300
+        Start-Sleep -Milliseconds 800
+    }
+    Invoke-Adb $Device shell input keyevent KEYCODE_HOME | Out-Null
+}

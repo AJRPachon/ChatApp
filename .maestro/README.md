@@ -82,8 +82,12 @@ Los resultados (junit, capturas, logcat) quedan en `.maestro/out/<RUN_ID>-<idiom
   ignoran `-change-locale`).
 - **Animaciones activas**: el temporizador del visor de estados es una animación; con
   `animator_duration_scale 0` cada historia termina al instante.
-- **mobile-mcp y Maestro no conviven**: ambos usan la única conexión de UiAutomation. Los scripts
+- **mobile-mcp y Maestro no conviven**: ambos usan la única conexión de UiAutomation (y también
+  bloquea `uiautomator dump`, que usan `set-locale.ps1` y `setup-emulators.ps1`). Los scripts
   paran el agente de mobile-mcp (`com.mobilenext.mobilecli.DeviceServer`) antes de ejecutar.
+- **Teclado**: `setup-emulators.ps1` desactiva la autocorrección, mayúsculas, redacción
+  inteligente y sugerencias de Gboard. Con ellas, `inputText` + Enter podía guardar una
+  *sugerencia* ("claudeqa" acabó como "claudeqa2") y las palabras con espacio se corregían.
 - **PIN del dispositivo**: el emulador arranca bloqueado; los scripts lo desbloquean (`Unlock-Device`).
 - **Play Integrity**: no hay bypass. En emuladores el check suele dar `Error` (la app continúa);
   si diera `Failed`, `launch_clean` falla con un mensaje explícito.
@@ -102,6 +106,7 @@ Los resultados (junit, capturas, logcat) quedan en `.maestro/out/<RUN_ID>-<idiom
 | Arreglado | Textos de la hoja de adjuntos y del selector de stickers/GIF sin traducir |
 | Arreglado | Paging del chat: tras cualquier invalidación de Room desaparecían los ~29 mensajes más nuevos (`getRefreshKey` con receta de páginas sobre claves de offset) |
 | Arreglado | El chat no seguía al mensaje más reciente tras la sincronización inicial ni al enviar con la ventana de Paging llena (las burbujas recién enviadas y las encuestas, "Cargando encuesta…", quedaban fuera de vista u obsoletas) |
+| Arreglado (migración aplicada) | Hacer admin / quitar admin en grupos nunca funcionaba: faltaba una política RLS de `UPDATE` para admins en `conversation_participants`, y el `update` de 0 filas pasaba como éxito (ahora la app lo detecta) |
 | Abierto (`known-bug`) | "Vaciar chat" solo borra Room: al abrir el chat se re-sincroniza y vuelve todo |
 | Abierto | Las encuestas son solo locales (`PollRepositoryImpl` no tiene backend): el otro participante ve "Cargando encuesta…" para siempre y los votos no se comparten. Fuera de `group_realtime` hasta que se implemente |
 | Por confirmar | Los estados con imagen se ven en blanco en el visor |
@@ -113,3 +118,5 @@ Los resultados (junit, capturas, logcat) quedan en `.maestro/out/<RUN_ID>-<idiom
 - Google Sign-In (hoja del sistema de Credential Manager).
 - Las acciones del menú de la lista (borrar, vaciar, salir) no piden confirmación: observación de
   producto, no fallo de test.
+- En "Nuevo grupo", el *atrás* del sistema en el paso 2 sale de la pantalla en lugar de volver al
+  paso 1 (la flecha de la barra sí vuelve): observación de UX.

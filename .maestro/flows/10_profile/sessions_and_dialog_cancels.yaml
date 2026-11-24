@@ -12,6 +12,7 @@ tags:
     element:
       id: profile_session_audit_row
     direction: DOWN
+    centerElement: true
 - tapOn:
     id: profile_session_audit_row
 - extendedWaitUntil:
@@ -24,6 +25,7 @@ tags:
     element:
       id: profile_sign_out_all_button
     direction: DOWN
+    centerElement: true
 - tapOn:
     id: profile_sign_out_all_button
 - tapOn:
@@ -34,6 +36,7 @@ tags:
     element:
       id: profile_delete_account_button
     direction: DOWN
+    centerElement: true
 - tapOn:
     id: profile_delete_account_button
 - tapOn:

@@ -36,6 +36,7 @@ foreach ($d in $Devices) {
     $pinOut = Invoke-Adb $d shell locksettings set-pin $Pin 2>&1
     Write-Host "  PIN: $pinOut"
     Unlock-Device -Device $d -Pin $Pin
+    Disable-GboardCorrections -Device $d
 
     if (Test-Path $assets) {
         Get-ChildItem $assets -File | ForEach-Object {

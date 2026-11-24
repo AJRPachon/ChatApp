@@ -12,6 +12,7 @@ tags:
     element:
       id: profile_debug_menu_row
     direction: DOWN
+    centerElement: true
 - tapOn:
     id: profile_debug_menu_row
 - assertVisible:

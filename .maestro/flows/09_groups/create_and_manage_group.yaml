@@ -41,6 +41,7 @@ tags:
     element:
       id: group_invite_link_row
     direction: DOWN
+    centerElement: true
 - tapOn:
     id: group_invite_link_row
 - extendedWaitUntil:

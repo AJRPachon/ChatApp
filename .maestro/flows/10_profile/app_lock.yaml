@@ -16,6 +16,7 @@ onFlowComplete:
     element:
       id: profile_app_lock_switch
     direction: DOWN
+    centerElement: true
 - tapOn:
     id: profile_app_lock_switch
 - pressKey: Home
@@ -41,5 +42,6 @@ onFlowComplete:
     element:
       id: profile_app_lock_switch
     direction: DOWN
+    centerElement: true
 - tapOn:
     id: profile_app_lock_switch

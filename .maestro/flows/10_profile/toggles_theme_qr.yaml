@@ -15,6 +15,7 @@ tags:
     element:
       id: profile_theme_dark_option
     direction: DOWN
+    centerElement: true
 - tapOn:
     id: profile_theme_dark_option
 - tapOn:
@@ -25,6 +26,7 @@ tags:
     element:
       id: profile_my_qr_code_button
     direction: UP
+    centerElement: true
 - tapOn:
     id: profile_my_qr_code_button
 - assertVisible:
