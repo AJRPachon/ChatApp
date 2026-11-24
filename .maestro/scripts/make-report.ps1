@@ -10,9 +10,13 @@
 .EXAMPLE
   ./make-report.ps1                                    # latest run
   ./make-report.ps1 -RunDir .maestro/out/20261124083253-es
+  ./make-report.ps1 -RunDirs out/A-es,out/B-es -Output out/combined.html   # several runs, latest result per flow
 #>
 param(
     [string]$RunDir = '',
+    # Several runs of the same device merged into one report (later runs win per flow). Runs cut
+    # short without report.xml are rebuilt from each flow's commands.json.
+    [string[]]$RunDirs = @(),
     [string]$Output = '',
     [string]$Title = ''
 )
@@ -20,8 +24,11 @@ param(
 
 $outRoot = Join-Path $script:MaestroRoot 'out'
 $runs = Get-ChildItem $outRoot -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'report.xml') } | Sort-Object Name
+$RunDirs = @($RunDirs | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ } | ForEach-Object { (Resolve-Path $_).Path } | Sort-Object)
+if ($RunDirs.Count -gt 0) { $RunDir = $RunDirs[-1] }
 if (-not $RunDir) { $RunDir = ($runs | Select-Object -Last 1).FullName }
 $RunDir = (Resolve-Path $RunDir).Path
+if ($RunDirs.Count -eq 0) { $RunDirs = @($RunDir) }
 if (-not $Output) { $Output = Join-Path $RunDir 'report.html' }
 
 $sectionNames = @{
@@ -31,6 +38,38 @@ $sectionNames = @{
     '12' = 'Ciclo de vida'; '13' = 'Menú QA/Debug'; 'MD' = 'Multi-dispositivo'
 }
 
+function Get-FlowFileByName {
+    $map = @{}
+    foreach ($f in (Get-ChildItem (Join-Path $script:MaestroRoot 'flows') -Recurse -Filter *.yaml)) {
+        $t = Get-Content $f.FullName -Raw -Encoding UTF8
+        if ($t -match 'name:\s*"([^"]+)"') { $map[($Matches[1] -replace '[\/:*?"<>|]', '_')] = $f.Name }
+    }
+    $map
+}
+
+# A run stopped before Maestro wrote report.xml: one case per flow folder that finished.
+function Read-PartialRun([string]$dir) {
+    $byName = Get-FlowFileByName
+    $items = foreach ($d in (Get-ChildItem $dir -Recurse -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'commands.json') })) {
+        $cmds = @((Get-Content (Join-Path $d.FullName 'commands.json') -Raw -Encoding UTF8 | ConvertFrom-Json) | ForEach-Object { $_ })
+        $top = @($cmds | Where-Object { $_.metadata.depth -eq 0 })
+        if (@($top | Where-Object { $_.metadata.status -in 'PENDING', 'RUNNING' }).Count -or -not $top.Count) { continue }
+        $failed = @($cmds | Where-Object { $_.metadata.status -eq 'FAILED' })
+        $err = if ($failed) { "$(($failed | Select-Object -Last 1).metadata.error.message)" } else { '' }
+        [pscustomobject]@{
+            File = $byName[$d.Name]; Name = $d.Name; Seconds = ((@($top | ForEach-Object { [double]$_.metadata.duration }) | Measure-Object -Sum).Sum / 1000)
+            Ok = -not $failed; Error = $err; Dir = $dir
+        }
+    }
+    $meta = Join-Path $dir 'run-meta.json'
+    $dev = if (Test-Path $meta) { (Get-Content $meta -Raw -Encoding UTF8 | ConvertFrom-Json).serial } else { '' }
+    [pscustomobject]@{ RunId = Split-Path $dir -Leaf; Device = $dev; Start = ''; Seconds = (($items | Measure-Object Seconds -Sum).Sum); Cases = @($items | Where-Object File) }
+}
+
+function Read-Run([string]$dir) {
+    if (Test-Path (Join-Path $dir 'report.xml')) { Read-Junit $dir } else { Read-PartialRun $dir }
+}
+
 function Read-Junit([string]$dir) {
     [xml]$x = Get-Content (Join-Path $dir 'report.xml') -Encoding UTF8
     $s = $x.testsuites.testsuite
@@ -38,7 +77,7 @@ function Read-Junit([string]$dir) {
         $msg = if ($c.failure) { if ($c.failure -is [string]) { $c.failure } elseif ($c.failure.InnerText) { $c.failure.InnerText } else { "$($c.failure)" } } else { '' }
         [pscustomobject]@{
             File = [IO.Path]::GetFileName($c.file); Name = $c.name; Seconds = [double]$c.time
-            Ok = ($c.status -eq 'SUCCESS' -and -not $c.failure); Error = $msg
+            Ok = ($c.status -eq 'SUCCESS' -and -not $c.failure); Error = $msg; Dir = $dir
         }
     }
     [pscustomobject]@{ RunId = Split-Path $dir -Leaf; Device = $s.device; Start = $s.timestamp; Seconds = [double]$s.time; Cases = @($items) }
@@ -96,8 +135,19 @@ function Get-RunDate([string]$runId) {
     return $runId
 }
 
-$current = Read-Junit $RunDir
-$others = @($runs | Where-Object { $_.FullName -ne $RunDir } | ForEach-Object { Read-Junit $_.FullName })
+$parts = @($RunDirs | ForEach-Object { Read-Run $_ })
+$current = $parts[-1]
+if ($parts.Count -gt 1) {
+    # Latest result per flow file across the merged runs.
+    $merged = [ordered]@{}
+    foreach ($p in $parts) { foreach ($c in $p.Cases) { $merged[$c.File] = $c } }
+    $current = [pscustomobject]@{
+        RunId = "$($parts.Count) ejecuciones · $(Get-RunDate (Split-Path $RunDirs[0] -Leaf)) → $(Get-RunDate (Split-Path $RunDirs[-1] -Leaf))"
+        Device = ($parts | Where-Object Device | Select-Object -Last 1).Device; Start = $((Split-Path $RunDirs[0] -Leaf) -replace '^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2}).*', '$1-$2-$3T$4:$5:$6')
+        Seconds = ($parts | Measure-Object Seconds -Sum).Sum; Cases = @($merged.Values)
+    }
+}
+$others = @($runs | Where-Object { $RunDirs -notcontains $_.FullName } | ForEach-Object { Read-Junit $_.FullName })
 
 # ── Cases: every flow of the suite + multi-device scenarios ─────────────────────────
 $cases = @()
@@ -112,7 +162,19 @@ foreach ($f in (Get-ChildItem (Join-Path $script:MaestroRoot 'flows') -Recurse -
     $art = [pscustomobject]@{ Steps = @(); FailedStep = ''; Image = $null }
     if ($r) {
         $status = if ($r.Ok) { 'PASA' } else { 'FALLA' }; $err = $r.Error; $dur = $r.Seconds
-        $art = Get-Artifacts $RunDir $r.Name (-not $r.Ok)
+        $art = Get-Artifacts $r.Dir $r.Name (-not $r.Ok)
+        $rm = Join-Path $r.Dir 'run-meta.json'
+        $caseKind = if (Test-Path $rm) { (Get-Content $rm -Raw -Encoding UTF8 | ConvertFrom-Json).kind } else { '' }
+        if ($RunDirs.Count -gt 1 -and $tags -contains 'emulator-only' -and $caseKind -and $caseKind -ne 'emulador') {
+            # Merged report: a result from before the flow was restricted to emulators.
+            $status = 'NO_EJECUTADO'; $reason = "Solo emulador (usaría datos reales del móvil). Antes de excluirlo falló en este móvil: $($r.Error)"
+            $err = ''; $art = [pscustomobject]@{ Steps = @(); FailedStep = ''; Image = $null }
+        }
+        # Whole flow behind a runFlow `when` that was false (e.g. QA3_USERNAME not configured).
+        $real = @($art.Steps | Where-Object { $_.d -eq 0 -and $_.label -notmatch '^(applyConfiguration|defineVariables)' })
+        if ($r.Ok -and $real.Count -and -not @($real | Where-Object { $_.st -ne 'SKIPPED' }).Count) {
+            $status = 'NO_EJECUTADO'; $reason = 'Omitido: precondición no cumplida (p. ej. cuenta @claudeqa3 / QA3_USERNAME sin configurar)'
+        }
     } elseif ($tags -contains 'known-bug') { $status = 'BUG'; $reason = 'Bug conocido (known-bug)' }
     elseif ($tags -contains 'emulator-only') { $reason = 'Solo emulador (usaría datos reales del móvil)' }
     elseif ($tags -contains 'destructive') { $reason = 'Destructivo (cuentas desechables)' }
@@ -146,6 +208,8 @@ $isEmu = $serial -like 'emulator-*' -or $serial -match '_API\d+'
 $model = $serial; $android = '—'; $appVer = ''
 $kind = if ($isEmu) { 'emulador' } else { 'móvil físico' }
 $metaFile = Join-Path $RunDir 'run-meta.json'
+if (-not (Test-Path $metaFile)) { $metaFile = @($RunDirs | ForEach-Object { Join-Path $_ 'run-meta.json' } | Where-Object { Test-Path $_ }) | Select-Object -Last 1 }
+if (-not $metaFile) { $metaFile = Join-Path $RunDir 'run-meta.json' }
 if (Test-Path $metaFile) {
     $meta = Get-Content $metaFile -Raw -Encoding UTF8 | ConvertFrom-Json
     $serial = $meta.serial; $model = $meta.model; $android = $meta.android; $appVer = $meta.appVer; $kind = $meta.kind
@@ -160,7 +224,7 @@ $repo = Split-Path $script:MaestroRoot -Parent
 $branch = "$(& git -C $repo branch --show-current)".Trim()
 $commit = "$(& git -C $repo rev-parse --short HEAD)".Trim()
 $maestroVer = "$((& (Get-MaestroExe) --version 2>$null) | Select-Object -Last 1)".Trim()
-$locale = if ($current.RunId -match '-(es|en)$') { $Matches[1] } else { '?' }
+$locale = if ((Split-Path $RunDir -Leaf) -match '-(es|en)$') { $Matches[1] } else { '?' }
 $envRows = @(
     @('Dispositivo', $deviceLabel), @('Tipo', $kind), @('Android', $android),
     @('App', "com.ajrpachon.chatapp $appVer (debug)".Trim()), @('Maestro', $maestroVer),
@@ -168,7 +232,7 @@ $envRows = @(
 )
 
 # ── History and bugs ──────────────────────────────────────────────────────────────────
-$history = @(@($others) + @($current) | Sort-Object RunId -Descending | Select-Object -First 12 | ForEach-Object {
+$history = @(@($others) + @($parts) | Sort-Object RunId -Descending | Select-Object -First 12 | ForEach-Object {
         [pscustomobject]@{ runId = $_.RunId; device = $_.Device; total = @($_.Cases).Count; pass = @($_.Cases | Where-Object Ok).Count }
     })
 $bugs = @()
@@ -196,5 +260,5 @@ $template = Get-Content (Join-Path $PSScriptRoot 'report-template.html') -Raw -E
 if ($Title) { $template = $template.Replace('<h1>Informe de ejecución E2E</h1>', "<h1>$([System.Net.WebUtility]::HtmlEncode($Title))</h1>") }
 $html = $template.Replace('/*__DATA__*/', $json)
 [IO.File]::WriteAllText($Output, $html, (New-Object System.Text.UTF8Encoding($false)))
-$ranN = @($current.Cases).Count; $okN = @($current.Cases | Where-Object Ok).Count
+$ranN = @($cases | Where-Object { $_.status -in 'PASA', 'FALLA' }).Count; $okN = @($cases | Where-Object status -eq 'PASA').Count
 Write-Host "Informe: $Output  ($okN/$ranN OK, $(@($cases).Count) casos en la suite)"
