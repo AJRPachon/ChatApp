@@ -5,7 +5,7 @@ name: "05 · Enviar PDF y abrir el visor de PDF"
 tags:
   - chat
   - slow
-  - emulator-only   # picks from the device recent documents
+  - personal-data   # picks from the device recent documents
 ---
 - runFlow: ../../subflows/open_chat_with_qa2.yaml
 - runFlow:

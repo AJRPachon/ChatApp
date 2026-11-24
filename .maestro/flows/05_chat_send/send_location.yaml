@@ -3,7 +3,7 @@ appId: com.ajrpachon.chatapp
 name: "05 · Enviar ubicación"
 tags:
   - chat
-  - emulator-only   # sends the device location
+  - personal-data   # sends the device location
 ---
 - setLocation:
     latitude: 40.4168

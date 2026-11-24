@@ -66,10 +66,20 @@ dispositivo y en dos a la vez, en español e inglés.
 ```
 
 `-Physical` no escribe el PIN del emulador ni cambia el idioma ni el teclado del sistema (exige
-que ya esté en el idioma pedido y desbloqueado) y excluye los flows `emulator-only`: los que
-subirían a Supabase fotos, cámara, ubicación o contactos reales del dueño del móvil, el bloqueo de
-app (PIN), el nombre visible (autocorrección de Gboard) y la copia de seguridad (iría al Google
-Drive de la cuenta Google del móvil). Los flows con estado limpio hacen `clearState`, así que
+que ya esté en el idioma pedido y desbloqueado) y excluye:
+
+- `emulator-only`: el bloqueo de app (habría que escribir el PIN real del móvil, cosa que la
+  automatización no hace) y el nombre visible (necesita desactivar la autocorrección de Gboard).
+- `personal-data`, salvo con `-AllowPersonalData`: galería, ficheros, cámara, vídeo, ubicación,
+  contacto, estado con imagen y la copia de seguridad (va al Google Drive de la cuenta del móvil).
+  Con el interruptor, antes de empezar copia `.maestro/assets` a `Download` como lo más reciente
+  (los selectores eligen esos ficheros y no fotos del dueño) y crea un contacto local sin
+  sincronizar «QA Contact»; al terminar borra ambos. La ubicación y la cámara sí son las reales.
+
+```powershell
+.maestro/scripts/run-suite.ps1 -Device <serial> -Physical -AllowPersonalData -Path flows/04_status,flows/05_chat_send,flows/10_profile
+```
+ Los flows con estado limpio hacen `clearState`, así que
 **borra los datos de ChatApp del móvil** (habrá que volver a iniciar sesión).
 Además desactiva el servicio de autocompletar del móvil solo durante la ejecución y lo restaura al
 terminar: si no, el Gestor de contraseñas de Google ofrece guardar las credenciales QA en la cuenta
@@ -107,7 +117,7 @@ captura, y flows no ejecutados) que `run-suite.ps1` genera al terminar. Para reg
 - Nombres de flow sin `: / \ * ? < > |` (Maestro crea carpetas con ellos y en Windows falla).
 - **Selectores solo en ASCII**: en Windows Maestro lee mal emojis y acentos del YAML ("👍" llegaba
   como "?"). Para emojis se usa `emoji_item_<n>`; en regex, `.` en lugar de la letra acentuada.
-- Tags transversales: `smoke`, `slow`, `multidevice`, `destructive`, `known-bug`, `emulator-only`.
+- Tags transversales: `smoke`, `slow`, `multidevice`, `destructive`, `known-bug`, `emulator-only`, `personal-data`.
 - No compiles con Gradle mientras corre la suite: un host saturado hace que los emuladores den ANR
   al arrancar la app.
 

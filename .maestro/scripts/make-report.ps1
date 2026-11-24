@@ -165,9 +165,9 @@ foreach ($f in (Get-ChildItem (Join-Path $script:MaestroRoot 'flows') -Recurse -
         $art = Get-Artifacts $r.Dir $r.Name (-not $r.Ok)
         $rm = Join-Path $r.Dir 'run-meta.json'
         $caseKind = if (Test-Path $rm) { (Get-Content $rm -Raw -Encoding UTF8 | ConvertFrom-Json).kind } else { '' }
-        if ($RunDirs.Count -gt 1 -and $tags -contains 'emulator-only' -and $caseKind -and $caseKind -ne 'emulador') {
+        if ($RunDirs.Count -gt 1 -and ($tags -contains 'emulator-only' -or $tags -contains 'personal-data') -and $caseKind -and $caseKind -ne 'emulador') {
             # Merged report: a result from before the flow was restricted to emulators.
-            $status = 'NO_EJECUTADO'; $reason = "Solo emulador (usaría datos reales del móvil). Antes de excluirlo falló en este móvil: $($r.Error)"
+            $status = 'NO_EJECUTADO'; $reason = "Excluido en el móvil físico. Antes de excluirlo falló en este móvil: $($r.Error)"
             $err = ''; $art = [pscustomobject]@{ Steps = @(); FailedStep = ''; Image = $null }
         }
         # Whole flow behind a runFlow `when` that was false (e.g. QA3_USERNAME not configured).
@@ -176,7 +176,8 @@ foreach ($f in (Get-ChildItem (Join-Path $script:MaestroRoot 'flows') -Recurse -
             $status = 'NO_EJECUTADO'; $reason = 'Omitido: precondición no cumplida (p. ej. cuenta @claudeqa3 / QA3_USERNAME sin configurar)'
         }
     } elseif ($tags -contains 'known-bug') { $status = 'BUG'; $reason = 'Bug conocido (known-bug)' }
-    elseif ($tags -contains 'emulator-only') { $reason = 'Solo emulador (usaría datos reales del móvil)' }
+    elseif ($tags -contains 'emulator-only') { $reason = 'Solo emulador (PIN del dispositivo o ajustes del teclado)' }
+    elseif ($tags -contains 'personal-data') { $reason = 'Datos personales del móvil (run-suite.ps1 -Physical -AllowPersonalData)' }
     elseif ($tags -contains 'destructive') { $reason = 'Destructivo (cuentas desechables)' }
     else { $reason = 'Fuera del filtro de esta tanda' }
     $trend = @($others | ForEach-Object {

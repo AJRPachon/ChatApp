@@ -5,7 +5,7 @@ name: "05 · Grabar y enviar vídeo"
 tags:
   - chat
   - slow
-  - emulator-only   # records with the real camera
+  - personal-data   # records with the real camera
 ---
 - runFlow: ../../subflows/open_chat_with_qa2.yaml
 - runFlow:
