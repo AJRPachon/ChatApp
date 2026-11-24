@@ -258,6 +258,12 @@ fun groupNavEntry(
             groupAvatarUrl = key.groupAvatarUrl,
             groupDescription = key.groupDescription,
             onBack = dropUnlessResumed { backStack.removeLastOrNull() },
+            onLeftGroup = dropUnlessResumed {
+                backStack.removeLastOrNull()
+                // Group info is opened from the group's chat: leaving the group closes that too.
+                val chat = backStack.lastOrNull()
+                if (chat is ChatRoute && chat.conversationId == key.conversationId) backStack.removeLastOrNull()
+            },
         )
     }
 

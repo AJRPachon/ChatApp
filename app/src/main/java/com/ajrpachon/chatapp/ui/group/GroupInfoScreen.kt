@@ -102,6 +102,7 @@ fun GroupInfoScreen(
     groupAvatarUrl: String?,
     groupDescription: String?,
     onBack: () -> Unit,
+    onLeftGroup: () -> Unit,
 ) {
     val vm: GroupInfoViewModel = koinViewModel(
         key = conversationId,
@@ -119,7 +120,7 @@ fun GroupInfoScreen(
     LaunchedEffect(Unit) {
         vm.effect.collect { effect ->
             when (effect) {
-                GroupInfoEffect.NavigateBack -> onBack()
+                GroupInfoEffect.LeftGroup -> onLeftGroup()
                 is GroupInfoEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message.asString(context))
                 is GroupInfoEffect.CopyToClipboard -> { /* handled inline via LocalClipboardManager */ }
                 is GroupInfoEffect.ShareInviteLink -> {
