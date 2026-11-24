@@ -179,6 +179,7 @@ foreach ($f in (Get-ChildItem (Join-Path $script:MaestroRoot 'flows') -Recurse -
             $status = 'NO_EJECUTADO'; $reason = 'Omitido: precondición no cumplida (p. ej. cuenta @claudeqa3 / QA3_USERNAME sin configurar)'
         }
     } elseif ($tags -contains 'known-bug') { $status = 'BUG'; $reason = 'Bug conocido (known-bug)' }
+    elseif ($tags -contains 'requires-google') { $reason = 'Necesita una cuenta con Google Sign-In (las cuentas QA entran por email)' }
     elseif ($tags -contains 'emulator-only') { $reason = 'Solo emulador (PIN del dispositivo o ajustes del teclado)' }
     elseif ($tags -contains 'personal-data') { $reason = 'Datos personales del móvil (run-suite.ps1 -Physical -AllowPersonalData)' }
     elseif ($tags -contains 'destructive') { $reason = 'Destructivo (cuentas desechables)' }

@@ -8,6 +8,7 @@ tags:
   - profile
   - slow
   - personal-data
+  - requires-google   # backups need a Google sign-in; the QA accounts sign in by email
 ---
 - runFlow: ../../subflows/login.yaml
 - tapOn:

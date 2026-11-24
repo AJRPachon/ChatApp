@@ -7,3 +7,4 @@ excludeTags:
   - multidevice
   - destructive
   - known-bug
+  - requires-google

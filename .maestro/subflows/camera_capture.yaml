@@ -8,9 +8,29 @@ appId: com.ajrpachon.chatapp
     timeout: 20000
 - tapOn:
     id: ".*(shutter_button|shutter).*"
+# Review screen: emulator camera has a separate done button; Google Camera (Pixel) turns the
+# shutter itself into the ✓ confirm button.
 - extendedWaitUntil:
     visible:
       id: ".*(done_button|btn_done|confirm).*"
-    timeout: 20000
-- tapOn:
-    id: ".*(done_button|btn_done|confirm).*"
+    timeout: 8000
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: ".*(done_button|btn_done|confirm).*"
+    commands:
+      - tapOn:
+          id: ".*(done_button|btn_done|confirm).*"
+- runFlow:
+    when:
+      notVisible:
+        id: ".*(done_button|btn_done|confirm).*"
+    commands:
+      - runFlow:
+          when:
+            visible:
+              id: ".*(shutter_button|shutter).*"
+          commands:
+            - tapOn:
+                id: ".*(shutter_button|shutter).*"

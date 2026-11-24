@@ -7,17 +7,31 @@ tags:
   - slow
   - personal-data   # needs the QA Contact fixture / would share a real contact
 ---
-- runFlow: ../../subflows/open_chat_with_qa2.yaml
+# The picker reads the address book: this flow needs the contacts permission even on a real phone
+# (where run-suite denies it by default).
+- runFlow:
+    file: ../../subflows/open_chat_with_qa2.yaml
+    env:
+      CONTACTS_PERMISSION: allow
 - runFlow:
     file: ../../subflows/open_attach.yaml
     env:
       ITEM: attach_contact
-- extendedWaitUntil:
-    visible:
+- scrollUntilVisible:
+    element:
       text: "QA Contact"
-    timeout: 20000
+    direction: DOWN
+    timeout: 60000
 - tapOn:
     text: "QA Contact"
+# Pixel's contact picker is multi-select: confirm the selection.
+- runFlow:
+    when:
+      visible:
+        text: "(Hecho|Done|Listo)"
+    commands:
+      - tapOn:
+          text: "(Hecho|Done|Listo)"
 - extendedWaitUntil:
     visible:
       id: message_contact_own
