@@ -72,4 +72,8 @@ try {
     }
 }
 Write-Host "Resultados: $outDir"
+if (Test-Path (Join-Path $outDir 'report.xml')) {
+    $label = if ($Physical) { 'móvil físico' } else { 'emulador' }
+    & "$PSScriptRoot/make-report.ps1" -RunDir $outDir -Title "Informe E2E · $Device ($label, $Locale)"
+}
 exit $code

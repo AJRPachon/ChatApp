@@ -74,7 +74,13 @@ Además desactiva el servicio de autocompletar del móvil solo durante la ejecuc
 terminar: si no, el Gestor de contraseñas de Google ofrece guardar las credenciales QA en la cuenta
 del dueño tras cada login, en una hoja que la automatización no puede ver.
 
-Los resultados (junit, capturas, logcat) quedan en `.maestro/out/<RUN_ID>-<idioma>/`.
+Los resultados (junit, capturas, logcat) quedan en `.maestro/out/<RUN_ID>-<idioma>/`, junto con
+`report.html`: un informe autocontenido (resumen, secciones, fallos con el paso fallido y su
+captura, y flows no ejecutados) que `run-suite.ps1` genera al terminar. Para regenerarlo:
+
+```powershell
+.maestro/scripts/make-report.ps1 -RunDir .maestro/out/<RUN_ID>-es
+```
 
 ## Convenciones
 
