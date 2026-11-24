@@ -160,6 +160,7 @@ captura, y flows no ejecutados) que `run-suite.ps1` genera al terminar. Para reg
 | Abierto | El diálogo de error de la copia de seguridad muestra el mensaje crudo de la excepción, en inglés ("Failed to get Google access token", `BackupRepositoryImpl`) |
 | Abierto (`known-bug`) | "Vaciar chat" solo borra Room: al abrir el chat se re-sincroniza y vuelve todo |
 | Abierto | Las encuestas son solo locales (`PollRepositoryImpl` no tiene backend): el otro participante ve "Cargando encuesta…" para siempre y los votos no se comparten. Fuera de `group_realtime` hasta que se implemente |
+| Observación | Cancelar una invitación enviada la marca como `rejected` (`InvitationRepositoryImpl.cancelSentInvitation`): en "Enviadas" sigue apareciendo, como "Rechazada", no como cancelada |
 | Por confirmar | Los estados con imagen se ven en blanco en el visor |
 
 ## Huecos conocidos (no automatizables o sin UI)
