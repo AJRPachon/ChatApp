@@ -168,7 +168,7 @@ foreach ($f in (Get-ChildItem (Join-Path $script:MaestroRoot 'flows') -Recurse -
         $art = Get-Artifacts $r.Dir $r.Name ((-not $r.Ok) -and -not $NoImages)
         $rm = Join-Path $r.Dir 'run-meta.json'
         $caseKind = if (Test-Path $rm) { (Get-Content $rm -Raw -Encoding UTF8 | ConvertFrom-Json).kind } else { '' }
-        if ($RunDirs.Count -gt 1 -and ($tags -contains 'emulator-only' -or $tags -contains 'personal-data') -and $caseKind -and $caseKind -ne 'emulador') {
+        if ($RunDirs.Count -gt 1 -and ($tags -contains 'emulator-only' -or $tags -contains 'requires-google') -and $caseKind -and $caseKind -ne 'emulador') {
             # Merged report: a result from before the flow was restricted to emulators.
             $status = 'NO_EJECUTADO'; $reason = "Excluido en el móvil físico. Antes de excluirlo falló en este móvil: $($r.Error)"
             $err = ''; $art = [pscustomobject]@{ Steps = @(); FailedStep = ''; Image = $null }
