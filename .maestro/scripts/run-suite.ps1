@@ -41,6 +41,15 @@ $envArgs = Get-MaestroEnvArgs -Extra $extra
 
 $outDir = Join-Path $script:MaestroRoot "out/$RunId-$Locale"
 New-Item -ItemType Directory -Force $outDir | Out-Null
+# Device facts for the report (the device may be gone when the report is regenerated later).
+$appVer = ((@(Invoke-Adb $Device shell dumpsys package $script:AppId) -match 'versionName=') | Select-Object -First 1) -replace '.*versionName=', ''
+[pscustomobject]@{
+    serial  = $Device
+    model   = ((Invoke-Adb $Device shell getprop ro.product.model) -join '').Trim()
+    android = ((Invoke-Adb $Device shell getprop ro.build.version.release) -join '').Trim()
+    appVer  = "$appVer".Trim()
+    kind    = $(if ($Physical) { 'móvil físico' } else { 'emulador' })
+} | ConvertTo-Json | Set-Content (Join-Path $outDir 'run-meta.json') -Encoding UTF8
 
 $target = if ($Path) { Join-Path $script:MaestroRoot $Path } else { $script:MaestroRoot }
 $maestroArgs = @('--device', $Device, 'test') + $envArgs + @(
