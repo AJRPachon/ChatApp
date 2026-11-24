@@ -5,7 +5,7 @@ name: "09 · Crear y gestionar un grupo"
 tags:
   - groups
 ---
-- runFlow: ../../subflows/login.yaml
+- runFlow: ../../subflows/ensure_logged_in.yaml
 - runFlow:
     file: ../../subflows/create_group.yaml
     env:

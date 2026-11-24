@@ -12,7 +12,8 @@
 param(
     [string]$Device = 'emulator-5554',
     [ValidateSet('es', 'en')][string]$Locale = 'es',
-    [string]$Path = '',
+    # One or more flow files/folders, comma-separated (e.g. flows/08_newchat_invitations,flows/09_groups).
+    [string[]]$Path = @(),
     [string]$IncludeTags = '',
     [string]$ExcludeTags = '',
     [string]$RunId = '',
@@ -51,7 +52,8 @@ $appVer = ((@(Invoke-Adb $Device shell dumpsys package $script:AppId) -match 've
     kind    = $(if ($Physical) { 'móvil físico' } else { 'emulador' })
 } | ConvertTo-Json | Set-Content (Join-Path $outDir 'run-meta.json') -Encoding UTF8
 
-$target = if ($Path) { Join-Path $script:MaestroRoot $Path } else { $script:MaestroRoot }
+$Path = @($Path | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+$target = if ($Path) { @($Path | ForEach-Object { Join-Path $script:MaestroRoot $_ }) } else { @($script:MaestroRoot) }
 $maestroArgs = @('--device', $Device, 'test') + $envArgs + @(
     '--format', 'junit',
     '--output', (Join-Path $outDir 'report.xml'),
@@ -61,8 +63,9 @@ if ($IncludeTags) { $maestroArgs += @('--include-tags', $IncludeTags) }
 if ($ExcludeTags) { $maestroArgs += @('--exclude-tags', $ExcludeTags) }
 $maestroArgs += $target
 
-Write-Host "RUN_ID=$RunId  locale=$Locale  device=$Device  target=$target"
+Write-Host "RUN_ID=$RunId  locale=$Locale  device=$Device  target=$($target -join ' ')"
 $savedAutofill = $null
+$savedRotation = $null
 if ($Physical) {
     # The phone's password manager offers to save the QA credentials into the owner's Google
     # account after every sign-in, in a sheet UI automation can't see. Turn the autofill service
@@ -70,6 +73,15 @@ if ($Physical) {
     $savedAutofill = ((Invoke-Adb $Device shell settings get secure autofill_service) | Out-String).Trim()
     Invoke-Adb $Device shell settings delete secure autofill_service | Out-Null
     Write-Host "[$Device] autocompletar desactivado temporalmente (era: $savedAutofill)"
+    # Auto-rotate follows how the phone sits on the desk: in landscape the keyboard covers the
+    # results. Lock portrait for the run and restore the owner's rotation settings afterwards.
+    $savedRotation = @(
+        ((Invoke-Adb $Device shell settings get system accelerometer_rotation) -join '').Trim(),
+        ((Invoke-Adb $Device shell settings get system user_rotation) -join '').Trim()
+    )
+    Invoke-Adb $Device shell settings put system accelerometer_rotation 0 | Out-Null
+    Invoke-Adb $Device shell settings put system user_rotation 0 | Out-Null
+    Write-Host "[$Device] rotación fijada en vertical (era: auto=$($savedRotation[0]), user=$($savedRotation[1]))"
 }
 try {
     & (Get-MaestroExe) @maestroArgs
@@ -78,6 +90,11 @@ try {
     if ($Physical -and $savedAutofill -and $savedAutofill -ne 'null') {
         Invoke-Adb $Device shell settings put secure autofill_service $savedAutofill | Out-Null
         Write-Host "[$Device] autocompletar restaurado: $((Invoke-Adb $Device shell settings get secure autofill_service) -join '')"
+    }
+    if ($Physical -and $savedRotation) {
+        if ($savedRotation[1] -match '^\d+$') { Invoke-Adb $Device shell settings put system user_rotation $savedRotation[1] | Out-Null }
+        if ($savedRotation[0] -match '^\d+$') { Invoke-Adb $Device shell settings put system accelerometer_rotation $savedRotation[0] | Out-Null }
+        Write-Host "[$Device] rotación restaurada"
     }
 }
 Write-Host "Resultados: $outDir"

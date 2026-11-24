@@ -4,27 +4,31 @@ name: "12 · Segundo plano y volver (lista, chat, perfil)"
 tags:
   - lifecycle
 ---
-- runFlow: ../../subflows/login.yaml
-- runFlow: ../../subflows/background_resume.yaml
+- runFlow: ../../subflows/ensure_logged_in.yaml
+- runFlow:
+    file: ../../subflows/background_resume.yaml
+    env:
+      EXPECT_ID: conversation_list_new_chat_fab
 - assertVisible:
     id: conversation_list_new_chat_fab
-- runFlow:
-    file: ../../subflows/open_conversation.yaml
-    env:
-      CONTACT: ${QA2_NAME}
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
 - tapOn:
     id: chat_input_field
 - inputText: "draft${RUN_ID}"
-- runFlow: ../../subflows/background_resume.yaml
+- runFlow:
+    file: ../../subflows/background_resume.yaml
+    env:
+      EXPECT_ID: chat_input_field
 - assertVisible:
     text: "draft${RUN_ID}"
-- tapOn:
-    id: chat_input_field
-- eraseText
+- runFlow: ../../subflows/clear_chat_input.yaml
 - tapOn:
     id: chat_back_button
 - tapOn:
     id: conversation_list_profile_button
-- runFlow: ../../subflows/background_resume.yaml
+- runFlow:
+    file: ../../subflows/background_resume.yaml
+    env:
+      EXPECT_ID: profile_display_name_field
 - assertVisible:
     id: profile_display_name_field

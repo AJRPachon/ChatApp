@@ -16,6 +16,4 @@ onFlowComplete:
 - setOrientation: PORTRAIT
 - assertVisible:
     text: "rotate${RUN_ID}"
-- tapOn:
-    id: chat_input_field
-- eraseText
+- runFlow: ../../subflows/clear_chat_input.yaml

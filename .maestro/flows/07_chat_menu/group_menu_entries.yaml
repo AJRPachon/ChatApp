@@ -5,7 +5,7 @@ tags:
   - chat
   - groups
 ---
-- runFlow: ../../subflows/login.yaml
+- runFlow: ../../subflows/ensure_logged_in.yaml
 - runFlow:
     file: ../../subflows/open_conversation.yaml
     env:

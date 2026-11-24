@@ -4,7 +4,7 @@ name: "03 · Hoja de archivados vacía"
 tags:
   - conversations
 ---
-- runFlow: ../../subflows/login.yaml
+- runFlow: ../../subflows/ensure_logged_in.yaml
 - tapOn:
     id: conversation_list_archived_button
 - assertVisible:

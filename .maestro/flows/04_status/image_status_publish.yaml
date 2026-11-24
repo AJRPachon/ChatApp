@@ -6,7 +6,7 @@ tags:
   - slow
   - emulator-only   # publishes the newest photo of the device
 ---
-- runFlow: ../../subflows/login.yaml
+- runFlow: ../../subflows/ensure_logged_in.yaml
 - extendedWaitUntil:
     visible:
       id: "status_add_media_button|status_add_more_button"

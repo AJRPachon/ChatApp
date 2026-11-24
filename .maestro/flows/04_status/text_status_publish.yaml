@@ -5,7 +5,7 @@ name: "04 · Publicar estado de texto y verlo"
 tags:
   - status
 ---
-- runFlow: ../../subflows/login.yaml
+- runFlow: ../../subflows/ensure_logged_in.yaml
 - runFlow:
     file: ../../subflows/status_publish_text.yaml
     env:
@@ -20,9 +20,16 @@ tags:
     while:
       notVisible:
         text: ".*status${RUN_ID}.*"
-    times: 15
+    times: 60
     commands:
       - tapOn:
           id: status_viewer_next_zone
+      # The next story's text renders a moment after the tap: without this wait the loop
+      # condition is checked too early and the flow taps past the status it is looking for.
+      - extendedWaitUntil:
+          visible:
+            text: ".*status${RUN_ID}.*"
+          timeout: 1500
+          optional: true
 - assertVisible:
     text: ".*status${RUN_ID}.*"

@@ -6,7 +6,7 @@ tags:
 onFlowComplete:
   - setAirplaneMode: disabled
 ---
-- runFlow: ../../subflows/login.yaml
+- runFlow: ../../subflows/ensure_logged_in.yaml
 - setAirplaneMode: enabled
 - extendedWaitUntil:
     visible:

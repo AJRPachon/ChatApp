@@ -1,10 +1,13 @@
 # Backup: passphrase validation, create a backup, restore with the right passphrase, and a wrong
 # passphrase shows the error dialog.
+# emulator-only: the backup goes to the Google Drive of the device's Google account, which on a
+# real phone is the owner's personal account.
 appId: com.ajrpachon.chatapp
 name: "10 · Copia de seguridad y restauración"
 tags:
   - profile
   - slow
+  - emulator-only
 ---
 - runFlow: ../../subflows/login.yaml
 - tapOn:

@@ -5,7 +5,7 @@ name: "10 · Sesiones y cancelar diálogos peligrosos"
 tags:
   - profile
 ---
-- runFlow: ../../subflows/login.yaml
+- runFlow: ../../subflows/ensure_logged_in.yaml
 - tapOn:
     id: conversation_list_profile_button
 - scrollUntilVisible:

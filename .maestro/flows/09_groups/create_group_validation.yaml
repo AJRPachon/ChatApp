@@ -4,7 +4,7 @@ name: "09 · Crear grupo - validación y volver atrás"
 tags:
   - groups
 ---
-- runFlow: ../../subflows/login.yaml
+- runFlow: ../../subflows/ensure_logged_in.yaml
 - tapOn:
     id: conversation_list_new_group_fab
 - tapOn:

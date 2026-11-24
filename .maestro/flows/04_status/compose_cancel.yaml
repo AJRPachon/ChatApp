@@ -4,7 +4,7 @@ name: "04 · Cancelar estado"
 tags:
   - status
 ---
-- runFlow: ../../subflows/login.yaml
+- runFlow: ../../subflows/ensure_logged_in.yaml
 - runFlow: ../../subflows/status_compose_text.yaml
 - assertVisible:
     id: status_publish_button

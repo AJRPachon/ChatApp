@@ -5,7 +5,7 @@ name: "04 · Menú añadir más (texto y multimedia)"
 tags:
   - status
 ---
-- runFlow: ../../subflows/login.yaml
+- runFlow: ../../subflows/ensure_logged_in.yaml
 - runFlow:
     file: ../../subflows/status_publish_text.yaml
     env:

@@ -10,7 +10,7 @@ tags:
 # chat re-syncs them from Supabase, so "Clear chat" doesn't stick. Excluded by default
 # (config.yaml) until fixed; run with -IncludeTags known-bug.
 ---
-- runFlow: ../../subflows/login.yaml
+- runFlow: ../../subflows/ensure_logged_in.yaml
 - runFlow:
     file: ../../subflows/create_group.yaml
     env:

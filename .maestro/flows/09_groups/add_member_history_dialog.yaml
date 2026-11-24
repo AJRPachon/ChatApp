@@ -9,7 +9,7 @@ tags:
     when:
       true: ${QA3_USERNAME != null && QA3_USERNAME != ''}
     commands:
-      - runFlow: ../../subflows/login.yaml
+      - runFlow: ../../subflows/ensure_logged_in.yaml
       - runFlow:
           file: ../../subflows/create_group.yaml
           env:
