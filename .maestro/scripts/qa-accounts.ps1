@@ -3,7 +3,10 @@
   Creates / deletes disposable Supabase users for the destructive Maestro flows.
 .DESCRIPTION
   Uses the Supabase Auth Admin API with SUPABASE_SERVICE_ROLE_KEY from .maestro/.env (local only,
-  never in CI). Created users are email-confirmed so they can sign in right away; they have no
+  never in CI). Deleting goes through the app's own path first: sign in as the user (anon key from
+  local.properties) and call the delete-account Edge Function, which clears the rows whose foreign
+  keys have no ON DELETE (invitations, messages, calls...). The Admin API delete is only the
+  fallback for users that cannot sign in (e.g. an unconfirmed sign-up). Created users are email-confirmed so they can sign in right away; they have no
   username yet, so the app shows the username-setup screen on first sign-in.
 .EXAMPLE
   $u = ./qa-accounts.ps1 -Action create -Label mfa        # prints and returns {id,email,password}
@@ -30,6 +33,9 @@ $headers = @{
     apikey        = $vars['SUPABASE_SERVICE_ROLE_KEY']
     Authorization = "Bearer $($vars['SUPABASE_SERVICE_ROLE_KEY'])"
 }
+$anonKey = (Get-Content (Join-Path $PSScriptRoot '../../local.properties') -Encoding UTF8 |
+    Where-Object { $_ -match '^\s*SUPABASE_ANON_KEY\s*=' } | Select-Object -First 1) -replace '^\s*SUPABASE_ANON_KEY\s*=\s*', ''
+$supabase = $vars['SUPABASE_URL'].TrimEnd('/')
 $prefix = 'qa.disposable+'
 $domain = '@example.com'
 
@@ -46,9 +52,23 @@ function Get-DisposableUsers([switch]$AnyEmail) {
     return $all | Where-Object { $_.email -like "$prefix*$domain" }
 }
 
+function Remove-ViaApp([string]$mail) {
+    # Same call the app makes from Profile > Delete account. Returns $false if it cannot sign in.
+    if (-not $anonKey -or -not $mail -or $mail -notlike '*@*') { return $false }
+    try {
+        $body = @{ email = $mail; password = $vars['DISPOSABLE_PASSWORD'] } | ConvertTo-Json
+        $session = Invoke-RestMethod -Method Post -Uri "$supabase/auth/v1/token?grant_type=password" `
+            -Headers @{ apikey = $anonKey } -Body $body -ContentType 'application/json'
+    } catch { return $false }
+    Invoke-RestMethod -Method Post -Uri "$supabase/functions/v1/delete-account" -ContentType 'application/json' `
+        -Headers @{ apikey = $anonKey; Authorization = "Bearer $($session.access_token)" } | Out-Null
+    return $true
+}
+
 function Remove-User([string]$id, [string]$mail) {
+    if (Remove-ViaApp $mail) { Write-Host "borrado $mail (delete-account)"; return }
     Invoke-RestMethod -Method Delete -Uri "$base/$id" -Headers $headers | Out-Null
-    Write-Host "borrado $mail"
+    Write-Host "borrado $mail (admin)"
 }
 
 switch ($Action) {

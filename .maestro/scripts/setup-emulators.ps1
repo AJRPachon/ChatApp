@@ -21,7 +21,7 @@ $repoRoot = Split-Path $script:MaestroRoot -Parent
 $apk = Join-Path $repoRoot 'app/build/outputs/apk/debug/app-debug.apk'
 $assets = Join-Path $script:MaestroRoot 'assets'
 
-foreach ($d in $Devices) {
+foreach ($d in ($Devices -split ',' | Where-Object { $_ })) {
     Write-Host "== $d =="
     Invoke-Adb $d wait-for-device
     # Animations stay ON: the status viewer's auto-advance timer is an animation, so
