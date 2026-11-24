@@ -1,0 +1,20 @@
+# Computes the current TOTP for SECRET into output.totp, waiting for the next 30 s window first if
+# fewer than 10 s are left (so the code is still valid when it reaches the server).
+appId: com.ajrpachon.chatapp
+---
+- runScript:
+    file: ../scripts/totp.js
+    env:
+      TOTP_SECRET: ${SECRET}
+- runFlow:
+    when:
+      true: ${output.totpRemaining < 10}
+    commands:
+      - runFlow:
+          file: wait.yaml
+          env:
+            MS: ${(output.totpRemaining + 1) * 1000}
+      - runScript:
+          file: ../scripts/totp.js
+          env:
+            TOTP_SECRET: ${SECRET}

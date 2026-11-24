@@ -1,0 +1,28 @@
+# [D] Profile > Sign out on all devices (confirmed) returns to the sign-in screen.
+appId: com.ajrpachon.chatapp
+name: "10 · Cerrar sesión en todos los dispositivos"
+tags:
+  - profile
+  - destructive
+---
+- runFlow:
+    file: ../../subflows/login_disposable.yaml
+    env:
+      D_EMAIL: ${D_SIGNOUT_EMAIL}
+      D_PASSWORD: ${DISPOSABLE_PASSWORD}
+      D_USERNAME: "qas${RUN_ID}"
+- tapOn:
+    id: conversation_list_profile_button
+- scrollUntilVisible:
+    element:
+      id: profile_sign_out_all_button
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: profile_sign_out_all_button
+- tapOn:
+    id: sign_out_all_confirm
+- extendedWaitUntil:
+    visible:
+      id: auth_email_field
+    timeout: 30000

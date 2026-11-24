@@ -1,0 +1,45 @@
+# [D] Profile > Delete account (confirmed): back on the sign-in screen, and the account can no
+# longer sign in.
+appId: com.ajrpachon.chatapp
+name: "10 · Borrar la cuenta"
+tags:
+  - profile
+  - destructive
+---
+- runFlow:
+    file: ../../subflows/login_disposable.yaml
+    env:
+      D_EMAIL: ${D_DELETE_EMAIL}
+      D_PASSWORD: ${DISPOSABLE_PASSWORD}
+      D_USERNAME: "qad${RUN_ID}"
+- tapOn:
+    id: conversation_list_profile_button
+- scrollUntilVisible:
+    element:
+      id: profile_delete_account_button
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: profile_delete_account_button
+- tapOn:
+    id: profile_delete_account_confirm_button
+- extendedWaitUntil:
+    visible:
+      id: auth_email_field
+    timeout: 45000
+- runFlow:
+    file: ../../subflows/login_fields.yaml
+    env:
+      LOGIN_EMAIL: ${D_DELETE_EMAIL}
+      LOGIN_PASSWORD: ${DISPOSABLE_PASSWORD}
+# The error snackbar is short-lived (it can be gone after the password-manager check): assert
+# the outcome instead — the sign-in never reaches the conversation list.
+- extendedWaitUntil:
+    visible:
+      id: conversation_list_new_chat_fab
+    timeout: 15000
+    optional: true
+- assertNotVisible:
+    id: conversation_list_new_chat_fab
+- assertVisible:
+    id: auth_submit_button

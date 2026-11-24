@@ -7,7 +7,7 @@
   ./run-suite.ps1 -IncludeTags smoke                # CI-like smoke subset
   ./run-suite.ps1 -Path flows/02_auth               # one section
   ./run-suite.ps1 -Path flows/02_auth/login_ok.yaml # one flow
-  ./run-suite.ps1 -IncludeTags destructive          # destructive flows (needs disposable accounts)
+  ./run-suite.ps1 -IncludeDestructive -IncludeTags destructive   # only the destructive flows
 #>
 param(
     [string]$Device = 'emulator-5554',
@@ -24,7 +24,11 @@ param(
     # With -Physical: also run the personal-data flows (gallery/file pickers, camera, location,
     # contact, Google Drive backup). The owner allowed it on 2026-11-24. The fixtures are pushed
     # to the phone so the pickers take them instead of the owner's files, and removed afterwards.
-    [switch]$AllowPersonalData
+    [switch]$AllowPersonalData,
+    # Run the destructive flows: creates one disposable account per flow (Supabase Admin API, needs
+    # SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY / DISPOSABLE_PASSWORD in .env) and deletes them all
+    # afterwards, including the one the sign-up flow registers through the UI.
+    [switch]$IncludeDestructive
 )
 . "$PSScriptRoot/common.ps1"
 
@@ -34,7 +38,8 @@ if ($Physical) {
     $sys = (Invoke-Adb $Device shell getprop persist.sys.locale).Trim()
     if (-not $sys.StartsWith($Locale)) { throw "[$Device] el dispositivo está en '$sys'; cámbialo a mano a '$Locale' (no se toca un móvil real)." }
     if ((Invoke-Adb $Device shell dumpsys window) -match 'isKeyguardShowing=true') { throw "[$Device] desbloquea el móvil antes de ejecutar." }
-    $baseExclude = @('multidevice', 'destructive', 'known-bug', 'emulator-only')
+    $baseExclude = @('multidevice', 'known-bug', 'emulator-only')
+    if (-not $IncludeDestructive) { $baseExclude += 'destructive' }
     if (-not $AllowPersonalData) { $baseExclude += 'personal-data' }
     $ExcludeTags = ($baseExclude + ($ExcludeTags -split ',' | Where-Object { $_ })) -join ','
 } else {
@@ -43,6 +48,22 @@ if ($Physical) {
 }
 
 $extra = @{ RUN_ID = $RunId; LOCALE = $Locale }
+$signupEmail = $null
+$createdUsers = @()
+if ($IncludeDestructive) {
+    $qa = Read-MaestroEnv
+    foreach ($label in @('username', 'totp', 'mfa', 'signout', 'delete')) {
+        $u = & "$PSScriptRoot/qa-accounts.ps1" -Action create -Label $label -RunId $RunId
+        $extra["D_$($label.ToUpper())_EMAIL"] = $u.email
+        $createdUsers += $u
+    }
+    # Plus-address of the QA mailbox: the confirmation mail is delivered instead of bouncing.
+    $local, $domain = $qa['QA_EMAIL'] -split '@', 2
+    $signupEmail = "$($local.Split('+')[0])+signup$RunId@$domain"
+    $extra['SIGNUP_EMAIL'] = $signupEmail
+} elseif (-not $Physical) {
+    $ExcludeTags = (@('destructive') + ($ExcludeTags -split ',' | Where-Object { $_ })) -join ','
+}
 foreach ($k in $ExtraEnv.Keys) { $extra[$k] = $ExtraEnv[$k] }
 $envArgs = Get-MaestroEnvArgs -Extra $extra
 
@@ -116,6 +137,16 @@ try {
     if ($Physical -and $savedAutofill -and $savedAutofill -ne 'null') {
         Invoke-Adb $Device shell settings put secure autofill_service $savedAutofill | Out-Null
         Write-Host "[$Device] autocompletar restaurado: $((Invoke-Adb $Device shell settings get secure autofill_service) -join '')"
+    }
+    if ($IncludeDestructive) {
+        # By id first (the delete-account flow may already have removed its own: ignore 404).
+        foreach ($u in $createdUsers) {
+            try { & "$PSScriptRoot/qa-accounts.ps1" -Action delete-id -Id $u.id -Email $u.email } catch { Write-Host "ya no existe $($u.email)" }
+        }
+        if ($signupEmail) {
+            try { & "$PSScriptRoot/qa-accounts.ps1" -Action delete -Email $signupEmail }
+            catch { Write-Warning "No se pudo borrar $signupEmail (listar usuarios falla): bórralo a mano. $_" }
+        }
     }
     if ($pushedAssets) {
         foreach ($p in $pushedAssets) { Invoke-Adb $Device shell rm -f $p | Out-Null }

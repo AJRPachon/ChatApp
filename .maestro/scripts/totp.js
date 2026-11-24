@@ -80,3 +80,6 @@ function totp(secret) {
 }
 
 output.totp = totp(TOTP_SECRET);
+// Seconds left in the current 30 s window: subflows/totp_code.yaml waits for a fresh window when
+// the code is about to expire before it can be typed and verified.
+output.totpRemaining = 30 - Math.floor(Date.now() / 1000) % 30;

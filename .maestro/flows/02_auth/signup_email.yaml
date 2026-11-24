@@ -1,0 +1,36 @@
+# [D] Sign-up tab with a new email: the app asks to confirm the email (snackbar), or, if the
+# project auto-confirms sign-ups, goes straight to the username setup. The account is deleted by
+# run-suite.ps1 after the run (it is a plus-address of the QA mailbox, so no mail bounces).
+appId: com.ajrpachon.chatapp
+name: "02 · Registro con email"
+tags:
+  - auth
+  - destructive
+---
+- runFlow: ../../subflows/launch_clean.yaml
+- extendedWaitUntil:
+    visible:
+      id: auth_email_field
+    timeout: 15000
+- tapOn:
+    id: auth_tab_sign_up
+- tapOn:
+    id: auth_email_field
+- runFlow: ../../subflows/dismiss_system_popups.yaml
+- inputText: ${SIGNUP_EMAIL}
+- hideKeyboard
+- tapOn:
+    id: auth_password_field
+- inputText: ${DISPOSABLE_PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: auth_confirm_password_field
+- inputText: ${DISPOSABLE_PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: auth_submit_button
+- runFlow: ../../subflows/decline_save_password.yaml
+- extendedWaitUntil:
+    visible:
+      id: "auth_snackbar|auth_username_field"
+    timeout: 30000

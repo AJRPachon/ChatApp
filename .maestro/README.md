@@ -54,7 +54,7 @@ dispositivo y en dos a la vez, en español e inglés.
 .maestro/scripts/run-suite.ps1 -Locale en                       # la misma en inglés
 .maestro/scripts/run-suite.ps1 -Path flows/05_chat_send         # una sección
 .maestro/scripts/run-suite.ps1 -IncludeTags smoke               # lo que corre CI
-.maestro/scripts/run-suite.ps1 -IncludeTags destructive         # cuentas desechables
+.maestro/scripts/run-suite.ps1 -IncludeDestructive -IncludeTags destructive  # registro, username, 2FA, cerrar sesiones, borrar cuenta
 .maestro/scripts/run-multidevice.ps1                            # escenarios de dos dispositivos
 .maestro/scripts/run-multidevice.ps1 -IncludeDestructive        # + invitaciones y sesiones (cuentas desechables)
 ```
