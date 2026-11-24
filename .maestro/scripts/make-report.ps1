@@ -18,13 +18,16 @@ param(
     # short without report.xml are rebuilt from each flow's commands.json.
     [string[]]$RunDirs = @(),
     [string]$Output = '',
-    [string]$Title = ''
+    [string]$Title = '',
+    # No embedded screenshots (for a report that is published): on a real phone they can show the
+    # owner's data (system banners with the Google account, address book...).
+    [switch]$NoImages
 )
 . "$PSScriptRoot/common.ps1"
 
 $outRoot = Join-Path $script:MaestroRoot 'out'
 $runs = Get-ChildItem $outRoot -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'report.xml') } | Sort-Object Name
-$RunDirs = @($RunDirs | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ } | ForEach-Object { (Resolve-Path $_).Path } | Sort-Object)
+$RunDirs = @($RunDirs | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ } | ForEach-Object { (Resolve-Path $_).Path } | Sort-Object -Unique)
 if ($RunDirs.Count -gt 0) { $RunDir = $RunDirs[-1] }
 if (-not $RunDir) { $RunDir = ($runs | Select-Object -Last 1).FullName }
 $RunDir = (Resolve-Path $RunDir).Path
@@ -162,7 +165,7 @@ foreach ($f in (Get-ChildItem (Join-Path $script:MaestroRoot 'flows') -Recurse -
     $art = [pscustomobject]@{ Steps = @(); FailedStep = ''; Image = $null }
     if ($r) {
         $status = if ($r.Ok) { 'PASA' } else { 'FALLA' }; $err = $r.Error; $dur = $r.Seconds
-        $art = Get-Artifacts $r.Dir $r.Name (-not $r.Ok)
+        $art = Get-Artifacts $r.Dir $r.Name ((-not $r.Ok) -and -not $NoImages)
         $rm = Join-Path $r.Dir 'run-meta.json'
         $caseKind = if (Test-Path $rm) { (Get-Content $rm -Raw -Encoding UTF8 | ConvertFrom-Json).kind } else { '' }
         if ($RunDirs.Count -gt 1 -and ($tags -contains 'emulator-only' -or $tags -contains 'personal-data') -and $caseKind -and $caseKind -ne 'emulador') {

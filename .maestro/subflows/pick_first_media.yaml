@@ -32,7 +32,7 @@ env:
 - runFlow:
     when:
       visible:
-        text: "(Listo|Done|A.adir|Add)"
+        text: "(Listo|Hecho|Done|A.adir|Add)"
     commands:
       - tapOn:
-          text: "(Listo|Done|A.adir|Add)"
+          text: "(Listo|Hecho|Done|A.adir|Add)"

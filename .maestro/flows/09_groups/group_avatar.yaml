@@ -1,0 +1,28 @@
+# Group info (admin): tapping the avatar opens the photo picker; the picked image is uploaded and
+# the "photo updated" message shows. Picks the newest photo: with -AllowPersonalData the fixture
+# image is pushed first.
+appId: com.ajrpachon.chatapp
+name: "09 · Cambiar la foto del grupo"
+tags:
+  - groups
+  - personal-data   # system photo picker
+---
+- runFlow: ../../subflows/ensure_logged_in.yaml
+- runFlow:
+    file: ../../subflows/open_conversation.yaml
+    env:
+      CONTACT: ${QA_GROUP}
+- tapOn:
+    id: chat_top_bar_menu_button
+- tapOn:
+    id: chat_menu_group_info
+- tapOn:
+    id: group_info_avatar
+- runFlow: ../../subflows/pick_first_media.yaml
+- extendedWaitUntil:
+    visible:
+      id: group_info_snackbar
+    timeout: 45000
+- assertVisible:
+    id: group_info_avatar
+- back

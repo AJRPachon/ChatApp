@@ -6,6 +6,9 @@ name: "02 · Registro con email"
 tags:
   - auth
   - destructive
+onFlowComplete:
+  # Signed in with another account: never leave its session for ensure_logged_in to reuse.
+  - clearState
 ---
 - runFlow: ../../subflows/launch_clean.yaml
 - extendedWaitUntil:

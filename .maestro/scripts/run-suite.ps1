@@ -48,11 +48,13 @@ if ($Physical) {
 }
 
 $extra = @{ RUN_ID = $RunId; LOCALE = $Locale }
+# Real phone: deny the contacts permission so the owner's address book never shows on screen.
+if ($Physical) { $extra['CONTACTS_PERMISSION'] = 'deny' }
 $signupEmail = $null
 $createdUsers = @()
 if ($IncludeDestructive) {
     $qa = Read-MaestroEnv
-    foreach ($label in @('username', 'totp', 'mfa', 'signout', 'delete')) {
+    foreach ($label in @('username', 'totp', 'mfa', 'signout', 'delete', 'inviter', 'invitee')) {
         $u = & "$PSScriptRoot/qa-accounts.ps1" -Action create -Label $label -RunId $RunId
         $extra["D_$($label.ToUpper())_EMAIL"] = $u.email
         $createdUsers += $u

@@ -5,6 +5,9 @@ tags:
   - profile
   - destructive
   - slow
+onFlowComplete:
+  # Signed in with another account: never leave its session for ensure_logged_in to reuse.
+  - clearState
 ---
 - runFlow:
     file: ../../subflows/login_disposable.yaml

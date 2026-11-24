@@ -9,6 +9,9 @@ appId: com.ajrpachon.chatapp
     clearState: true
     permissions:
       all: allow
+      # Real phones: run-suite -Physical sets deny so the owner's contacts never show on screen
+      # (New chat lists them) nor in the report screenshots.
+      contacts: ${CONTACTS_PERMISSION || 'allow'}
 # A save-password sheet left over from a previous sign-in (real phones) covers the app.
 - runFlow:
     when:

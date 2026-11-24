@@ -5,6 +5,9 @@ name: "10 · Borrar la cuenta"
 tags:
   - profile
   - destructive
+onFlowComplete:
+  # Signed in with another account: never leave its session for ensure_logged_in to reuse.
+  - clearState
 ---
 - runFlow:
     file: ../../subflows/login_disposable.yaml

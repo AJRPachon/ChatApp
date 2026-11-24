@@ -11,6 +11,9 @@ appId: com.ajrpachon.chatapp
     stopApp: true
     permissions:
       all: allow
+      # Real phones: run-suite -Physical sets deny so the owner's contacts never show on screen
+      # (New chat lists them) nor in the report screenshots.
+      contacts: ${CONTACTS_PERMISSION || 'allow'}
 - extendedWaitUntil:
     visible:
       id: "conversation_list_new_chat_fab|auth_email_field|root_warning_continue_button|integrity_blocked_screen|applock_screen"
