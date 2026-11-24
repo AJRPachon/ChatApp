@@ -1,0 +1,55 @@
+# Tapping the quote inside a reply scrolls the chat back to the quoted message.
+# "anchor" is sent just before the original: it is never quoted, so seeing it proves the jump.
+appId: com.ajrpachon.chatapp
+name: "06 · Tocar la cita lleva al mensaje original"
+tags:
+  - chat
+  - slow
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "anchor-${RUN_ID}"
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "quoted-${RUN_ID}"
+- evalScript: ${output.n = 0}
+- repeat:
+    times: 12
+    commands:
+      - evalScript: ${output.n = output.n + 1}
+      - runFlow:
+          file: ../../subflows/send_text.yaml
+          env:
+            TEXT: "filler${output.n}-${RUN_ID}"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      text: "quoted-${RUN_ID}"
+    direction: UP
+    timeout: 30000
+    centerElement: true
+- swipe:
+    from:
+      text: "quoted-${RUN_ID}"
+    direction: RIGHT
+- assertVisible:
+    id: reply_preview_bar
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "answer-${RUN_ID}"
+- hideKeyboard
+- extendedWaitUntil:
+    notVisible:
+      text: "anchor-${RUN_ID}"
+    timeout: 5000
+- tapOn:
+    id: message_reply_quote
+    index: -1
+- extendedWaitUntil:
+    visible:
+      text: "anchor-${RUN_ID}"
+    timeout: 10000

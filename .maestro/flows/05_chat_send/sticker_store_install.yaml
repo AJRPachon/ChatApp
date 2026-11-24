@@ -1,0 +1,53 @@
+# Sticker picker "+" opens the store: installing a pack adds its tab to the picker. Packs are
+# installed locally, so once all are installed (reused session) the store shows its empty state.
+appId: com.ajrpachon.chatapp
+name: "05 · Tienda de stickers - instalar un paquete"
+tags:
+  - chat
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/open_attach.yaml
+    env:
+      ITEM: attach_sticker
+- tapOn:
+    id: sticker_open_store
+- extendedWaitUntil:
+    visible:
+      id: "sticker_store_install|sticker_store_empty"
+    timeout: 15000
+- runFlow:
+    when:
+      visible:
+        id: sticker_store_install
+    commands:
+      - tapOn:
+          id: sticker_store_install
+          index: 0
+- waitForAnimationToEnd:
+    timeout: 3000
+# Installing closes the store (and, on some devices, the whole picker): get back to the picker.
+- runFlow:
+    when:
+      visible:
+        id: sticker_store_sheet
+    commands:
+      - back
+- runFlow:
+    when:
+      notVisible:
+        id: sticker_picker_tab_stickers
+    commands:
+      - runFlow:
+          file: ../../subflows/open_attach.yaml
+          env:
+            ITEM: attach_sticker
+- extendedWaitUntil:
+    visible:
+      id: sticker_pack_tab_0
+    timeout: 10000
+- tapOn:
+    id: sticker_pack_tab_0
+- assertVisible:
+    id: sticker_item_0
+- back

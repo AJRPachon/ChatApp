@@ -165,7 +165,8 @@ captura, y flows no ejecutados) que `run-suite.ps1` genera al terminar. Para reg
 ## Huecos conocidos (no automatizables o sin UI)
 
 - Intents sin UI: fijar/guardar mensaje, reintentar envío, transcribir audio, filtros/orden/búsqueda
-  de la lista, tema y fondo del chat (ocultos), borrar estado y color del estado.
+  de la lista, tema y fondo del chat (ocultos), borrar estado y color del estado, resumir con IA
+  (`ChatIntent.AiSummarize` no tiene botón en la hoja de IA).
 - Google Sign-In (hoja del sistema de Credential Manager).
 - Las acciones del menú de la lista (borrar, vaciar, salir) no piden confirmación: observación de
   producto, no fallo de test.

@@ -1,0 +1,39 @@
+# Rotating keeps the state of the profile screen and of the new chat search (query and results).
+appId: com.ajrpachon.chatapp
+name: "12 · Rotación en perfil y nuevo chat"
+tags:
+  - lifecycle
+onFlowComplete:
+  - setOrientation: PORTRAIT
+---
+- runFlow: ../../subflows/ensure_logged_in.yaml
+- tapOn:
+    id: conversation_list_profile_button
+- assertVisible:
+    id: profile_display_name_field
+- setOrientation: LANDSCAPE_LEFT
+- assertVisible:
+    id: profile_display_name_field
+- setOrientation: PORTRAIT
+- assertVisible:
+    text: ${QA_NAME}
+- back
+- tapOn:
+    id: conversation_list_new_chat_fab
+- tapOn:
+    id: newchat_search_field
+- inputText: ${QA2_USERNAME}
+- extendedWaitUntil:
+    visible:
+      id: "newchat_user_row_${QA2_USERNAME}"
+    timeout: 20000
+- hideKeyboard
+- setOrientation: LANDSCAPE_LEFT
+- extendedWaitUntil:
+    visible:
+      id: "newchat_user_row_${QA2_USERNAME}"
+    timeout: 10000
+- setOrientation: PORTRAIT
+- assertVisible:
+    id: "newchat_user_row_${QA2_USERNAME}"
+- back

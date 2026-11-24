@@ -1,0 +1,43 @@
+# Attach > Stickers > GIF: search a term and send the first result. Without a Giphy key on the
+# device there is nothing to search (the key dialog itself is covered by sticker_and_gif).
+appId: com.ajrpachon.chatapp
+name: "05 · Buscar y enviar un GIF"
+tags:
+  - chat
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/open_attach.yaml
+    env:
+      ITEM: attach_sticker
+- tapOn:
+    id: sticker_picker_tab_gifs
+- extendedWaitUntil:
+    visible:
+      id: "gif_search_field|gif_configure_key_button"
+    timeout: 20000
+- runFlow:
+    when:
+      visible:
+        id: gif_configure_key_button
+    commands:
+      - back
+- runFlow:
+    when:
+      visible:
+        id: gif_search_field
+    commands:
+      - tapOn:
+          id: gif_search_field
+      - inputText: "cat"
+      - hideKeyboard
+      - extendedWaitUntil:
+          visible:
+            id: gif_item_0
+          timeout: 20000
+      - tapOn:
+          id: gif_item_0
+      - extendedWaitUntil:
+          visible:
+            id: message_gif_own
+          timeout: 30000

@@ -1,0 +1,31 @@
+# Group chat: typing "@" lists the members; picking QA2 inserts @username, and the sent message
+# carries the mention.
+appId: com.ajrpachon.chatapp
+name: "09 · Mencionar a un miembro del grupo"
+tags:
+  - groups
+---
+- runFlow: ../../subflows/ensure_logged_in.yaml
+- runFlow:
+    file: ../../subflows/open_conversation.yaml
+    env:
+      CONTACT: ${QA_GROUP}
+- runFlow: ../../subflows/clear_chat_input.yaml
+- tapOn:
+    id: chat_input_field
+- inputText: "@"
+- extendedWaitUntil:
+    visible:
+      id: "mention_suggestion_${QA2_USERNAME}"
+    timeout: 10000
+- tapOn:
+    id: "mention_suggestion_${QA2_USERNAME}"
+- assertNotVisible:
+    id: "mention_suggestion_.*"
+- inputText: "men-${RUN_ID}"
+- tapOn:
+    id: chat_send_button
+- extendedWaitUntil:
+    visible:
+      text: ".*@${QA2_USERNAME}.*men-${RUN_ID}.*"
+    timeout: 15000

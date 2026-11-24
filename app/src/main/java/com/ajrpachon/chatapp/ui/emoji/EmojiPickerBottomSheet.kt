@@ -82,6 +82,7 @@ internal fun EmojiPickerContent(
                     Tab(
                         selected = state.selectedTab == index,
                         onClick = { onIntent(EmojiPickerIntent.SelectTab(index)) },
+                        modifier = Modifier.qaTag("emoji_tab_$index"),
                         text = {
                             Text(
                                 text = cat.icon,

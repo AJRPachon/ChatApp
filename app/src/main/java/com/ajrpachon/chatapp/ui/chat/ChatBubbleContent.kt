@@ -542,6 +542,7 @@ internal fun ReplyQuote(
             .clip(ChatAppShapeExtras.Thumbnail)
             .background(bg)
             .height(IntrinsicSize.Min)
+            .qaTag("message_reply_quote")
             .clickable { onClick() },
     ) {
         Box(
@@ -670,6 +671,7 @@ internal fun LinkPreviewCard(data: LinkPreviewData) {
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = Modifier
             .fillMaxWidth()
+            .qaTag("message_link_preview")
             .clickable {
                 val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(data.url)).apply {
                     addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)

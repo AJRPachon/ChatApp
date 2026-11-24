@@ -1,0 +1,25 @@
+# Profile: confirming an empty display name does not save it; the previous name stays.
+appId: com.ajrpachon.chatapp
+name: "10 · Nombre visible vacío no se guarda"
+tags:
+  - profile
+---
+- runFlow: ../../subflows/ensure_logged_in.yaml
+- tapOn:
+    id: conversation_list_profile_button
+- assertVisible:
+    text: ${QA_NAME}
+# Tap the right edge so the cursor lands at the end of the existing text before erasing.
+- tapOn:
+    id: profile_display_name_field
+    point: "95%,50%"
+- eraseText: 60
+- pressKey: Enter
+- back
+- tapOn:
+    id: conversation_list_profile_button
+- extendedWaitUntil:
+    visible:
+      text: ${QA_NAME}
+    timeout: 10000
+- back

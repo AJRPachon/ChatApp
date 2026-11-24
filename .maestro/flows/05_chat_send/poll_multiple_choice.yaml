@@ -1,0 +1,47 @@
+# Attach > Poll with "multiple answers" on: two options can be voted at once (both counts go to 1).
+appId: com.ajrpachon.chatapp
+name: "05 · Encuesta de opción múltiple"
+tags:
+  - chat
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/open_attach.yaml
+    env:
+      ITEM: attach_poll
+- tapOn:
+    id: poll_question_field
+- inputText: "mq-${RUN_ID}"
+- tapOn:
+    id: poll_option_field_0
+- inputText: "M${RUN_ID}"
+- tapOn:
+    id: poll_option_field_1
+- inputText: "N${RUN_ID}"
+- hideKeyboard
+- tapOn:
+    id: poll_multiple_switch
+- tapOn:
+    id: poll_create_button
+- extendedWaitUntil:
+    visible:
+      id: "poll_vote_M${RUN_ID}"
+    timeout: 30000
+- tapOn:
+    id: "poll_vote_M${RUN_ID}"
+- extendedWaitUntil:
+    visible:
+      id: "poll_count_M${RUN_ID}"
+      text: "1"
+    timeout: 15000
+- tapOn:
+    id: "poll_vote_N${RUN_ID}"
+- extendedWaitUntil:
+    visible:
+      id: "poll_count_N${RUN_ID}"
+      text: "1"
+    timeout: 15000
+# Multiple choice: the first vote is kept.
+- assertVisible:
+    id: "poll_count_M${RUN_ID}"
+    text: "1"

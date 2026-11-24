@@ -1,0 +1,33 @@
+# Sending without connection leaves the message pending; when the network is back it is sent.
+appId: com.ajrpachon.chatapp
+name: "05 · Enviar sin conexión y enviarlo al volver la red"
+tags:
+  - chat
+onFlowComplete:
+  - setAirplaneMode: disabled
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- setAirplaneMode: enabled
+- extendedWaitUntil:
+    visible:
+      id: offline_banner
+    timeout: 15000
+    optional: true
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "off-${RUN_ID}"
+- hideKeyboard
+- extendedWaitUntil:
+    visible:
+      id: "message_status_(pending|error)"
+      below:
+        text: "off-${RUN_ID}"
+    timeout: 15000
+- setAirplaneMode: disabled
+- extendedWaitUntil:
+    visible:
+      id: "message_status_(sent|read)"
+      below:
+        text: "off-${RUN_ID}"
+    timeout: 90000

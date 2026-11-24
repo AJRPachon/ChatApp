@@ -1,0 +1,38 @@
+# Scrolling up in a long chat shows the "scroll to bottom" button; tapping it returns to the
+# newest message and hides the button.
+appId: com.ajrpachon.chatapp
+name: "06 · Botón ir al final del chat"
+tags:
+  - chat
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "bottom-${RUN_ID}"
+- hideKeyboard
+- assertNotVisible:
+    id: scroll_to_bottom_fab
+- repeat:
+    times: 4
+    commands:
+      - swipe:
+          start: "50%,30%"
+          end: "50%,80%"
+          duration: 300
+- extendedWaitUntil:
+    visible:
+      id: scroll_to_bottom_fab
+    timeout: 5000
+- assertNotVisible:
+    text: "bottom-${RUN_ID}"
+- tapOn:
+    id: scroll_to_bottom_fab
+- extendedWaitUntil:
+    visible:
+      text: "bottom-${RUN_ID}"
+    timeout: 10000
+- extendedWaitUntil:
+    notVisible:
+      id: scroll_to_bottom_fab
+    timeout: 5000

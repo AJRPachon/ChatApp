@@ -1,0 +1,47 @@
+# New chat: block a user with no relationship (testbot, a QA account) and unblock it again.
+appId: com.ajrpachon.chatapp
+name: "08 · Bloquear y desbloquear un usuario"
+tags:
+  - newchat
+env:
+  TARGET: ${BLOCK_TARGET || 'testbot'}
+---
+- runFlow: ../../subflows/ensure_logged_in.yaml
+- tapOn:
+    id: conversation_list_new_chat_fab
+- tapOn:
+    id: newchat_search_field
+- inputText: ${TARGET}
+- extendedWaitUntil:
+    visible:
+      id: "newchat_user_row_${TARGET}"
+    timeout: 20000
+- hideKeyboard
+# A previous failed run may have left it blocked.
+- runFlow:
+    when:
+      visible:
+        id: "newchat_unblock_${TARGET}"
+    commands:
+      - tapOn:
+          id: "newchat_unblock_${TARGET}"
+      - extendedWaitUntil:
+          visible:
+            id: "newchat_block_${TARGET}"
+          timeout: 15000
+- tapOn:
+    id: "newchat_block_${TARGET}"
+- extendedWaitUntil:
+    visible:
+      id: "newchat_blocked_${TARGET}"
+    timeout: 15000
+- assertVisible:
+    id: "newchat_unblock_${TARGET}"
+- tapOn:
+    id: "newchat_unblock_${TARGET}"
+- extendedWaitUntil:
+    visible:
+      id: "newchat_block_${TARGET}"
+    timeout: 15000
+- assertNotVisible:
+    id: "newchat_blocked_${TARGET}"

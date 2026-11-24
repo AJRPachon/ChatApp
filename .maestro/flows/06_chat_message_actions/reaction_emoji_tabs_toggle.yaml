@@ -1,0 +1,45 @@
+# Reaction sheet: an emoji from another category tab adds a reaction; choosing the same emoji
+# again removes it (toggle).
+appId: com.ajrpachon.chatapp
+name: "06 · Reacción de otra categoría y quitarla"
+tags:
+  - chat
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "rx-${RUN_ID}"
+- hideKeyboard
+- runFlow:
+    file: ../../subflows/long_press_message.yaml
+    env:
+      TEXT: "rx-${RUN_ID}"
+- tapOn:
+    id: message_menu_react
+- tapOn:
+    id: emoji_tab_1
+- tapOn:
+    id: emoji_item_0
+- extendedWaitUntil:
+    visible:
+      id: message_reaction_chip
+      below:
+        text: "rx-${RUN_ID}"
+    timeout: 15000
+- runFlow:
+    file: ../../subflows/long_press_message.yaml
+    env:
+      TEXT: "rx-${RUN_ID}"
+- tapOn:
+    id: message_menu_react
+- tapOn:
+    id: emoji_tab_1
+- tapOn:
+    id: emoji_item_0
+- extendedWaitUntil:
+    notVisible:
+      id: message_reaction_chip
+      below:
+        text: "rx-${RUN_ID}"
+    timeout: 15000
