@@ -5,6 +5,7 @@ name: "10 · Bloqueo de la app"
 tags:
   - profile
   - slow
+  - emulator-only   # needs the emulator PIN (1234)
 onFlowComplete:
   - launchApp:
       stopApp: false

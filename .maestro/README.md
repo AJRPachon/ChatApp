@@ -59,6 +59,21 @@ dispositivo y en dos a la vez, en español e inglés.
 .maestro/scripts/run-multidevice.ps1 -IncludeDestructive        # + invitaciones y sesiones (cuentas desechables)
 ```
 
+### En un móvil físico
+
+```powershell
+.maestro/scripts/run-suite.ps1 -Device <serial> -Physical
+```
+
+`-Physical` no escribe el PIN del emulador ni cambia el idioma ni el teclado del sistema (exige
+que ya esté en el idioma pedido y desbloqueado) y excluye los flows `emulator-only`: los que
+subirían a Supabase fotos, cámara, ubicación o contactos reales del dueño del móvil, el bloqueo de
+app (PIN) y el nombre visible (autocorrección de Gboard). Cada flow hace `clearState`, así que
+**borra los datos de ChatApp del móvil** (habrá que volver a iniciar sesión).
+Además desactiva el servicio de autocompletar del móvil solo durante la ejecución y lo restaura al
+terminar: si no, el Gestor de contraseñas de Google ofrece guardar las credenciales QA en la cuenta
+del dueño tras cada login, en una hoja que la automatización no puede ver.
+
 Los resultados (junit, capturas, logcat) quedan en `.maestro/out/<RUN_ID>-<idioma>/`.
 
 ## Convenciones
@@ -73,7 +88,9 @@ Los resultados (junit, capturas, logcat) quedan en `.maestro/out/<RUN_ID>-<idiom
 - Nombres de flow sin `: / \ * ? < > |` (Maestro crea carpetas con ellos y en Windows falla).
 - **Selectores solo en ASCII**: en Windows Maestro lee mal emojis y acentos del YAML ("👍" llegaba
   como "?"). Para emojis se usa `emoji_item_<n>`; en regex, `.` en lugar de la letra acentuada.
-- Tags transversales: `smoke`, `slow`, `multidevice`, `destructive`, `known-bug`.
+- Tags transversales: `smoke`, `slow`, `multidevice`, `destructive`, `known-bug`, `emulator-only`.
+- No compiles con Gradle mientras corre la suite: un host saturado hace que los emuladores den ANR
+  al arrancar la app.
 
 ## Peculiaridades del entorno
 
@@ -99,6 +116,7 @@ Los resultados (junit, capturas, logcat) quedan en `.maestro/out/<RUN_ID>-<idiom
 | Estado | Bug |
 |---|---|
 | Arreglado | `NetworkMonitor` no detectaba el modo avión (re-consultaba `activeNetwork` en `onLost`) |
+| Arreglado | `MainActivity.onCreate` leía disco en el hilo principal (detección de root + prefs): StrictMode lo marcaba y en un dispositivo lento provocaba ANR en el primer frame |
 | Arreglado | El banner "Sin conexión" se pintaba debajo de la barra de estado |
 | Arreglado | El aviso de modo incógnito del chat también se pintaba debajo de la barra de estado |
 | Arreglado | El visor de estados se cerraba solo al abrirlo mientras cargaba |

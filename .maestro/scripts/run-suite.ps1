@@ -16,14 +16,24 @@ param(
     [string]$IncludeTags = '',
     [string]$ExcludeTags = '',
     [string]$RunId = '',
-    [hashtable]$ExtraEnv = @{}
+    [hashtable]$ExtraEnv = @{},
+    # Real phone: never types the emulator PIN or changes system settings (language), and skips
+    # flows tagged emulator-only (they would upload the owner's photos/camera/location/contacts).
+    [switch]$Physical
 )
 . "$PSScriptRoot/common.ps1"
 
 if (-not $RunId) { $RunId = New-RunId }
-Unlock-Device -Device $Device
 Stop-MobileMcpAgent -Device $Device
-& "$PSScriptRoot/set-locale.ps1" -Device $Device -Locale $Locale
+if ($Physical) {
+    $sys = (Invoke-Adb $Device shell getprop persist.sys.locale).Trim()
+    if (-not $sys.StartsWith($Locale)) { throw "[$Device] el dispositivo está en '$sys'; cámbialo a mano a '$Locale' (no se toca un móvil real)." }
+    if ((Invoke-Adb $Device shell dumpsys window) -match 'isKeyguardShowing=true') { throw "[$Device] desbloquea el móvil antes de ejecutar." }
+    $ExcludeTags = (@('multidevice', 'destructive', 'known-bug', 'emulator-only') + ($ExcludeTags -split ',' | Where-Object { $_ })) -join ','
+} else {
+    Unlock-Device -Device $Device
+    & "$PSScriptRoot/set-locale.ps1" -Device $Device -Locale $Locale
+}
 
 $extra = @{ RUN_ID = $RunId; LOCALE = $Locale }
 foreach ($k in $ExtraEnv.Keys) { $extra[$k] = $ExtraEnv[$k] }
@@ -43,7 +53,23 @@ if ($ExcludeTags) { $maestroArgs += @('--exclude-tags', $ExcludeTags) }
 $maestroArgs += $target
 
 Write-Host "RUN_ID=$RunId  locale=$Locale  device=$Device  target=$target"
-& (Get-MaestroExe) @maestroArgs
-$code = $LASTEXITCODE
+$savedAutofill = $null
+if ($Physical) {
+    # The phone's password manager offers to save the QA credentials into the owner's Google
+    # account after every sign-in, in a sheet UI automation can't see. Turn the autofill service
+    # off for the duration of the run only, and always put the original value back.
+    $savedAutofill = ((Invoke-Adb $Device shell settings get secure autofill_service) | Out-String).Trim()
+    Invoke-Adb $Device shell settings delete secure autofill_service | Out-Null
+    Write-Host "[$Device] autocompletar desactivado temporalmente (era: $savedAutofill)"
+}
+try {
+    & (Get-MaestroExe) @maestroArgs
+    $code = $LASTEXITCODE
+} finally {
+    if ($Physical -and $savedAutofill -and $savedAutofill -ne 'null') {
+        Invoke-Adb $Device shell settings put secure autofill_service $savedAutofill | Out-Null
+        Write-Host "[$Device] autocompletar restaurado: $((Invoke-Adb $Device shell settings get secure autofill_service) -join '')"
+    }
+}
 Write-Host "Resultados: $outDir"
 exit $code

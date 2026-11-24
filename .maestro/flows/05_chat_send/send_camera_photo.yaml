@@ -4,6 +4,7 @@ name: "05 · Enviar foto desde la cámara"
 tags:
   - chat
   - slow
+  - emulator-only   # captures with the real camera
 ---
 - runFlow: ../../subflows/open_chat_with_qa2.yaml
 - runFlow:

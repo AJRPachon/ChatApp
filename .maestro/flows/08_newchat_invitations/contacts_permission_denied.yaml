@@ -23,12 +23,14 @@ tags:
 - tapOn:
     id: auth_email_field
 - inputText: ${QA_EMAIL}
+- hideKeyboard
 - tapOn:
     id: auth_password_field
 - inputText: ${QA_PASSWORD}
 - hideKeyboard
 - tapOn:
     id: auth_submit_button
+- runFlow: ../../subflows/decline_save_password.yaml
 - extendedWaitUntil:
     visible:
       id: conversation_list_new_chat_fab

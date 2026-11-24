@@ -5,6 +5,7 @@ name: "05 · Enviar imagen desde galería y abrir visor"
 tags:
   - chat
   - slow
+  - emulator-only   # gallery picks the newest photo of the device
 ---
 - runFlow: ../../subflows/open_chat_with_qa2.yaml
 - runFlow:

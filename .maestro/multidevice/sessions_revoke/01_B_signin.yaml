@@ -8,6 +8,7 @@ tags:
 - tapOn:
     id: auth_email_field
 - inputText: ${DISPOSABLE_EMAIL}
+- hideKeyboard
 - tapOn:
     id: auth_password_field
 - inputText: ${DISPOSABLE_PASSWORD}

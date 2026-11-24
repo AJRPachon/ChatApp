@@ -5,6 +5,7 @@ name: "05 · Enviar contacto"
 tags:
   - chat
   - slow
+  - emulator-only   # needs the QA Contact fixture / would share a real contact
 ---
 - runFlow: ../../subflows/open_chat_with_qa2.yaml
 - runFlow:

@@ -4,6 +4,7 @@ name: "04 · Publicar estado con imagen"
 tags:
   - status
   - slow
+  - emulator-only   # publishes the newest photo of the device
 ---
 - runFlow: ../../subflows/login.yaml
 - extendedWaitUntil:

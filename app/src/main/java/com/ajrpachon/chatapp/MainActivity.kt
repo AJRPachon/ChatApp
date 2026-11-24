@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp
 
+import kotlinx.coroutines.withContext
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -479,10 +480,15 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun checkRootAndWarnIfNeeded() {
-        val prefs = getSharedPreferences("security_prefs", Context.MODE_PRIVATE)
-        val alreadyAccepted = prefs.getBoolean("root_warning_accepted", false)
-        if (!alreadyAccepted && RootDetector.isRooted(packageManager)) {
-            showRootWarning = true
+        // Off the main thread: the prefs read and RootDetector's file probes (su binaries, Magisk
+        // paths) are disk I/O in onCreate, flagged by StrictMode and long enough on a slow device
+        // to ANR the first frame (seen in the E2E suite on emulators under load).
+        lifecycleScope.launch {
+            val rooted = withContext(Dispatchers.IO) {
+                val prefs = getSharedPreferences("security_prefs", Context.MODE_PRIVATE)
+                !prefs.getBoolean("root_warning_accepted", false) && RootDetector.isRooted(packageManager)
+            }
+            if (rooted) showRootWarning = true
         }
     }
 

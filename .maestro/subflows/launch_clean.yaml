@@ -9,6 +9,13 @@ appId: com.ajrpachon.chatapp
     clearState: true
     permissions:
       all: allow
+# A save-password sheet left over from a previous sign-in (real phones) covers the app.
+- runFlow:
+    when:
+      visible:
+        text: ".*(Gestor de contrase.as|Password Manager).*"
+    commands:
+      - back
 - extendedWaitUntil:
     visible:
       id: "auth_email_field|conversation_list_new_chat_fab|root_warning_continue_button|integrity_blocked_screen"
