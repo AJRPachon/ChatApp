@@ -18,7 +18,15 @@ tags:
     id: chat_menu_group_info
 - tapOn:
     id: group_info_avatar
-- runFlow: ../../subflows/pick_first_media.yaml
+# Single pick (GetContent): the picker returns on the first tap. Not pick_first_media: its
+# multi-select "Done" check takes ~7 s to rule out, longer than the 4 s snackbar on a fast upload.
+- extendedWaitUntil:
+    visible:
+      text: "(Foto|Photo) .*"
+    timeout: 15000
+- tapOn:
+    text: "(Foto|Photo) .*"
+    index: 0
 - extendedWaitUntil:
     visible:
       id: group_info_snackbar

@@ -11,7 +11,7 @@ appId: com.ajrpachon.chatapp
           text: "(Usar PIN|Use PIN)"
 - extendedWaitUntil:
     visible:
-      text: ".*(PIN).*"
+      id: ".*(auth_credential_input|lockPassword)"
     timeout: 10000
 - inputText: "1234"
 - pressKey: Enter

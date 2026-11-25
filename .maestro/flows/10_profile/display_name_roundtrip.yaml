@@ -4,6 +4,8 @@ name: "10 · Nombre visible ida y vuelta"
 tags:
   - profile
   - emulator-only   # needs Gboard suggestions off (Enter could commit a suggestion as the name)
+# Even with suggestions off Gboard completes a learned word on Enter ("claudeqa" was saved as
+# "claudeqa2"/"claudeqa3"): typing a space commits the word as typed, Backspace removes the space.
 ---
 - runFlow: ../../subflows/login.yaml
 - tapOn:
@@ -13,7 +15,8 @@ tags:
     id: profile_display_name_field
     point: "95%,50%"
 - eraseText: 60
-- inputText: "qaname${RUN_ID}"
+- inputText: "qaname${RUN_ID} "
+- pressKey: Backspace
 - pressKey: Enter
 - back
 - tapOn:
@@ -25,7 +28,8 @@ tags:
     id: profile_display_name_field
     point: "95%,50%"
 - eraseText: 60
-- inputText: ${QA_NAME}
+- inputText: "${QA_NAME} "
+- pressKey: Backspace
 - pressKey: Enter
 - back
 - tapOn:

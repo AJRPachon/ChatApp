@@ -27,12 +27,18 @@ onFlowComplete:
       MS: "35000"
 - launchApp:
     stopApp: false
+# The lock screen opens the system prompt by itself on resume, which then covers it.
 - extendedWaitUntil:
     visible:
-      id: applock_screen
+      id: "applock_screen|.*auth_credential_input|.*lockPassword"
     timeout: 15000
-- tapOn:
-    id: applock_unlock_button
+- runFlow:
+    when:
+      notVisible:
+        id: ".*(auth_credential_input|lockPassword)"
+    commands:
+      - tapOn:
+          id: applock_unlock_button
 - runFlow:
     file: ../../subflows/unlock_system_prompt.yaml
 - extendedWaitUntil:
