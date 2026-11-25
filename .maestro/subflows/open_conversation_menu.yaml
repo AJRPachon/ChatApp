@@ -6,6 +6,7 @@ appId: com.ajrpachon.chatapp
     element:
       id: "conversation_row_${CONTACT}"
     direction: DOWN
+    centerElement: true
 - longPressOn:
     id: "conversation_row_${CONTACT}"
 - tapOn:

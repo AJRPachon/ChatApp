@@ -46,6 +46,14 @@ if ($Physical) {
     Unlock-Device -Device $Device
     & "$PSScriptRoot/set-locale.ps1" -Device $Device -Locale $Locale
 }
+# Groups left by earlier runs ("delete conversation" is local only) pile up in QA's list and push
+# the chat with QA2 below the FABs: leave them before starting.
+try {
+    & "$PSScriptRoot/cleanup-qa-groups.ps1"
+    # The app keeps groups it was removed from in Room, so the list only shrinks after a fresh
+    # sync: clear the app data (emulators only; the first flow signs in again).
+    if (-not $Physical) { Invoke-Adb $Device shell pm clear com.ajrpachon.chatapp | Out-Null }
+} catch { Write-Host "(no se han podido limpiar los grupos de prueba: $($_.Exception.Message))" }
 
 $extra = @{ RUN_ID = $RunId; LOCALE = $Locale }
 # Real phone: deny the contacts permission so the owner's address book never shows on screen.

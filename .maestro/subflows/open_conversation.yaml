@@ -5,6 +5,7 @@ appId: com.ajrpachon.chatapp
     element:
       id: "conversation_row_${CONTACT}"
     direction: DOWN
+    centerElement: true
     timeout: 20000
 - tapOn:
     id: "conversation_row_${CONTACT}"

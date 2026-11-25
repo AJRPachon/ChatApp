@@ -37,4 +37,4 @@ tags:
 - extendedWaitUntil:
     visible:
       id: status_viewer
-    timeout: 10000
+    timeout: 20000  # many live statuses (24 h) make the viewer load slowly

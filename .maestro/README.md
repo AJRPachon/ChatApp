@@ -144,12 +144,18 @@ captura, y flows no ejecutados) que `run-suite.ps1` genera al terminar. Para reg
   tardó 60 min, pero con los dos emuladores a plena carga el A se colgó ("El proceso system no
   responde") y el B falló en flows que en solitario pasan: de momento la suite fiable es la de un
   emulador.
-- **Gboard y "claudeqa2"**: en los emuladores Gboard aprende "claudeqa2" (muchos flows lo buscan) y a
-  lo confirmaba en lugar del "claudeqa" escrito, aunque las correcciones estuvieran desactivadas.
-  Desde que el campo "Nombre visible" tiene la autocorrección desactivada (`autoCorrectEnabled =
-  false`) ya no pasa. Si `display_name_roundtrip` deja el nombre visible de QA como "claudeqa2",
-  restáuralo desde Perfil. Cambiar el idioma del sistema (suite en inglés) puede reactivar las
+- **Gboard y "claudeqa2"**: en los emuladores Gboard aprende "claudeqa2" y "claudeqa3" (muchos flows
+  los buscan) y al pulsar Enter confirmaba uno de ellos en lugar del "claudeqa" escrito, incluso con
+  la autocorrección del campo desactivada (`autoCorrectEnabled = false`). Por eso
+  `display_name_roundtrip` pega el nombre desde el portapapeles (`setClipboard` + `pasteText`) en vez
+  de teclearlo. Si aun así deja el nombre visible de QA mal, restáuralo desde Perfil. Cambiar el idioma del sistema (suite en inglés) puede reactivar las
   correcciones: vuelve a pasar `setup-emulators.ps1`.
+- **Grupos de ejecuciones anteriores**: los flows crean grupos `<prefijo><RUN_ID>` que, por los
+  bugs de borrar conversación y de salir de grupos, se quedaban en la lista de QA y empujaban el chat
+  con QA2 debajo de los botones flotantes. `run-suite.ps1` llama al empezar a
+  `cleanup-qa-groups.ps1`, que saca a QA, QA2 y QA3 de esos grupos (lo mismo que "Salir del grupo";
+  nunca toca `QA_GROUP`), y en emuladores borra los datos de la app para que la lista se rehaga.
+  Para verlo sin cambiar nada: `./scripts/cleanup-qa-groups.ps1 -WhatIf`.
 - **Supabase pausado**: si el proyecto se pausa por inactividad, todos los logins fallan con
   "Unable to resolve host". Reactívalo desde el dashboard.
 
@@ -178,6 +184,8 @@ captura, y flows no ejecutados) que `run-suite.ps1` genera al terminar. Para reg
 | Arreglado (migración `20261125160705` aplicada + app) | Las reacciones no llegaban en tiempo real: `message_reactions` no estaba en la publicación de Realtime y la app solo las descargaba al abrir el chat. Ahora `ReactionRepositoryImpl.observeReactions` se suscribe a altas y bajas mientras el chat está abierto |
 | Abierto | El diálogo de error de la copia de seguridad muestra el mensaje crudo de la excepción, en inglés ("Failed to get Google access token", `BackupRepositoryImpl`) |
 | Abierto (`known-bug`) | "Vaciar chat" solo borra Room: al abrir el chat se re-sincroniza y vuelve todo |
+| Abierto (`known-bug` en `delete_conversation`) | "Borrar conversación" desde la lista solo borra Room (`ConversationRepositoryImpl.deleteConversation`): en la siguiente sincronización la conversación vuelve. Por eso los grupos de prueba se acumulaban en la lista de QA (ver `cleanup-qa-groups.ps1`) |
+| Abierto | La app no quita de la lista los grupos de los que te han sacado (o de los que sales desde otro dispositivo): siguen en Room hasta borrar los datos de la app |
 | Abierto | Las encuestas son solo locales (`PollRepositoryImpl` no tiene backend): el otro participante ve "Cargando encuesta…" para siempre y los votos no se comparten. Fuera de `group_realtime` hasta que se implemente |
 | Observación | Cancelar una invitación enviada la marca como `rejected` (`InvitationRepositoryImpl.cancelSentInvitation`): en "Enviadas" sigue apareciendo, como "Rechazada", no como cancelada |
 | Observación | "Nuevo chat" no se entera en tiempo real de que aceptan tu invitación: la fila sigue "pendiente" hasta repetir la búsqueda |

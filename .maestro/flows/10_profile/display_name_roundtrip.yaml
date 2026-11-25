@@ -4,7 +4,8 @@ name: "10 · Nombre visible ida y vuelta"
 tags:
   - profile
   - emulator-only   # needs Gboard suggestions off (Enter could commit a suggestion as the name)
-# The field has autocorrect off, so Gboard no longer replaces "claudeqa" with the learned "claudeqa2".
+# The name is pasted, not typed: Gboard completes a typed "claudeqa" to the learned "claudeqa2"/"claudeqa3"
+# on Enter even with autocorrect off, while pasted text has no composing word to complete.
 ---
 - runFlow: ../../subflows/ensure_logged_in.yaml
 - tapOn:
@@ -14,7 +15,8 @@ tags:
     id: profile_display_name_field
     point: "95%,50%"
 - eraseText: 60
-- inputText: "qaname${RUN_ID}"
+- setClipboard: "qaname${RUN_ID}"
+- pasteText
 - pressKey: Enter
 - back
 - tapOn:
@@ -26,7 +28,8 @@ tags:
     id: profile_display_name_field
     point: "95%,50%"
 - eraseText: 60
-- inputText: ${QA_NAME}
+- setClipboard: ${QA_NAME}
+- pasteText
 - pressKey: Enter
 - back
 - tapOn:

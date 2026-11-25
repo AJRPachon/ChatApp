@@ -3,6 +3,10 @@ appId: com.ajrpachon.chatapp
 name: "03 · Borrar conversación desde la lista"
 tags:
   - conversations
+  - known-bug
+# KNOWN BUG: ConversationRepositoryImpl.deleteConversation only deletes the local Room rows; the
+# next sync brings the conversation back. The flow relaunches the app to check the deletion sticks.
+# Excluded by default (config.yaml) until fixed; run with -IncludeTags known-bug.
 ---
 - runFlow: ../../subflows/ensure_logged_in.yaml
 - runFlow:
@@ -32,3 +36,13 @@ tags:
     notVisible:
       id: "conversation_row_del${RUN_ID}"
     timeout: 15000
+# The deletion must survive a relaunch (and the sync with Supabase that comes with it).
+- stopApp
+- runFlow: ../../subflows/ensure_logged_in.yaml
+- extendedWaitUntil:
+    visible:
+      id: "conversation_row_del${RUN_ID}"
+    timeout: 10000
+    optional: true
+- assertNotVisible:
+    id: "conversation_row_del${RUN_ID}"

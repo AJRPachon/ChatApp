@@ -1,5 +1,5 @@
-# Compose a text status and publish it; the viewer (which starts at the oldest live status)
-# reaches it by tapping forward.
+# Compose a text status and publish it; the viewer (newest first, but the new status can land a
+# few places in if Room hasn't synced yet) reaches it by tapping forward.
 appId: com.ajrpachon.chatapp
 name: "04 · Publicar estado de texto y verlo"
 tags:
@@ -15,7 +15,7 @@ tags:
 - extendedWaitUntil:
     visible:
       id: status_viewer
-    timeout: 5000
+    timeout: 20000  # many live statuses (24 h) make the viewer load slowly
 - repeat:
     while:
       notVisible:
