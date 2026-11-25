@@ -204,6 +204,8 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -dns-server 8.8.8.8
           script: |
             adb install -r -g apk/app-debug.apk
+            # Slow CI emulators often show an "isn't responding" dialog (Pixel Launcher) over the app.
+            adb shell settings put global hide_error_dialogs 1
             maestro test .maestro --include-tags smoke --format junit --output maestro-report.xml --test-output-dir maestro-out -e QA_EMAIL="$QA_EMAIL" -e QA_PASSWORD="$QA_PASSWORD" -e QA_NAME=claudeqa -e QA2_NAME=claudeqa2 -e QA2_USERNAME=claudeqa2 -e QA_GROUP="Maestro Test Group" -e RUN_ID=ci${{ github.run_id }}
 
       - name: Upload Maestro results
