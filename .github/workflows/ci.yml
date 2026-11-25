@@ -173,6 +173,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check QA secrets
+        env:
+          QA_EMAIL: ${{ secrets.QA_EMAIL }}
+          QA_PASSWORD: ${{ secrets.QA_PASSWORD }}
+        run: |
+          if [ -z "$QA_EMAIL" ] || [ -z "$QA_PASSWORD" ]; then
+            echo "::error::Faltan los secrets QA_EMAIL y QA_PASSWORD del repositorio (cuenta QA de Maestro)"
+            exit 1
+          fi
+
       - name: Download debug APK
         uses: actions/download-artifact@v4
         with:
