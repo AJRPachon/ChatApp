@@ -8,9 +8,9 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.fragment.app.FragmentActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -75,7 +75,9 @@ import org.koin.android.ext.android.get
 
 private const val APP_LOCK_TIMEOUT_MS = 30_000L
 
-class MainActivity : ComponentActivity() {
+// FragmentActivity (not plain ComponentActivity): the app-lock BiometricPrompt needs one; with
+// ComponentActivity the prompt never opened and an enabled app lock could not be unlocked.
+class MainActivity : FragmentActivity() {
 
     private val pendingConversationId = mutableStateOf<String?>(null)
     private val pendingOtherUserName = mutableStateOf<String?>(null)
