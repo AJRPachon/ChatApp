@@ -55,6 +55,7 @@ dispositivo y en dos a la vez, en español e inglés.
 .maestro/scripts/run-suite.ps1 -Path flows/05_chat_send         # una sección
 .maestro/scripts/run-suite.ps1 -IncludeTags smoke               # lo que corre CI
 .maestro/scripts/run-suite.ps1 -IncludeDestructive -IncludeTags destructive  # registro, username, 2FA, cerrar sesiones, borrar cuenta
+.maestro/scripts/run-suite-parallel.ps1                         # experimental: mitad en cada emulador (ver Notas)
 .maestro/scripts/run-multidevice.ps1                            # escenarios de dos dispositivos
 .maestro/scripts/run-multidevice.ps1 -IncludeDestructive        # + invitaciones y sesiones (cuentas desechables)
 .maestro/scripts/run-multidevice.ps1 -IncludeKnownBugs          # + escenarios que fallan por un bug abierto
@@ -118,7 +119,7 @@ captura, y flows no ejecutados) que `run-suite.ps1` genera al terminar. Para reg
 - Nombres de flow sin `: / \ * ? < > |` (Maestro crea carpetas con ellos y en Windows falla).
 - **Selectores solo en ASCII**: en Windows Maestro lee mal emojis y acentos del YAML ("👍" llegaba
   como "?"). Para emojis se usa `emoji_item_<n>`; en regex, `.` en lugar de la letra acentuada.
-- Tags transversales: `smoke`, `slow`, `multidevice`, `destructive`, `known-bug`, `emulator-only`, `personal-data`.
+- Tags transversales: `smoke`, `slow`, `multidevice`, `destructive`, `known-bug`, `emulator-only`, `personal-data`, `requires-google`, `flaky` (excluido por defecto: falla por el entorno, no por la app; se lanza con `-Path`).
 - No compiles con Gradle mientras corre la suite: un host saturado hace que los emuladores den ANR
   al arrancar la app.
 
@@ -138,6 +139,11 @@ captura, y flows no ejecutados) que `run-suite.ps1` genera al terminar. Para reg
 - **PIN del dispositivo**: el emulador arranca bloqueado; los scripts lo desbloquean (`Unlock-Device`).
 - **Play Integrity**: no hay bypass. En emuladores el check suele dar `Error` (la app continúa);
   si diera `Failed`, `launch_clean` falla con un mensaje explícito.
+- **Suite en paralelo (`run-suite-parallel.ps1`)**: reparte por secciones (los flows que comparten el
+  chat con QA2 o el perfil de QA van en el mismo emulador). En este PC (32 GB) la primera prueba
+  tardó 60 min, pero con los dos emuladores a plena carga el A se colgó ("El proceso system no
+  responde") y el B falló en flows que en solitario pasan: de momento la suite fiable es la de un
+  emulador.
 - **Gboard y "claudeqa2"**: en los emuladores Gboard aprende "claudeqa2" (muchos flows lo buscan) y a
   veces lo confirma en lugar del "claudeqa" escrito, aunque las correcciones estén desactivadas.
   `display_name_roundtrip` puede fallar por eso y dejar el nombre visible de QA como "claudeqa2":

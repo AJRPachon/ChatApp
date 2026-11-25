@@ -8,3 +8,4 @@ excludeTags:
   - destructive
   - known-bug
   - requires-google
+  - flaky

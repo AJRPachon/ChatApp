@@ -38,7 +38,7 @@ if ($Physical) {
     $sys = (Invoke-Adb $Device shell getprop persist.sys.locale).Trim()
     if (-not $sys.StartsWith($Locale)) { throw "[$Device] el dispositivo está en '$sys'; cámbialo a mano a '$Locale' (no se toca un móvil real)." }
     if ((Invoke-Adb $Device shell dumpsys window) -match 'isKeyguardShowing=true') { throw "[$Device] desbloquea el móvil antes de ejecutar." }
-    $baseExclude = @('multidevice', 'known-bug', 'emulator-only', 'requires-google')
+    $baseExclude = @('multidevice', 'known-bug', 'emulator-only', 'requires-google', 'flaky')
     if (-not $IncludeDestructive) { $baseExclude += 'destructive' }
     if (-not $AllowPersonalData) { $baseExclude += 'personal-data' }
     $ExcludeTags = ($baseExclude + ($ExcludeTags -split ',' | Where-Object { $_ })) -join ','

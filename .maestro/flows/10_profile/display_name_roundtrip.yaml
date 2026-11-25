@@ -3,6 +3,7 @@ appId: com.ajrpachon.chatapp
 name: "10 · Nombre visible ida y vuelta"
 tags:
   - profile
+  - flaky
   - emulator-only   # needs Gboard suggestions off (Enter could commit a suggestion as the name)
 # Known flaky on emulators: Gboard learns "claudeqa2" (searched by many flows) and can commit it
 # instead of the typed "claudeqa", even with corrections off. See README.
