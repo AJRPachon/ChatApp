@@ -5,7 +5,7 @@ name: "01 · Deep link a un chat (válido e inválido)"
 tags:
   - launch
 ---
-- runFlow: ../../subflows/login.yaml
+- runFlow: ../../subflows/ensure_logged_in.yaml
 # Invalid id -> ignored
 - openLink: "chatapp://chat/not-a-uuid?name=x"
 - assertVisible:

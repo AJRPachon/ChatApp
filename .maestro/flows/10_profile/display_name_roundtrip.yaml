@@ -4,10 +4,10 @@ name: "10 · Nombre visible ida y vuelta"
 tags:
   - profile
   - emulator-only   # needs Gboard suggestions off (Enter could commit a suggestion as the name)
-# Even with suggestions off Gboard completes a learned word on Enter ("claudeqa" was saved as
-# "claudeqa2"/"claudeqa3"): typing a space commits the word as typed, Backspace removes the space.
+# Known flaky on emulators: Gboard learns "claudeqa2" (searched by many flows) and can commit it
+# instead of the typed "claudeqa", even with corrections off. See README.
 ---
-- runFlow: ../../subflows/login.yaml
+- runFlow: ../../subflows/ensure_logged_in.yaml
 - tapOn:
     id: conversation_list_profile_button
 # Tap the right edge so the cursor lands at the end of the existing text before erasing.
@@ -15,8 +15,7 @@ tags:
     id: profile_display_name_field
     point: "95%,50%"
 - eraseText: 60
-- inputText: "qaname${RUN_ID} "
-- pressKey: Backspace
+- inputText: "qaname${RUN_ID}"
 - pressKey: Enter
 - back
 - tapOn:
@@ -28,8 +27,7 @@ tags:
     id: profile_display_name_field
     point: "95%,50%"
 - eraseText: 60
-- inputText: "${QA_NAME} "
-- pressKey: Backspace
+- inputText: ${QA_NAME}
 - pressKey: Enter
 - back
 - tapOn:

@@ -4,13 +4,32 @@ name: "10 · Estado en línea, tema y código QR"
 tags:
   - profile
 ---
-- runFlow: ../../subflows/login.yaml
+- runFlow: ../../subflows/ensure_logged_in.yaml
 - tapOn:
     id: conversation_list_profile_button
+# Shared QA account: it must end with "show online" ON (a lost tap used to leave it off silently).
+- runFlow:
+    when:
+      visible:
+        id: profile_online_status_switch
+        checked: false
+    commands:
+      - tapOn:
+          id: profile_online_status_switch
 - tapOn:
     id: profile_online_status_switch
+- extendedWaitUntil:
+    visible:
+      id: profile_online_status_switch
+      checked: false
+    timeout: 5000
 - tapOn:
     id: profile_online_status_switch
+- extendedWaitUntil:
+    visible:
+      id: profile_online_status_switch
+      checked: true
+    timeout: 5000
 - scrollUntilVisible:
     element:
       id: profile_theme_dark_option

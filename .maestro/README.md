@@ -138,6 +138,11 @@ captura, y flows no ejecutados) que `run-suite.ps1` genera al terminar. Para reg
 - **PIN del dispositivo**: el emulador arranca bloqueado; los scripts lo desbloquean (`Unlock-Device`).
 - **Play Integrity**: no hay bypass. En emuladores el check suele dar `Error` (la app continúa);
   si diera `Failed`, `launch_clean` falla con un mensaje explícito.
+- **Gboard y "claudeqa2"**: en los emuladores Gboard aprende "claudeqa2" (muchos flows lo buscan) y a
+  veces lo confirma en lugar del "claudeqa" escrito, aunque las correcciones estén desactivadas.
+  `display_name_roundtrip` puede fallar por eso y dejar el nombre visible de QA como "claudeqa2":
+  restáuralo desde Perfil. Cambiar el idioma del sistema (suite en inglés) puede reactivar las
+  correcciones: vuelve a pasar `setup-emulators.ps1`.
 - **Supabase pausado**: si el proyecto se pausa por inactividad, todos los logins fallan con
   "Unable to resolve host". Reactívalo desde el dashboard.
 
