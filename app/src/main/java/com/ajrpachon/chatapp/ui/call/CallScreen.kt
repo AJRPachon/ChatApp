@@ -55,6 +55,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -296,11 +298,23 @@ private fun CallScreenBody(
                     }
                 }
 
-                tracks.isNotEmpty() && !state.isRemoteVideoMuted -> VideoView(
-                    track = tracks.first(),
-                    room = currentRoom,
-                    modifier = Modifier.fillMaxSize().testTag("call_remote_video"),
-                )
+                // The tag/description sit on a Compose wrapper: an AndroidView's own semantics
+                // never reach the accessibility tree (so neither TalkBack nor UI tests saw it).
+                tracks.isNotEmpty() && !state.isRemoteVideoMuted -> {
+                    val remoteVideoCd = stringResource(R.string.call_remote_video_cd)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .semantics { contentDescription = remoteVideoCd }
+                            .testTag("call_remote_video"),
+                    ) {
+                        VideoView(
+                            track = tracks.first(),
+                            room = currentRoom,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                }
             }
         }
 

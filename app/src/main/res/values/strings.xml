@@ -292,6 +292,7 @@
     <!-- Call -->
     <string name="call_requesting_permissions">Solicitando permisos...</string>
     <string name="call_screen_sharing_active">Compartiendo pantalla</string>
+    <string name="call_remote_video_cd">Vídeo del otro participante</string>
     <string name="call_connecting">Conectando...</string>
     <string name="call_ringing">Llamando...</string>
     <string name="call_ended">Llamada terminada</string>
