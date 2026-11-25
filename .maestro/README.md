@@ -33,7 +33,7 @@ dispositivo y en dos a la vez, en español e inglés.
 | 11_search | búsqueda global |
 | 12_lifecycle | segundo plano y vuelta, rotación |
 | 13_debug_menu | menú QA/Debug (solo debug): listas de difusión y estadísticas de uso |
-| multidevice/ | mensajería en tiempo real, invitaciones, estados, llamadas, notificaciones, sesiones |
+| multidevice/ | mensajería en tiempo real, invitaciones, estados, llamadas (1:1 voz/vídeo, grupo, rechazar, cancelar, rotación), notificaciones, reenviar + tarjeta de contacto, sesiones |
 
 ## Puesta en marcha
 
@@ -57,6 +57,7 @@ dispositivo y en dos a la vez, en español e inglés.
 .maestro/scripts/run-suite.ps1 -IncludeDestructive -IncludeTags destructive  # registro, username, 2FA, cerrar sesiones, borrar cuenta
 .maestro/scripts/run-multidevice.ps1                            # escenarios de dos dispositivos
 .maestro/scripts/run-multidevice.ps1 -IncludeDestructive        # + invitaciones y sesiones (cuentas desechables)
+.maestro/scripts/run-multidevice.ps1 -IncludeKnownBugs          # + escenarios que fallan por un bug abierto
 ```
 
 ### En un móvil físico
@@ -157,10 +158,17 @@ captura, y flows no ejecutados) que `run-suite.ps1` genera al terminar. Para reg
 | Arreglado (migración `20261124094500` aplicada) | Hacer admin / quitar admin seguía fallando con un 500: la política `allow_self_promote_when_no_admin` (creada fuera de las migraciones) consultaba `conversation_participants` dentro de una política de esa misma tabla (recursión infinita, 42P17), y `minimal_grants` nunca concedió `UPDATE` sobre la tabla. Ahora la comprobación va en `group_has_admin()` (`SECURITY DEFINER`) y hay `GRANT UPDATE (role)` |
 | Arreglado | Al salir de un grupo desde "Info del grupo" la app volvía al chat (vacío) del grupo abandonado en lugar de a la lista |
 | Arreglado | Salir de un grupo no lo quitaba de la lista: solo se borraba el miembro en Room, no la conversación ni sus mensajes |
+| Arreglado | El bloqueo de la app nunca se podía desbloquear: `AppLockScreen` necesita una `FragmentActivity` para el `BiometricPrompt` y `MainActivity` era un `ComponentActivity` (el botón no hacía nada) |
+| Arreglado | El vídeo remoto de la llamada no tenía nodo de accesibilidad (la etiqueta iba en el `AndroidView`): ahora tiene descripción para TalkBack |
+| **Abierto, seguridad** (`known-bug` en `status_reply`) | El cifrado E2EE de los mensajes 1:1 nunca está activo: nadie publica `profiles.public_key` (todas a NULL) y todos los mensajes tienen `is_encrypted = false`. El chat normal envía en claro porque no le llega `otherUserId`; responder a un estado sí intenta cifrar y falla siempre ("No se pudo cifrar el mensaje") |
+| **Abierto, seguridad** (`known-bug` en `sessions_revoke*`) | "Sesiones activas" es solo local (`active_sessions` en Room, id derivado del usuario): nunca muestra otros dispositivos, y "cerrar sesión" / "cerrar las demás" solo borran filas locales, no cierran nada en el servidor |
+| **Abierto, pendiente de aplicar** (`supabase/migrations/20261125110000_grant_message_reactions.sql`) | Las reacciones nunca llegan al servidor: `authenticated` no tiene `GRANT` sobre `message_reactions` (la tabla tiene 0 filas) y `ReactionRepositoryImpl` se traga el error; el otro participante nunca ve tu reacción |
 | Abierto | El diálogo de error de la copia de seguridad muestra el mensaje crudo de la excepción, en inglés ("Failed to get Google access token", `BackupRepositoryImpl`) |
 | Abierto (`known-bug`) | "Vaciar chat" solo borra Room: al abrir el chat se re-sincroniza y vuelve todo |
 | Abierto | Las encuestas son solo locales (`PollRepositoryImpl` no tiene backend): el otro participante ve "Cargando encuesta…" para siempre y los votos no se comparten. Fuera de `group_realtime` hasta que se implemente |
 | Observación | Cancelar una invitación enviada la marca como `rejected` (`InvitationRepositoryImpl.cancelSentInvitation`): en "Enviadas" sigue apareciendo, como "Rechazada", no como cancelada |
+| Observación | "Nuevo chat" no se entera en tiempo real de que aceptan tu invitación: la fila sigue "pendiente" hasta repetir la búsqueda |
+| Observación | El llamante cuelga por "llamada perdida" a los 20 s (`MISSED_CALL_TIMEOUT_MS`), aunque el otro acepte un segundo después; en emuladores, la videollamada no siempre llega a tiempo |
 | Por confirmar | Los estados con imagen se ven en blanco en el visor |
 
 ## Huecos conocidos (no automatizables o sin UI)

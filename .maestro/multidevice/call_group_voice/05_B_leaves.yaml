@@ -1,0 +1,16 @@
+# B leaves the group call too (a group call can outlive its creator, so B hangs up itself).
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- runFlow:
+    when:
+      visible:
+        id: call_hangup_button
+    commands:
+      - tapOn:
+          id: call_hangup_button
+- extendedWaitUntil:
+    notVisible:
+      id: call_screen
+    timeout: 30000

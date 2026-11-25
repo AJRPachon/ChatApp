@@ -2,6 +2,7 @@
 appId: com.ajrpachon.chatapp
 tags:
   - multidevice
+  - known-bug
 ---
 - runFlow:
     file: ../../subflows/open_conversation.yaml

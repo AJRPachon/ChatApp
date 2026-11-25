@@ -10,10 +10,13 @@ tags:
     timeout: 30000
 - assertVisible:
     id: message_text_other
+# Best effort: A's typing state expires after a few seconds and this step starts ~10 s after A's
+# last keystroke (a separate Maestro run), so the indicator is not always still there.
 - extendedWaitUntil:
     visible:
       id: typing_indicator
-    timeout: 15000
+    timeout: 5000
+    optional: true
 - assertVisible:
     id: chat_presence_subtitle
 - runFlow:

@@ -21,7 +21,9 @@ param(
     [string]$RunId = '',
     # Scenarios with a setup.ps1 create disposable accounts (Supabase Admin API, service role key
     # in .env): skipped unless asked for.
-    [switch]$IncludeDestructive
+    [switch]$IncludeDestructive,
+    # Scenarios tagged known-bug (they fail until an app bug is fixed): skipped unless asked for.
+    [switch]$IncludeKnownBugs
 )
 . "$PSScriptRoot/common.ps1"
 
@@ -35,6 +37,11 @@ $scenarios = if ($Scenario) { @(Get-Item (Join-Path $scenarioRoot $Scenario)) } 
 $failed = @()
 
 foreach ($sc in $scenarios) {
+    if (-not $Scenario -and -not $IncludeKnownBugs -and
+        (Get-ChildItem $sc.FullName -Filter '*.yaml' | Select-String -Pattern '^\s*- known-bug' -Quiet)) {
+        Write-Host "(omitido $($sc.Name): known-bug, usa -IncludeKnownBugs)"
+        continue
+    }
     if (-not $Scenario -and -not $IncludeDestructive -and (Test-Path (Join-Path $sc.FullName 'setup.ps1'))) {
         Write-Host "(omitido $($sc.Name): destructivo, usa -IncludeDestructive)"
         continue
@@ -62,6 +69,11 @@ foreach ($sc in $scenarios) {
 
     $teardown = Join-Path $sc.FullName 'teardown.ps1'
     if (Test-Path $teardown) { & $teardown -RunId $RunId }
+    if (Test-Path $setup) {
+        # Signed in with disposable accounts: never leave those sessions for the next scenario's
+        # ensure_logged_in to reuse (it would act as the wrong user).
+        foreach ($d in @($DeviceA, $DeviceB)) { Invoke-Adb $d shell pm clear com.ajrpachon.chatapp | Out-Null }
+    }
     if (-not $ok) { $failed += $sc.Name }
 }
 

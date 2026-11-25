@@ -1,0 +1,10 @@
+# B (@claudeqa2) signs in and waits on the conversation list (incoming calls arrive as an overlay).
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      LOGIN_EMAIL: ${QA2_EMAIL}
+      LOGIN_PASSWORD: ${QA2_PASSWORD}

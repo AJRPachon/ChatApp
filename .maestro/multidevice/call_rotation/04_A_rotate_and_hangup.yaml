@@ -1,0 +1,30 @@
+# A rotates the device during the active call: the call survives the configuration change (still
+# active, controls still there), rotates back and hangs up.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+onFlowComplete:
+  - setOrientation: PORTRAIT
+---
+- extendedWaitUntil:
+    visible:
+      id: call_phase_active
+    timeout: 45000
+- setOrientation: LANDSCAPE_LEFT
+- extendedWaitUntil:
+    visible:
+      id: call_phase_active
+    timeout: 10000
+- assertVisible:
+    id: call_hangup_button
+- setOrientation: PORTRAIT
+- extendedWaitUntil:
+    visible:
+      id: call_phase_active
+    timeout: 10000
+- tapOn:
+    id: call_hangup_button
+- extendedWaitUntil:
+    notVisible:
+      id: call_screen
+    timeout: 20000

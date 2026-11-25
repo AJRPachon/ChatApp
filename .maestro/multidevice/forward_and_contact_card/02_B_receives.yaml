@@ -1,0 +1,25 @@
+# B gets the forwarded message and the contact card (with its main action) in the chat with A.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      LOGIN_EMAIL: ${QA2_EMAIL}
+      LOGIN_PASSWORD: ${QA2_PASSWORD}
+- runFlow:
+    file: ../../subflows/open_conversation.yaml
+    env:
+      CONTACT: ${QA_NAME}
+- extendedWaitUntil:
+    visible:
+      text: "fwdmd-${RUN_ID}"
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      id: message_contact_other
+    timeout: 30000
+- assertVisible:
+    id: contact_card_primary_action
+    index: -1

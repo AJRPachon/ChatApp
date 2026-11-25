@@ -1,0 +1,9 @@
+# When A hangs up, B's call screen closes too.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- extendedWaitUntil:
+    notVisible:
+      id: call_screen
+    timeout: 30000
