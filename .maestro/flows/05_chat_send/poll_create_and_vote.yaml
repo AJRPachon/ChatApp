@@ -1,0 +1,44 @@
+# Attach > Poll: create a poll with 3 options and vote one; its count goes to 1.
+appId: com.ajrpachon.chatapp
+name: "05 · Crear encuesta y votar"
+tags:
+  - chat
+# Single device only: polls have no backend yet, so the other participant can't load them
+# (see README, known bugs).
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/open_attach.yaml
+    env:
+      ITEM: attach_poll
+- assertVisible:
+    id: poll_create_button
+    enabled: false
+- tapOn:
+    id: poll_question_field
+- inputText: "q-${RUN_ID}"
+- tapOn:
+    id: poll_option_field_0
+- inputText: "A${RUN_ID}"
+- tapOn:
+    id: poll_option_field_1
+- inputText: "B${RUN_ID}"
+- tapOn:
+    id: poll_add_option
+- tapOn:
+    id: poll_option_field_2
+- inputText: "C${RUN_ID}"
+- hideKeyboard
+- tapOn:
+    id: poll_create_button
+- extendedWaitUntil:
+    visible:
+      id: "poll_vote_A${RUN_ID}"
+    timeout: 30000
+- tapOn:
+    id: "poll_vote_A${RUN_ID}"
+- extendedWaitUntil:
+    visible:
+      id: "poll_count_A${RUN_ID}"
+      text: "1"
+    timeout: 15000

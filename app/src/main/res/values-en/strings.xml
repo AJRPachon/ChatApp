@@ -287,6 +287,7 @@
     <!-- Call -->
     <string name="call_requesting_permissions">Requesting permissions...</string>
     <string name="call_screen_sharing_active">Sharing screen</string>
+    <string name="call_remote_video_cd">Video from the other participant</string>
     <string name="call_connecting">Connecting...</string>
     <string name="call_ringing">Calling...</string>
     <string name="call_ended">Call ended</string>
@@ -636,9 +637,21 @@
     <string name="chat_cannot_invite_contact">You can\'t send an invitation to this contact</string>
     <string name="chat_uploading_progress">Uploading %1$d of %2$d · %3$s</string>
     <string name="chat_attach_title">Attach</string>
+    <string name="chat_attach_option_gallery">Gallery</string>
+    <string name="chat_attach_option_camera">Camera</string>
+    <string name="chat_attach_option_file">File</string>
+    <string name="chat_attach_option_video">Video</string>
+    <string name="chat_attach_option_sticker">Stickers</string>
+    <string name="chat_attach_option_location">Location</string>
+    <string name="chat_attach_option_poll">Poll</string>
+    <string name="chat_attach_option_contact">Contact</string>
+    <string name="chat_attach_option_schedule">Schedule</string>
+    <string name="chat_attach_option_ai">AI</string>
     <string name="stickers_tab_stickers">Stickers</string>
     <string name="stickers_tab_gifs">GIFs</string>
     <string name="gif_unavailable">GIFs unavailable</string>
+    <string name="stickers_install_from_store_hint">Install packs from the store →</string>
+    <string name="gif_configure_key_hint">Set up your own Giphy API key to enable this feature.</string>
     <string name="gif_configure_key">Set API key</string>
     <string name="gif_network_error">Network error. Try again.</string>
     <string name="gif_api_key_title">Giphy API key</string>

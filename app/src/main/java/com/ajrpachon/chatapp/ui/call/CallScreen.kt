@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.call
 
+import androidx.compose.ui.platform.testTag
 import android.app.Activity
 import android.content.pm.PackageManager
 import android.media.projection.MediaProjectionManager
@@ -54,6 +55,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -262,7 +265,8 @@ private fun CallScreenBody(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(CallBackground),
+            .background(CallBackground)
+            .testTag("call_screen"),
     ) {
         // Remote video — screen share always takes priority (any call type); otherwise
         // camera feeds: grid for groups, fullscreen for 1:1.
@@ -279,7 +283,7 @@ private fun CallScreenBody(
                 isGroup && tracks.size > 1 -> {
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(2),
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxSize().testTag("call_video_grid"),
                         userScrollEnabled = false,
                     ) {
                         gridItems(tracks) { track ->
@@ -294,11 +298,23 @@ private fun CallScreenBody(
                     }
                 }
 
-                tracks.isNotEmpty() && !state.isRemoteVideoMuted -> VideoView(
-                    track = tracks.first(),
-                    room = currentRoom,
-                    modifier = Modifier.fillMaxSize(),
-                )
+                // The tag/description sit on a Compose wrapper: an AndroidView's own semantics
+                // never reach the accessibility tree (so neither TalkBack nor UI tests saw it).
+                tracks.isNotEmpty() && !state.isRemoteVideoMuted -> {
+                    val remoteVideoCd = stringResource(R.string.call_remote_video_cd)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .semantics { contentDescription = remoteVideoCd }
+                            .testTag("call_remote_video"),
+                    ) {
+                        VideoView(
+                            track = tracks.first(),
+                            room = currentRoom,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                }
             }
         }
 
@@ -350,7 +366,8 @@ private fun CallScreenBody(
                 size = 44.dp,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(top = 24.dp, end = 24.dp),
+                    .padding(top = 24.dp, end = 24.dp)
+                    .testTag("call_flip_button"),
             ) {
                 Icon(
                     Icons.Default.Cameraswitch,
@@ -366,7 +383,8 @@ private fun CallScreenBody(
                     .align(Alignment.TopCenter)
                     .padding(top = 48.dp)
                     .background(CallScreenShareAccent.copy(alpha = 0.8f), MaterialTheme.shapes.small)
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .testTag("call_screen_share_banner"),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
@@ -402,30 +420,35 @@ private fun CallScreenBody(
                     Spacer(Modifier.height(8.dp))
                     Text(
                         stringResource(R.string.call_connecting),
-                        color = Color.White.copy(alpha = 0.7f)
+                        color = Color.White.copy(alpha = 0.7f),
+                        modifier = Modifier.testTag("call_phase_connecting"),
                     )
                 }
 
                 CallPhase.RINGING -> Text(
                     stringResource(R.string.call_ringing),
+                    modifier = Modifier.testTag("call_phase_ringing"),
                     color = Color.White.copy(alpha = 0.7f),
                     style = MaterialTheme.typography.bodyLarge,
                 )
 
                 CallPhase.ACTIVE -> Text(
                     formatCallDuration(state.durationSeconds),
+                    modifier = Modifier.testTag("call_phase_active"),
                     color = Color.White.copy(alpha = 0.85f),
                     style = MaterialTheme.typography.bodyLarge,
                 )
 
                 CallPhase.ENDED -> Text(
                     stringResource(R.string.call_ended),
+                    modifier = Modifier.testTag("call_phase_ended"),
                     color = Color.White.copy(alpha = 0.7f),
                     style = MaterialTheme.typography.bodyLarge,
                 )
 
                 CallPhase.ERROR -> Text(
                     state.error?.asString() ?: stringResource(R.string.call_generic_error),
+                    modifier = Modifier.testTag("call_phase_error"),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium,
                 )
@@ -443,6 +466,7 @@ private fun CallScreenBody(
             // Mute mic
             CallControlButton(
                 onClick = onToggleMic,
+                modifier = Modifier.testTag(if (state.isMicMuted) "call_mic_button_muted" else "call_mic_button"),
                 containerColor = if (state.isMicMuted) Color.White else Color.White.copy(alpha = 0.2f),
                 iconTint = if (state.isMicMuted) Color.Black else Color.White,
             ) {
@@ -456,6 +480,7 @@ private fun CallScreenBody(
             if (callType == "video") {
                 CallControlButton(
                     onClick = onToggleCamera,
+                    modifier = Modifier.testTag(if (state.isCameraOff) "call_camera_button_off" else "call_camera_button"),
                     containerColor = if (state.isCameraOff) Color.White else Color.White.copy(alpha = 0.2f),
                     iconTint = if (state.isCameraOff) Color.Black else Color.White,
                 ) {
@@ -469,6 +494,7 @@ private fun CallScreenBody(
             // Screen share toggle
             CallControlButton(
                 onClick = onToggleScreenShare,
+                modifier = Modifier.testTag("call_screen_share_button"),
                 containerColor = if (state.isScreenSharing) CallScreenShareAccent else Color.White.copy(
                     alpha = 0.2f
                 ),
@@ -483,6 +509,7 @@ private fun CallScreenBody(
             // Hang up
             CallControlButton(
                 onClick = onHangUp,
+                modifier = Modifier.testTag("call_hangup_button"),
                 containerColor = MaterialTheme.colorScheme.error,
                 iconTint = Color.White,
                 size = 64.dp,

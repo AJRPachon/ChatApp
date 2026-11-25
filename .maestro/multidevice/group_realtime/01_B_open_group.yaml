@@ -1,0 +1,14 @@
+# B opens the shared QA group.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- runFlow:
+    file: ../../subflows/login.yaml
+    env:
+      LOGIN_EMAIL: ${QA2_EMAIL}
+      LOGIN_PASSWORD: ${QA2_PASSWORD}
+- runFlow:
+    file: ../../subflows/open_conversation.yaml
+    env:
+      CONTACT: ${QA_GROUP}

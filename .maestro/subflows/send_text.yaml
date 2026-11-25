@@ -1,0 +1,12 @@
+# Inside a chat: type TEXT and send it, then wait for it to show up as an own message.
+appId: com.ajrpachon.chatapp
+---
+- tapOn:
+    id: chat_input_field
+- inputText: ${TEXT}
+- tapOn:
+    id: chat_send_button
+- extendedWaitUntil:
+    visible:
+      text: ${TEXT}
+    timeout: 15000

@@ -1,0 +1,21 @@
+# B gets the incoming voice-call overlay and accepts: the call becomes active with a timer.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- extendedWaitUntil:
+    visible:
+      id: incoming_call_overlay
+    timeout: 45000
+- assertVisible:
+    id: incoming_call_type_voice
+# The caller gives up after 20 s of ringing (CallViewModel.MISSED_CALL_TIMEOUT_MS) and this step
+# already starts ~15 s late: do not wait for the (animated, never idle) overlay to settle.
+- tapOn:
+    id: incoming_call_accept_button
+    waitToSettleTimeoutMs: 500
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: call_phase_active
+    timeout: 45000

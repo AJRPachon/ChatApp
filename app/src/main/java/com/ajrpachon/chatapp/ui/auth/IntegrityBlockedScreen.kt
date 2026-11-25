@@ -18,7 +18,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ajrpachon.chatapp.R
@@ -38,7 +41,11 @@ fun IntegrityBlockedScreen(onExit: () -> Unit) {
 @Composable
 fun IntegrityBlockedContent(onExit: () -> Unit) {
     Surface(
-        modifier = Modifier.fillMaxSize(),
+        // Rendered outside MainActivity's testTagsAsResourceId Box, so it exposes its own tag.
+        modifier = Modifier
+            .fillMaxSize()
+            .semantics { testTagsAsResourceId = true }
+            .testTag("integrity_blocked_screen"),
         color = MaterialTheme.colorScheme.errorContainer,
     ) {
         Column(

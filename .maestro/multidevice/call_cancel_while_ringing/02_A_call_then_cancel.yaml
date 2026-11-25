@@ -1,0 +1,24 @@
+# A calls B and hangs up while it is still ringing.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- tapOn:
+    id: chat_call_button
+- tapOn:
+    id: chat_call_voice_option
+- extendedWaitUntil:
+    visible:
+      id: "call_phase_(connecting|ringing)"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/wait.yaml
+    env:
+      MS: "8000"
+- tapOn:
+    id: call_hangup_button
+- extendedWaitUntil:
+    visible:
+      id: chat_input_field
+    timeout: 20000

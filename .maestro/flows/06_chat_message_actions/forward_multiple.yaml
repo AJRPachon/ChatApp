@@ -1,0 +1,55 @@
+# Multi-select two messages > Forward to the QA group: both show up in that conversation.
+appId: com.ajrpachon.chatapp
+name: "06 · Reenviar varios mensajes a la vez"
+tags:
+  - chat
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "fm1-${RUN_ID}"
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "fm2-${RUN_ID}"
+- hideKeyboard
+- extendedWaitUntil:
+    visible:
+      id: "message_status_(sent|read)"
+    timeout: 15000
+- longPressOn:
+    id: "message_status_(sent|read)"
+    index: -1
+- tapOn:
+    id: "message_status_(sent|read)"
+    index: -2
+- assertVisible:
+    id: chat_selection_count
+- tapOn:
+    id: chat_selection_forward
+- tapOn:
+    id: "forward_target_${QA_GROUP}"
+- extendedWaitUntil:
+    notVisible:
+      id: "forward_target_.*"
+    timeout: 15000
+- runFlow:
+    when:
+      visible:
+        id: chat_selection_cancel
+    commands:
+      - tapOn:
+          id: chat_selection_cancel
+- tapOn:
+    id: chat_back_button
+- runFlow:
+    file: ../../subflows/open_conversation.yaml
+    env:
+      CONTACT: ${QA_GROUP}
+- extendedWaitUntil:
+    visible:
+      text: "fm1-${RUN_ID}"
+    timeout: 20000
+- assertVisible:
+    text: "fm2-${RUN_ID}"

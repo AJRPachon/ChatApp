@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.chat
 
+import com.ajrpachon.chatapp.ui.common.qaTag
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -54,6 +55,7 @@ private fun MentionSuggestionRow(member: GroupMemberBO, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .qaTag("mention_suggestion_${member.username}")
             .clickable(onClickLabel = stringResource(R.string.chat_mention_click_label), onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,

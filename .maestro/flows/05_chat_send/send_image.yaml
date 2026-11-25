@@ -1,0 +1,26 @@
+# Attach > Gallery: pick the fixture image from the system photo picker; an own image bubble
+# appears, and tapping it opens the fullscreen viewer.
+appId: com.ajrpachon.chatapp
+name: "05 · Enviar imagen desde galería y abrir visor"
+tags:
+  - chat
+  - slow
+  - personal-data   # gallery picks the newest photo of the device
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/open_attach.yaml
+    env:
+      ITEM: attach_gallery
+- runFlow: ../../subflows/pick_first_media.yaml
+- extendedWaitUntil:
+    visible:
+      id: "message_image(_group)?_own"
+    timeout: 45000
+- tapOn:
+    id: message_image
+    index: -1
+- assertVisible:
+    id: fullscreen_viewer
+- tapOn:
+    id: fullscreen_viewer_close

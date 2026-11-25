@@ -1,0 +1,18 @@
+# Attach > Camera: take a photo with the emulator camera app and accept it.
+appId: com.ajrpachon.chatapp
+name: "05 · Enviar foto desde la cámara"
+tags:
+  - chat
+  - slow
+  - personal-data   # captures with the real camera
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/open_attach.yaml
+    env:
+      ITEM: attach_camera
+- runFlow: ../../subflows/camera_capture.yaml
+- extendedWaitUntil:
+    visible:
+      id: "message_image(_group)?_own"
+    timeout: 45000

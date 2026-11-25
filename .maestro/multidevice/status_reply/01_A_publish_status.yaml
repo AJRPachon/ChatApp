@@ -1,0 +1,11 @@
+# A (@claudeqa) publishes a text status.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+  - known-bug
+---
+- runFlow: ../../subflows/login.yaml
+- runFlow:
+    file: ../../subflows/status_publish_text.yaml
+    env:
+      STATUS_TEXT: "story${RUN_ID}"

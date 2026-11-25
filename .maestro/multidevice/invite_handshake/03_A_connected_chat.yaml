@@ -1,0 +1,37 @@
+# [D] A now sees @claudeqa2 as connected: tapping the row opens the 1:1 chat.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+  - destructive
+---
+# New chat does not pick up the acceptance in real time (observation in README): if the row
+# still says pending, leave and search again.
+- extendedWaitUntil:
+    notVisible:
+      id: "newchat_pending_sent_${QA2_USERNAME}"
+    timeout: 10000
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: "newchat_pending_sent_${QA2_USERNAME}"
+    commands:
+      - hideKeyboard
+      - back
+      - tapOn:
+          id: conversation_list_new_chat_fab
+      - tapOn:
+          id: newchat_search_field
+      - inputText: ${QA2_USERNAME}
+      - extendedWaitUntil:
+          visible:
+            id: "newchat_user_row_${QA2_USERNAME}"
+          timeout: 20000
+- assertNotVisible:
+    id: "newchat_pending_sent_${QA2_USERNAME}"
+- tapOn:
+    id: "newchat_user_row_${QA2_USERNAME}"
+- extendedWaitUntil:
+    visible:
+      id: chat_input_field
+    timeout: 20000

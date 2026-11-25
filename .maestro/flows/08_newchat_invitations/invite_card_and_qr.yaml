@@ -1,0 +1,31 @@
+# New chat: invite card Copy / Share (system share sheet), and Scan QR opens the camera scanner.
+appId: com.ajrpachon.chatapp
+name: "08 · Invitar (copiar y compartir) y escanear QR"
+tags:
+  - newchat
+---
+- runFlow: ../../subflows/ensure_logged_in.yaml
+- tapOn:
+    id: conversation_list_new_chat_fab
+- tapOn:
+    id: newchat_invite_copy
+- tapOn:
+    id: newchat_invite_share
+- extendedWaitUntil:
+    notVisible:
+      id: newchat_invite_share
+    timeout: 15000
+- back
+- extendedWaitUntil:
+    visible:
+      id: newchat_scan_qr_button
+    timeout: 10000
+- tapOn:
+    id: newchat_scan_qr_button
+- extendedWaitUntil:
+    notVisible:
+      id: newchat_scan_qr_button
+    timeout: 15000
+- back
+- assertVisible:
+    id: newchat_search_field

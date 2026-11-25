@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.chat
 
+import androidx.compose.ui.platform.testTag
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -142,6 +143,7 @@ internal fun ReplySelectContainer(
                 contentDescription = stringResource(R.string.chat_selected),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
+                    .testTag("message_selected_check")
                     .align(if (isFromMe) Alignment.TopEnd else Alignment.TopStart)
                     .padding(4.dp)
                     .size(20.dp),
@@ -434,6 +436,7 @@ internal fun MessageBubble(
                                     contentDescription = stringResource(R.string.chat_image_content_description),
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier
+                                        .testTag("message_image")
                                         .fillMaxWidth()
                                         .height(220.dp)
                                         // A bare photo fills the whole bubble (mediaIsStandalone),
@@ -514,10 +517,12 @@ internal fun MessageBubble(
                         shape = CircleShape,
                         color = if (isMine) MaterialTheme.colorScheme.primaryContainer
                                 else MaterialTheme.colorScheme.surfaceVariant,
-                        modifier = Modifier.combinedClickable(
-                            onClick = { onToggleReaction(emoji) },
-                            onLongClick = { onShowReactionDetails() },
-                        ),
+                        modifier = Modifier
+                            .testTag("message_reaction_chip")
+                            .combinedClickable(
+                                onClick = { onToggleReaction(emoji) },
+                                onLongClick = { onShowReactionDetails() },
+                            ),
                     ) {
                         Text(
                             text = "$emoji ${reactors.size}",
@@ -545,6 +550,7 @@ internal fun MessageBubble(
                 contentDescription = stringResource(R.string.chat_selected),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
+                    .testTag("message_selected_check")
                     .align(if (message.isFromMe) Alignment.TopEnd else Alignment.TopStart)
                     .padding(4.dp)
                     .size(20.dp),

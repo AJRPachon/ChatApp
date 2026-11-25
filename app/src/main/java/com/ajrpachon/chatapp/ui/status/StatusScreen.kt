@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.status
 
+import com.ajrpachon.chatapp.ui.common.qaTag
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -281,6 +282,7 @@ private fun AddStatusButton(
                     .size(52.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.secondaryContainer)
+                    .testTag("status_add_media_button")
                     .clickable(onClick = onAddMedia),
             ) {
                 Icon(
@@ -345,10 +347,12 @@ private fun MyStatusAvatar(
                 )
                 DropdownMenu(expanded = showAddMenu, onDismissRequest = { showAddMenu = false }) {
                     DropdownMenuItem(
+                        modifier = Modifier.qaTag("status_add_more_text"),
                         text = { Text(stringResource(R.string.status_add_text_cd)) },
                         onClick = { showAddMenu = false; onAddText() },
                     )
                     DropdownMenuItem(
+                        modifier = Modifier.qaTag("status_add_more_media"),
                         text = { Text(stringResource(R.string.status_add_image_cd)) },
                         onClick = { showAddMenu = false; onAddMedia() },
                     )
@@ -423,7 +427,7 @@ private fun ComposeStatusDialog(
                 maxLines = 4,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .testTag("status_compose_text_field"),
+                    .qaTag("status_compose_text_field"),
             )
         },
         confirmButton = {
@@ -431,11 +435,15 @@ private fun ComposeStatusDialog(
                 text = stringResource(R.string.status_publish),
                 onClick = onPost,
                 enabled = text.isNotBlank(),
-                modifier = Modifier.testTag("status_publish_button"),
+                modifier = Modifier.qaTag("status_publish_button"),
             )
         },
         dismissButton = {
-            ChatAppTextButton(text = stringResource(R.string.status_cancel), onClick = onDismiss)
+            ChatAppTextButton(
+                text = stringResource(R.string.status_cancel),
+                onClick = onDismiss,
+                modifier = Modifier.qaTag("status_compose_cancel"),
+            )
         },
     )
 }
@@ -480,7 +488,8 @@ fun StatusViewerScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(current.backgroundColor)),
+            .background(Color(current.backgroundColor))
+            .testTag("status_viewer"),
     ) {
         // Media fills the entire screen; the header floats on top of it.
         when {
@@ -495,6 +504,36 @@ fun StatusViewerScreen(
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
+            )
+        }
+
+        // Drawn right above the media but BELOW the story text and header: those have no pointer
+        // input, so taps on them still fall through to these zones, while they stay in the
+        // accessibility tree. Drawn last (on top of everything) they hid the story text from
+        // TalkBack and UI automation, which only saw two blank full-screen buttons.
+        // Tap zones to navigate — no ripple: a full-screen highlight on every
+        // tap would be distracting for a story viewer (Instagram/WhatsApp
+        // don't show one either). Drawn before the reply bar below, so where
+        // the two overlap at the bottom, the reply bar (a later Box sibling —
+        // topmost in both z-order and hit-testing) wins touches, not this Row.
+        Row(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxSize()
+                    .testTag("status_viewer_prev_zone")
+                    .clickable(interactionSource = null, indication = null) {
+                        if (currentIndex > 0) currentIndex-- else onClose()
+                    },
+            )
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxSize()
+                    .testTag("status_viewer_next_zone")
+                    .clickable(interactionSource = null, indication = null) {
+                        if (currentIndex < statuses.lastIndex) currentIndex++ else onClose()
+                    },
             )
         }
 
@@ -539,6 +578,7 @@ fun StatusViewerScreen(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = current.userName,
+                        modifier = Modifier.testTag("status_viewer_author"),
                         color = Color.White,
                         style = MaterialTheme.typography.titleSmall,
                         maxLines = 1,
@@ -557,7 +597,8 @@ fun StatusViewerScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
+                    .padding(horizontal = 8.dp)
+                    .testTag("status_viewer_progress"),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 statuses.forEachIndexed { idx, _ ->
@@ -580,30 +621,6 @@ fun StatusViewerScreen(
                     )
                 }
             }
-        }
-
-        // Tap zones to navigate — no ripple: a full-screen highlight on every
-        // tap would be distracting for a story viewer (Instagram/WhatsApp
-        // don't show one either). Drawn before the reply bar below, so where
-        // the two overlap at the bottom, the reply bar (a later Box sibling —
-        // topmost in both z-order and hit-testing) wins touches, not this Row.
-        Row(modifier = Modifier.fillMaxSize()) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxSize()
-                    .clickable(interactionSource = null, indication = null) {
-                        if (currentIndex > 0) currentIndex-- else onClose()
-                    },
-            )
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxSize()
-                    .clickable(interactionSource = null, indication = null) {
-                        if (currentIndex < statuses.lastIndex) currentIndex++ else onClose()
-                    },
-            )
         }
 
         // Reply bar — only for someone else's status; replying to your own doesn't make sense
@@ -691,11 +708,28 @@ fun StatusViewerScreen(
         }
     }
 
+    // Derived here rather than read from state.userStatuses: that copy is filled by the
+    // FilterUserStatuses intent one frame *after* statuses arrive, and the viewer closes itself
+    // as soon as it is handed an empty list — so opening "My status" used to flash a blank
+    // screen and close immediately while this screen's ViewModel was still loading.
+    val userStatuses = remember(state.statuses, userId) { state.statuses.filter { it.userId == userId } }
+    if (!state.hasLoadedStatuses) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black),
+            contentAlignment = Alignment.Center,
+        ) {
+            androidx.compose.material3.CircularProgressIndicator(color = Color.White)
+        }
+        return
+    }
+
     Box {
         StatusViewerScreen(
-            statuses = state.userStatuses,
+            statuses = userStatuses,
             initialIndex = initialStatusId
-                ?.let { id -> state.userStatuses.indexOfFirst { it.id == id }.takeIf { it >= 0 } }
+                ?.let { id -> userStatuses.indexOfFirst { it.id == id }.takeIf { it >= 0 } }
                 ?: 0,
             onClose = onClose,
             onSendReply = { status, text -> vm.onIntent(StatusIntent.ReplyToStatus(status, text)) },

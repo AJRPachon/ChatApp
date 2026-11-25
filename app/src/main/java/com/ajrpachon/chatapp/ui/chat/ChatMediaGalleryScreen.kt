@@ -1,5 +1,7 @@
 package com.ajrpachon.chatapp.ui.chat
 
+import androidx.compose.ui.platform.testTag
+import com.ajrpachon.chatapp.ui.common.qaTag
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -100,11 +102,13 @@ internal fun ChatMediaGalleryContent(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
                     text = { Text(stringResource(R.string.media_gallery_tab_images)) },
+                    modifier = Modifier.testTag("media_gallery_tab_images"),
                 )
                 Tab(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
                     text = { Text(stringResource(R.string.media_gallery_tab_videos)) },
+                    modifier = Modifier.testTag("media_gallery_tab_videos"),
                 )
             }
 
@@ -188,6 +192,7 @@ private fun ImagesTab(
                     modifier = Modifier
                         .aspectRatio(1f)
                         .fillMaxWidth()
+                        .testTag("media_item")
                         .clickable { onImageClick(url) },
                 )
             }
@@ -225,7 +230,8 @@ private fun VideosTab(urls: List<String>) {
                 Box(
                     modifier = Modifier
                         .aspectRatio(1f)
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .testTag("media_item_video"),
                     contentAlignment = Alignment.Center,
                 ) {
                     AsyncImage(
@@ -264,6 +270,7 @@ private fun GalleryFullScreenViewer(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black)
+                .qaTag("fullscreen_viewer")
                 .clickable(onClickLabel = stringResource(R.string.userinfo_close_cd)) { onDismiss() },
             contentAlignment = Alignment.Center,
         ) {

@@ -1,0 +1,72 @@
+# [D] QA invites a disposable account; the invitation shows in Sent as pending and cancelling it
+# turns it into "rejected" (no cancel action left).
+appId: com.ajrpachon.chatapp
+name: "08 · Cancelar una invitación enviada"
+tags:
+  - newchat
+  - destructive
+onFlowComplete:
+  # Signed in with another account: never leave its session for ensure_logged_in to reuse.
+  - clearState
+---
+# The invitee signs in once so it has a username QA can search.
+- runFlow:
+    file: ../../subflows/login_disposable.yaml
+    env:
+      D_EMAIL: ${D_INVITEE_EMAIL}
+      D_PASSWORD: ${DISPOSABLE_PASSWORD}
+      D_USERNAME: "qae${RUN_ID}"
+- runFlow: ../../subflows/login.yaml
+- tapOn:
+    id: conversation_list_new_chat_fab
+# After two clean launches Android can ask for contacts again (real phones run with contacts
+# denied): deny it, the search does not need contacts.
+- extendedWaitUntil:
+    visible:
+      id: "newchat_search_field|.*permission_deny_button"
+    timeout: 10000
+- runFlow:
+    when:
+      visible:
+        id: ".*permission_deny_button"
+    commands:
+      - tapOn:
+          id: ".*permission_deny_button"
+- tapOn:
+    id: newchat_search_field
+- inputText: "qae${RUN_ID}"
+- extendedWaitUntil:
+    visible:
+      id: "newchat_invite_qae${RUN_ID}"
+    timeout: 20000
+- tapOn:
+    id: "newchat_invite_qae${RUN_ID}"
+- extendedWaitUntil:
+    visible:
+      id: "newchat_pending_sent_qae${RUN_ID}"
+    timeout: 20000
+- hideKeyboard
+- back
+- tapOn:
+    id: conversation_list_invitations_button
+- tapOn:
+    id: invitations_tab_sent
+- extendedWaitUntil:
+    visible:
+      id: "invitation_row_qae${RUN_ID}"
+    timeout: 20000
+- assertVisible:
+    id: invitation_status_pending
+- tapOn:
+    id: "invitation_cancel_qae${RUN_ID}"
+# Cancelling sets the invitation to "rejected" (InvitationRepositoryImpl.cancelSentInvitation) and
+# the Sent tab lists every status: the row stays, without the cancel action, marked rejected.
+- extendedWaitUntil:
+    notVisible:
+      id: "invitation_cancel_qae${RUN_ID}"
+    timeout: 15000
+- assertVisible:
+    id: invitation_status_rejected
+    childOf:
+      id: "invitation_row_qae${RUN_ID}"
+- back

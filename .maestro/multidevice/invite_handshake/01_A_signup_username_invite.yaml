@@ -1,0 +1,46 @@
+# [D] A signs in with a fresh disposable account: username setup screen, then invites @claudeqa2.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+  - destructive
+---
+- runFlow: ../../subflows/launch_clean.yaml
+- tapOn:
+    id: auth_email_field
+- inputText: ${DISPOSABLE_EMAIL}
+- hideKeyboard
+- tapOn:
+    id: auth_password_field
+- inputText: ${DISPOSABLE_PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: auth_submit_button
+- extendedWaitUntil:
+    visible:
+      id: auth_username_field
+    timeout: 30000
+- tapOn:
+    id: auth_username_field
+- inputText: ${DISPOSABLE_USERNAME}
+- hideKeyboard
+- tapOn:
+    id: auth_username_confirm_button
+- extendedWaitUntil:
+    visible:
+      id: conversation_list_empty
+    timeout: 30000
+- tapOn:
+    id: conversation_list_new_chat_fab
+- tapOn:
+    id: newchat_search_field
+- inputText: ${QA2_USERNAME}
+- extendedWaitUntil:
+    visible:
+      id: "newchat_invite_${QA2_USERNAME}"
+    timeout: 20000
+- tapOn:
+    id: "newchat_invite_${QA2_USERNAME}"
+- extendedWaitUntil:
+    visible:
+      id: "newchat_pending_sent_${QA2_USERNAME}"
+    timeout: 20000

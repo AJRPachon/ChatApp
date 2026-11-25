@@ -1,0 +1,48 @@
+# Without READ_CONTACTS the new-chat screen still works and shows the "permission denied" note.
+appId: com.ajrpachon.chatapp
+name: "08 · Permiso de contactos denegado"
+tags:
+  - newchat
+---
+- launchApp:
+    clearState: true
+    permissions:
+      all: allow
+      contacts: deny
+- runFlow:
+    when:
+      visible:
+        id: root_warning_continue_button
+    commands:
+      - tapOn:
+          id: root_warning_continue_button
+- extendedWaitUntil:
+    visible:
+      id: auth_email_field
+    timeout: 45000
+- tapOn:
+    id: auth_email_field
+- inputText: ${QA_EMAIL}
+- hideKeyboard
+- tapOn:
+    id: auth_password_field
+- inputText: ${QA_PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: auth_submit_button
+- runFlow: ../../subflows/decline_save_password.yaml
+- extendedWaitUntil:
+    visible:
+      id: conversation_list_new_chat_fab
+    timeout: 45000
+- tapOn:
+    id: conversation_list_new_chat_fab
+- runFlow:
+    when:
+      visible:
+        text: "(No permitir|Don.t allow)"
+    commands:
+      - tapOn:
+          text: "(No permitir|Don.t allow)"
+- assertVisible:
+    id: newchat_search_field

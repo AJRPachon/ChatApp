@@ -1,0 +1,30 @@
+# Attach > AI: a free-form request returns a suggestion that can be inserted into the input.
+appId: com.ajrpachon.chatapp
+name: "05 · Asistente de IA - petición libre"
+tags:
+  - chat
+  - slow
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/open_attach.yaml
+    env:
+      ITEM: attach_ai
+- assertVisible:
+    id: ai_sheet
+- tapOn:
+    id: ai_freeform_field
+- inputText: "Escribe un saludo corto"
+- tapOn:
+    id: ai_send
+- extendedWaitUntil:
+    visible:
+      id: ai_suggestion_text
+    timeout: 60000
+- tapOn:
+    id: ai_insert
+- assertNotVisible:
+    id: ai_sheet
+- assertVisible:
+    id: chat_send_button
+- runFlow: ../../subflows/clear_chat_input.yaml

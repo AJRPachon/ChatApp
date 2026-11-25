@@ -1,0 +1,53 @@
+# Profile: online-status switch toggles and toggles back; theme light/dark/system; My QR sheet.
+appId: com.ajrpachon.chatapp
+name: "10 · Estado en línea, tema y código QR"
+tags:
+  - profile
+---
+- runFlow: ../../subflows/ensure_logged_in.yaml
+- tapOn:
+    id: conversation_list_profile_button
+# Shared QA account: it must end with "show online" ON (a lost tap used to leave it off silently).
+- runFlow:
+    when:
+      visible:
+        id: profile_online_status_switch
+        checked: false
+    commands:
+      - tapOn:
+          id: profile_online_status_switch
+- tapOn:
+    id: profile_online_status_switch
+- extendedWaitUntil:
+    visible:
+      id: profile_online_status_switch
+      checked: false
+    timeout: 5000
+- tapOn:
+    id: profile_online_status_switch
+- extendedWaitUntil:
+    visible:
+      id: profile_online_status_switch
+      checked: true
+    timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: profile_theme_dark_option
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: profile_theme_dark_option
+- tapOn:
+    id: profile_theme_light_option
+- tapOn:
+    id: profile_theme_system_option
+- scrollUntilVisible:
+    element:
+      id: profile_my_qr_code_button
+    direction: UP
+    centerElement: true
+- tapOn:
+    id: profile_my_qr_code_button
+- assertVisible:
+    id: qr_sheet
+- back

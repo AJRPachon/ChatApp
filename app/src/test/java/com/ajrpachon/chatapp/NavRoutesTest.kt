@@ -22,6 +22,7 @@ class NavRoutesTest {
         GroupInfoRoute("c1", "Team", groupAvatarUrl = null, groupDescription = "desc"),
         BroadcastListRoute,
         UsageStatsRoute,
+        DebugMenuRoute,
         SessionAuditRoute,
         AppLockRoute,
         BackupRoute,

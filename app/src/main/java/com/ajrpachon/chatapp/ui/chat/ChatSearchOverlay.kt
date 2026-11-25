@@ -92,7 +92,7 @@ internal fun MessageSearchOverlay(
                         }
                     } else null,
                 )
-                IconButton(onClick = onClose) {
+                IconButton(onClick = onClose, modifier = Modifier.testTag("chat_search_close")) {
                     Icon(Icons.Default.Close, contentDescription = stringResource(R.string.chat_close_search_cd))
                 }
             }
@@ -128,6 +128,7 @@ internal fun SearchResultItem(message: MessageBO, onClick: () -> Unit = {}) {
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.small)
+            .testTag("chat_search_result")
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 8.dp),
     ) {

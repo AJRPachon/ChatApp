@@ -1,0 +1,46 @@
+# Group names are a single token: the emulator keyboard autocorrects words followed by a space
+# ("Tmp " became "Temp ").
+# On a throw-away group created in this run: clear chat empties it, leave group removes it.
+appId: com.ajrpachon.chatapp
+name: "03 · Vaciar chat y salir de grupo (grupo del run)"
+tags:
+  - conversations
+  - known-bug
+# KNOWN BUG: ConversationRepositoryImpl.clearChat only deletes the local Room rows; opening the
+# chat re-syncs them from Supabase, so "Clear chat" doesn't stick. Excluded by default
+# (config.yaml) until fixed; run with -IncludeTags known-bug.
+---
+- runFlow: ../../subflows/ensure_logged_in.yaml
+- runFlow:
+    file: ../../subflows/create_group.yaml
+    env:
+      GROUP_NAME: "qagrp${RUN_ID}"
+      MEMBER: ${QA2_USERNAME}
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "clear-${RUN_ID}"
+- tapOn:
+    id: chat_back_button
+- runFlow:
+    file: ../../subflows/open_conversation_menu.yaml
+    env:
+      CONTACT: "qagrp${RUN_ID}"
+      ITEM: conversation_menu_clear
+- runFlow:
+    file: ../../subflows/open_conversation.yaml
+    env:
+      CONTACT: "qagrp${RUN_ID}"
+- assertNotVisible:
+    text: "clear-${RUN_ID}"
+- tapOn:
+    id: chat_back_button
+- runFlow:
+    file: ../../subflows/open_conversation_menu.yaml
+    env:
+      CONTACT: "qagrp${RUN_ID}"
+      ITEM: conversation_menu_leave
+- extendedWaitUntil:
+    notVisible:
+      id: "conversation_row_qagrp${RUN_ID}"
+    timeout: 15000

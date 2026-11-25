@@ -1,0 +1,7 @@
+# Inside a chat: open the attachment sheet and tap the option with id ITEM (e.g. attach_poll).
+appId: com.ajrpachon.chatapp
+---
+- tapOn:
+    id: attach_button
+- tapOn:
+    id: ${ITEM}

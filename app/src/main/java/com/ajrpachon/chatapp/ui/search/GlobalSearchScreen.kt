@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.search
 
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
@@ -95,7 +95,7 @@ internal fun GlobalSearchContent(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = onBack, modifier = Modifier.testTag("global_search_back")) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.search_back_cd))
                     }
                 },
@@ -203,7 +203,7 @@ private fun EmptySearchHint() {
 @Composable
 private fun NoResultsState(query: String) {
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().testTag("global_search_empty"),
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -221,10 +221,11 @@ private fun ResultsList(
 ) {
     val dateFormat = remember { SimpleDateFormat("dd MMM HH:mm", Locale.getDefault()) }
     LazyColumn {
-        items(results, key = { it.messageId }) { result ->
+        itemsIndexed(results, key = { _, item -> item.messageId }) { index, result ->
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .testTag("global_search_result_$index")
                     .clickable {
                         onOpenConversation(result.conversationId, result.conversationName, result.isGroup, result.messageId)
                     }

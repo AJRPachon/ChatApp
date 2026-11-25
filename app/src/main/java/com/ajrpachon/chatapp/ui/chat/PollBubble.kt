@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.chat
 
+import androidx.compose.ui.platform.testTag
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -130,7 +131,7 @@ private fun PollOptionRow(
         animationSpec = tween(durationMillis = 300),
         label = "pollOptionFraction",
     )
-    Column(modifier = Modifier.padding(bottom = 6.dp)) {
+    Column(modifier = Modifier.padding(bottom = 6.dp).testTag("poll_option_${option.text}")) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth(),
@@ -139,13 +140,13 @@ private fun PollOptionRow(
                 Checkbox(
                     checked = isSelected,
                     onCheckedChange = { onVote() },
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(20.dp).testTag("poll_vote_${option.text}"),
                 )
             } else {
                 RadioButton(
                     selected = isSelected,
                     onClick = onVote,
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(20.dp).testTag("poll_vote_${option.text}"),
                 )
             }
             Spacer(Modifier.width(6.dp))
@@ -159,6 +160,7 @@ private fun PollOptionRow(
                 text = "${option.voteCount}",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.testTag("poll_count_${option.text}"),
             )
         }
         Box(

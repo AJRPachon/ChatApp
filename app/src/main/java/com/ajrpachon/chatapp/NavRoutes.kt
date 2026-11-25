@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp
 
+import com.ajrpachon.chatapp.ui.debugmenu.DebugMenu
 import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
@@ -62,6 +63,8 @@ import kotlinx.serialization.Serializable
 ) : NavKey
 @Serializable data object BroadcastListRoute : NavKey
 @Serializable data object UsageStatsRoute : NavKey
+/** QA / Debug menu — only reachable in debug builds (see ui/debugmenu/DebugMenu in src/debug). */
+@Serializable data object DebugMenuRoute : NavKey
 @Serializable data object SessionAuditRoute : NavKey
 @Serializable data object AppLockRoute : NavKey
 @Serializable data object BackupRoute : NavKey
@@ -255,6 +258,12 @@ fun groupNavEntry(
             groupAvatarUrl = key.groupAvatarUrl,
             groupDescription = key.groupDescription,
             onBack = dropUnlessResumed { backStack.removeLastOrNull() },
+            onLeftGroup = dropUnlessResumed {
+                backStack.removeLastOrNull()
+                // Group info is opened from the group's chat: leaving the group closes that too.
+                val chat = backStack.lastOrNull()
+                if (chat is ChatRoute && chat.conversationId == key.conversationId) backStack.removeLastOrNull()
+            },
         )
     }
 
@@ -276,6 +285,9 @@ fun profileNavEntry(
             onBackup = dropUnlessResumed {
                 backStack.add(BackupRoute)
             },
+            onDebugMenu = dropUnlessResumed {
+                backStack.add(DebugMenuRoute)
+            },
             onSessionAudit = dropUnlessResumed {
                 backStack.add(SessionAuditRoute)
             },
@@ -291,6 +303,14 @@ fun profileNavEntry(
     is SessionAuditRoute -> NavEntry(key) {
         SessionAuditScreen(
             onBack = dropUnlessResumed { backStack.removeLastOrNull() },
+        )
+    }
+
+    is DebugMenuRoute -> NavEntry(key) {
+        DebugMenu.Screen(
+            onBack = dropUnlessResumed { backStack.removeLastOrNull() },
+            onOpenBroadcastLists = dropUnlessResumed { backStack.add(BroadcastListRoute) },
+            onOpenUsageStats = dropUnlessResumed { backStack.add(UsageStatsRoute) },
         )
     }
 

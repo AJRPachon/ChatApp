@@ -54,7 +54,8 @@ sealed interface GroupInfoIntent {
 }
 
 sealed interface GroupInfoEffect {
-    data object NavigateBack : GroupInfoEffect
+    /** The user left the group: close Group info AND the chat of the group they no longer belong to. */
+    data object LeftGroup : GroupInfoEffect
     data class ShowMessage(val message: UiText) : GroupInfoEffect
     data class CopyToClipboard(val text: String) : GroupInfoEffect
     data class ShareInviteLink(val url: String) : GroupInfoEffect

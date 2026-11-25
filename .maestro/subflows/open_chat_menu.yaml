@@ -1,0 +1,7 @@
+# Inside a chat: open the ⋮ menu and tap the item with id ITEM (e.g. chat_menu_search).
+appId: com.ajrpachon.chatapp
+---
+- tapOn:
+    id: chat_top_bar_menu_button
+- tapOn:
+    id: ${ITEM}

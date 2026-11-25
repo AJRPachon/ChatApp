@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.pdf
 
+import androidx.compose.ui.platform.testTag
 import android.content.Intent
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
@@ -101,12 +102,12 @@ internal fun PdfViewerContent(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = onBack, modifier = Modifier.testTag("pdf_back_button")) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.pdf_back_cd))
                     }
                 },
                 actions = {
-                    IconButton(onClick = { onShare() }) {
+                    IconButton(onClick = { onShare() }, modifier = Modifier.testTag("pdf_share_button")) {
                         Icon(Icons.Default.Share, contentDescription = stringResource(R.string.pdf_share_cd))
                     }
                 },
@@ -135,6 +136,7 @@ internal fun PdfViewerContent(
                     Text(
                         text = state.error?.asString() ?: stringResource(R.string.pdf_error_loading),
                         color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.testTag("pdf_error"),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }

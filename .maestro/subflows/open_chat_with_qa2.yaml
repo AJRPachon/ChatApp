@@ -1,0 +1,11 @@
+# Sign in as QA and open the 1:1 chat with QA2 (fixture conversation, see flows/00_setup).
+appId: com.ajrpachon.chatapp
+---
+- runFlow: ensure_logged_in.yaml
+- runFlow:
+    file: open_conversation.yaml
+    env:
+      CONTACT: ${QA2_NAME}
+# The app keeps a per-chat draft and the session (with its data) is reused between flows: clear
+# whatever a previous flow left in the input so exact-text assertions see only this flow's text.
+- runFlow: clear_chat_input.yaml

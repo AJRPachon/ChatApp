@@ -1,0 +1,12 @@
+# Press back until the conversation list is showing (the first back may only close the keyboard).
+appId: com.ajrpachon.chatapp
+---
+- repeat:
+    while:
+      notVisible:
+        id: conversation_list_new_chat_fab
+    times: 4
+    commands:
+      - back
+- assertVisible:
+    id: conversation_list_new_chat_fab

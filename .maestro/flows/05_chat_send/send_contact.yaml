@@ -1,0 +1,40 @@
+# Attach > Contact: pick a device contact in the system contact picker; a contact card bubble is sent.
+# Needs at least one contact on the emulator (setup-emulators.ps1 creates "QA Contact").
+appId: com.ajrpachon.chatapp
+name: "05 · Enviar contacto"
+tags:
+  - chat
+  - slow
+  - personal-data   # needs the QA Contact fixture / would share a real contact
+---
+# The picker reads the address book: this flow needs the contacts permission even on a real phone
+# (where run-suite denies it by default).
+- runFlow:
+    file: ../../subflows/open_chat_with_qa2.yaml
+    env:
+      CONTACTS_PERMISSION: allow
+- runFlow:
+    file: ../../subflows/open_attach.yaml
+    env:
+      ITEM: attach_contact
+- scrollUntilVisible:
+    element:
+      text: "QA Contact"
+    direction: DOWN
+    timeout: 60000
+- tapOn:
+    text: "QA Contact"
+# Pixel's contact picker is multi-select: confirm the selection.
+- runFlow:
+    when:
+      visible:
+        text: "(Hecho|Done|Listo)"
+    commands:
+      - tapOn:
+          text: "(Hecho|Done|Listo)"
+- extendedWaitUntil:
+    visible:
+      id: message_contact_own
+    timeout: 30000
+- assertVisible:
+    id: contact_card_primary_action

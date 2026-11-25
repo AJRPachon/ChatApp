@@ -1,0 +1,27 @@
+# In a group chat the menu adds Group info (opens it) and Leave group; the title also opens info.
+appId: com.ajrpachon.chatapp
+name: "07 · Menú de chat de grupo"
+tags:
+  - chat
+  - groups
+---
+- runFlow: ../../subflows/ensure_logged_in.yaml
+- runFlow:
+    file: ../../subflows/open_conversation.yaml
+    env:
+      CONTACT: ${QA_GROUP}
+- tapOn:
+    id: chat_top_bar_menu_button
+- assertVisible:
+    id: chat_menu_group_info
+- assertVisible:
+    id: chat_menu_leave
+- tapOn:
+    id: chat_menu_group_info
+- assertVisible:
+    id: group_participants_count
+- back
+- tapOn:
+    id: chat_top_bar_title
+- assertVisible:
+    id: group_participants_count

@@ -1,0 +1,40 @@
+# Image status from the system photo picker (fixture image pushed by setup-emulators.ps1).
+appId: com.ajrpachon.chatapp
+name: "04 · Publicar estado con imagen"
+tags:
+  - status
+  - slow
+  - personal-data   # publishes the newest photo of the device
+---
+- runFlow: ../../subflows/ensure_logged_in.yaml
+- extendedWaitUntil:
+    visible:
+      id: "status_add_media_button|status_add_more_button"
+    timeout: 15000
+- runFlow:
+    when:
+      visible:
+        id: status_add_media_button
+    commands:
+      - tapOn:
+          id: status_add_media_button
+- runFlow:
+    when:
+      visible:
+        id: status_add_more_button
+    commands:
+      - tapOn:
+          id: status_add_more_button
+      - tapOn:
+          id: status_add_more_media
+- runFlow: ../../subflows/pick_first_media.yaml
+- extendedWaitUntil:
+    visible:
+      id: status_my_avatar
+    timeout: 45000
+- tapOn:
+    id: status_my_avatar
+- extendedWaitUntil:
+    visible:
+      id: status_viewer
+    timeout: 20000  # many live statuses (24 h) make the viewer load slowly

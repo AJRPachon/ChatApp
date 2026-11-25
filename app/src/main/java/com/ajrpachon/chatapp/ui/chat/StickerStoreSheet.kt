@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.chat
 
+import com.ajrpachon.chatapp.ui.common.qaTag
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -54,7 +55,7 @@ fun StickerStoreSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        modifier = Modifier.fillMaxHeight(0.7f),
+        modifier = Modifier.fillMaxHeight(0.7f).qaTag("sticker_store_sheet"),
     ) {
         StickerStoreContent(
             packs = packs,
@@ -85,7 +86,11 @@ internal fun StickerStoreContent(
                     .height(180.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(stringResource(R.string.sticker_store_empty), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    stringResource(R.string.sticker_store_empty),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.qaTag("sticker_store_empty"),
+                )
             }
         } else {
             LazyColumn(
@@ -150,7 +155,11 @@ private fun StickerPackStoreRow(
 
         Spacer(Modifier.width(8.dp))
 
-        ChatAppPrimaryButton(text = stringResource(R.string.sticker_store_install), onClick = onInstall)
+        ChatAppPrimaryButton(
+            text = stringResource(R.string.sticker_store_install),
+            onClick = onInstall,
+            modifier = Modifier.qaTag("sticker_store_install"),
+        )
     }
 }
 

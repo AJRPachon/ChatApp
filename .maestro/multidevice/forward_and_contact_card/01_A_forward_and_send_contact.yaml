@@ -1,0 +1,62 @@
+# A forwards a message from the QA group to the chat with B, then sends B a contact card
+# ("QA Contact", created on the emulators by setup-emulators.ps1).
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- runFlow:
+    file: ../../subflows/ensure_logged_in.yaml
+    env:
+      CONTACTS_PERMISSION: allow
+- runFlow:
+    file: ../../subflows/open_conversation.yaml
+    env:
+      CONTACT: ${QA_GROUP}
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "fwdmd-${RUN_ID}"
+- runFlow:
+    file: ../../subflows/long_press_message.yaml
+    env:
+      TEXT: "fwdmd-${RUN_ID}"
+- tapOn:
+    id: message_menu_forward
+- tapOn:
+    id: "forward_target_${QA2_NAME}"
+- extendedWaitUntil:
+    notVisible:
+      id: "forward_target_.*"
+    timeout: 15000
+- tapOn:
+    id: chat_back_button
+- runFlow:
+    file: ../../subflows/open_conversation.yaml
+    env:
+      CONTACT: ${QA2_NAME}
+- extendedWaitUntil:
+    visible:
+      text: "fwdmd-${RUN_ID}"
+    timeout: 20000
+- runFlow:
+    file: ../../subflows/open_attach.yaml
+    env:
+      ITEM: attach_contact
+- scrollUntilVisible:
+    element:
+      text: "QA Contact"
+    direction: DOWN
+    timeout: 60000
+- tapOn:
+    text: "QA Contact"
+- runFlow:
+    when:
+      visible:
+        text: "(Hecho|Done|Listo)"
+    commands:
+      - tapOn:
+          text: "(Hecho|Done|Listo)"
+- extendedWaitUntil:
+    visible:
+      id: message_contact_own
+    timeout: 30000

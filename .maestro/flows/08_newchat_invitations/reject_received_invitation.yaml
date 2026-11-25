@@ -1,0 +1,48 @@
+# [D] A disposable account invites @claudeqa; signed in as QA, the invitation shows in Received
+# and rejecting it removes it from the list.
+appId: com.ajrpachon.chatapp
+name: "08 · Rechazar una invitación recibida"
+tags:
+  - newchat
+  - destructive
+onFlowComplete:
+  # Signed in with another account: never leave its session for ensure_logged_in to reuse.
+  - clearState
+---
+- runFlow:
+    file: ../../subflows/login_disposable.yaml
+    env:
+      D_EMAIL: ${D_INVITER_EMAIL}
+      D_PASSWORD: ${DISPOSABLE_PASSWORD}
+      D_USERNAME: "qai${RUN_ID}"
+- tapOn:
+    id: conversation_list_new_chat_fab
+- tapOn:
+    id: newchat_search_field
+- inputText: ${QA_USERNAME}
+- extendedWaitUntil:
+    visible:
+      id: "newchat_invite_${QA_USERNAME}"
+    timeout: 20000
+- tapOn:
+    id: "newchat_invite_${QA_USERNAME}"
+- extendedWaitUntil:
+    visible:
+      id: "newchat_pending_sent_${QA_USERNAME}"
+    timeout: 20000
+- runFlow: ../../subflows/login.yaml
+- tapOn:
+    id: conversation_list_invitations_button
+- tapOn:
+    id: invitations_tab_received
+- extendedWaitUntil:
+    visible:
+      id: "invitation_row_qai${RUN_ID}"
+    timeout: 20000
+- tapOn:
+    id: "invitation_reject_qai${RUN_ID}"
+- extendedWaitUntil:
+    notVisible:
+      id: "invitation_row_qai${RUN_ID}"
+    timeout: 15000
+- back

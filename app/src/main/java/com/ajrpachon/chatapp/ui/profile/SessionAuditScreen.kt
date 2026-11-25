@@ -1,5 +1,7 @@
 package com.ajrpachon.chatapp.ui.profile
 
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Smartphone
@@ -98,7 +99,7 @@ internal fun SessionAuditContent(
             TopAppBar(
                 title = { Text(stringResource(R.string.session_audit_top_bar_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = onBack, modifier = Modifier.testTag("session_audit_close")) {
                         Icon(Icons.Default.Close, contentDescription = stringResource(R.string.session_audit_back_content_description))
                     }
                 },
@@ -109,6 +110,7 @@ internal fun SessionAuditContent(
                             onClick = { onIntent(SessionAuditIntent.RevokeAllOtherSessions) },
                             color = MaterialTheme.colorScheme.error,
                             textStyle = MaterialTheme.typography.labelLarge,
+                            modifier = Modifier.testTag("session_revoke_all_others"),
                         )
                     }
                 },
@@ -159,8 +161,9 @@ internal fun SessionAuditContent(
                             modifier = Modifier.padding(vertical = 8.dp),
                         )
                     }
-                    items(state.sessions, key = { it.id }) { session ->
+                    itemsIndexed(state.sessions, key = { _, item -> item.id }) { index, session ->
                         SessionCard(
+                            index = index,
                             session = session,
                             onRevoke = { onIntent(SessionAuditIntent.RevokeSession(session.id)) },
                         )
@@ -206,11 +209,14 @@ internal fun SessionAuditLoadingPreview() {
 
 @Composable
 private fun SessionCard(
+    index: Int,
     session: SessionInfo,
     onRevoke: () -> Unit,
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("session_row_$index"),
         colors = CardDefaults.cardColors(
             containerColor = if (session.isCurrent)
                 MaterialTheme.colorScheme.primaryContainer
@@ -244,7 +250,9 @@ private fun SessionCard(
                 )
                 if (session.isCurrent) {
                     Badge(
-                        modifier = Modifier.padding(top = 2.dp, bottom = 2.dp),
+                        modifier = Modifier
+                            .padding(top = 2.dp, bottom = 2.dp)
+                            .testTag("session_this_device_badge"),
                         containerColor = MaterialTheme.colorScheme.primary,
                     ) {
                         Text(
@@ -261,7 +269,7 @@ private fun SessionCard(
                     color = MaterialTheme.colorScheme.outline,
                 )
             }
-            IconButton(onClick = onRevoke) {
+            IconButton(onClick = onRevoke, modifier = Modifier.testTag("session_revoke_$index")) {
                 Icon(
                     Icons.Default.Close,
                     contentDescription = stringResource(R.string.session_audit_close_session_content_description),

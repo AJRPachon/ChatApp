@@ -1,5 +1,7 @@
 package com.ajrpachon.chatapp.ui.emoji
 
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import com.ajrpachon.chatapp.ui.common.qaTag
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -81,6 +82,7 @@ internal fun EmojiPickerContent(
                     Tab(
                         selected = state.selectedTab == index,
                         onClick = { onIntent(EmojiPickerIntent.SelectTab(index)) },
+                        modifier = Modifier.qaTag("emoji_tab_$index"),
                         text = {
                             Text(
                                 text = cat.icon,
@@ -108,11 +110,12 @@ internal fun EmojiPickerContent(
                         .fillMaxWidth()
                         .height(280.dp),
                 ) {
-                    items(current.emojis, key = { it }) { emoji ->
+                    itemsIndexed(current.emojis, key = { _, item -> item }) { index, emoji ->
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier
                                 .size(48.dp)
+                                .qaTag("emoji_item_$index")
                                 .clickable {
                                     onIntent(EmojiPickerIntent.EmojiClicked(emoji))
                                 },

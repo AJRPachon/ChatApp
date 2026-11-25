@@ -171,7 +171,11 @@ class GroupRepositoryImpl(
             }
         }
         remoteSource.removeMember(conversationId, userId)
-        groupMemberDao.delete(conversationId, userId)
+        // The user is no longer a participant: drop the whole group locally, otherwise it stays in
+        // the conversation list (with its history) until the next full sync.
+        messageDao.deleteByConversation(conversationId)
+        groupMemberDao.deleteAllForConversation(conversationId)
+        conversationDao.deleteById(conversationId)
     }
     private suspend fun ensureAdminExists(conversationId: String) {
         val remaining = remoteSource.getMembers(conversationId) ?: return

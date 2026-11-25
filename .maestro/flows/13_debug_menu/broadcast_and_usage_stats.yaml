@@ -1,0 +1,69 @@
+# Debug builds only: Profile > QA / Debug menu opens Broadcast lists (create with QA2, send a
+# message, delete) and Usage stats.
+appId: com.ajrpachon.chatapp
+name: "13 · Menú debug - difusión y estadísticas"
+tags:
+  - debugmenu
+---
+- runFlow: ../../subflows/ensure_logged_in.yaml
+- tapOn:
+    id: conversation_list_profile_button
+- scrollUntilVisible:
+    element:
+      id: profile_debug_menu_row
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: profile_debug_menu_row
+- assertVisible:
+    id: debug_menu_screen
+# Usage stats
+- tapOn:
+    id: debug_open_usage_stats
+- extendedWaitUntil:
+    visible:
+      id: usage_stats_screen
+    timeout: 15000
+- back
+# Broadcast lists
+- tapOn:
+    id: debug_open_broadcast
+- tapOn:
+    id: broadcast_create_button
+- tapOn:
+    id: broadcast_name_field
+- inputText: "bc${RUN_ID}"
+- tapOn:
+    id: broadcast_search_field
+- inputText: ${QA2_USERNAME}
+- extendedWaitUntil:
+    visible:
+      id: "broadcast_member_${QA2_USERNAME}"
+    timeout: 15000
+- tapOn:
+    id: "broadcast_member_${QA2_USERNAME}"
+- hideKeyboard
+- tapOn:
+    id: broadcast_save
+- extendedWaitUntil:
+    visible:
+      id: "broadcast_row_bc${RUN_ID}"
+    timeout: 15000
+- tapOn:
+    id: "broadcast_send_bc${RUN_ID}"
+- tapOn:
+    id: broadcast_message_field
+- inputText: "broadcast${RUN_ID}"
+- hideKeyboard
+- tapOn:
+    id: broadcast_send_confirm
+- extendedWaitUntil:
+    notVisible:
+      id: broadcast_message_field
+    timeout: 20000
+- tapOn:
+    id: "broadcast_delete_bc${RUN_ID}"
+- extendedWaitUntil:
+    notVisible:
+      id: "broadcast_row_bc${RUN_ID}"
+    timeout: 15000

@@ -1,0 +1,9 @@
+# A sees B's answer in the group in real time.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- extendedWaitUntil:
+    visible:
+      text: "grpback${RUN_ID}"
+    timeout: 30000

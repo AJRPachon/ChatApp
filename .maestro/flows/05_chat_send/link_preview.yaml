@@ -1,0 +1,18 @@
+# A text message with a URL shows a link preview card under the text.
+appId: com.ajrpachon.chatapp
+name: "05 · Enlace con vista previa"
+tags:
+  - chat
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "https://example.com/#r${RUN_ID}"
+- hideKeyboard
+- extendedWaitUntil:
+    visible:
+      id: message_link_preview
+      below:
+        text: ".*#r${RUN_ID}"
+    timeout: 30000

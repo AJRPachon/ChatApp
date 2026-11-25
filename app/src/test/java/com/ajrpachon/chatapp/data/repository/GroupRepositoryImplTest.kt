@@ -142,14 +142,16 @@ class GroupRepositoryImplTest {
     }
 
     @Test
-    fun `leaveGroup removes user from remote and local`() = runTest {
+    fun `leaveGroup removes user from remote and drops the group locally`() = runTest {
         val memberDBO = dbo("user1", role = "member")
         coEvery { groupMemberDao.getAllForConversation("conv1") } returns listOf(memberDBO)
 
         repo.leaveGroup("conv1", "user1")
 
         coVerify { remoteSource.removeMember("conv1", "user1") }
-        coVerify { groupMemberDao.delete("conv1", "user1") }
+        coVerify { messageDao.deleteByConversation("conv1") }
+        coVerify { groupMemberDao.deleteAllForConversation("conv1") }
+        coVerify { conversationDao.deleteById("conv1") }
     }
 
     @Test

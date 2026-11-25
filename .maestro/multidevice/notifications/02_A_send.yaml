@@ -1,0 +1,10 @@
+# A sends B a message while B's app is in the background.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "notif-${RUN_ID}"

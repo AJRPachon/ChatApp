@@ -1,0 +1,24 @@
+# [D] Profile > 2FA: activate with a TOTP code computed from the shown secret, then deactivate.
+appId: com.ajrpachon.chatapp
+name: "10 · Activar y desactivar 2FA"
+tags:
+  - profile
+  - destructive
+  - slow
+onFlowComplete:
+  # Signed in with another account: never leave its session for ensure_logged_in to reuse.
+  - clearState
+---
+- runFlow:
+    file: ../../subflows/login_disposable.yaml
+    env:
+      D_EMAIL: ${D_TOTP_EMAIL}
+      D_PASSWORD: ${DISPOSABLE_PASSWORD}
+      D_USERNAME: "qat${RUN_ID}"
+- runFlow: ../../subflows/enroll_2fa.yaml
+- tapOn:
+    id: profile_2fa_deactivate
+- extendedWaitUntil:
+    visible:
+      id: profile_2fa_activate
+    timeout: 20000

@@ -1,0 +1,15 @@
+# A sees the group call active with B in it, then hangs up.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- extendedWaitUntil:
+    visible:
+      id: call_phase_active
+    timeout: 45000
+- tapOn:
+    id: call_hangup_button
+- extendedWaitUntil:
+    notVisible:
+      id: call_screen
+    timeout: 20000

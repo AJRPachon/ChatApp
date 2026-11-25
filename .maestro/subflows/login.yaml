@@ -1,0 +1,30 @@
+# Clean launch + email/password sign-in. Params: LOGIN_EMAIL / LOGIN_PASSWORD (default: QA account).
+appId: com.ajrpachon.chatapp
+env:
+  LOGIN_EMAIL: ${LOGIN_EMAIL || QA_EMAIL}
+  LOGIN_PASSWORD: ${LOGIN_PASSWORD || QA_PASSWORD}
+---
+- runFlow: launch_clean.yaml
+- extendedWaitUntil:
+    visible:
+      id: auth_email_field
+    timeout: 15000
+- tapOn:
+    id: auth_email_field
+- runFlow: dismiss_system_popups.yaml
+- inputText: ${LOGIN_EMAIL}
+# On smaller screens (Pixel 9) the keyboard covers the password field: close it first.
+- hideKeyboard
+- tapOn:
+    id: auth_password_field
+- runFlow: dismiss_system_popups.yaml
+- inputText: ${LOGIN_PASSWORD}
+- hideKeyboard
+- runFlow: dismiss_system_popups.yaml
+- tapOn:
+    id: auth_submit_button
+- runFlow: decline_save_password.yaml
+- extendedWaitUntil:
+    visible:
+      id: conversation_list_new_chat_fab
+    timeout: 45000

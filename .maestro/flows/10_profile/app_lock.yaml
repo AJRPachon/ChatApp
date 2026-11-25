@@ -1,0 +1,54 @@
+# App lock: enable it (device PIN set by setup-emulators.ps1), background the app for >30 s, the
+# lock screen appears; unlock with the device PIN in the system prompt; disable it again.
+appId: com.ajrpachon.chatapp
+name: "10 · Bloqueo de la app"
+tags:
+  - profile
+  - slow
+  - emulator-only   # needs the emulator PIN (1234)
+onFlowComplete:
+  - launchApp:
+      stopApp: false
+---
+- runFlow: ../../subflows/login.yaml
+- tapOn:
+    id: conversation_list_profile_button
+- scrollUntilVisible:
+    element:
+      id: profile_app_lock_switch
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: profile_app_lock_switch
+- pressKey: Home
+- runFlow:
+    file: ../../subflows/wait.yaml
+    env:
+      MS: "35000"
+- launchApp:
+    stopApp: false
+# The lock screen opens the system prompt by itself on resume, which then covers it.
+- extendedWaitUntil:
+    visible:
+      id: "applock_screen|.*auth_credential_input|.*lockPassword"
+    timeout: 15000
+- runFlow:
+    when:
+      notVisible:
+        id: ".*(auth_credential_input|lockPassword)"
+    commands:
+      - tapOn:
+          id: applock_unlock_button
+- runFlow:
+    file: ../../subflows/unlock_system_prompt.yaml
+- extendedWaitUntil:
+    notVisible:
+      id: applock_screen
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      id: profile_app_lock_switch
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: profile_app_lock_switch

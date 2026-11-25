@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.group
 
+import app.cash.turbine.test
 import com.ajrpachon.chatapp.domain.model.ConversationBO
 import com.ajrpachon.chatapp.domain.model.GroupMemberBO
 import com.ajrpachon.chatapp.domain.model.GroupRole
@@ -104,6 +105,30 @@ class GroupInfoViewModelTest {
         val vm = buildViewModel()
         advanceUntilIdle()
         assertFalse(vm.state.value.isCurrentUserAdmin)
+    }
+
+    @Test
+    fun `leaving the group emits LeftGroup so the group's chat is closed too`() = runTest(mainDispatcherRule.scheduler) {
+        coEvery { leaveGroupUseCase(conversationId, "user1") } returns Result.success(Unit)
+        val vm = buildViewModel()
+        advanceUntilIdle()
+        vm.effect.test {
+            vm.onIntent(GroupInfoIntent.LeaveGroup)
+            assertEquals(GroupInfoEffect.LeftGroup, awaitItem())
+        }
+    }
+
+    @Test
+    fun `a failed leave shows the error and stays on the screen`() = runTest(mainDispatcherRule.scheduler) {
+        coEvery { leaveGroupUseCase(conversationId, "user1") } returns Result.failure(IllegalStateException("boom"))
+        val vm = buildViewModel()
+        advanceUntilIdle()
+        vm.effect.test {
+            vm.onIntent(GroupInfoIntent.LeaveGroup)
+            advanceUntilIdle()
+            expectNoEvents()
+        }
+        assertTrue(vm.state.value.error != null)
     }
 
     private fun member(userId: String, role: GroupRole = GroupRole.MEMBER) = GroupMemberBO(

@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.chat
 
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -108,7 +109,7 @@ internal fun ContactBubble(
                 text = primaryLabel,
                 onClick = { onPrimaryAction(phone) },
                 enabled = relationship != UserRelationship.PENDING_SENT,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).testTag("contact_card_primary_action"),
                 textStyle = MaterialTheme.typography.labelMedium,
                 textAlign = TextAlign.Center,
             )
@@ -122,7 +123,7 @@ internal fun ContactBubble(
                     }
                     context.startActivity(insertIntent)
                 },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).testTag("contact_card_add_contact"),
                 textStyle = MaterialTheme.typography.labelMedium,
                 textAlign = TextAlign.Center,
             )

@@ -1,0 +1,52 @@
+# Group info > add participant: search QA3, pick it, the history dialog offers see/blank; QA3 joins.
+# Requires the @claudeqa3 account (QA3_USERNAME) — skipped while it is not configured.
+appId: com.ajrpachon.chatapp
+name: "09 · Añadir miembro con diálogo de historial"
+tags:
+  - groups
+---
+- runFlow:
+    when:
+      true: ${QA3_USERNAME != null && QA3_USERNAME != ''}
+    commands:
+      - runFlow: ../../subflows/ensure_logged_in.yaml
+      - runFlow:
+          file: ../../subflows/create_group.yaml
+          env:
+            GROUP_NAME: "grpadd${RUN_ID}"
+            MEMBER: ${QA2_USERNAME}
+      - tapOn:
+          id: chat_top_bar_title
+      - tapOn:
+          id: group_add_member_button
+      - tapOn:
+          id: group_add_member_search
+      - inputText: ${QA3_USERNAME}
+      - extendedWaitUntil:
+          visible:
+            id: "group_add_member_user_${QA3_USERNAME}"
+          timeout: 15000
+      - tapOn:
+          id: "group_add_member_user_${QA3_USERNAME}"
+      - assertVisible:
+          id: group_history_see
+      - assertVisible:
+          id: group_history_blank
+      - tapOn:
+          id: group_history_blank
+      - extendedWaitUntil:
+          visible:
+            id: "group_member_row_${QA3_USERNAME}"
+          timeout: 15000
+      - tapOn:
+          id: "group_member_menu_${QA3_USERNAME}"
+      - tapOn:
+          id: group_member_menu_remove
+      - extendedWaitUntil:
+          notVisible:
+            id: "group_member_row_${QA3_USERNAME}"
+          timeout: 15000
+      - tapOn:
+          id: group_info_menu
+      - tapOn:
+          id: group_info_leave

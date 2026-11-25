@@ -1,0 +1,21 @@
+# Viewer with own statuses: progress bar shows; prev zone on the first story closes the viewer.
+appId: com.ajrpachon.chatapp
+name: "04 · Visor de estados - anterior y cerrar"
+tags:
+  - status
+---
+- runFlow: ../../subflows/ensure_logged_in.yaml
+- runFlow:
+    file: ../../subflows/status_publish_text.yaml
+    env:
+      STATUS_TEXT: "nav${RUN_ID}"
+- tapOn:
+    id: status_my_avatar
+- assertVisible:
+    id: status_viewer_progress
+- tapOn:
+    id: status_viewer_prev_zone
+- extendedWaitUntil:
+    notVisible:
+      id: status_viewer
+    timeout: 5000

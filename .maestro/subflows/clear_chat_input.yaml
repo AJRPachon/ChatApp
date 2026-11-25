@@ -1,0 +1,10 @@
+# Empties the chat input (the app keeps a per-chat draft). eraseText deletes backwards from the
+# cursor, and a tap leaves the cursor where it lands: tap the bottom-right corner so it sits at the
+# end of the text even when the draft wraps onto several lines. Leaves the keyboard closed.
+appId: com.ajrpachon.chatapp
+---
+- tapOn:
+    id: chat_input_field
+    point: "97%,85%"
+- eraseText: 150
+- hideKeyboard

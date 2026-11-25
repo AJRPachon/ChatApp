@@ -1,0 +1,3 @@
+
+# Maestro media fixtures: never normalise line endings
+.maestro/assets/** binary

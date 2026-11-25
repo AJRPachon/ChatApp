@@ -176,7 +176,7 @@ fun AuthContent(
         return
     }
 
-    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { innerPadding ->
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState, modifier = Modifier.testTag("auth_snackbar")) }) { innerPadding ->
         when {
             state.needsMfaChallenge -> Box(
                 modifier = Modifier.fillMaxSize().padding(innerPadding),
@@ -390,7 +390,9 @@ private fun LoginContent(
                         ChatAppOutlinedButton(
                             text = stringResource(R.string.auth_continue_with_google),
                             onClick = onGoogleSignIn,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("auth_google_button"),
                             leadingContent = {
                                 Image(
                                     imageVector = ImageVector.vectorResource(R.drawable.ic_google),
@@ -438,11 +440,13 @@ private fun LoginContent(
                                     text = stringResource(R.string.auth_sign_in_tab),
                                     selected = isSignIn,
                                     onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_IN)) },
+                                    testTag = "auth_tab_sign_in",
                                 )
                                 AuthModeTab(
                                     text = stringResource(R.string.auth_sign_up_tab),
                                     selected = !isSignIn,
                                     onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_UP)) },
+                                    testTag = "auth_tab_sign_up",
                                 )
                             }
                         }
@@ -478,20 +482,26 @@ private fun AuthSwitchModeLink(
             ChatAppTextButton(
                 text = stringResource(R.string.auth_no_account_register_here),
                 onClick = { onIntent(AuthIntent.SwitchToRegister) },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("auth_register_suggestion"),
             )
         } else {
             ChatAppTextButton(
                 text = stringResource(R.string.auth_no_account_register),
                 onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_UP)) },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("auth_switch_to_sign_up_link"),
             )
         }
     } else {
         ChatAppTextButton(
             text = stringResource(R.string.auth_have_account_sign_in),
             onClick = { onIntent(AuthIntent.ToggleMode(AuthMode.SIGN_IN)) },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("auth_switch_to_sign_in_link"),
         )
     }
 }
@@ -503,9 +513,12 @@ private fun RowScope.AuthModeTab(
     text: String,
     selected: Boolean,
     onClick: () -> Unit,
+    testTag: String,
 ) {
     Surface(
-        modifier = Modifier.weight(1f),
+        modifier = Modifier
+            .weight(1f)
+            .testTag(testTag),
         shape = CircleShape,
         color = if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
         onClick = onClick,
@@ -556,7 +569,10 @@ private fun EmailPasswordForm(
         label = stringResource(R.string.auth_password_label),
         leadingIcon = Icons.Default.Lock,
         trailingIcon = {
-            IconButton(onClick = { showPassword = !showPassword }) {
+            IconButton(
+                onClick = { showPassword = !showPassword },
+                modifier = Modifier.testTag("auth_password_visibility_toggle"),
+            ) {
                 Icon(
                     if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                     contentDescription = if (showPassword) {
@@ -613,7 +629,9 @@ private fun EmailPasswordForm(
                     keyboard?.hide()
                     onIntent(AuthIntent.SignUpWithEmail)
                 }),
-                modifier = Modifier.focusRequester(confirmFocus),
+                modifier = Modifier
+                    .focusRequester(confirmFocus)
+                    .testTag("auth_confirm_password_field"),
             )
         }
     }
@@ -691,6 +709,7 @@ private fun MfaChallengeContent(
                 keyboard?.hide()
                 onVerify()
             }),
+            modifier = Modifier.testTag("auth_mfa_code_field"),
         )
         Spacer(Modifier.height(16.dp))
         if (isLoading) {
@@ -703,7 +722,9 @@ private fun MfaChallengeContent(
                     onVerify()
                 },
                 enabled = code.length == 6,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("auth_mfa_verify_button"),
             )
         }
     }
@@ -738,13 +759,16 @@ private fun UsernameSetupContent(
             label = stringResource(R.string.auth_username_label),
             isError = error != null,
             supportingText = error?.asString(),
+            modifier = Modifier.testTag("auth_username_field"),
         )
         Spacer(Modifier.height(16.dp))
         ChatAppPrimaryButton(
             text = stringResource(R.string.auth_confirm_button),
             onClick = onConfirm,
             enabled = username.length >= 3,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("auth_username_confirm_button"),
         )
     }
 }

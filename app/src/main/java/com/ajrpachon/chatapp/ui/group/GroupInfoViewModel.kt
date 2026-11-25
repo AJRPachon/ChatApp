@@ -158,7 +158,7 @@ class GroupInfoViewModel(
         val userId = state.value.currentUserId ?: return
         viewModelScope.launch {
             leaveGroupUseCase(conversationId, userId)
-                .onSuccess { sendEffect(GroupInfoEffect.NavigateBack) }
+                .onSuccess { sendEffect(GroupInfoEffect.LeftGroup) }
                 .onFailure { e -> updateState { it.copy(error = e.toUiText()) } }
         }
     }

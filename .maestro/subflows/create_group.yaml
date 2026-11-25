@@ -1,0 +1,28 @@
+# From the conversation list: create a group GROUP_NAME with member MEMBER (username, no @).
+# Ends inside the new group chat.
+appId: com.ajrpachon.chatapp
+---
+- tapOn:
+    id: conversation_list_new_group_fab
+- tapOn:
+    id: create_group_search_field
+- inputText: ${MEMBER}
+- extendedWaitUntil:
+    visible:
+      id: "create_group_user_${MEMBER}"
+    timeout: 15000
+- tapOn:
+    id: "create_group_user_${MEMBER}"
+- hideKeyboard
+- tapOn:
+    id: create_group_next_button
+- tapOn:
+    id: create_group_name_field
+- inputText: ${GROUP_NAME}
+- hideKeyboard
+- tapOn:
+    id: create_group_create_button
+- extendedWaitUntil:
+    visible:
+      id: chat_input_field
+    timeout: 20000

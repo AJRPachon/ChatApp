@@ -1,0 +1,28 @@
+# Fixture (idempotent): make @claudeqa and @claudeqa2 "connected" through the real invitation
+# flow. A invites B unless they are already connected or an invitation is already pending.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+  - fixture
+---
+- runFlow: ../../subflows/login.yaml
+- tapOn:
+    id: conversation_list_new_chat_fab
+- tapOn:
+    id: newchat_search_field
+- inputText: ${QA2_USERNAME}
+- extendedWaitUntil:
+    visible:
+      id: "newchat_user_row_${QA2_USERNAME}"
+    timeout: 20000
+- runFlow:
+    when:
+      visible:
+        id: "newchat_invite_${QA2_USERNAME}"
+    commands:
+      - tapOn:
+          id: "newchat_invite_${QA2_USERNAME}"
+      - extendedWaitUntil:
+          visible:
+            id: "newchat_pending_sent_${QA2_USERNAME}"
+          timeout: 20000

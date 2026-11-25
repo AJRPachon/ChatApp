@@ -1,0 +1,20 @@
+# Dismiss system popups that can cover the app on a busy/fresh emulator:
+#  - "ChatApp no responde / isn't responding" (transient ANR under host load) -> Wait
+#  - Gboard's first-run tip ("Cambia de teclado…") -> accept
+appId: com.ajrpachon.chatapp
+---
+- runFlow:
+    when:
+      visible:
+        text: "(Esperar|Wait)"
+    commands:
+      - tapOn:
+          text: "(Esperar|Wait)"
+- runFlow:
+    when:
+      visible:
+        text: "(Cambia de teclado|Switch keyboard).*"
+    commands:
+      - tapOn:
+          text: "(Aceptar|OK|Got it)"
+          optional: true

@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp
 
+import kotlinx.coroutines.withContext
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -7,9 +8,9 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.fragment.app.FragmentActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -43,6 +44,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import com.ajrpachon.chatapp.ui.auth.IntegrityBlockedScreen
+import com.ajrpachon.chatapp.ui.common.qaTag
 import com.ajrpachon.chatapp.domain.repository.AppLockRepository
 import com.ajrpachon.chatapp.domain.model.IntegrityResultBO
 import com.ajrpachon.chatapp.domain.model.isGroupCall
@@ -73,7 +75,9 @@ import org.koin.android.ext.android.get
 
 private const val APP_LOCK_TIMEOUT_MS = 30_000L
 
-class MainActivity : ComponentActivity() {
+// FragmentActivity (not plain ComponentActivity): the app-lock BiometricPrompt needs one; with
+// ComponentActivity the prompt never opened and an enabled app lock could not be unlocked.
+class MainActivity : FragmentActivity() {
 
     private val pendingConversationId = mutableStateOf<String?>(null)
     private val pendingOtherUserName = mutableStateOf<String?>(null)
@@ -370,15 +374,21 @@ class MainActivity : ComponentActivity() {
                             Text(stringResource(R.string.root_warning_message))
                         },
                         confirmButton = {
-                            TextButton(onClick = {
-                                saveRootWarningAccepted()
-                                showRootWarning = false
-                            }) {
+                            TextButton(
+                                onClick = {
+                                    saveRootWarningAccepted()
+                                    showRootWarning = false
+                                },
+                                modifier = Modifier.qaTag("root_warning_continue_button"),
+                            ) {
                                 Text(stringResource(R.string.root_warning_continue))
                             }
                         },
                         dismissButton = {
-                            TextButton(onClick = { finish() }) {
+                            TextButton(
+                                onClick = { finish() },
+                                modifier = Modifier.qaTag("root_warning_exit_button"),
+                            ) {
                                 Text(stringResource(R.string.root_warning_exit))
                             }
                         },
@@ -472,10 +482,15 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun checkRootAndWarnIfNeeded() {
-        val prefs = getSharedPreferences("security_prefs", Context.MODE_PRIVATE)
-        val alreadyAccepted = prefs.getBoolean("root_warning_accepted", false)
-        if (!alreadyAccepted && RootDetector.isRooted(packageManager)) {
-            showRootWarning = true
+        // Off the main thread: the prefs read and RootDetector's file probes (su binaries, Magisk
+        // paths) are disk I/O in onCreate, flagged by StrictMode and long enough on a slow device
+        // to ANR the first frame (seen in the E2E suite on emulators under load).
+        lifecycleScope.launch {
+            val rooted = withContext(Dispatchers.IO) {
+                val prefs = getSharedPreferences("security_prefs", Context.MODE_PRIVATE)
+                !prefs.getBoolean("root_warning_accepted", false) && RootDetector.isRooted(packageManager)
+            }
+            if (rooted) showRootWarning = true
         }
     }
 

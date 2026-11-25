@@ -1,5 +1,7 @@
 package com.ajrpachon.chatapp.ui.chat
 
+import androidx.compose.ui.platform.testTag
+import com.ajrpachon.chatapp.ui.common.qaTag
 import android.util.Patterns
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -151,22 +153,26 @@ internal fun MessageFooterContent(
             LocationMessageCard(mapsUrl = locationUrl, onLongPress = onToggleSelect)
         }
         Box(
-            modifier = Modifier.combinedClickable(
-                onClick = {},
-                onLongClick = { showMsgMenu = true },
-            ),
+            modifier = Modifier
+                .testTag("message_text")
+                .combinedClickable(
+                    onClick = {},
+                    onLongClick = { showMsgMenu = true },
+                ),
         ) {
             if (locationUrl == null) {
                 Text(text = rememberMentionHighlighted(message.content), style = MaterialTheme.typography.bodyMedium)
             }
             DropdownMenu(expanded = showMsgMenu, onDismissRequest = { showMsgMenu = false }) {
                 DropdownMenuItem(
+                    modifier = Modifier.qaTag("message_menu_react"),
                     text = { Text(stringResource(R.string.chat_react)) },
                     leadingIcon = { Text("😊") },
                     onClick = { showMsgMenu = false; showEmojiPicker = true },
                 )
                 if (onEdit != null) {
                     DropdownMenuItem(
+                        modifier = Modifier.qaTag("message_menu_edit"),
                         text = { Text(stringResource(R.string.chat_edit)) },
                         leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
                         onClick = { showMsgMenu = false; onEdit() },
@@ -174,6 +180,7 @@ internal fun MessageFooterContent(
                 }
                 if (onSelfDestruct != null) {
                     DropdownMenuItem(
+                        modifier = Modifier.qaTag("message_menu_timer"),
                         text = {
                             Text(if (message.expiresAt != null) stringResource(R.string.chat_remove_self_destruct) else stringResource(R.string.chat_ephemeral_message))
                         },
@@ -182,12 +189,14 @@ internal fun MessageFooterContent(
                     )
                 }
                 DropdownMenuItem(
+                    modifier = Modifier.qaTag("message_menu_copy"),
                     text = { Text(stringResource(R.string.chat_copy)) },
                     leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null) },
                     onClick = { showMsgMenu = false; onCopy(message.content) },
                 )
                 if (translatedText == null && !isTranslating) {
                     DropdownMenuItem(
+                        modifier = Modifier.qaTag("message_menu_translate"),
                         text = { Text(stringResource(R.string.chat_translate)) },
                         leadingIcon = { Icon(Icons.Default.Translate, contentDescription = null) },
                         onClick = { showMsgMenu = false; onTranslate() },
@@ -195,6 +204,7 @@ internal fun MessageFooterContent(
                 }
                 if (onDelete != null) {
                     DropdownMenuItem(
+                        modifier = Modifier.qaTag("message_menu_delete"),
                         text = { Text(stringResource(R.string.chat_delete)) },
                         leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
                         onClick = { showMsgMenu = false; onDelete() },
@@ -202,6 +212,7 @@ internal fun MessageFooterContent(
                 }
                 if (onForward != null) {
                     DropdownMenuItem(
+                        modifier = Modifier.qaTag("message_menu_forward"),
                         text = { Text(stringResource(R.string.chat_forward)) },
                         leadingIcon = { Icon(Icons.AutoMirrored.Filled.Forward, contentDescription = null) },
                         onClick = { showMsgMenu = false; onForward() },
@@ -233,9 +244,9 @@ internal fun MessageFooterContent(
                     text = translatedText,
                     style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic),
                     color = LocalContentColor.current.copy(alpha = 0.75f),
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).testTag("message_translation"),
                 )
-                IconButton(onClick = onDismissTranslation) {
+                IconButton(onClick = onDismissTranslation, modifier = Modifier.testTag("message_translation_dismiss")) {
                     Icon(
                         Icons.Default.Close,
                         contentDescription = stringResource(R.string.chat_hide_translation),
@@ -273,7 +284,7 @@ internal fun MessageFooterContent(
                 "⏱️ ${if (secsLeft < 60) "${secsLeft}s" else "${secsLeft / 60}m"}",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
-                modifier = Modifier.padding(end = 2.dp),
+                modifier = Modifier.padding(end = 2.dp).testTag("message_expiry_label"),
             )
         }
         if (message.isEdited) {
@@ -281,7 +292,7 @@ internal fun MessageFooterContent(
                 stringResource(R.string.chat_edited_label),
                 style = MaterialTheme.typography.labelSmall,
                 color = LocalContentColor.current.copy(alpha = 0.4f),
-                modifier = Modifier.padding(end = 2.dp),
+                modifier = Modifier.padding(end = 2.dp).testTag("message_edited_label"),
             )
         }
         // Audio messages show their send time (and status icon) inside the
@@ -406,7 +417,9 @@ internal fun ReadReceiptIcon(isRead: Boolean, unreadTint: Color? = null) {
     Icon(
         imageVector = if (isRead) Icons.Default.DoneAll else Icons.Default.Done,
         contentDescription = if (isRead) stringResource(R.string.chat_read) else stringResource(R.string.chat_sent),
-        modifier = Modifier.size(14.dp),
+        modifier = Modifier
+            .size(14.dp)
+            .testTag(if (isRead) "message_status_read" else "message_status_sent"),
         tint = if (isRead)
             ReadReceiptBlue
         else
@@ -433,14 +446,14 @@ internal fun SendStatusIcon(
                 imageVector = Icons.Default.Schedule,
                 contentDescription = stringResource(R.string.chat_pending_send),
                 tint = neutralTint ?: MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                modifier = Modifier.size(12.dp),
+                modifier = Modifier.size(12.dp).testTag("message_status_pending"),
             )
         SendStatus.FAILED ->
             Icon(
                 imageVector = Icons.Default.Warning,
                 contentDescription = stringResource(R.string.chat_send_error),
                 tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(12.dp),
+                modifier = Modifier.size(12.dp).testTag("message_status_error"),
             )
         SendStatus.SENT ->
             ReadReceiptIcon(isRead = isRead, unreadTint = neutralTint)
@@ -482,6 +495,7 @@ internal fun MediaMetaOverlay(
                     stringResource(R.string.chat_edited_label),
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White.copy(alpha = 0.85f),
+                    modifier = Modifier.testTag("message_edited_label"),
                 )
             }
             Text(
@@ -528,6 +542,7 @@ internal fun ReplyQuote(
             .clip(ChatAppShapeExtras.Thumbnail)
             .background(bg)
             .height(IntrinsicSize.Min)
+            .qaTag("message_reply_quote")
             .clickable { onClick() },
     ) {
         Box(
@@ -656,6 +671,7 @@ internal fun LinkPreviewCard(data: LinkPreviewData) {
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = Modifier
             .fillMaxWidth()
+            .qaTag("message_link_preview")
             .clickable {
                 val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(data.url)).apply {
                     addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)

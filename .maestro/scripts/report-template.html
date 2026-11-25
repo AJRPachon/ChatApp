@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Informe E2E ChatApp</title>
+<style>
+/* Cabecera y veredicto → panel del dispositivo → mapa por sección → fallos → no ejecutados → tabla filtrable → entorno e histórico */
+:root {
+  --bg:#f5f7fa; --surface:#fff; --sunken:#eef2f6; --ink:#17222e; --muted:#5b6b7d; --line:#d9e0e8;
+  --accent:#c4552f; --accent-soft:#fbe9e2; --link:#1d5fa8;
+  --pass:#1f8a4c; --pass-bg:#dcf2e3; --pass-ink:#14532d;
+  --fail:#c63b3b; --fail-bg:#fbdada; --fail-ink:#8a1c1c;
+  --skip:#8193a8; --skip-bg:#e6ebf1; --skip-ink:#3b4a5c;
+  --known:#7a55c2; --known-bg:#e7def7; --known-ink:#4b2a85;
+  --f-body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; --f-mono:ui-monospace,Consolas,"Courier New",monospace;
+  --r:6px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg:#0f151c; --surface:#161e27; --sunken:#1c2631; --ink:#e5ebf1; --muted:#93a2b3; --line:#2a3644;
+  --accent:#f0916d; --accent-soft:#3a2219; --link:#8cbcf0;
+  --pass:#3fbf74; --pass-bg:#163626; --pass-ink:#9de2b8; --fail:#ec6a6a; --fail-bg:#3d1d1f; --fail-ink:#f5b3b3;
+  --skip:#6c7e93; --skip-bg:#222d39; --skip-ink:#b3c0cf; --known:#a487e0; --known-bg:#2b2342; --known-ink:#d3c3f5; color-scheme:dark; } }
+:root[data-theme="dark"] {
+  --bg:#0f151c; --surface:#161e27; --sunken:#1c2631; --ink:#e5ebf1; --muted:#93a2b3; --line:#2a3644;
+  --accent:#f0916d; --accent-soft:#3a2219; --link:#8cbcf0;
+  --pass:#3fbf74; --pass-bg:#163626; --pass-ink:#9de2b8; --fail:#ec6a6a; --fail-bg:#3d1d1f; --fail-ink:#f5b3b3;
+  --skip:#6c7e93; --skip-bg:#222d39; --skip-ink:#b3c0cf; --known:#a487e0; --known-bg:#2b2342; --known-ink:#d3c3f5; color-scheme:dark; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.5 var(--f-body); }
+.wrap { max-width:1200px; margin:0 auto; padding:28px 16px 64px; display:flex; flex-direction:column; gap:28px; }
+h1,h2,h3 { margin:0; letter-spacing:-.01em; }
+h1 { font-size:clamp(24px,4vw,34px); font-weight:800; } h2 { font-size:19px; } h3 { font-size:15px; }
+.eyebrow { font:600 11px/1 var(--f-body); letter-spacing:.12em; text-transform:uppercase; color:var(--accent); }
+.muted { color:var(--muted); } .mono { font-family:var(--f-mono); } .num { font-variant-numeric:tabular-nums; }
+a { color:var(--link); } :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+header.top { display:flex; flex-direction:column; gap:10px; border-bottom:1px solid var(--line); padding-bottom:20px; }
+.meta { display:flex; flex-wrap:wrap; gap:6px 22px; color:var(--muted); font-size:13px; }
+.meta b { color:var(--ink); font:600 12.5px var(--f-mono); }
+.top-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.print-btn { margin-left:auto; font:600 12.5px var(--f-body); color:var(--accent); background:var(--accent-soft); border:0; border-radius:6px; padding:6px 12px; cursor:pointer; }
+.verdict { background:var(--surface); border:1px solid var(--line); border-top:4px solid var(--v); border-radius:var(--r); padding:16px 18px; display:flex; gap:14px; align-items:flex-start; }
+.v-badge { flex:none; display:inline-flex; align-items:center; gap:7px; font:700 12px/1 var(--f-body); letter-spacing:.08em; color:var(--v-ink); border:1px solid var(--v); border-radius:999px; padding:6px 11px; margin-top:3px; }
+.v-badge i { width:9px; height:9px; border-radius:50%; background:var(--v); }
+.v-title { font:700 21px/1.25 var(--f-body); color:var(--v-ink); }
+.v-why { margin:6px 0 0; padding:0; list-style:none; font-size:13.5px; } .v-why li { padding:2px 0; overflow-wrap:anywhere; }
+@media (max-width:640px) { .verdict { flex-wrap:wrap; } }
+.section-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+.panel { background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:18px; display:flex; flex-direction:column; gap:14px; min-width:0; }
+.overview { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); gap:16px; }
+@media (max-width:860px) { .overview { grid-template-columns:1fr; } }
+.score { display:flex; align-items:baseline; gap:10px; } .score b { font:800 40px/1 var(--f-body); } .score .pct { margin-left:auto; font:700 22px var(--f-body); }
+.stack { display:flex; height:12px; border-radius:3px; overflow:hidden; background:var(--sunken); } .stack span { display:block; height:100%; }
+.counts { display:grid; grid-template-columns:repeat(3,1fr); gap:8px 12px; }
+.count .v { font:700 20px var(--f-body); font-variant-numeric:tabular-nums; display:block; }
+.count .k { font-size:12px; color:var(--muted); display:flex; align-items:center; gap:6px; }
+.dot { width:9px; height:9px; border-radius:2px; flex:none; display:inline-block; }
+dl.facts { display:grid; grid-template-columns:130px minmax(0,1fr); gap:6px 12px; margin:0; font-size:13px; }
+dl.facts dt { color:var(--muted); } dl.facts dd { margin:0; overflow-wrap:anywhere; }
+.map { background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:6px 18px; }
+.map-row { display:grid; grid-template-columns:200px 1fr 80px; gap:14px; align-items:center; padding:10px 0; border-top:1px solid var(--line); }
+.map-row:first-child { border-top:0; }
+@media (max-width:640px) { .map-row { grid-template-columns:1fr auto; } .map-row .cells { grid-column:1/-1; grid-row:2; } }
+.map-row .name { font-weight:600; } .map-row .name small { display:block; font-weight:400; color:var(--muted); font-size:12px; }
+.sc { display:inline-block; min-width:28px; margin-right:8px; padding:1px 5px; border-radius:4px; background:var(--accent-soft); color:var(--accent); font-size:11.5px; font-weight:700; text-align:center; }
+.map-row .tally { text-align:right; font-size:12.5px; color:var(--muted); }
+.cells { display:flex; flex-wrap:wrap; gap:4px; }
+.cell { width:22px; height:22px; border-radius:4px; border:0; padding:0; cursor:pointer; }
+.cell:hover { transform:translateY(-1px); }
+.legend { display:flex; flex-wrap:wrap; gap:8px 16px; font-size:12.5px; color:var(--muted); } .legend span { display:inline-flex; align-items:center; gap:6px; }
+.legend .sw { width:14px; height:14px; border-radius:3px; }
+.allclear { display:flex; gap:12px; background:var(--pass-bg); color:var(--pass-ink); border-radius:var(--r); padding:12px 16px; }
+.fails { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,520px),1fr)); gap:12px; }
+.fail { background:var(--surface); border:1px solid var(--line); border-left:4px solid var(--fail); border-radius:var(--r); padding:14px 16px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.fail .row1 { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.err { font:12.5px/1.45 var(--f-mono); background:var(--sunken); border-radius:4px; padding:8px 10px; overflow-wrap:anywhere; }
+.pv { display:grid; grid-template-columns:minmax(0,170px) minmax(0,1fr); gap:14px; align-items:start; }
+@media (max-width:560px) { .pv { grid-template-columns:1fr; } .pv img { max-width:200px; } }
+.pv img { width:100%; border-radius:10px; border:3px solid var(--ink); background:#000; cursor:zoom-in; display:block; }
+.pv-h { font:600 11px var(--f-body); text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:6px; }
+ol.tl { list-style:none; margin:0; padding:0; font-size:12.5px; max-height:320px; overflow:auto; }
+ol.tl li { position:relative; display:flex; gap:10px; padding:4px 0 4px 22px; }
+ol.tl li::before { content:""; position:absolute; left:6px; top:0; bottom:0; width:2px; background:var(--muted); opacity:.3; }
+ol.tl .mk { position:absolute; left:1px; top:7px; width:12px; height:12px; border-radius:50%; background:var(--surface); border:2px solid var(--pass); }
+ol.tl li.warn .mk { border-color:var(--skip); }
+ol.tl li.ko { background:var(--fail-bg); border-radius:6px; } ol.tl li.ko .mk { border:0; background:var(--fail); }
+ol.tl li.ko .st { color:var(--fail-ink); font-weight:600; }
+ol.tl .st { flex:1 1 auto; min-width:0; overflow-wrap:anywhere; } ol.tl .secs { flex:none; color:var(--muted); font-variant-numeric:tabular-nums; }
+ol.tl li.d2 { padding-left:36px; } ol.tl li.d3 { padding-left:50px; }
+.pill { display:inline-block; font:600 11px/1 var(--f-body); letter-spacing:.03em; padding:5px 8px; border-radius:999px; white-space:nowrap; }
+.p-PASA { background:var(--pass-bg); color:var(--pass-ink); } .p-FALLA { background:var(--fail-bg); color:var(--fail-ink); }
+.p-NO_EJECUTADO { background:var(--skip-bg); color:var(--skip-ink); } .p-BUG { background:var(--known-bg); color:var(--known-ink); }
+.tag { display:inline-block; font:500 11px/1 var(--f-mono); padding:4px 6px; border-radius:4px; background:var(--sunken); color:var(--muted); white-space:nowrap; margin:1px 2px 1px 0; }
+.bycat { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; }
+.cat-card { background:var(--surface); border:1px solid var(--line); border-left:4px solid var(--c); border-radius:var(--r); padding:12px 14px; display:grid; gap:6px; align-content:start; }
+.cat-card .top { display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+.cat-card .cn { font-weight:700; color:var(--c); } .cat-card .n { font:700 24px/1 var(--f-body); color:var(--c); }
+.cat-card ul { margin:0; padding-left:16px; font-size:12.5px; color:var(--muted); } .cat-card li { overflow-wrap:anywhere; }
+.filters { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:12px; }
+.filters input, .filters select { font:inherit; color:var(--ink); background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:7px 10px; }
+.filters input { flex:1 1 220px; min-width:0; }
+.chips { display:flex; flex-wrap:wrap; gap:6px; }
+.chip { font:600 12px var(--f-body); border:1px solid var(--line); background:var(--surface); color:var(--muted); border-radius:999px; padding:5px 10px; cursor:pointer; }
+.chip[aria-pressed="true"] { background:var(--accent); border-color:var(--accent); color:var(--surface); }
+.table-wrap { overflow-x:auto; background:var(--surface); border:1px solid var(--line); border-radius:var(--r); }
+table { border-collapse:collapse; width:100%; min-width:820px; table-layout:fixed; }
+th, td { text-align:left; padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:top; overflow-wrap:anywhere; }
+th { font:600 11.5px var(--f-body); color:var(--muted); text-transform:uppercase; letter-spacing:.06em; background:var(--sunken); }
+th button { all:unset; cursor:pointer; } th button:hover { color:var(--ink); } th[aria-sort="ascending"] button::after { content:" ▲"; } th[aria-sort="descending"] button::after { content:" ▼"; }
+tbody tr.main { cursor:pointer; } tbody tr.main:hover, tbody tr.flash { background:var(--accent-soft); }
+tr.detail td { background:var(--sunken); }
+.detail-grid { display:grid; grid-template-columns:140px minmax(0,1fr); gap:6px 16px; font-size:13px; margin:0; }
+.detail-grid dt { color:var(--muted); } .detail-grid dd { margin:0; }
+@media (max-width:720px) { .detail-grid { grid-template-columns:1fr; } }
+.trend { display:inline-flex; gap:3px; align-items:center; } .trend i { width:8px; height:8px; border-radius:50%; display:inline-block; }
+.bottom { display:grid; grid-template-columns:1fr 1fr; gap:16px; } @media (max-width:800px) { .bottom { grid-template-columns:1fr; } }
+.hist { width:100%; border-collapse:collapse; min-width:0; table-layout:auto; font-size:13px; } .hist td, .hist th { padding:6px 8px; }
+dialog#lb { border:0; padding:0; background:transparent; max-width:96vw; max-height:96vh; }
+dialog#lb::backdrop { background:rgba(5,8,12,.92); } dialog#lb img { max-width:94vw; max-height:90vh; border-radius:12px; display:block; }
+dialog#lb button { position:fixed; top:14px; right:14px; width:38px; height:38px; border-radius:999px; border:1px solid rgba(255,255,255,.3); background:rgba(255,255,255,.12); color:#fff; font-size:18px; cursor:pointer; }
+@media (prefers-reduced-motion: reduce) { .cell:hover { transform:none; } }
+@media print {
+  :root { --bg:#fff; --surface:#fff; --sunken:#f3f5f8; --ink:#111; --muted:#444; --line:#ccc; }
+  body { font-size:11px; } .wrap { max-width:none; padding:0; }
+  .print-btn, .filters, dialog { display:none !important; }
+  tr.detail { display:table-row !important; }
+  .fail, .panel, .cat-card, tr { break-inside:avoid; } ol.tl { max-height:none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="top-row"><div class="eyebrow">ChatApp Android · Maestro · debug</div><button class="print-btn" onclick="window.print()">Imprimir / PDF</button></div>
+    <h1>Informe de ejecución E2E</h1>
+    <div class="meta" id="meta"></div>
+    <div class="verdict" id="verdict"></div>
+  </header>
+
+  <section>
+    <div class="section-head"><h2>Resultado</h2><span class="muted" id="split"></span></div>
+    <div class="overview">
+      <div class="panel" id="device"></div>
+      <div class="panel"><h3>Entorno</h3><dl class="facts" id="env"></dl></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head"><h2>Mapa de casos</h2><div class="legend" id="legend"></div></div>
+    <div class="map" id="map"></div>
+  </section>
+
+  <section>
+    <div class="section-head"><h2>Fallos</h2><span class="muted" id="failcount"></span></div>
+    <div id="fails"></div>
+  </section>
+
+  <section id="notrun-section">
+    <div class="section-head"><h2>No ejecutados en esta tanda</h2><span class="muted">Agrupados por motivo</span></div>
+    <div class="bycat" id="notrun"></div>
+  </section>
+
+  <section id="cases">
+    <div class="section-head"><h2>Todos los casos</h2><span class="muted" id="shown"></span></div>
+    <div class="filters">
+      <input id="q" type="search" placeholder="Buscar por caso, fichero, tag o error" aria-label="Buscar">
+      <select id="fsec" aria-label="Sección"><option value="">Todas las secciones</option></select>
+      <div class="chips" id="fstatus"></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <colgroup><col style="width:34%"><col style="width:120px"><col style="width:130px"><col style="width:90px"><col style="width:120px"><col></colgroup>
+        <thead><tr>
+          <th aria-sort="none"><button data-sort="name">Caso</button></th>
+          <th aria-sort="none"><button data-sort="section">Sección</button></th>
+          <th aria-sort="none"><button data-sort="status">Resultado</button></th>
+          <th aria-sort="none"><button data-sort="duration">Duración</button></th>
+          <th title="Ejecuciones anteriores que lanzaron el caso, de la más antigua a la actual">Últimas</th>
+          <th aria-sort="none"><button data-sort="error">Error</button></th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="bottom">
+    <div class="panel"><h2>Histórico</h2><div id="hist"></div></div>
+    <div class="panel"><h2>Bugs encontrados por la suite</h2><div id="bugs"></div></div>
+  </section>
+</div>
+<dialog id="lb"><button aria-label="Cerrar" onclick="this.parentElement.close()">✕</button><img alt=""></dialog>
+
+<script>
+const DATA = /*__DATA__*/;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ST = { PASA:{label:'Pasa', c:'var(--pass)'}, FALLA:{label:'Falla', c:'var(--fail)'}, NO_EJECUTADO:{label:'No ejecutado', c:'var(--skip)'}, BUG:{label:'Bug conocido', c:'var(--known)'} };
+const fmtS = s => s >= 60 ? `${Math.floor(s/60)} min ${Math.round(s%60)} s` : `${Math.round(s)} s`;
+const cases = DATA.cases;
+const ran = cases.filter(c => c.status === 'PASA' || c.status === 'FALLA');
+const pass = ran.filter(c => c.status === 'PASA').length, fail = ran.length - pass;
+const pct = ran.length ? Math.round(100 * pass / ran.length) : 0;
+
+// Cabecera
+const m = DATA.meta;
+$('#meta').innerHTML = [
+  ['Ejecución', m.runId], ['Fecha', m.date], ['Dispositivo', m.device], ['Idioma', m.locale],
+  ['Duración', fmtS(m.durationSec)], ['Rama', `${m.branch} @ ${m.commit}`]].map(([k,v]) => `<span>${k} <b>${esc(v)}</b></span>`).join('');
+const green = fail === 0;
+const v = $('#verdict');
+v.style.setProperty('--v', green ? 'var(--pass)' : 'var(--fail)');
+v.style.setProperty('--v-ink', green ? 'var(--pass-ink)' : 'var(--fail-ink)');
+const notRun = cases.filter(c => c.status !== 'PASA' && c.status !== 'FALLA');
+v.innerHTML = `<span class="v-badge"><i></i>${green ? 'VERDE' : 'ROJO'}</span><div><div class="v-title">${green
+  ? `Pasan los ${ran.length} casos ejecutados` : `${fail} de ${ran.length} casos fallan`}</div><ul class="v-why">
+  <li>${pass} pasan (${pct} %) en ${esc(m.device)}, ${esc(m.deviceKind)}.</li>
+  ${notRun.length ? `<li>${notRun.length} casos de la suite no se ejecutaron en esta tanda (motivos abajo).</li>` : ''}
+  ${fail ? `<li>Fallos en: ${[...new Set(ran.filter(c=>c.status==='FALLA').map(c=>c.sectionName))].map(esc).join(', ')}.</li>` : ''}
+  </ul></div>`;
+
+// Panel del dispositivo
+$('#split').textContent = `${cases.length} casos en la suite · ${ran.length} ejecutados`;
+const seg = (n, col) => n ? `<span style="width:${100*n/cases.length}%;background:${col}"></span>` : '';
+$('#device').innerHTML = `<h3>${esc(m.device)} <span class="muted" style="font-weight:400">· ${esc(m.deviceKind)}</span></h3>
+  <div class="score"><b class="num">${pass}</b><span class="muted">de ${ran.length} ejecutados pasan</span><span class="pct num">${pct} %</span></div>
+  <div class="stack">${seg(pass,'var(--pass)')}${seg(fail,'var(--fail)')}${seg(notRun.length,'var(--skip)')}</div>
+  <div class="counts">
+    <div class="count"><span class="v">${pass}</span><span class="k"><i class="dot" style="background:var(--pass)"></i>Pasan</span></div>
+    <div class="count"><span class="v">${fail}</span><span class="k"><i class="dot" style="background:var(--fail)"></i>Fallan</span></div>
+    <div class="count"><span class="v">${notRun.length}</span><span class="k"><i class="dot" style="background:var(--skip)"></i>No ejecutados</span></div>
+  </div>`;
+$('#env').innerHTML = (DATA.env || []).map(([k,v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('');
+
+// Mapa
+const sections = [...new Set(cases.map(c => c.section))].sort();
+$('#legend').innerHTML = Object.entries(ST).map(([k,s]) => `<span><i class="sw" style="background:${s.c}"></i>${s.label}</span>`).join('');
+$('#map').innerHTML = sections.map(sec => {
+  const cs = cases.filter(c => c.section === sec), ok = cs.filter(c => c.status === 'PASA').length;
+  const runN = cs.filter(c => c.status === 'PASA' || c.status === 'FALLA').length;
+  return `<div class="map-row"><div class="name"><span class="sc">${esc(sec)}</span>${esc(cs[0].sectionName)}<small>${cs.length} casos</small></div>
+    <div class="cells">${cs.map(c => `<button class="cell" style="background:${ST[c.status].c}" title="${esc(c.name)} · ${ST[c.status].label}" data-go="${esc(c.id)}" aria-label="${esc(c.name)}: ${ST[c.status].label}"></button>`).join('')}</div>
+    <div class="tally num">${runN ? `${ok}/${runN}` : '—'}</div></div>`;
+}).join('');
+document.addEventListener('click', e => {
+  const go = e.target.closest('[data-go]'); if (!go) return;
+  const row = document.querySelector(`tr.main[data-id="${CSS.escape(go.dataset.go)}"]`);
+  if (!row) return; openDetail(row, true); row.scrollIntoView({behavior:'smooth', block:'center'});
+  row.classList.add('flash'); setTimeout(() => row.classList.remove('flash'), 1600);
+});
+
+// Fallos
+const tl = steps => `<ol class="tl">${steps.map(s => `<li class="${s.st === 'FAILED' ? 'ko' : (s.st === 'WARNED' || s.st === 'SKIPPED') ? 'warn' : ''} d${Math.min(s.d,3)}"><span class="mk"></span><span class="st">${esc(s.label)}</span><span class="secs">${s.ms >= 1000 ? (s.ms/1000).toFixed(1)+' s' : ''}</span></li>`).join('')}</ol>`;
+const failed = cases.filter(c => c.status === 'FALLA');
+$('#failcount').textContent = failed.length ? `${failed.length} caso(s)` : '';
+$('#fails').innerHTML = failed.length ? `<div class="fails">${failed.map(c => `<article class="fail">
+  <div class="row1"><span class="pill p-FALLA">Falla</span><span class="sc">${esc(c.section)}</span><b>${esc(c.name)}</b></div>
+  <div class="err">${esc(c.error)}</div>
+  ${c.failedStep ? `<div class="muted" style="font-size:12.5px">Paso que falla: <span class="mono">${esc(c.failedStep)}</span></div>` : ''}
+  <div class="pv">${c.image ? `<img src="${c.image}" alt="Pantalla en el momento del fallo de ${esc(c.name)}" data-lb>` : '<div class="muted">Sin captura</div>'}
+  <div><div class="pv-h">Pasos <span class="muted">(${c.steps.length})</span></div>${tl(c.steps)}</div></div>
+  <div class="muted mono" style="font-size:12px">${esc(c.file)}</div></article>`).join('')}</div>`
+  : `<div class="allclear"><b>Sin fallos.</b> Todos los casos ejecutados pasan.</div>`;
+document.addEventListener('click', e => { const img = e.target.closest('img[data-lb]'); if (!img) return;
+  const lb = $('#lb'); lb.querySelector('img').src = img.src; lb.querySelector('img').alt = img.alt; lb.showModal(); });
+
+// No ejecutados
+const groups = {};
+notRun.forEach(c => (groups[c.reason] ??= []).push(c));
+const reasonColor = r => /bug/i.test(r) ? 'var(--known)' : 'var(--skip)';
+$('#notrun').innerHTML = Object.entries(groups).map(([r, cs]) => `<div class="cat-card" style="--c:${reasonColor(r)}">
+  <div class="top"><span class="cn">${esc(r)}</span><span class="n num">${cs.length}</span></div>
+  <ul>${cs.map(c => `<li><a href="#" data-go="${esc(c.id)}">${esc(c.name)}</a></li>`).join('')}</ul></div>`).join('');
+if (!notRun.length) $('#notrun-section').hidden = true;
+
+// Tabla
+sections.forEach(s => $('#fsec').insertAdjacentHTML('beforeend', `<option value="${esc(s)}">${esc(s)} · ${esc(cases.find(c=>c.section===s).sectionName)}</option>`));
+const active = new Set(Object.keys(ST));
+$('#fstatus').innerHTML = Object.entries(ST).map(([k,s]) => `<button class="chip" data-st="${k}" aria-pressed="true">${s.label}</button>`).join('');
+$('#fstatus').addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b) return;
+  const on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', on); on ? active.add(b.dataset.st) : active.delete(b.dataset.st); render(); });
+let sortKey = 'section', sortDir = 1;
+document.querySelectorAll('th button[data-sort]').forEach(b => b.addEventListener('click', () => {
+  const k = b.dataset.sort; sortDir = sortKey === k ? -sortDir : 1; sortKey = k;
+  document.querySelectorAll('th').forEach(th => th.setAttribute('aria-sort', 'none'));
+  b.parentElement.setAttribute('aria-sort', sortDir > 0 ? 'ascending' : 'descending'); render(); }));
+const trendDots = t => `<span class="trend" title="${esc(t.map(x => `${x.date}: ${ST[x.st]?.label ?? x.st}`).join(' · '))}">${t.map(x => `<i style="background:${ST[x.st]?.c ?? 'var(--line)'}"></i>`).join('')}</span>`;
+function render() {
+  const q = $('#q').value.trim().toLowerCase(), sec = $('#fsec').value;
+  const list = cases.filter(c => active.has(c.status) && (!sec || c.section === sec) &&
+    (!q || [c.name, c.file, c.error, c.tags.join(' ')].join(' ').toLowerCase().includes(q)))
+    .sort((a, b) => { const x = a[sortKey], y = b[sortKey]; return (typeof x === 'number' ? x - y : String(x).localeCompare(String(y), 'es')) * sortDir || a.name.localeCompare(b.name, 'es'); });
+  $('#shown').textContent = `${list.length} de ${cases.length}`;
+  $('#rows').innerHTML = list.map(c => `<tr class="main" data-id="${esc(c.id)}" tabindex="0" aria-expanded="false">
+    <td><b>${esc(c.name)}</b><div>${c.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div></td>
+    <td><span class="sc">${esc(c.section)}</span>${esc(c.sectionName)}</td>
+    <td><span class="pill p-${c.status}">${ST[c.status].label}</span></td>
+    <td class="num">${c.duration ? fmtS(c.duration) : '—'}</td>
+    <td>${trendDots(c.trend)}</td>
+    <td class="mono" style="font-size:12px">${esc(c.error || (c.status === 'NO_EJECUTADO' || c.status === 'BUG' ? c.reason : ''))}</td></tr>`).join('');
+}
+function openDetail(row, forceOpen) {
+  const next = row.nextElementSibling;
+  if (next && next.classList.contains('detail')) { if (!forceOpen) { next.remove(); row.setAttribute('aria-expanded','false'); } return; }
+  const c = cases.find(x => x.id === row.dataset.id);
+  row.setAttribute('aria-expanded','true');
+  row.insertAdjacentHTML('afterend', `<tr class="detail"><td colspan="6"><dl class="detail-grid">
+    <dt>Fichero</dt><dd class="mono">${esc(c.file)}</dd>
+    <dt>Tags</dt><dd>${c.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('') || '—'}</dd>
+    ${c.status === 'NO_EJECUTADO' || c.status === 'BUG' ? `<dt>Motivo</dt><dd>${esc(c.reason)}</dd>` : ''}
+    ${c.error ? `<dt>Error</dt><dd class="mono">${esc(c.error)}</dd>` : ''}
+    <dt>Historial</dt><dd>${c.trend.length ? c.trend.map(t => `<span class="tag">${esc(t.date)} · ${ST[t.st]?.label ?? t.st}</span>`).join('') : 'Primera ejecución'}</dd>
+    ${c.steps.length ? `<dt>Pasos</dt><dd>${tl(c.steps)}</dd>` : ''}
+  </dl></td></tr>`);
+}
+$('#rows').addEventListener('click', e => { const r = e.target.closest('tr.main'); if (r) openDetail(r); });
+$('#rows').addEventListener('keydown', e => { const r = e.target.closest('tr.main'); if (r && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openDetail(r); } });
+$('#q').addEventListener('input', render); $('#fsec').addEventListener('change', render);
+render();
+
+// Histórico y bugs
+$('#hist').innerHTML = DATA.history.length ? `<div class="table-wrap"><table class="hist"><thead><tr><th>Ejecución</th><th>Dispositivo</th><th>Casos</th><th>Pasan</th></tr></thead><tbody>${
+  DATA.history.map(h => `<tr><td class="mono">${esc(h.runId)}</td><td>${esc(h.device)}</td><td class="num">${h.total}</td><td class="num">${h.pass} (${h.total ? Math.round(100*h.pass/h.total) : 0} %)</td></tr>`).join('')}</tbody></table></div>`
+  : '<p class="muted">Sin ejecuciones anteriores.</p>';
+$('#bugs').innerHTML = (DATA.bugs || []).length ? `<div class="table-wrap"><table class="hist"><thead><tr><th>Estado</th><th>Bug</th></tr></thead><tbody>${
+  DATA.bugs.map(b => `<tr><td style="white-space:nowrap">${esc(b.state)}</td><td>${esc(b.text)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">—</p>';
+</script>
+</body>
+</html>

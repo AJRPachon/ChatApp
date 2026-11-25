@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.chat
 
+import androidx.compose.foundation.interaction.DragInteraction
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
@@ -109,10 +110,28 @@ fun ChatScreen(
     var highlightedMessageId by remember { mutableStateOf<String?>(null) }
     val showScrollToBottom by remember { derivedStateOf { listState.firstVisibleItemIndex > 2 } }
 
+    // Whether the list should keep following the newest message. Only the user (dragging the
+    // list) or a jump to a specific message turns it off; reaching the bottom turns it back on.
+    // Without it, opening a chat right after sign-in left the user stranded on old messages:
+    // Paging first shows what Room already had (initial scroll lands on that), then the sync
+    // inserts the newer messages in front, LazyColumn keeps its anchor on the item that was
+    // visible, and the "follow the conversation" check below (index <= 3) no longer matched.
+    val stickToBottom = remember { mutableStateOf(true) }
+    LaunchedEffect(listState) {
+        listState.interactionSource.interactions.collect { interaction ->
+            if (interaction is DragInteraction.Start) stickToBottom.value = false
+        }
+    }
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0 }
+            .collect { atBottom -> if (atBottom) stickToBottom.value = true }
+    }
+
     val onScrollToMessage: (String) -> Unit = { messageId ->
         val snapshot = lazyPagingItems.itemSnapshotList
         val index = snapshot.indexOfFirst { it?.id == messageId }
         if (index >= 0) {
+            stickToBottom.value = false
             scope.launch {
                 listState.animateScrollToItem(index)
                 highlightedMessageId = messageId
@@ -190,7 +209,10 @@ fun ChatScreen(
     }
 
     // Subsequent scrolls: new sent messages and incoming messages while near the bottom.
-    LaunchedEffect(lazyPagingItems.itemCount) {
+    // Keyed on the newest message id, not just itemCount: once Paging's loaded window is full,
+    // a new message can shift the window without changing the count, and the effect never ran.
+    val newestMessageId = if (lazyPagingItems.itemCount > 0) lazyPagingItems.peek(0)?.id else null
+    LaunchedEffect(lazyPagingItems.itemCount, newestMessageId) {
         if (!initialScrollDone.value) return@LaunchedEffect
         val count = lazyPagingItems.itemCount
         if (count == 0) return@LaunchedEffect
@@ -202,8 +224,9 @@ fun ChatScreen(
             withFrameNanos { }
             listState.animateScrollToItem(0)
             pendingSendScroll.value = false
-        } else if (listState.firstVisibleItemIndex <= 3) {
-            // Someone else sent while we're near the bottom — follow the conversation.
+        } else if (stickToBottom.value || listState.firstVisibleItemIndex <= 3) {
+            // Following the conversation (new incoming message, or the post-open sync inserting
+            // newer messages) — stay on the newest one.
             listState.scrollToItem(0)
         }
     }

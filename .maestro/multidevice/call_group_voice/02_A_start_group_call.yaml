@@ -1,0 +1,18 @@
+# A starts a group voice call in the QA group and leaves it ringing for the members.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+---
+- runFlow: ../../subflows/ensure_logged_in.yaml
+- runFlow:
+    file: ../../subflows/open_conversation.yaml
+    env:
+      CONTACT: ${QA_GROUP}
+- tapOn:
+    id: chat_call_button
+- tapOn:
+    id: chat_call_voice_option
+- extendedWaitUntil:
+    visible:
+      id: call_screen
+    timeout: 20000

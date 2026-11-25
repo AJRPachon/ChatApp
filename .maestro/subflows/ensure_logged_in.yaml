@@ -1,0 +1,26 @@
+# Fast start: relaunches the app KEEPING its data (the session from a previous flow), so the
+# ~60 s of clearState + sign-in is only paid when needed. Falls back to the clean login.yaml
+# whenever the app does not land on the conversation list (signed out, app lock, root warning,
+# a dialog left over...). Only for the default QA account: flows that sign in with another
+# account, or need a pristine app (auth, deep links, persistent settings), use login.yaml.
+appId: com.ajrpachon.chatapp
+---
+# A previous flow that failed mid-way may have left airplane mode on.
+- setAirplaneMode: disabled
+- launchApp:
+    stopApp: true
+    permissions:
+      all: allow
+      # Real phones: run-suite -Physical sets deny so the owner's contacts never show on screen
+      # (New chat lists them) nor in the report screenshots.
+      contacts: ${CONTACTS_PERMISSION || 'allow'}
+- extendedWaitUntil:
+    visible:
+      id: "conversation_list_new_chat_fab|auth_email_field|root_warning_continue_button|integrity_blocked_screen|applock_screen"
+    timeout: 30000
+    optional: true
+- runFlow:
+    when:
+      notVisible:
+        id: conversation_list_new_chat_fab
+    file: login.yaml

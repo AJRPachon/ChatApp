@@ -154,6 +154,7 @@ private fun AppLockContent(
             text = stringResource(R.string.applock_unlock_with_fingerprint),
             onClick = onUnlockClick,
             leadingIcon = Icons.Default.Fingerprint,
+            modifier = Modifier.testTag("applock_unlock_button"),
         )
 
         if (errorMessage != null) {

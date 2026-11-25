@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug-only strings: QA / Debug menu (src/debug/.../ui/debugmenu/DebugMenu.kt). -->
+<resources>
+    <string name="debug_menu_title">QA / Debug</string>
+    <string name="debug_menu_subtitle">Pantallas sin acceso desde la UI (solo debug)</string>
+    <string name="debug_menu_broadcast_lists">Listas de difusión</string>
+    <string name="debug_menu_broadcast_lists_subtitle">Crear, enviar y borrar listas</string>
+    <string name="debug_menu_usage_stats">Estadísticas de uso</string>
+    <string name="debug_menu_usage_stats_subtitle">Mensajes, llamadas y almacenamiento</string>
+</resources>

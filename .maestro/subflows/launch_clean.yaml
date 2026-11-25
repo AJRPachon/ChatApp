@@ -1,0 +1,49 @@
+# Fresh launch: clears app data, grants every runtime permission, and gets past the
+# first-launch dialogs (root warning on test-keys emulator images). Fails loudly if
+# Play Integrity returned "Failed" — there is no bypass by design.
+appId: com.ajrpachon.chatapp
+---
+# A previous flow that failed mid-way may have left airplane mode on.
+- setAirplaneMode: disabled
+- launchApp:
+    clearState: true
+    permissions:
+      all: allow
+      # Real phones: run-suite -Physical sets deny so the owner's contacts never show on screen
+      # (New chat lists them) nor in the report screenshots.
+      contacts: ${CONTACTS_PERMISSION || 'allow'}
+# A save-password sheet left over from a previous sign-in (real phones) covers the app.
+- runFlow:
+    when:
+      visible:
+        text: ".*(Gestor de contrase.as|Password Manager).*"
+    commands:
+      - back
+# A system "<app> isn't responding" dialog (slow emulators: Pixel Launcher on CI, system on a busy
+# PC) covers the app: wait for it to show up or for the app, and keep the process waiting.
+- extendedWaitUntil:
+    visible:
+      id: "auth_email_field|conversation_list_new_chat_fab|root_warning_continue_button|integrity_blocked_screen|android:id/aerr_wait"
+    timeout: 45000
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: "android:id/aerr_wait"
+    commands:
+      - tapOn:
+          id: "android:id/aerr_wait"
+- extendedWaitUntil:
+    visible:
+      id: "auth_email_field|conversation_list_new_chat_fab|root_warning_continue_button|integrity_blocked_screen"
+    timeout: 45000
+- runFlow:
+    when:
+      visible:
+        id: root_warning_continue_button
+    commands:
+      - tapOn:
+          id: root_warning_continue_button
+- assertNotVisible:
+    id: integrity_blocked_screen
+    label: "Play Integrity bloquea la app en este dispositivo (IntegrityBlockedScreen)"

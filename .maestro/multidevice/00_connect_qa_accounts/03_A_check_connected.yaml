@@ -1,0 +1,26 @@
+# Fixture check: for A, B is now connected (no invite / pending action; the row opens the chat).
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+  - fixture
+---
+- runFlow: ../../subflows/back_to_list.yaml
+- tapOn:
+    id: conversation_list_new_chat_fab
+- tapOn:
+    id: newchat_search_field
+- inputText: ${QA2_USERNAME}
+- extendedWaitUntil:
+    visible:
+      id: "newchat_user_row_${QA2_USERNAME}"
+    timeout: 20000
+- assertNotVisible:
+    id: "newchat_invite_${QA2_USERNAME}"
+- assertNotVisible:
+    id: "newchat_pending_sent_${QA2_USERNAME}"
+- tapOn:
+    id: "newchat_user_row_${QA2_USERNAME}"
+- extendedWaitUntil:
+    visible:
+      id: chat_input_field
+    timeout: 15000

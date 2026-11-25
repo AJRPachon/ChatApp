@@ -1,0 +1,42 @@
+# Opens the text-status compose dialog. The status bar differs depending on whether the account
+# already has a live status (statuses last 24 h): without one it shows "+" (text) and image
+# buttons; with one it shows My status + a small "+" badge that opens a text/media menu.
+# It can also switch between the two right after launch, when statuses finish loading, so the
+# tap is retried until the dialog is actually open.
+appId: com.ajrpachon.chatapp
+---
+- extendedWaitUntil:
+    visible:
+      id: "status_add_text_button|status_add_more_button"
+    timeout: 15000
+- runFlow:
+    file: wait.yaml
+    env:
+      MS: "2000"
+- repeat:
+    while:
+      notVisible:
+        id: status_compose_text_field
+    times: 3
+    commands:
+      - runFlow:
+          when:
+            visible:
+              id: status_add_text_button
+          commands:
+            - tapOn:
+                id: status_add_text_button
+                optional: true
+      - runFlow:
+          when:
+            visible:
+              id: status_add_more_button
+          commands:
+            - tapOn:
+                id: status_add_more_button
+                optional: true
+            - tapOn:
+                id: status_add_more_text
+                optional: true
+- assertVisible:
+    id: status_compose_text_field

@@ -240,6 +240,7 @@ private fun SetGroupInfoStep(
             value = state.groupName,
             onValueChange = { onIntent(CreateGroupIntent.NameChanged(it)) },
             label = stringResource(R.string.group_create_name_label),
+            modifier = Modifier.testTag("create_group_name_field"),
         )
 
         Spacer(Modifier.height(12.dp))
@@ -250,6 +251,7 @@ private fun SetGroupInfoStep(
             label = stringResource(R.string.group_create_description_label),
             singleLine = false,
             maxLines = 3,
+            modifier = Modifier.testTag("create_group_description_field"),
         )
 
         Spacer(Modifier.weight(1f))
@@ -259,7 +261,9 @@ private fun SetGroupInfoStep(
             onClick = { onIntent(CreateGroupIntent.Create) },
             enabled = state.groupName.isNotBlank() && !state.isLoading,
             isLoading = state.isLoading,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("create_group_create_button"),
         )
     }
 }
@@ -273,6 +277,7 @@ private fun UserSearchItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .testTag("create_group_user_${user.username}")
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,

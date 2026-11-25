@@ -1,0 +1,16 @@
+# A gets B's reply in the 1:1 chat, quoting the status.
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+  - known-bug
+---
+- runFlow:
+    file: ../../subflows/open_conversation.yaml
+    env:
+      CONTACT: ${QA2_NAME}
+- extendedWaitUntil:
+    visible:
+      text: "reply${RUN_ID}"
+    timeout: 30000
+- assertVisible:
+    id: message_text_other

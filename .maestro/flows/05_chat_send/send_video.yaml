@@ -1,0 +1,19 @@
+# Attach > Video records a clip with the camera app (CaptureVideo, not a picker); an own video
+# bubble appears.
+appId: com.ajrpachon.chatapp
+name: "05 · Grabar y enviar vídeo"
+tags:
+  - chat
+  - slow
+  - personal-data   # records with the real camera
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/open_attach.yaml
+    env:
+      ITEM: attach_video
+- runFlow: ../../subflows/camera_record_video.yaml
+- extendedWaitUntil:
+    visible:
+      id: message_video_own
+    timeout: 90000

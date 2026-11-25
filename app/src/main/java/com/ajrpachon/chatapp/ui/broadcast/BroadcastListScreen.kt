@@ -1,5 +1,7 @@
 package com.ajrpachon.chatapp.ui.broadcast
 
+import androidx.compose.ui.platform.testTag
+import com.ajrpachon.chatapp.ui.common.qaTag
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -96,14 +98,14 @@ fun BroadcastListContent(
                         onValueChange = { onIntent(BroadcastListIntent.NameChanged(it)) },
                         label = { Text(stringResource(R.string.broadcast_list_name_label)) },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().qaTag("broadcast_name_field"),
                     )
                     OutlinedTextField(
                         value = state.searchQuery,
                         onValueChange = { onIntent(BroadcastListIntent.SearchQueryChanged(it)) },
                         label = { Text(stringResource(R.string.broadcast_search_contacts_label)) },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().qaTag("broadcast_search_field"),
                     )
                     if (state.selectedMembers.isNotEmpty()) {
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -146,7 +148,9 @@ fun BroadcastListContent(
                                         )
                                     }
                                 },
-                                modifier = Modifier.clickable { onIntent(BroadcastListIntent.ToggleMember(user)) },
+                                modifier = Modifier
+                                    .qaTag("broadcast_member_${user.username}")
+                                    .clickable { onIntent(BroadcastListIntent.ToggleMember(user)) },
                             )
                         }
                     }
@@ -157,10 +161,15 @@ fun BroadcastListContent(
                     text = stringResource(R.string.broadcast_create_button),
                     onClick = { onIntent(BroadcastListIntent.CreateList) },
                     isLoading = state.isCreating,
+                    modifier = Modifier.qaTag("broadcast_save"),
                 )
             },
             dismissButton = {
-                ChatAppTextButton(text = stringResource(R.string.broadcast_cancel_button), onClick = { onIntent(BroadcastListIntent.DismissCreateDialog) })
+                ChatAppTextButton(
+                    text = stringResource(R.string.broadcast_cancel_button),
+                    onClick = { onIntent(BroadcastListIntent.DismissCreateDialog) },
+                    modifier = Modifier.qaTag("broadcast_create_cancel"),
+                )
             },
         )
     }
@@ -185,7 +194,7 @@ fun BroadcastListContent(
                         onValueChange = { onIntent(BroadcastListIntent.BroadcastMessageChanged(it)) },
                         label = { Text(stringResource(R.string.broadcast_message_label)) },
                         minLines = 3,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().qaTag("broadcast_message_field"),
                     )
                 }
             },
@@ -196,10 +205,15 @@ fun BroadcastListContent(
                     enabled = state.broadcastMessage.isNotBlank(),
                     isLoading = state.isSending,
                     leadingIcon = Icons.Default.Send,
+                    modifier = Modifier.qaTag("broadcast_send_confirm"),
                 )
             },
             dismissButton = {
-                ChatAppTextButton(text = stringResource(R.string.broadcast_cancel_button), onClick = { onIntent(BroadcastListIntent.DismissSendDialog) })
+                ChatAppTextButton(
+                    text = stringResource(R.string.broadcast_cancel_button),
+                    onClick = { onIntent(BroadcastListIntent.DismissSendDialog) },
+                    modifier = Modifier.qaTag("broadcast_send_cancel"),
+                )
             },
         )
     }
@@ -211,7 +225,11 @@ fun BroadcastListContent(
             title = { Text(stringResource(R.string.broadcast_error_title)) },
             text = { Text(error.asString()) },
             confirmButton = {
-                ChatAppTextButton(text = stringResource(R.string.broadcast_ok_button), onClick = { onIntent(BroadcastListIntent.DismissError) })
+                ChatAppTextButton(
+                    text = stringResource(R.string.broadcast_ok_button),
+                    onClick = { onIntent(BroadcastListIntent.DismissError) },
+                    modifier = Modifier.qaTag("broadcast_error_ok"),
+                )
             },
         )
     }
@@ -229,7 +247,10 @@ fun BroadcastListContent(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { onIntent(BroadcastListIntent.OpenCreateDialog) }) {
+            FloatingActionButton(
+                onClick = { onIntent(BroadcastListIntent.OpenCreateDialog) },
+                modifier = Modifier.testTag("broadcast_create_button"),
+            ) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(R.string.broadcast_new_list_content_description))
             }
         },
@@ -245,7 +266,8 @@ fun BroadcastListContent(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding),
+                    .padding(innerPadding)
+                    .testTag("broadcast_empty"),
                 contentAlignment = Alignment.Center,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -275,6 +297,7 @@ fun BroadcastListContent(
             ) {
                 items(state.lists, key = { it.id }) { item ->
                     ListItem(
+                        modifier = Modifier.testTag("broadcast_row_${item.name}"),
                         headlineContent = {
                             Text(item.name, fontWeight = FontWeight.SemiBold)
                         },
@@ -290,14 +313,20 @@ fun BroadcastListContent(
                         },
                         trailingContent = {
                             Row {
-                                IconButton(onClick = { onIntent(BroadcastListIntent.OpenSendDialog(item.id)) }) {
+                                IconButton(
+                                    onClick = { onIntent(BroadcastListIntent.OpenSendDialog(item.id)) },
+                                    modifier = Modifier.testTag("broadcast_send_${item.name}"),
+                                ) {
                                     Icon(
                                         Icons.Default.Send,
                                         contentDescription = stringResource(R.string.broadcast_send_content_description),
                                         tint = MaterialTheme.colorScheme.primary,
                                     )
                                 }
-                                IconButton(onClick = { onIntent(BroadcastListIntent.DeleteList(item.id)) }) {
+                                IconButton(
+                                    onClick = { onIntent(BroadcastListIntent.DeleteList(item.id)) },
+                                    modifier = Modifier.testTag("broadcast_delete_${item.name}"),
+                                ) {
                                     Icon(
                                         Icons.Default.Delete,
                                         contentDescription = stringResource(R.string.broadcast_delete_content_description),

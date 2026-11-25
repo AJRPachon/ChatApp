@@ -1,0 +1,84 @@
+# Create a group with QA2, edit its name/description, open the invite-link sheet, promote/demote
+# QA2, then leave the group (it disappears from the list).
+appId: com.ajrpachon.chatapp
+name: "09 · Crear y gestionar un grupo"
+tags:
+  - groups
+---
+- runFlow: ../../subflows/ensure_logged_in.yaml
+- runFlow:
+    file: ../../subflows/create_group.yaml
+    env:
+      GROUP_NAME: "grp${RUN_ID}"
+      MEMBER: ${QA2_USERNAME}
+- tapOn:
+    id: chat_top_bar_title
+- assertVisible:
+    id: "group_member_row_${QA2_USERNAME}"
+# Edit name + description
+- tapOn:
+    id: group_info_menu
+- tapOn:
+    id: group_info_edit
+# Tap the right edge so the cursor lands at the end of the existing text before erasing.
+- tapOn:
+    id: group_edit_name
+    point: "95%,50%"
+- eraseText: 60
+- inputText: "grpedit${RUN_ID}"
+- tapOn:
+    id: group_edit_description
+- inputText: "desc${RUN_ID}"
+- hideKeyboard
+- tapOn:
+    id: group_edit_save
+- extendedWaitUntil:
+    visible:
+      text: "grpedit${RUN_ID}"
+    timeout: 15000
+# Invite link sheet
+- scrollUntilVisible:
+    element:
+      id: group_invite_link_row
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: group_invite_link_row
+- extendedWaitUntil:
+    visible:
+      id: group_invite_link_sheet
+    timeout: 15000
+- tapOn:
+    id: group_invite_link_copy
+# Promote / demote QA2
+- scrollUntilVisible:
+    element:
+      id: "group_member_menu_${QA2_USERNAME}"
+    direction: UP
+- tapOn:
+    id: "group_member_menu_${QA2_USERNAME}"
+- tapOn:
+    id: group_member_menu_promote
+- extendedWaitUntil:
+    visible:
+      id: "group_member_admin_badge_${QA2_USERNAME}"
+    timeout: 15000
+- tapOn:
+    id: "group_member_menu_${QA2_USERNAME}"
+- tapOn:
+    id: group_member_menu_demote
+- extendedWaitUntil:
+    notVisible:
+      id: "group_member_admin_badge_${QA2_USERNAME}"
+    timeout: 15000
+# Leave
+- tapOn:
+    id: group_info_menu
+- tapOn:
+    id: group_info_leave
+- extendedWaitUntil:
+    visible:
+      id: conversation_list_new_chat_fab
+    timeout: 20000
+- assertNotVisible:
+    id: "conversation_row_grpedit${RUN_ID}"

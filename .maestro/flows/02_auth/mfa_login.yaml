@@ -1,0 +1,48 @@
+# [D] An account with 2FA asks for the TOTP code after the password; the right code signs in.
+appId: com.ajrpachon.chatapp
+name: "02 · Login con código 2FA"
+tags:
+  - auth
+  - destructive
+  - slow
+onFlowComplete:
+  # Signed in with another account: never leave its session for ensure_logged_in to reuse.
+  - clearState
+---
+- runFlow:
+    file: ../../subflows/login_disposable.yaml
+    env:
+      D_EMAIL: ${D_MFA_EMAIL}
+      D_PASSWORD: ${DISPOSABLE_PASSWORD}
+      D_USERNAME: "qam${RUN_ID}"
+- runFlow: ../../subflows/enroll_2fa.yaml
+- back
+- runFlow: ../../subflows/logout.yaml
+- runFlow:
+    file: ../../subflows/login_fields.yaml
+    env:
+      LOGIN_EMAIL: ${D_MFA_EMAIL}
+      LOGIN_PASSWORD: ${DISPOSABLE_PASSWORD}
+- extendedWaitUntil:
+    visible:
+      id: auth_mfa_code_field
+    timeout: 45000
+# A code from the enrolment window may be refused as reused: use the next window.
+- runFlow:
+    file: ../../subflows/wait.yaml
+    env:
+      MS: 30000
+- runFlow:
+    file: ../../subflows/totp_code.yaml
+    env:
+      SECRET: ${output.totpSecret}
+- tapOn:
+    id: auth_mfa_code_field
+- inputText: ${output.totp}
+- hideKeyboard
+- tapOn:
+    id: auth_mfa_verify_button
+- extendedWaitUntil:
+    visible:
+      id: conversation_list_new_chat_fab
+    timeout: 45000

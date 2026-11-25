@@ -1,0 +1,17 @@
+# Publishes a text status STATUS_TEXT (works with or without an existing live status).
+appId: com.ajrpachon.chatapp
+---
+- runFlow: status_compose_text.yaml
+- tapOn:
+    id: status_compose_text_field
+- inputText: ${STATUS_TEXT}
+- tapOn:
+    id: status_publish_button
+- extendedWaitUntil:
+    notVisible:
+      id: status_compose_text_field
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: status_my_avatar
+    timeout: 15000

@@ -45,8 +45,9 @@ supabase/.temp/
 shared/
 supabase/functions/.env
 
-# Maestro E2E flows and local env (QA credentials) — kept local only
-.maestro/
+# Maestro E2E: flows are versioned; local env (QA credentials, service role key) and run output are not
+.maestro/.env
+.maestro/out/
 
 # Release signing (upload keystore, never commit)
 *.jks

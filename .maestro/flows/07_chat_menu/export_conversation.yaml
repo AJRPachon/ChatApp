@@ -1,0 +1,20 @@
+# Chat menu > Export opens the system share sheet; back returns to the chat.
+appId: com.ajrpachon.chatapp
+name: "07 · Exportar conversación"
+tags:
+  - chat
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/open_chat_menu.yaml
+    env:
+      ITEM: chat_menu_export
+- extendedWaitUntil:
+    notVisible:
+      id: chat_input_field
+    timeout: 20000
+- back
+- extendedWaitUntil:
+    visible:
+      id: chat_input_field
+    timeout: 10000

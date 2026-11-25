@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.call
 
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -65,7 +66,8 @@ fun IncomingCallContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(CallBackground.copy(alpha = 0.96f)),
+            .background(CallBackground.copy(alpha = 0.96f))
+            .testTag("incoming_call_overlay"),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -80,6 +82,7 @@ fun IncomingCallContent(
                 },
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color.White.copy(alpha = 0.7f),
+                modifier = Modifier.testTag(if (call.type == CallType.VIDEO) "incoming_call_type_video" else "incoming_call_type_voice"),
             )
 
             CallPartyHeader(call.callerName)
@@ -90,6 +93,7 @@ fun IncomingCallContent(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CallControlButton(
                         onClick = onReject,
+                        modifier = Modifier.testTag("incoming_call_reject_button"),
                         containerColor = MaterialTheme.colorScheme.error,
                         iconTint = Color.White,
                         size = 64.dp,
@@ -110,6 +114,7 @@ fun IncomingCallContent(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CallControlButton(
                         onClick = onAccept,
+                        modifier = Modifier.testTag("incoming_call_accept_button"),
                         containerColor = CallAcceptedGreen,
                         iconTint = Color.White,
                         size = 64.dp,

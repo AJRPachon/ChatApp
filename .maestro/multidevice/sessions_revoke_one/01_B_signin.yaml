@@ -1,0 +1,37 @@
+# [D] B signs in with the disposable account (sets the username).
+appId: com.ajrpachon.chatapp
+tags:
+  - multidevice
+  - known-bug
+  - destructive
+---
+- runFlow: ../../subflows/launch_clean.yaml
+- tapOn:
+    id: auth_email_field
+- inputText: ${DISPOSABLE_EMAIL}
+- hideKeyboard
+- tapOn:
+    id: auth_password_field
+- inputText: ${DISPOSABLE_PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: auth_submit_button
+- extendedWaitUntil:
+    visible:
+      id: "auth_username_field|conversation_list_new_chat_fab"
+    timeout: 30000
+- runFlow:
+    when:
+      visible:
+        id: auth_username_field
+    commands:
+      - tapOn:
+          id: auth_username_field
+      - inputText: ${DISPOSABLE_USERNAME}
+      - hideKeyboard
+      - tapOn:
+          id: auth_username_confirm_button
+- extendedWaitUntil:
+    visible:
+      id: conversation_list_new_chat_fab
+    timeout: 30000

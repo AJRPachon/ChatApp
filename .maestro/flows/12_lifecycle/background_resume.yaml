@@ -1,0 +1,34 @@
+# Backgrounding and resuming keeps the current screen: list, chat (with the typed draft) and profile.
+appId: com.ajrpachon.chatapp
+name: "12 · Segundo plano y volver (lista, chat, perfil)"
+tags:
+  - lifecycle
+---
+- runFlow: ../../subflows/ensure_logged_in.yaml
+- runFlow:
+    file: ../../subflows/background_resume.yaml
+    env:
+      EXPECT_ID: conversation_list_new_chat_fab
+- assertVisible:
+    id: conversation_list_new_chat_fab
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- tapOn:
+    id: chat_input_field
+- inputText: "draft${RUN_ID}"
+- runFlow:
+    file: ../../subflows/background_resume.yaml
+    env:
+      EXPECT_ID: chat_input_field
+- assertVisible:
+    text: "draft${RUN_ID}"
+- runFlow: ../../subflows/clear_chat_input.yaml
+- tapOn:
+    id: chat_back_button
+- tapOn:
+    id: conversation_list_profile_button
+- runFlow:
+    file: ../../subflows/background_resume.yaml
+    env:
+      EXPECT_ID: profile_display_name_field
+- assertVisible:
+    id: profile_display_name_field

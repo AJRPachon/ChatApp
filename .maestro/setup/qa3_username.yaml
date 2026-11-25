@@ -1,0 +1,13 @@
+# One-off: first sign-in of @claudeqa3 (created with the Admin API, see README) to choose its
+# username. Run it once with scripts/run-setup.ps1 or maestro test -e ... setup/qa3_username.yaml.
+appId: com.ajrpachon.chatapp
+onFlowComplete:
+  # Signed in with another account: never leave its session for ensure_logged_in to reuse.
+  - clearState
+---
+- runFlow:
+    file: ../subflows/login_disposable.yaml
+    env:
+      D_EMAIL: ${QA3_EMAIL}
+      D_PASSWORD: ${QA3_PASSWORD}
+      D_USERNAME: ${QA3_USERNAME}

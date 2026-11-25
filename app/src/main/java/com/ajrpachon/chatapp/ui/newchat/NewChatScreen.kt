@@ -193,7 +193,7 @@ fun NewChatContent(
                 title = stringResource(R.string.newchat_title),
                 onBack = onBack,
                 actions = {
-                    IconButton(onClick = onScanQr) {
+                    IconButton(onClick = onScanQr, modifier = Modifier.testTag("newchat_scan_qr_button")) {
                         Icon(
                             Icons.Default.QrCodeScanner,
                             contentDescription = stringResource(R.string.newchat_scan_qr_code),
@@ -442,11 +442,13 @@ private fun InviteCodeCard(
                     text = stringResource(R.string.newchat_copy),
                     onClick = onCopy,
                     leadingIcon = Icons.Default.ContentCopy,
+                    modifier = Modifier.testTag("newchat_invite_copy"),
                 )
                 ChatAppSecondaryButton(
                     text = stringResource(R.string.newchat_share),
                     onClick = onShare,
                     leadingIcon = Icons.Default.Share,
+                    modifier = Modifier.testTag("newchat_invite_share"),
                 )
             }
         }
@@ -481,6 +483,7 @@ private fun AppUserItem(
                     stringResource(R.string.newchat_blocked),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.testTag("newchat_blocked_${user.username}"),
                 )
             } else {
                 Text("@${user.username}")
@@ -490,7 +493,7 @@ private fun AppUserItem(
             when {
                 isPending -> CircularProgressIndicator(modifier = Modifier.size(24.dp))
                 isBlocked ->
-                    IconButton(onClick = onUnblock) {
+                    IconButton(onClick = onUnblock, modifier = Modifier.testTag("newchat_unblock_${user.username}")) {
                         Icon(
                             Icons.Default.LockOpen,
                             contentDescription = stringResource(R.string.newchat_unblock_cd),
@@ -499,14 +502,14 @@ private fun AppUserItem(
                     }
                 relationship == null || relationship == UserRelationship.NONE ->
                     Row {
-                        IconButton(onClick = onAction) {
+                        IconButton(onClick = onAction, modifier = Modifier.testTag("newchat_invite_${user.username}")) {
                             Icon(
                                 Icons.Default.PersonAdd,
                                 contentDescription = stringResource(R.string.newchat_invite_cd),
                                 tint = MaterialTheme.colorScheme.primary,
                             )
                         }
-                        IconButton(onClick = onBlock) {
+                        IconButton(onClick = onBlock, modifier = Modifier.testTag("newchat_block_${user.username}")) {
                             Icon(
                                 Icons.Default.Block,
                                 contentDescription = stringResource(R.string.newchat_block_cd),
@@ -521,6 +524,7 @@ private fun AppUserItem(
                                 stringResource(R.string.newchat_invitation_sent),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.testTag("newchat_pending_sent_${user.username}"),
                             )
                             Text(
                                 stringResource(R.string.newchat_pending_response),
@@ -528,7 +532,7 @@ private fun AppUserItem(
                                 color = MaterialTheme.colorScheme.outline,
                             )
                         }
-                        IconButton(onClick = onBlock) {
+                        IconButton(onClick = onBlock, modifier = Modifier.testTag("newchat_block_${user.username}")) {
                             Icon(
                                 Icons.Default.Block,
                                 contentDescription = stringResource(R.string.newchat_block_cd),
@@ -537,7 +541,7 @@ private fun AppUserItem(
                         }
                     }
                 relationship == UserRelationship.PENDING_RECEIVED ->
-                    IconButton(onClick = onAction) {
+                    IconButton(onClick = onAction, modifier = Modifier.testTag("newchat_accept_${user.username}")) {
                         Icon(
                             Icons.Default.PersonAdd,
                             contentDescription = stringResource(R.string.newchat_accept_cd),
@@ -549,6 +553,7 @@ private fun AppUserItem(
         },
         modifier = Modifier
             .fillMaxWidth()
+            .testTag("newchat_user_row_${user.username}")
             .clickable(enabled = isConnected, onClick = onAction),
     )
 }
@@ -559,7 +564,7 @@ private fun ContactItem(contact: PhoneContact, onInvite: () -> Unit) {
         headlineContent = { Text(contact.name) },
         supportingContent = { Text(contact.phoneNumber) },
         trailingContent = {
-            IconButton(onClick = onInvite) {
+            IconButton(onClick = onInvite, modifier = Modifier.testTag("newchat_contact_invite_${contact.name}")) {
                 Icon(
                     Icons.Default.PersonAdd,
                     contentDescription = stringResource(R.string.newchat_invite_contact_cd, contact.name),
@@ -580,6 +585,7 @@ private fun SuggestedContactChip(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .width(72.dp)
+            .testTag("newchat_suggested_${user.username}")
             .clickable(onClick = onClick)
             .padding(vertical = 4.dp),
     ) {

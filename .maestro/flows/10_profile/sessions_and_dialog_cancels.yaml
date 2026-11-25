@@ -1,0 +1,45 @@
+# Profile: sessions list shows "This device"; sign-out-all and delete-account dialogs can be
+# cancelled without side effects (the real actions run in destructive flows).
+appId: com.ajrpachon.chatapp
+name: "10 · Sesiones y cancelar diálogos peligrosos"
+tags:
+  - profile
+---
+- runFlow: ../../subflows/ensure_logged_in.yaml
+- tapOn:
+    id: conversation_list_profile_button
+- scrollUntilVisible:
+    element:
+      id: profile_session_audit_row
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: profile_session_audit_row
+- extendedWaitUntil:
+    visible:
+      id: session_this_device_badge
+    timeout: 20000
+- tapOn:
+    id: session_audit_close
+- scrollUntilVisible:
+    element:
+      id: profile_sign_out_all_button
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: profile_sign_out_all_button
+- tapOn:
+    id: sign_out_all_cancel
+- assertVisible:
+    id: profile_sign_out_all_button
+- scrollUntilVisible:
+    element:
+      id: profile_delete_account_button
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: profile_delete_account_button
+- tapOn:
+    id: profile_delete_account_cancel_button
+- assertVisible:
+    id: profile_delete_account_button

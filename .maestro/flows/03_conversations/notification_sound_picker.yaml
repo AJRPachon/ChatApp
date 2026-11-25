@@ -1,0 +1,28 @@
+# Long-press menu > Notification sound opens the picker; cancel closes it, choosing an option too.
+appId: com.ajrpachon.chatapp
+name: "03 · Selector de sonido de notificación"
+tags:
+  - conversations
+---
+- runFlow: ../../subflows/ensure_logged_in.yaml
+- runFlow:
+    file: ../../subflows/open_conversation_menu.yaml
+    env:
+      CONTACT: ${QA2_NAME}
+      ITEM: conversation_menu_sound
+- assertVisible:
+    id: "sound_picker_option_.*"
+- tapOn:
+    id: sound_picker_cancel
+- assertNotVisible:
+    id: "sound_picker_option_.*"
+- runFlow:
+    file: ../../subflows/open_conversation_menu.yaml
+    env:
+      CONTACT: ${QA2_NAME}
+      ITEM: conversation_menu_sound
+- tapOn:
+    id: "sound_picker_option_.*"
+    index: 1
+- assertNotVisible:
+    id: "sound_picker_option_.*"

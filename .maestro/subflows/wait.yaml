@@ -1,0 +1,8 @@
+# Plain delay of MS milliseconds (Maestro has no sleep command): waits for an id that never exists.
+appId: com.ajrpachon.chatapp
+---
+- extendedWaitUntil:
+    visible:
+      id: "__qa_never_present__"
+    timeout: ${MS}
+    optional: true

@@ -1,0 +1,39 @@
+# From the conversation list: Profile > activate 2FA, read the secret, verify with a TOTP code.
+# Leaves the secret in output.totpSecret and ends on the profile screen with 2FA active.
+appId: com.ajrpachon.chatapp
+---
+- tapOn:
+    id: conversation_list_profile_button
+- scrollUntilVisible:
+    element:
+      id: profile_2fa_activate
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: profile_2fa_activate
+- extendedWaitUntil:
+    visible:
+      id: profile_2fa_secret_text
+    timeout: 20000
+- copyTextFrom:
+    id: profile_2fa_secret_text
+- evalScript: ${output.totpSecret = maestro.copiedText}
+- runFlow:
+    file: totp_code.yaml
+    env:
+      SECRET: ${output.totpSecret}
+- tapOn:
+    id: profile_2fa_code_field
+- inputText: ${output.totp}
+- hideKeyboard
+- tapOn:
+    id: profile_2fa_verify
+- extendedWaitUntil:
+    notVisible:
+      id: profile_2fa_sheet
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: profile_2fa_deactivate
+    direction: DOWN
+    centerElement: true

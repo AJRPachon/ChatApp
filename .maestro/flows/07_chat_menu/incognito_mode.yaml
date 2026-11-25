@@ -1,0 +1,31 @@
+# Chat menu > Incognito: explanation dialog (cancel / activate), banner while active, disable again.
+appId: com.ajrpachon.chatapp
+name: "07 · Modo incógnito"
+tags:
+  - chat
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/open_chat_menu.yaml
+    env:
+      ITEM: chat_menu_incognito
+- tapOn:
+    id: incognito_cancel
+- assertNotVisible:
+    id: incognito_banner
+- runFlow:
+    file: ../../subflows/open_chat_menu.yaml
+    env:
+      ITEM: chat_menu_incognito
+- tapOn:
+    id: incognito_confirm
+- assertVisible:
+    id: incognito_banner
+- runFlow:
+    file: ../../subflows/open_chat_menu.yaml
+    env:
+      ITEM: chat_menu_incognito
+- extendedWaitUntil:
+    notVisible:
+      id: incognito_banner
+    timeout: 5000

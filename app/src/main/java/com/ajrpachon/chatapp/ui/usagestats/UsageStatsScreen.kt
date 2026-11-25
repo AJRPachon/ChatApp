@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.usagestats
 
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -62,6 +63,7 @@ internal fun UsageStatsContent(
     onBack: () -> Unit,
 ) {
     Scaffold(
+        modifier = Modifier.testTag("usage_stats_screen"),
         topBar = { ChatAppTopBar(title = stringResource(R.string.usagestats_title), onBack = onBack) },
     ) { innerPadding ->
         if (state.isLoading) {

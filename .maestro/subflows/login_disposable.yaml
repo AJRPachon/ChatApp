@@ -1,0 +1,29 @@
+# Clean launch + sign-in with a disposable account (created by run-suite.ps1 -IncludeDestructive).
+# A fresh account has no username: the username screen appears and D_USERNAME is set.
+# Params: D_EMAIL, D_PASSWORD, D_USERNAME. Ends on the conversation list.
+appId: com.ajrpachon.chatapp
+---
+- runFlow:
+    file: login_fields.yaml
+    env:
+      LOGIN_EMAIL: ${D_EMAIL}
+      LOGIN_PASSWORD: ${D_PASSWORD}
+- extendedWaitUntil:
+    visible:
+      id: "auth_username_field|conversation_list_new_chat_fab"
+    timeout: 45000
+- runFlow:
+    when:
+      visible:
+        id: auth_username_field
+    commands:
+      - tapOn:
+          id: auth_username_field
+      - inputText: ${D_USERNAME}
+      - hideKeyboard
+      - tapOn:
+          id: auth_username_confirm_button
+- extendedWaitUntil:
+    visible:
+      id: conversation_list_new_chat_fab
+    timeout: 30000

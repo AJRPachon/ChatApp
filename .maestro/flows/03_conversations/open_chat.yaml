@@ -1,0 +1,15 @@
+# [S] Tapping a conversation row opens the chat with that contact; back returns to the list.
+appId: com.ajrpachon.chatapp
+name: "03 · Abrir un chat desde la lista"
+tags:
+  - smoke
+  - conversations
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- assertVisible:
+    id: chat_top_bar_title
+- assertVisible:
+    text: ${QA2_NAME}
+- back
+- assertVisible:
+    id: conversation_list_new_chat_fab

@@ -1,0 +1,35 @@
+# Chat menu > Mute offers durations (1 h, 8 h, 24 h, always); after muting, the same entry turns
+# notifications back on without a dialog.
+appId: com.ajrpachon.chatapp
+name: "07 · Silenciar con duración y reactivar"
+tags:
+  - chat
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/open_chat_menu.yaml
+    env:
+      ITEM: chat_menu_mute
+- assertVisible:
+    id: mute_option_0
+- assertVisible:
+    id: mute_option_3
+- tapOn:
+    id: dialog_cancel
+- assertNotVisible:
+    id: mute_option_0
+- runFlow:
+    file: ../../subflows/open_chat_menu.yaml
+    env:
+      ITEM: chat_menu_mute
+- tapOn:
+    id: mute_option_1
+- assertNotVisible:
+    id: mute_option_1
+# Unmute: no dialog this time
+- runFlow:
+    file: ../../subflows/open_chat_menu.yaml
+    env:
+      ITEM: chat_menu_mute
+- assertNotVisible:
+    id: mute_option_0

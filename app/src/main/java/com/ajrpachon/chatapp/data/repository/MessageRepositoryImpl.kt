@@ -321,10 +321,19 @@ private class SenderResolvingPagingSource(
         }
     }
 
-    override fun getRefreshKey(state: PagingState<Int, MessageBO>): Int? =
-        state.anchorPosition?.let { anchorPosition ->
-            val anchorPage = state.closestPageToPosition(anchorPosition)
-            anchorPage?.prevKey?.plus(1) ?: anchorPage?.nextKey?.minus(1)
-        }
+    override fun getRefreshKey(state: PagingState<Int, MessageBO>): Int? = messageRefreshKey(state)
 }
+
+/**
+ * Refresh key for the wrapped Room source, whose keys are item *offsets* (not page numbers):
+ * start the reload half an initial load before the anchor so the anchored item stays in the
+ * middle of it — the same rule Room's own LimitOffsetPagingSource uses.
+ *
+ * The previous `prevKey + 1 ?: nextKey - 1` (the page-number recipe) returned offset 29 while the
+ * user sat at the newest message (anchor 0, first page = offsets 0..29): every Room invalidation
+ * — the post-open sync, an incoming or a just-sent message — reloaded from offset 29 and the 29
+ * newest messages vanished until the user scrolled.
+ */
+internal fun messageRefreshKey(state: PagingState<Int, MessageBO>): Int? =
+    state.anchorPosition?.let { anchor -> (anchor - state.config.initialLoadSize / 2).coerceAtLeast(0) }
 

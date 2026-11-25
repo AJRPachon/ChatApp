@@ -1,5 +1,6 @@
 package com.ajrpachon.chatapp.ui.chat
 
+import com.ajrpachon.chatapp.ui.common.qaTag
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -137,6 +138,7 @@ internal fun NormalInputBar(
         IconButton(
             onClick = { showAttachSheet = true },
             enabled = !busy,
+            modifier = Modifier.testTag("attach_button"),
         ) {
             Icon(
                 Icons.Default.Add,
@@ -292,6 +294,7 @@ private data class AttachmentOption(
     val label: String,
     val action: () -> Unit,
     val enabled: Boolean = true,
+    val tag: String,
 )
 
 @Composable
@@ -309,16 +312,16 @@ internal fun AttachmentBottomSheet(
     isScheduleEnabled: Boolean = true,
 ) {
     val options = listOf(
-        AttachmentOption(Icons.Default.AddPhotoAlternate, "Galería", onGallery),
-        AttachmentOption(Icons.Default.CameraAlt, "Cámara", onCamera),
-        AttachmentOption(Icons.Default.AttachFile, "Archivo", onFile),
-        AttachmentOption(Icons.Default.Videocam, "Video", onVideo),
-        AttachmentOption(Icons.Default.EmojiEmotions, "Stickers", onSticker),
-        AttachmentOption(Icons.Default.LocationOn, "Ubicación", onLocation),
-        AttachmentOption(Icons.Default.CheckCircle, "Encuesta", onCreatePoll),
-        AttachmentOption(Icons.Default.Contacts, "Contacto", onContact),
-        AttachmentOption(Icons.Default.Schedule, "Programar", onSchedule, enabled = isScheduleEnabled),
-        AttachmentOption(Icons.Default.SmartToy, "IA", onAi),
+        AttachmentOption(Icons.Default.AddPhotoAlternate, stringResource(R.string.chat_attach_option_gallery), onGallery, tag = "attach_gallery"),
+        AttachmentOption(Icons.Default.CameraAlt, stringResource(R.string.chat_attach_option_camera), onCamera, tag = "attach_camera"),
+        AttachmentOption(Icons.Default.AttachFile, stringResource(R.string.chat_attach_option_file), onFile, tag = "attach_file"),
+        AttachmentOption(Icons.Default.Videocam, stringResource(R.string.chat_attach_option_video), onVideo, tag = "attach_video"),
+        AttachmentOption(Icons.Default.EmojiEmotions, stringResource(R.string.chat_attach_option_sticker), onSticker, tag = "attach_sticker"),
+        AttachmentOption(Icons.Default.LocationOn, stringResource(R.string.chat_attach_option_location), onLocation, tag = "attach_location"),
+        AttachmentOption(Icons.Default.CheckCircle, stringResource(R.string.chat_attach_option_poll), onCreatePoll, tag = "attach_poll"),
+        AttachmentOption(Icons.Default.Contacts, stringResource(R.string.chat_attach_option_contact), onContact, tag = "attach_contact"),
+        AttachmentOption(Icons.Default.Schedule, stringResource(R.string.chat_attach_option_schedule), onSchedule, enabled = isScheduleEnabled, tag = "attach_schedule"),
+        AttachmentOption(Icons.Default.SmartToy, stringResource(R.string.chat_attach_option_ai), onAi, tag = "attach_ai"),
     )
 
     Column(
@@ -346,6 +349,7 @@ internal fun AttachmentBottomSheet(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
                             .weight(1f)
+                            .qaTag(option.tag)
                             .clickable(enabled = option.enabled, onClick = option.action)
                             .padding(vertical = 12.dp),
                     ) {
@@ -390,6 +394,7 @@ internal fun ReplyPreviewBar(message: MessageBO, onCancel: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .testTag("reply_preview_bar")
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -416,7 +421,7 @@ internal fun ReplyPreviewBar(message: MessageBO, onCancel: () -> Unit) {
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        IconButton(onClick = onCancel) {
+        IconButton(onClick = onCancel, modifier = Modifier.testTag("reply_preview_cancel")) {
             Icon(
                 Icons.Default.Close,
                 contentDescription = stringResource(R.string.chat_cancel_reply_cd),

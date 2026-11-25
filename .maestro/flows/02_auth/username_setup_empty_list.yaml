@@ -1,0 +1,34 @@
+# [D] First sign-in of an account without username: the username screen appears; after choosing
+# one the user lands on an empty conversation list.
+appId: com.ajrpachon.chatapp
+name: "02 · Configurar username y lista vacía"
+tags:
+  - auth
+  - destructive
+onFlowComplete:
+  # Signed in with another account: never leave its session for ensure_logged_in to reuse.
+  - clearState
+---
+- runFlow:
+    file: ../../subflows/login_fields.yaml
+    env:
+      LOGIN_EMAIL: ${D_USERNAME_EMAIL}
+      LOGIN_PASSWORD: ${DISPOSABLE_PASSWORD}
+- extendedWaitUntil:
+    visible:
+      id: auth_username_field
+    timeout: 45000
+- assertVisible:
+    id: auth_username_confirm_button
+- tapOn:
+    id: auth_username_field
+- inputText: "qau${RUN_ID}"
+- hideKeyboard
+- tapOn:
+    id: auth_username_confirm_button
+- extendedWaitUntil:
+    visible:
+      id: conversation_list_empty
+    timeout: 30000
+- assertVisible:
+    id: conversation_list_new_chat_fab

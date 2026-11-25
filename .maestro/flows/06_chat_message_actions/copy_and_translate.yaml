@@ -1,0 +1,37 @@
+# Translate shows a translation under the bubble that can be dismissed; Copy runs and closes the
+# menu. Copy goes last: Android 13+ then shows its clipboard overlay at the bottom of the screen,
+# which can cover the bubble for a following long-press.
+appId: com.ajrpachon.chatapp
+name: "06 · Copiar y traducir"
+tags:
+  - chat
+---
+- runFlow: ../../subflows/open_chat_with_qa2.yaml
+- runFlow:
+    file: ../../subflows/send_text.yaml
+    env:
+      TEXT: "gracias${RUN_ID}"
+- runFlow:
+    file: ../../subflows/long_press_message.yaml
+    env:
+      TEXT: "gracias${RUN_ID}"
+- tapOn:
+    id: message_menu_translate
+- extendedWaitUntil:
+    visible:
+      id: message_translation
+    timeout: 30000
+- tapOn:
+    id: message_translation_dismiss
+- assertNotVisible:
+    id: message_translation
+# Maestro's pasteText uses its own clipboard (copyTextFrom), not the device one, so the copy is
+# checked only as "the action runs and closes the menu".
+- runFlow:
+    file: ../../subflows/long_press_message.yaml
+    env:
+      TEXT: "gracias${RUN_ID}"
+- tapOn:
+    id: message_menu_copy
+- assertNotVisible:
+    id: message_menu_copy

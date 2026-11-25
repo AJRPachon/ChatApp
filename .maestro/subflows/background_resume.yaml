@@ -1,0 +1,26 @@
+# Send the app to background for a few seconds and bring it back (no state clearing).
+# Param EXPECT_ID: an element of the screen that must be back in front. On real phones the
+# relaunch intent sometimes leaves the launcher in front; one retry brings the task back.
+appId: com.ajrpachon.chatapp
+---
+- pressKey: Home
+- waitForAnimationToEnd:
+    timeout: 3000
+- launchApp:
+    stopApp: false
+- extendedWaitUntil:
+    visible:
+      id: ${EXPECT_ID}
+    timeout: 8000
+    optional: true
+- runFlow:
+    when:
+      notVisible:
+        id: ${EXPECT_ID}
+    commands:
+      - launchApp:
+          stopApp: false
+      - extendedWaitUntil:
+          visible:
+            id: ${EXPECT_ID}
+          timeout: 10000

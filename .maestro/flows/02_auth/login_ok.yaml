@@ -1,0 +1,10 @@
+# [S] Email/password sign-in with the QA account lands on the conversation list.
+appId: com.ajrpachon.chatapp
+name: "02 · Login por email"
+tags:
+  - smoke
+  - auth
+---
+- runFlow: ../../subflows/login.yaml
+- assertVisible:
+    id: conversation_list_profile_button

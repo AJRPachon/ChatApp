@@ -1,0 +1,10 @@
+# Back on the root screen (conversation list) leaves the app.
+appId: com.ajrpachon.chatapp
+name: "01 · Atrás en la raíz cierra la app"
+tags:
+  - launch
+---
+- runFlow: ../../subflows/ensure_logged_in.yaml
+- back
+- assertNotVisible:
+    id: conversation_list_new_chat_fab
