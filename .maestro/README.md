@@ -145,8 +145,9 @@ captura, y flows no ejecutados) que `run-suite.ps1` genera al terminar. Para reg
   responde") y el B falló en flows que en solitario pasan: de momento la suite fiable es la de un
   emulador.
 - **Gboard y "claudeqa2"**: en los emuladores Gboard aprende "claudeqa2" (muchos flows lo buscan) y a
-  veces lo confirma en lugar del "claudeqa" escrito, aunque las correcciones estén desactivadas.
-  `display_name_roundtrip` puede fallar por eso y dejar el nombre visible de QA como "claudeqa2":
+  lo confirmaba en lugar del "claudeqa" escrito, aunque las correcciones estuvieran desactivadas.
+  Desde que el campo "Nombre visible" tiene la autocorrección desactivada (`autoCorrectEnabled =
+  false`) ya no pasa. Si `display_name_roundtrip` deja el nombre visible de QA como "claudeqa2",
   restáuralo desde Perfil. Cambiar el idioma del sistema (suite en inglés) puede reactivar las
   correcciones: vuelve a pasar `setup-emulators.ps1`.
 - **Supabase pausado**: si el proyecto se pausa por inactividad, todos los logins fallan con

@@ -482,6 +482,8 @@ fun ProfileContent(
                 enabled = !state.isSavingDisplayName,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Text,
+                    // A name is a proper noun: autocorrect would "fix" it to a word the keyboard learned.
+                    autoCorrectEnabled = false,
                     imeAction = ImeAction.Done,
                 ),
                 keyboardActions = KeyboardActions(onDone = {
