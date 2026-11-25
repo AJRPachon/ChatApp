@@ -9,3 +9,9 @@ data class ReactionRemoteDTO(
     @SerialName("user_id") val userId: String,
     @SerialName("emoji") val emoji: String,
 )
+
+/** A reaction added or removed by anyone, as received from Supabase Realtime. */
+data class ReactionChangeDTO(
+    val reaction: ReactionRemoteDTO,
+    val removed: Boolean,
+)

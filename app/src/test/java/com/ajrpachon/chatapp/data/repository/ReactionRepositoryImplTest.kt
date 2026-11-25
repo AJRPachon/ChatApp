@@ -3,16 +3,21 @@ package com.ajrpachon.chatapp.data.repository
 import app.cash.turbine.test
 import com.ajrpachon.chatapp.data.local.dao.ReactionDao
 import com.ajrpachon.chatapp.data.local.entity.ReactionDBO
+import com.ajrpachon.chatapp.data.remote.dto.ReactionChangeDTO
+import com.ajrpachon.chatapp.data.remote.dto.ReactionRemoteDTO
 import com.ajrpachon.chatapp.data.remote.source.ReactionRemoteSource
 import com.ajrpachon.chatapp.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
@@ -25,6 +30,55 @@ class ReactionRepositoryImplTest {
     private val remoteSource = mockk<ReactionRemoteSource>(relaxed = true)
 
     private val repo = ReactionRepositoryImpl(reactionDao, remoteSource)
+
+    @Before
+    fun setUp() {
+        every { remoteSource.observeReactionChanges() } returns emptyFlow()
+    }
+
+    // ── observeReactions — Realtime changes ──────────────────────────────────
+
+    @Test
+    fun `observeReactions writes a reaction added remotely into Room`() = runTest {
+        every { reactionDao.observeByConversation("conv1") } returns flowOf(emptyList())
+        every { remoteSource.observeReactionChanges() } returns flowOf(
+            ReactionChangeDTO(ReactionRemoteDTO("msg1", "user2", "x"), removed = false)
+        )
+
+        repo.observeReactions("conv1").test {
+            awaitItem()
+            coVerify { reactionDao.insert(ReactionDBO("msg1", "user2", "x")) }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `observeReactions deletes a reaction removed remotely from Room`() = runTest {
+        every { reactionDao.observeByConversation("conv1") } returns flowOf(emptyList())
+        every { remoteSource.observeReactionChanges() } returns flowOf(
+            ReactionChangeDTO(ReactionRemoteDTO("msg1", "user2", "x"), removed = true)
+        )
+
+        repo.observeReactions("conv1").test {
+            awaitItem()
+            coVerify { reactionDao.delete("msg1", "user2", "x") }
+            coVerify(exactly = 0) { reactionDao.insert(any()) }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `observeReactions keeps emitting Room data when Realtime fails`() = runTest {
+        every { reactionDao.observeByConversation("conv1") } returns flowOf(
+            listOf(ReactionDBO("msg1", "user1", "x"))
+        )
+        every { remoteSource.observeReactionChanges() } returns flow { error("socket closed") }
+
+        repo.observeReactions("conv1").test {
+            assertEquals(1, awaitItem()["msg1"]?.size)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
 
     // ── observeReactions ──────────────────────────────────────────────────────
 
